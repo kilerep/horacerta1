@@ -1,0 +1,62 @@
+{% extends "accounts/base.html" %}
+{% block title %}Exportacoes{% endblock %}
+{% block page_title %}Exportacoes{% endblock %}
+
+{% block content %}
+  <style>
+    .panel{
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(140deg, rgba(79,124,255,.10), transparent 42%),
+        linear-gradient(180deg, rgba(250,204,21,.06), rgba(255,255,255,.03));
+      padding:14px;
+    }
+    .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+    .field{ display:flex; flex-direction:column; gap:6px; min-width:220px; flex:1; }
+    label{ color:var(--muted); font-size:13px; }
+    input, select{
+      width:100%;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.06);
+      color:var(--text);
+      outline:none;
+    }
+    .muted{ color:var(--muted); }
+  </style>
+
+  <section class="panel">
+    <h2 style="margin:0;">Exportar batidas</h2>
+    <p class="muted" style="margin:8px 0 0;">
+      Gere arquivos limpos para compartilhamento (inclusive WhatsApp).
+    </p>
+
+    {% if contracts %}
+      <form method="get" class="row" style="margin-top:12px;">
+        <div class="field">
+          <label>Contrato</label>
+          <select name="contract" required>
+            {% for c in contracts %}
+              <option value="{{ c.id }}">{{ c.company.name }} - R$ {{ c.hourly_rate }}/h</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label>De</label>
+          <input type="date" name="start">
+        </div>
+        <div class="field">
+          <label>Ate</label>
+          <input type="date" name="end">
+        </div>
+        <button class="btn" type="submit" formaction="{% url 'export_csv' %}">CSV</button>
+        <button class="btn primary" type="submit" formaction="{% url 'export_xlsx' %}">Excel (.xlsx)</button>
+        <button class="btn" type="submit" formaction="{% url 'export_pdf' %}">PDF</button>
+      </form>
+    {% else %}
+      <p class="muted" style="margin-top:10px;">Sem contratos ativos para exportar.</p>
+    {% endif %}
+  </section>
+{% endblock %}

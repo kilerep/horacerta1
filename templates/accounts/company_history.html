@@ -1,0 +1,122 @@
+{% extends "accounts/base.html" %}
+{% block title %}Historico (batidas){% endblock %}
+{% block page_title %}Historico (batidas){% endblock %}
+
+{% block content %}
+  <style>
+    .history-wrap{ display:grid; gap:14px; }
+    .panel{
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(140deg, rgba(79,124,255,.10), transparent 42%),
+        linear-gradient(180deg, rgba(250,204,21,.06), rgba(255,255,255,.03));
+      padding:14px;
+    }
+    .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+    .field{ display:flex; flex-direction:column; gap:6px; min-width:220px; flex:1; }
+    label{ color:var(--muted); font-size:13px; }
+    input, select{
+      width:100%;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.06);
+      color:var(--text);
+      outline:none;
+    }
+    input:focus, select:focus{
+      border-color: rgba(79,124,255,.55);
+      box-shadow: 0 0 0 3px rgba(79,124,255,.16);
+    }
+    .table{
+      width:100%;
+      border-collapse: collapse;
+      border:1px solid var(--border);
+      border-radius:14px;
+      overflow:hidden;
+      margin-top:10px;
+    }
+    .table th, .table td{
+      text-align:left;
+      padding:10px;
+      border-bottom:1px solid rgba(255,255,255,.07);
+      font-size:14px;
+    }
+    .table th{ color:var(--muted); font-weight:700; }
+    .table tr:last-child td{ border-bottom:none; }
+    .meta{ color:var(--muted); font-size:13px; margin-top:10px; display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+    .pager{ display:flex; gap:8px; }
+  </style>
+
+  <div class="history-wrap">
+    <section class="panel">
+      <h2 style="margin:0 0 8px;">Filtros</h2>
+      <form method="get" class="row">
+        <div class="field">
+          <label>MEI</label>
+          <select name="employee">
+            <option value="">Todos</option>
+            {% for e in employees %}
+              <option value="{{ e.user_id }}" {% if selected_employee and selected_employee == e.user_id|stringformat:"s" %}selected{% endif %}>
+                {{ e.full_name }} - {{ e.user.email|default:e.user.username }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field">
+          <label>{{ period_form.date_from.label }}</label>
+          {{ period_form.date_from }}
+        </div>
+
+        <div class="field">
+          <label>{{ period_form.date_to.label }}</label>
+          {{ period_form.date_to }}
+        </div>
+
+        <button class="btn primary" type="submit">Aplicar filtros</button>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h2 style="margin:0;">Batidas</h2>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>MEI</th>
+            <th>Data</th>
+            <th>Hora</th>
+            <th>Observacao</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in punches %}
+            <tr>
+              <td>{{ p.contract.employee_user.employee_profile.full_name|default:p.contract.employee_user.email|default:p.contract.employee_user.username }}</td>
+              <td>{{ p.timestamp|date:"d/m/Y" }}</td>
+              <td>{{ p.timestamp|date:"H:i:s" }}</td>
+              <td>{% if p.note %}{{ p.note }}{% else %}<span class="muted">-</span>{% endif %}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="4" class="muted">Sem batidas para os filtros selecionados.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <div class="meta">
+        <div>Mostrando {{ showing_count }} de {{ total_count }}</div>
+        <div class="pager">
+          {% if prev_query %}
+            <a class="btn" href="?{{ prev_query }}">Anterior</a>
+          {% endif %}
+          {% if next_query %}
+            <a class="btn" href="?{{ next_query }}">Proxima</a>
+          {% endif %}
+        </div>
+      </div>
+    </section>
+  </div>
+{% endblock %}

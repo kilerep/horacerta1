@@ -1,0 +1,85 @@
+{% extends "accounts/base.html" %}
+{% block title %}Meu Perfil{% endblock %}
+{% block page_title %}Meu Perfil{% endblock %}
+
+{% block content %}
+  <style>
+    .panel{
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(140deg, rgba(79,124,255,.10), transparent 42%),
+        linear-gradient(180deg, rgba(250,204,21,.06), rgba(255,255,255,.03));
+      padding:14px;
+    }
+    .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+    .field{ display:flex; flex-direction:column; gap:6px; min-width:220px; flex:1; }
+    label{ color:var(--muted); font-size:13px; }
+    input, textarea{
+      width:100%;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.06);
+      color:var(--text);
+      outline:none;
+    }
+    .error{ color:#ffd3d3; font-size:12px; margin-top:4px; }
+    .preview{
+      width:70px;height:70px;border-radius:999px;object-fit:cover;border:1px solid var(--border);
+      background:rgba(255,255,255,.05);
+    }
+  </style>
+
+  <section class="panel">
+    <h2 style="margin:0;">Meu Perfil</h2>
+    <form method="post" enctype="multipart/form-data" style="margin-top:10px;">
+      {% csrf_token %}
+
+      <div class="row">
+        <div class="field">
+          <label>{{ form.full_name.label }}</label>
+          {{ form.full_name }}
+          {% if form.full_name.errors %}<div class="error">{{ form.full_name.errors }}</div>{% endif %}
+        </div>
+        <div class="field">
+          <label>{{ form.document.label }}</label>
+          {{ form.document }}
+          {% if form.document.errors %}<div class="error">{{ form.document.errors }}</div>{% endif %}
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:10px;">
+        <div class="field">
+          <label>{{ form.phone.label }}</label>
+          {{ form.phone }}
+          {% if form.phone.errors %}<div class="error">{{ form.phone.errors }}</div>{% endif %}
+        </div>
+        <div class="field">
+          <label>{{ form.address.label }}</label>
+          {{ form.address }}
+          {% if form.address.errors %}<div class="error">{{ form.address.errors }}</div>{% endif %}
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:10px;">
+        <div class="field" style="max-width:320px;">
+          <label>{{ form.profile_photo.label }}</label>
+          {{ form.profile_photo }}
+          {% if form.profile_photo.errors %}<div class="error">{{ form.profile_photo.errors }}</div>{% endif %}
+        </div>
+        {% if employee.profile_photo %}
+          <img class="preview" src="{{ employee.profile_photo.url }}" alt="Foto de perfil">
+        {% endif %}
+      </div>
+
+      {% if form.non_field_errors %}
+        <div class="error" style="margin-top:10px;">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <div style="margin-top:10px;">
+        <button class="btn primary" type="submit">Salvar perfil</button>
+      </div>
+    </form>
+  </section>
+{% endblock %}

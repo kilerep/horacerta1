@@ -1,0 +1,192 @@
+{% extends "accounts/base.html" %}
+{% block title %}Relatorios{% endblock %}
+{% block page_title %}Relatorios{% endblock %}
+
+{% block content %}
+  <style>
+    .wrap-grid{ display:grid; gap:14px; }
+    .panel{
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(140deg, rgba(79,124,255,.10), transparent 42%),
+        linear-gradient(180deg, rgba(250,204,21,.06), rgba(255,255,255,.03));
+      padding:14px;
+    }
+    .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+    .field{ display:flex; flex-direction:column; gap:6px; min-width:220px; flex:1; }
+    label{ color:var(--muted); font-size:13px; }
+    input, select, textarea{
+      width:100%;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.06);
+      color:var(--text);
+      outline:none;
+    }
+    .card-grid{ display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; }
+    .stat{
+      border:1px solid var(--border);
+      border-radius:12px;
+      background: rgba(255,255,255,.04);
+      padding:12px;
+    }
+    .k{ color:var(--muted); font-size:12px; }
+    .v{ font-size:24px; font-weight:800; margin-top:2px; }
+    .table{
+      width:100%;
+      border-collapse: collapse;
+      border:1px solid var(--border);
+      border-radius:14px;
+      overflow:hidden;
+      margin-top:10px;
+    }
+    .table th, .table td{
+      text-align:left;
+      padding:10px;
+      border-bottom:1px solid rgba(255,255,255,.07);
+      font-size:14px;
+    }
+    .table th{ color:var(--muted); font-weight:700; }
+    .table tr:last-child td{ border-bottom:none; }
+    .muted{ color:var(--muted); }
+    @media (max-width: 980px){
+      .card-grid{ grid-template-columns: 1fr; }
+    }
+  </style>
+
+  <div class="wrap-grid">
+    <section class="panel">
+      <h2 style="margin:0;">Filtros do relatorio</h2>
+      <form method="get" class="row" style="margin-top:10px;">
+        <div class="field">
+          <label>MEI</label>
+          <select name="employee">
+            <option value="">Todos</option>
+            {% for e in employees %}
+              <option value="{{ e.user_id }}" {% if selected_employee and selected_employee == e.user_id|stringformat:"s" %}selected{% endif %}>
+                {{ e.full_name }} - {{ e.user.email|default:e.user.username }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label>De</label>
+          <input type="date" name="date_from" value="{{ date_from }}">
+        </div>
+        <div class="field">
+          <label>Ate</label>
+          <input type="date" name="date_to" value="{{ date_to }}">
+        </div>
+        <button class="btn primary" type="submit">Aplicar</button>
+      </form>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
+        <a class="btn" href="?employee={{ selected_employee }}&date_from={{ date_from }}&date_to={{ date_to }}&export=xlsx">Exportar Excel (.xlsx)</a>
+        <a class="btn" href="?employee={{ selected_employee }}&date_from={{ date_from }}&date_to={{ date_to }}&export=pdf">Exportar PDF</a>
+      </div>
+    </section>
+
+    <section class="card-grid">
+      <div class="stat">
+        <div class="k">Total horas</div>
+        <div class="v">{{ total_hours }}</div>
+      </div>
+      <div class="stat">
+        <div class="k">Total batidas</div>
+        <div class="v">{{ total_punches }}</div>
+      </div>
+      <div class="stat">
+        <div class="k">Pagamento estimado</div>
+        <div class="v">R$ {{ estimated_payment }}</div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2 style="margin:0;">Batidas detalhadas</h2>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>MEI</th>
+            <th>Data</th>
+            <th>Hora</th>
+            <th>Valor/h</th>
+            <th>Obs</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in punches %}
+            <tr>
+              <td>{{ p.contract.employee_user.employee_profile.full_name|default:p.contract.employee_user.email|default:p.contract.employee_user.username }}</td>
+              <td>{{ p.timestamp|date:"d/m/Y" }}</td>
+              <td>{{ p.timestamp|date:"H:i:s" }}</td>
+              <td>R$ {{ p.contract.hourly_rate }}</td>
+              <td>{% if p.note %}{{ p.note }}{% else %}<span class="muted">-</span>{% endif %}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="muted">Sem batidas para os filtros.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <p class="muted" style="margin-top:8px;">Mostrando no maximo 300 linhas na tela.</p>
+    </section>
+
+    <section class="panel">
+      <h2 style="margin:0;">Solicitar relatorio de atividades</h2>
+      <form method="post" class="row" style="margin-top:10px;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="request_activity_report">
+        <div class="field">
+          <label>MEI</label>
+          <select name="employee_user" required>
+            <option value="">Selecionar...</option>
+            {% for e in employees %}
+              <option value="{{ e.user_id }}">{{ e.full_name }} - {{ e.user.email|default:e.user.username }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label>De</label>
+          <input type="date" name="req_date_from">
+        </div>
+        <div class="field">
+          <label>Ate</label>
+          <input type="date" name="req_date_to">
+        </div>
+        <div class="field">
+          <label>Mensagem (opcional)</label>
+          <textarea name="message" rows="2" placeholder="Ex: detalhar atividades do periodo."></textarea>
+        </div>
+        <button class="btn primary" type="submit">Request report from MEI</button>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h2 style="margin:0;">Respostas recebidas</h2>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>MEI</th>
+            <th>Solicitado em</th>
+            <th>Periodo</th>
+            <th>Status</th>
+            <th>Resposta</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in requests %}
+            <tr>
+              <td>{{ r.employee_user.employee_profile.full_name|default:r.employee_user.email|default:r.employee_user.username }}</td>
+              <td>{{ r.requested_at|date:"d/m/Y H:i" }}</td>
+              <td>{{ r.date_from|default:"-" }} ate {{ r.date_to|default:"-" }}</td>
+              <td>{% if r.is_answered %}Respondido{% else %}<span class="muted">Pendente</span>{% endif %}</td>
+              <td>{% if r.response_text %}{{ r.response_text }}{% else %}<span class="muted">-</span>{% endif %}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="muted">Sem solicitacoes ainda.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+  </div>
+{% endblock %}

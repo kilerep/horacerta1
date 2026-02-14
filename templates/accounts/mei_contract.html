@@ -1,0 +1,90 @@
+{% extends "accounts/base.html" %}
+{% block title %}Meu Contrato{% endblock %}
+{% block page_title %}Meu Contrato{% endblock %}
+
+{% block content %}
+  <style>
+    .contract-wrap{ display:grid; gap:14px; }
+    .panel{
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(140deg, rgba(79,124,255,.10), transparent 42%),
+        linear-gradient(180deg, rgba(250,204,21,.06), rgba(255,255,255,.03));
+      padding:14px;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(4, minmax(180px, 1fr));
+      gap:10px;
+      margin-top:10px;
+    }
+    .stat{
+      border:1px solid var(--border);
+      border-radius:12px;
+      background: rgba(255,255,255,.04);
+      padding:12px;
+    }
+    .k{ color:var(--muted); font-size:12px; }
+    .v{ font-size:20px; font-weight:800; margin-top:2px; }
+    .warning{
+      border:1px solid rgba(250,204,21,.45);
+      background: rgba(250,204,21,.12);
+      border-radius: 12px;
+      padding: 12px;
+      color: #fff0b5;
+      margin-top:8px;
+    }
+    @media (max-width: 900px){
+      .grid{ grid-template-columns: 1fr; }
+    }
+  </style>
+
+  <div class="contract-wrap">
+    {% if active_contract %}
+      <section class="panel">
+        <h2 style="margin:0;">Contrato ativo</h2>
+        <p class="muted" style="margin:8px 0 0;">Dados do seu contrato atual.</p>
+
+        <div class="grid">
+          <div class="stat">
+            <div class="k">Empresa</div>
+            <div class="v">{{ active_contract.company.name|default:"-" }}</div>
+          </div>
+          <div class="stat">
+            <div class="k">Valor por hora</div>
+            <div class="v">R$ {{ active_contract.hourly_rate }}</div>
+          </div>
+          <div class="stat">
+            <div class="k">Status</div>
+            <div class="v">{% if active_contract.is_active %}Ativo{% else %}Inativo{% endif %}</div>
+          </div>
+          <div class="stat">
+            <div class="k">Inicio / Fim</div>
+            <div class="v" style="font-size:16px;">
+              {{ active_contract.start_date|date:"d/m/Y" }}
+              {% if active_contract.end_date %} - {{ active_contract.end_date|date:"d/m/Y" }}{% else %} - em aberto{% endif %}
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;">
+          {% if active_contract.contract_file %}
+            <a class="btn" href="{{ active_contract.contract_file.url }}" target="_blank" rel="noopener">Download PDF do contrato</a>
+          {% endif %}
+          <a class="btn" href="{% url 'employee_dashboard' %}">Voltar ao painel</a>
+        </div>
+      </section>
+    {% else %}
+      <section class="panel">
+        <h2 style="margin:0;">Nenhum contrato ativo</h2>
+        <div class="warning">
+          Voce ainda nao possui contrato ativo. A empresa precisa criar seu contrato para liberar o fluxo completo.
+        </div>
+        <div style="margin-top:12px;">
+          <a class="btn primary" href="#">Falar com a empresa</a>
+        </div>
+      </section>
+    {% endif %}
+  </div>
+{% endblock %}

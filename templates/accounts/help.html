@@ -1,0 +1,17 @@
+<a class="btn secondary" href="{% url 'dashboard' %}">⬅ Voltar à Dashboard</a>
+{% extends "base.html" %}
+{% block title %}HoraCerta • Ajuda{% endblock %}
+{% block subtitle %}Como usar o HoraCerta{% endblock %}
+{% block content %}
+  <div class="grid">
+    <div class="card">
+      <h2>Ajuda</h2>
+      <ul>
+        <li>Empresa cria a conta e cadastra funcionários (MEIs).</li>
+        <li>Funcionário registra batidas e pode adicionar observações.</li>
+        <li>Horas são imutáveis (sem edição de horário). Só texto/observação pode ser editado.</li>
+        <li>Relatórios podem ser exportados (PDF/CSV).</li>
+      </ul>
+    </div>
+  </div>
+{% endblock %}

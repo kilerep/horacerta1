@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+{% block title %}HoraCerta - Cadastro{% endblock %}
+{% block subtitle %}Criar conta{% endblock %}
+
+{% block content %}
+  <style>
+    .signup-wrap{
+      margin-top: 14px;
+    }
+    .signup-card{
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(140deg, rgba(79,124,255,.10), transparent 42%),
+        linear-gradient(180deg, rgba(255,204,40,.06), rgba(255,255,255,.02));
+      padding: 18px;
+    }
+    .signup-title{
+      margin:0;
+      font-size: 28px;
+      line-height: 1.15;
+    }
+    .signup-sub{
+      margin:8px 0 0;
+      color:var(--muted);
+    }
+    .mode-label{
+      display:block;
+      margin:18px 0 10px;
+      font-weight:700;
+    }
+
+    .type-grid{
+      display:grid;
+      gap:10px;
+      grid-template-columns: repeat(2, minmax(180px, 1fr));
+    }
+    .type-option{
+      border:1px solid var(--border);
+      border-radius: 14px;
+      background: rgba(255,255,255,.04);
+      padding:12px 14px;
+      cursor:pointer;
+      display:flex;
+      gap:10px;
+      align-items:center;
+      transition: border-color .12s ease, background .12s ease;
+    }
+    .type-option:hover{
+      border-color: rgba(79,124,255,.45);
+      background: rgba(79,124,255,.10);
+    }
+    .type-option input{
+      width:auto;
+      margin:0;
+    }
+    .type-option.active{
+      border-color: rgba(79,124,255,.55);
+      box-shadow: 0 0 0 2px rgba(79,124,255,.16) inset;
+      background: rgba(79,124,255,.16);
+    }
+
+    .section{
+      margin-top:16px;
+      border:1px solid var(--border);
+      border-radius: 16px;
+      padding:14px;
+      background: rgba(255,255,255,.03);
+    }
+    .section h3{
+      margin:0 0 10px;
+      font-size: 17px;
+    }
+    .row{
+      display:grid;
+      gap:12px;
+      grid-template-columns: repeat(2, minmax(220px, 1fr));
+    }
+    .field label{
+      display:block;
+      margin:0 0 6px;
+      color:var(--muted);
+      font-size:13px;
+    }
+    .field input{
+      width:100%;
+      padding:11px 12px;
+      border-radius: 12px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.06);
+      color:var(--text);
+      outline:none;
+    }
+    .field input:focus{
+      border-color: rgba(79,124,255,.52);
+      box-shadow: 0 0 0 3px rgba(79,124,255,.16);
+    }
+    .error-box{
+      margin-top:12px;
+      border:1px solid rgba(255,90,90,.45);
+      background: rgba(255,90,90,.12);
+      border-radius: 12px;
+      padding:10px 12px;
+      color:#ffe0e0;
+    }
+    .field-error{
+      margin-top:6px;
+      color:#ffd3d3;
+      font-size:13px;
+    }
+    .actions{
+      margin-top:16px;
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .hint{
+      color:var(--muted);
+      font-size:14px;
+    }
+    .accent{
+      color: var(--yellow);
+      font-weight:700;
+    }
+    [hidden]{ display:none !important; }
+
+    @media (max-width: 760px){
+      .type-grid{ grid-template-columns: 1fr; }
+      .row{ grid-template-columns: 1fr; }
+      .signup-title{ font-size: 24px; }
+    }
+  </style>
+
+  <div class="signup-wrap">
+    <div class="signup-card">
+      <h1 class="signup-title">Criar conta</h1>
+      <p class="signup-sub">
+        Escolha <span class="accent">MEI</span> ou <span class="accent">EMPRESA</span> para mostrar apenas os campos necessarios.
+      </p>
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        <span class="mode-label">{{ form.account_type.label }}</span>
+        <div class="type-grid" id="typeGrid">
+          {% for radio in form.account_type %}
+            <label class="type-option" data-type="{{ radio.data.value }}">
+              {{ radio.tag }}
+              <span>{{ radio.choice_label }}</span>
+            </label>
+          {% endfor %}
+        </div>
+        {% if form.account_type.errors %}<div class="field-error">{{ form.account_type.errors }}</div>{% endif %}
+
+        <section class="section" id="blockEmpresa">
+          <h3>Dados da empresa</h3>
+          <div class="row">
+            <div class="field">
+              <label>{{ form.company_name.label }}</label>
+              {{ form.company_name }}
+              {% if form.company_name.errors %}<div class="field-error">{{ form.company_name.errors }}</div>{% endif %}
+            </div>
+            <div class="field">
+              <label>{{ form.company_email.label }}</label>
+              {{ form.company_email }}
+              {% if form.company_email.errors %}<div class="field-error">{{ form.company_email.errors }}</div>{% endif %}
+            </div>
+            <div class="field">
+              <label>{{ form.rh_email.label }}</label>
+              {{ form.rh_email }}
+              {% if form.rh_email.errors %}<div class="field-error">{{ form.rh_email.errors }}</div>{% endif %}
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="blockMei" hidden>
+          <h3>Dados do MEI</h3>
+          <div class="row">
+            <div class="field">
+              <label>{{ form.full_name.label }}</label>
+              {{ form.full_name }}
+              {% if form.full_name.errors %}<div class="field-error">{{ form.full_name.errors }}</div>{% endif %}
+            </div>
+            <div class="field">
+              <label>{{ form.mei_email.label }}</label>
+              {{ form.mei_email }}
+              {% if form.mei_email.errors %}<div class="field-error">{{ form.mei_email.errors }}</div>{% endif %}
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h3>Senha</h3>
+          <div class="row">
+            <div class="field">
+              <label>{{ form.password1.label }}</label>
+              {{ form.password1 }}
+              {% if form.password1.errors %}<div class="field-error">{{ form.password1.errors }}</div>{% endif %}
+            </div>
+            <div class="field">
+              <label>{{ form.password2.label }}</label>
+              {{ form.password2 }}
+              {% if form.password2.errors %}<div class="field-error">{{ form.password2.errors }}</div>{% endif %}
+            </div>
+          </div>
+        </section>
+
+        {% if form.non_field_errors %}
+          <div class="error-box">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="actions">
+          <button class="btn primary" type="submit">Criar conta</button>
+          <span class="hint">Ja tem conta? <a href="{% url 'login' %}">Entrar</a></span>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const empresaBlock = document.getElementById("blockEmpresa");
+      const meiBlock = document.getElementById("blockMei");
+      const typeCards = document.querySelectorAll(".type-option");
+      const radios = document.querySelectorAll('input[name="account_type"]');
+
+      const empresaFields = [
+        document.getElementById("id_company_name"),
+        document.getElementById("id_company_email"),
+        document.getElementById("id_rh_email")
+      ];
+      const meiFields = [
+        document.getElementById("id_full_name"),
+        document.getElementById("id_mei_email")
+      ];
+
+      function setDisabled(fields, disabled) {
+        fields.forEach(function (field) {
+          if (!field) return;
+          field.disabled = disabled;
+          if (disabled) field.value = "";
+        });
+      }
+
+      function paintActiveCard(currentType) {
+        typeCards.forEach(function (card) {
+          card.classList.toggle("active", card.dataset.type === currentType);
+        });
+      }
+
+      function setMode(type) {
+        const isMei = type === "FUNCIONARIO";
+        empresaBlock.hidden = isMei;
+        meiBlock.hidden = !isMei;
+
+        setDisabled(empresaFields, isMei);
+        setDisabled(meiFields, !isMei);
+        paintActiveCard(type);
+      }
+
+      radios.forEach(function (radio) {
+        radio.addEventListener("change", function () {
+          setMode(radio.value);
+        });
+      });
+
+      const checked = document.querySelector('input[name="account_type"]:checked');
+      setMode(checked ? checked.value : "EMPRESA");
+    })();
+  </script>
+{% endblock %}

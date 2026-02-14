@@ -1,0 +1,22 @@
+{% extends "accounts/base.html" %}
+{% block title %}Editar observação{% endblock %}
+{% block page_title %}Editar observação{% endblock %}
+
+{% block content %}
+  <div class="card" style="display:grid; gap:12px;">
+    <div style="opacity:.8;">
+      Batida: <strong>{{ punch.timestamp|date:"d/m/Y H:i" }}</strong>
+    </div>
+
+    <form method="post" style="display:grid; gap:10px;">
+      {% csrf_token %}
+      <textarea name="note" rows="4"
+        style="width:100%; background: rgba(0,0,0,.22); color:#fff; border:1px solid rgba(255,255,255,.12); border-radius:14px; padding:12px;">{{ punch.note }}</textarea>
+
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="btn primary" style="border-radius:14px;">Salvar</button>
+        <a class="btn" style="border-radius:14px;" href="/me/?contract={{ contract_id }}">Voltar</a>
+      </div>
+    </form>
+  </div>
+{% endblock %}

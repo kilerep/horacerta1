@@ -1,0 +1,225 @@
+{% extends "accounts/base.html" %}
+{% block title %}HoraCerta - Empresa{% endblock %}
+{% block page_title %}Painel da empresa (RH/Admin){% endblock %}
+
+{% block content %}
+  <style>
+    .wrap-grid{ margin-top:14px; display:grid; gap:14px; }
+    .cards-grid{ display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; }
+    .cols{ display:grid; grid-template-columns: 1.1fr .9fr; gap:14px; }
+    .panel{
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(140deg, rgba(79,124,255,.10), transparent 42%),
+        linear-gradient(180deg, rgba(250,204,21,.06), rgba(255,255,255,.03));
+      padding:14px;
+    }
+    .k{ color:var(--muted); font-size:12px; }
+    .v{ font-size:28px; font-weight:800; margin-top:2px; }
+    .muted{ color:var(--muted); }
+    .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+    .field{ display:flex; flex-direction:column; gap:6px; min-width:220px; flex:1; }
+    label{ color:var(--muted); font-size:13px; }
+    input, select{
+      width:100%;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.06);
+      color:var(--text);
+      outline:none;
+    }
+    input:focus, select:focus{
+      border-color: rgba(79,124,255,.55);
+      box-shadow: 0 0 0 3px rgba(79,124,255,.16);
+    }
+    .pill{
+      display:inline-block;
+      border:1px solid var(--border);
+      border-radius:999px;
+      padding:4px 10px;
+      font-size:12px;
+      background: rgba(255,255,255,.05);
+    }
+    .pill.warn{
+      border-color: rgba(250,204,21,.45);
+      background: rgba(250,204,21,.12);
+      color: #fff0b5;
+    }
+    .table{
+      width:100%;
+      border-collapse: collapse;
+      border:1px solid var(--border);
+      border-radius:14px;
+      overflow:hidden;
+      margin-top:10px;
+    }
+    .table th, .table td{
+      text-align:left;
+      padding:10px;
+      border-bottom:1px solid rgba(255,255,255,.07);
+      font-size:14px;
+    }
+    .table th{ color:var(--muted); font-weight:700; }
+    .table tr:last-child td{ border-bottom:none; }
+    .right{ text-align:right; }
+
+    @media (max-width: 980px){
+      .cards-grid{ grid-template-columns: 1fr; }
+      .cols{ grid-template-columns: 1fr; }
+    }
+  </style>
+
+  {% if not company %}
+    <div class="wrap-grid">
+      <section class="panel">
+        <h2 style="margin:0 0 8px;">Empresa nao encontrada</h2>
+        <p class="muted" style="margin:0;">Esse usuario ainda nao tem empresa vinculada.</p>
+      </section>
+    </div>
+  {% else %}
+    <div class="wrap-grid">
+      <section class="cards-grid">
+        <div class="panel">
+          <div class="k">MEIs ativos</div>
+          <div class="v">{{ total_employees }}</div>
+        </div>
+        <div class="panel">
+          <div class="k">Contratos ativos</div>
+          <div class="v">{{ total_active_contracts }}</div>
+        </div>
+        <div class="panel">
+          <div class="k">Horas no periodo</div>
+          <div class="v">{{ total_hours_period }}</div>
+          <small class="muted">Batidas: {{ total_punches_period }} (estimativa simples)</small>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h3 style="margin:0 0 8px;">Periodo do relatorio</h3>
+        <form method="get" class="row">
+          <input type="hidden" name="q" value="{{ employee_search_form.q.value|default:'' }}">
+          <div class="field">
+            <label>{{ period_form.date_from.label }}</label>
+            {{ period_form.date_from }}
+          </div>
+          <div class="field">
+            <label>{{ period_form.date_to.label }}</label>
+            {{ period_form.date_to }}
+          </div>
+          <button class="btn primary" type="submit">Aplicar periodo</button>
+        </form>
+        <p class="muted" style="margin:8px 0 0;">
+          Periodo atual: <strong>{{ period_result.date_from }}</strong> ate <strong>{{ period_result.date_to }}</strong>
+        </p>
+      </section>
+
+      <div class="cols">
+        <section class="panel">
+          <h3 style="margin:0;">MEIs</h3>
+          <form method="get" class="row" style="margin-top:10px;">
+            <input type="hidden" name="date_from" value="{{ period_form.date_from.value|default:'' }}">
+            <input type="hidden" name="date_to" value="{{ period_form.date_to.value|default:'' }}">
+            <div class="field">
+              <label>{{ employee_search_form.q.label }}</label>
+              {{ employee_search_form.q }}
+            </div>
+            <button class="btn primary" type="submit">Buscar</button>
+          </form>
+
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Email</th>
+                <th>Status</th>
+                <th class="right">Contratos ativos</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in employees %}
+                <tr>
+                  <td>{{ row.employee.full_name }}</td>
+                  <td>{{ row.employee.user.email|default:row.employee.user.username }}</td>
+                  <td>
+                    {% if row.employee.is_active %}
+                      <span class="pill">Ativo</span>
+                    {% else %}
+                      <span class="pill warn">Inativo</span>
+                    {% endif %}
+                  </td>
+                  <td class="right">{{ row.active_contracts }}</td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="4" class="muted">Nenhum MEI encontrado.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </section>
+
+        <section class="panel">
+          <h3 style="margin:0;">Contratos</h3>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>MEI</th>
+                <th>Valor/h</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in contracts %}
+                <tr>
+                  <td>{{ row.mei_name }}</td>
+                  <td>R$ {{ row.contract.hourly_rate }}</td>
+                  <td>
+                    {% if row.contract.is_active %}
+                      <span class="pill">Ativo</span>
+                    {% else %}
+                      <span class="pill warn">Inativo</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="3" class="muted">Sem contratos para esta empresa.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </section>
+      </div>
+
+      <section class="panel">
+        <h3 style="margin:0;">Base de relatorio (batidas no periodo)</h3>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>MEI</th>
+              <th>Valor/h</th>
+              <th>Observacao</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in punches_period %}
+              <tr>
+                <td>{{ row.punch.timestamp|date:"d/m/Y H:i" }}</td>
+                <td>{{ row.mei_name }}</td>
+                <td>R$ {{ row.punch.contract.hourly_rate }}</td>
+                <td>{% if row.punch.note %}{{ row.punch.note }}{% else %}<span class="muted">-</span>{% endif %}</td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="4" class="muted">Sem batidas para o periodo informado.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </section>
+    </div>
+  {% endif %}
+{% endblock %}

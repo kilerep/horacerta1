@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <title>HoraCerta • Dashboard</title>
+</head>
+<body>
+  <h1>Dashboard</h1>
+
+  <p>Logado como: <b>{{ request.user.email }}</b></p>
+
+  <p><a href="{% url 'logout' %}">Sair</a></p>
+</body>
+</html>

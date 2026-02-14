@@ -1,0 +1,377 @@
+{% load static %}
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}HoraCerta{% endblock %}</title>
+
+  <style>
+    :root{
+      --bg:#070b18;
+      --panel:#0b1430;
+      --panel2:#0a1026;
+      --stroke:rgba(255,255,255,.08);
+      --border:rgba(255,255,255,.10);
+      --text:rgba(255,255,255,.92);
+      --muted:rgba(255,255,255,.65);
+      --blue:#2f7cff;
+      --yellow:#ffd24a;
+      --ok:#29d17d;
+      --warn:#ffb020;
+      --danger:#ff4d5a;
+      --radius:18px;
+      --shadow: 0 18px 60px rgba(0,0,0,.45);
+    }
+
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(1200px 600px at 40% -10%, rgba(47,124,255,.25), transparent 60%),
+                  radial-gradient(900px 500px at 90% 10%, rgba(255,210,74,.12), transparent 55%),
+                  radial-gradient(900px 600px at 20% 100%, rgba(47,124,255,.16), transparent 60%),
+                  var(--bg);
+      color: var(--text);
+      min-height:100vh;
+    }
+
+    a{ color:inherit; text-decoration:none; }
+
+    .wrap{
+      display:flex;
+      min-height:100vh;
+      gap:18px;
+      padding:18px;
+    }
+
+    .sidebar{
+      width:280px;
+      background: linear-gradient(180deg, rgba(11,20,48,.86), rgba(10,16,38,.86));
+      border:1px solid var(--stroke);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding:16px;
+      position: sticky;
+      top:18px;
+      height: calc(100vh - 36px);
+      overflow:auto;
+    }
+    .brand{
+      padding:14px 14px 16px;
+      border:1px solid var(--stroke);
+      border-radius: 16px;
+      background: rgba(255,255,255,.03);
+    }
+    .brand .name{
+      font-weight:800;
+      letter-spacing:.3px;
+      font-size: 18px;
+      margin-bottom:4px;
+    }
+    .brand .sub{
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.25;
+    }
+
+    .menu{
+      margin-top:14px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .item{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:12px 12px;
+      border:1px solid var(--stroke);
+      border-radius: 16px;
+      background: rgba(255,255,255,.03);
+      transition: transform .08s ease, border-color .12s ease, background .12s ease;
+    }
+    .item:hover{
+      transform: translateY(-1px);
+      background: rgba(255,255,255,.05);
+      border-color: rgba(255,255,255,.14);
+    }
+    .item .icon{
+      width:36px;
+      height:36px;
+      border-radius: 12px;
+      display:grid;
+      place-items:center;
+      background: rgba(47,124,255,.14);
+      border:1px solid rgba(47,124,255,.22);
+      color: rgba(255,255,255,.92);
+      font-weight:800;
+    }
+    .item.muted{ opacity:.7; }
+
+    .main{
+      flex:1;
+      min-width:0;
+      display:flex;
+      flex-direction:column;
+      gap:18px;
+    }
+
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:16px 18px;
+      border-radius: var(--radius);
+      border:1px solid var(--stroke);
+      background: linear-gradient(180deg, rgba(11,20,48,.72), rgba(10,16,38,.66));
+      box-shadow: var(--shadow);
+    }
+    .top-left .title{
+      font-size:18px;
+      font-weight:800;
+      margin-bottom:2px;
+    }
+    .top-heading{
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .top-avatar{
+      width:34px;
+      height:34px;
+      border-radius: 999px;
+      object-fit: cover;
+      border:1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.08);
+    }
+    .top-left .meta{
+      color:var(--muted);
+      font-size:13px;
+    }
+
+    .top-actions{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .guestbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:14px 16px;
+      border-radius: var(--radius);
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.03);
+      box-shadow: var(--shadow);
+    }
+    .guestbrand{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-weight:900;
+      letter-spacing:.3px;
+    }
+    .logo-mark{
+      width:28px;height:28px;border-radius:10px;position:relative;flex:0 0 auto;
+      background:linear-gradient(145deg,var(--blue),#2d5fff);
+      border:1px solid rgba(255,255,255,.25);
+      box-shadow:0 8px 20px rgba(47,124,255,.35);
+    }
+    .logo-mark:after{
+      content:"";position:absolute;right:-4px;top:-4px;width:10px;height:10px;border-radius:50%;
+      background:var(--yellow);border:1px solid rgba(255,255,255,.45);
+    }
+    .guestactions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:10px 14px;
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.05);
+      color: rgba(255,255,255,.92);
+      font-weight:700;
+      cursor:pointer;
+    }
+    .btn:hover{ border-color: rgba(255,255,255,.18); background: rgba(255,255,255,.07); }
+    .btn.primary{ background: rgba(47,124,255,.22); border-color: rgba(47,124,255,.35); }
+    .btn.primary:hover{ background: rgba(47,124,255,.28); }
+    .btn.danger{ background: rgba(255,77,90,.14); border-color: rgba(255,77,90,.30); }
+    .btn.danger:hover{ background: rgba(255,77,90,.18); }
+
+    .content{ padding:0; }
+    .card{
+      border:1px solid var(--stroke);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(11,20,48,.72), rgba(10,16,38,.62));
+      box-shadow: var(--shadow);
+      padding:18px;
+    }
+    .muted{ color: var(--muted); }
+
+    @media (max-width: 980px){
+      .wrap{ flex-direction:column; }
+      .sidebar{
+        width:100%;
+        height:auto;
+        position:relative;
+        top:auto;
+      }
+    }
+  </style>
+
+  {% block extra_head %}{% endblock %}
+</head>
+
+<body>
+  {% if request.user.is_authenticated %}
+    <div class="wrap">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="name">HoraCerta</div>
+          <div class="sub">Controle de horas - RH/Empresa - MEI</div>
+        </div>
+
+        <nav class="menu">
+          {% if request.user.role == "EMPRESA" %}
+            <a class="item" href="{% url 'dashboard_empresa' %}">
+              <div class="icon">D</div>
+              <div><strong>Dashboard</strong><div class="muted" style="font-size:12px">visao geral</div></div>
+            </a>
+            <a class="item" href="{% url 'company_meis' %}">
+              <div class="icon">M</div>
+              <div><strong>MEIs</strong><div class="muted" style="font-size:12px">lista</div></div>
+            </a>
+            <a class="item" href="{% url 'company_contracts' %}">
+              <div class="icon">C</div>
+              <div><strong>Contratos</strong><div class="muted" style="font-size:12px">ativos</div></div>
+            </a>
+            <a class="item muted" href="{% url 'company_reports' %}">
+              <div class="icon">R</div>
+              <div><strong>Relatorios</strong><div class="muted" style="font-size:12px">em breve</div></div>
+            </a>
+            <a class="item" href="{% url 'company_history' %}">
+              <div class="icon">H</div>
+              <div><strong>Historico</strong><div class="muted" style="font-size:12px">batidas</div></div>
+            </a>
+            <a class="item muted" href="{% url 'company_docs' %}">
+              <div class="icon">D</div>
+              <div><strong>Contratos/Docs</strong><div class="muted" style="font-size:12px">em breve</div></div>
+            </a>
+            <a class="item muted" href="{% url 'company_settings' %}">
+              <div class="icon">S</div>
+              <div><strong>Configuracoes</strong><div class="muted" style="font-size:12px">em breve</div></div>
+            </a>
+            <a class="item" href="{% url 'company_profile' %}">
+              <div class="icon">P</div>
+              <div><strong>Perfil</strong><div class="muted" style="font-size:12px">empresa</div></div>
+            </a>
+          {% else %}
+            <a class="item" href="{% url 'mei_panel' %}">
+              <div class="icon">P</div>
+              <div><strong>Meu Painel</strong><div class="muted" style="font-size:12px">resumo</div></div>
+            </a>
+            <a class="item" href="{% url 'employee_dashboard' %}">
+              <div class="icon">B</div>
+              <div><strong>Registrar batida</strong><div class="muted" style="font-size:12px">/me/</div></div>
+            </a>
+            <a class="item" href="{% url 'mei_history' %}">
+              <div class="icon">H</div>
+              <div><strong>Historico de batidas</strong><div class="muted" style="font-size:12px">por periodo</div></div>
+            </a>
+            <a class="item" href="{% url 'mei_export' %}">
+              <div class="icon">E</div>
+              <div><strong>Exportar CSV</strong><div class="muted" style="font-size:12px">gerar arquivo</div></div>
+            </a>
+            <a class="item" href="{% url 'mei_contract' %}">
+              <div class="icon">C</div>
+              <div><strong>Meu contrato</strong><div class="muted" style="font-size:12px">valor/h e status</div></div>
+            </a>
+            <a class="item" href="{% url 'mei_profile' %}">
+              <div class="icon">P</div>
+              <div><strong>Meu perfil</strong><div class="muted" style="font-size:12px">dados pessoais</div></div>
+            </a>
+            <a class="item muted" href="{% url 'mei_reports' %}">
+              <div class="icon">R</div>
+              <div><strong>Relatorios</strong><div class="muted" style="font-size:12px">em breve</div></div>
+            </a>
+          {% endif %}
+
+          <a class="item" href="{% url 'help' %}">
+            <div class="icon">?</div>
+            <div><strong>Ajuda</strong><div class="muted" style="font-size:12px">como usar</div></div>
+          </a>
+          <a class="item" href="{% url 'terms' %}">
+            <div class="icon">T</div>
+            <div><strong>Termos</strong><div class="muted" style="font-size:12px">uso e privacidade</div></div>
+          </a>
+          <a class="item" href="{% url 'logout' %}">
+            <div class="icon">X</div>
+            <div><strong>Sair</strong><div class="muted" style="font-size:12px">logout</div></div>
+          </a>
+        </nav>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div class="top-left">
+            <div class="top-heading">
+              {% if request.user.role == "EMPRESA" and header_company_logo_url %}
+                <img class="top-avatar" src="{{ header_company_logo_url }}" alt="Logo da empresa">
+              {% elif request.user.role != "EMPRESA" and header_profile_photo_url %}
+                <img class="top-avatar" src="{{ header_profile_photo_url }}" alt="Foto de perfil">
+              {% endif %}
+              <div class="title">{% block page_title %}HoraCerta{% endblock %}</div>
+            </div>
+            <div class="meta">Logado como: <strong>{{ request.user.email|default:request.user.username }}</strong></div>
+          </div>
+          <div class="top-actions">
+            <a class="btn" href="{% url 'dashboard' %}">Dashboard</a>
+            <a class="btn" href="{% url 'help' %}">Ajuda</a>
+            <a class="btn danger" href="{% url 'logout' %}">Sair</a>
+          </div>
+        </header>
+
+        <section class="content">
+          {% block content %}{% endblock %}
+        </section>
+      </main>
+    </div>
+  {% else %}
+    <div class="wrap" style="flex-direction:column; align-items:center; justify-content:flex-start;">
+      <div class="guestbar" style="width: min(980px, 100%);">
+        <div class="guestbrand">
+          <span class="logo-mark" aria-hidden="true"></span>
+          <span>HoraCerta</span>
+        </div>
+        <div class="guestactions">
+          <a class="btn" href="{% url 'help' %}">Ajuda</a>
+          <a class="btn" href="{% url 'terms' %}">Termos</a>
+        </div>
+      </div>
+      <main class="main" style="width: min(980px, 100%);">
+        <section class="content">
+          <div class="card">
+            <h2 style="margin-top:0;">Area restrita</h2>
+            <p class="muted">Faca login para acessar este conteudo.</p>
+          </div>
+        </section>
+      </main>
+    </div>
+  {% endif %}
+
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,21 @@
+{% extends "accounts/base.html" %}
+{% block title %}Meu Painel{% endblock %}
+{% block page_title %}Meu Painel{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h2 style="margin-top:0;">Resumo do MEI</h2>
+  <div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:12px;">
+    <div class="card" style="padding:12px;">
+      <div class="muted">Contratos ativos</div>
+      <div style="font-size:28px;font-weight:800">{{ contracts_count }}</div>
+    </div>
+    <div class="card" style="padding:12px;">
+      <div class="muted">Batidas hoje</div>
+      <div style="font-size:28px;font-weight:800">{{ punches_today }}</div>
+    </div>
+  </div>
+  <p class="muted" style="margin-top:10px;">Acesse "Registrar batida" para controlar ponto.</p>
+</div>
+{% endblock %}
+

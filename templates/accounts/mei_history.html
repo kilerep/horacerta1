@@ -1,0 +1,106 @@
+{% extends "accounts/base.html" %}
+{% block title %}Historico de Batidas{% endblock %}
+{% block page_title %}Historico de Batidas{% endblock %}
+
+{% block content %}
+  <style>
+    .panel{
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:14px;
+      background:
+        linear-gradient(140deg, rgba(79,124,255,.10), transparent 42%),
+        linear-gradient(180deg, rgba(250,204,21,.06), rgba(255,255,255,.03));
+    }
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+    .field{display:flex;flex-direction:column;gap:6px;min-width:180px;flex:1}
+    label{font-size:13px;color:var(--muted)}
+    input, select{
+      width:100%;
+      padding:11px 12px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.06);
+      color:var(--text);
+      outline:none;
+    }
+    .table-wrap{overflow:auto;border:1px solid var(--border);border-radius:12px;margin-top:12px}
+    .table{width:100%;border-collapse:collapse;min-width:780px}
+    .table th,.table td{
+      text-align:left;
+      padding:10px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      font-size:14px;
+      white-space:nowrap;
+    }
+    .table th{background:#20396b;color:#f3f6ff}
+    .table tr:last-child td{border-bottom:none}
+    .ok{color:#2dd391}
+    .warn{color:var(--yellow)}
+    .muted{color:var(--muted)}
+  </style>
+
+  <section class="panel">
+    <h2 style="margin:0 0 8px;">Historico por dia</h2>
+    <form method="get" class="row">
+      <div class="field">
+        <label>Contrato</label>
+        <select name="contract" onchange="this.form.submit()">
+          {% for c in contracts %}
+            <option value="{{ c.id }}" {% if selected_contract and c.id == selected_contract.id %}selected{% endif %}>
+              {{ c.company.name }} - R$ {{ c.hourly_rate }}/h
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label>De</label>
+        <input type="date" name="date_from" value="{{ date_from }}">
+      </div>
+      <div class="field">
+        <label>Ate</label>
+        <input type="date" name="date_to" value="{{ date_to }}">
+      </div>
+      <button class="btn primary" type="submit">Filtrar</button>
+    </form>
+
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Data</th>
+            {% for n in history_punch_columns %}
+              <th>Batida {{ n }}</th>
+            {% endfor %}
+            <th>Observacoes</th>
+            <th>Total do dia</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in history_days %}
+            <tr>
+              <td>{{ d.date|date:"d/m/Y" }}</td>
+              {% for bt in d.punch_columns %}
+                <td>{{ bt }}</td>
+              {% endfor %}
+              <td>{% if d.notes_summary %}{{ d.notes_summary }}{% else %}-{% endif %}</td>
+              <td>{{ d.total_hours_hhmm }}</td>
+              <td>
+                {% if d.is_incomplete %}
+                  <span class="warn">⚠ Incompleto</span>
+                {% else %}
+                  <span class="ok">OK</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="20" class="muted">Sem registros no periodo.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}
