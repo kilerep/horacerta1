@@ -292,6 +292,11 @@ def dashboard(request):
 
 
 @login_required
+def dashboard_employee(request):
+    return redirect("employee_dashboard")
+
+
+@login_required
 def dashboard_empresa(request):
     denied = _redirect_if_not_empresa(request)
     if denied:

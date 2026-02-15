@@ -41,6 +41,7 @@ urlpatterns = [
 
     path("", views.dashboard),
     path("dashboard/", views.dashboard, name="dashboard"),
+    path("dashboard/funcionario/", views.dashboard_employee, name="dashboard_employee"),
     path("dashboard/profile/", views.company_profile, name="company_profile"),
     path("empresa/", views.dashboard_empresa, name="dashboard_empresa"),
     path("empresa/meis/", views.company_meis, name="company_meis"),
