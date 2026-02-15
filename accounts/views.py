@@ -1,11 +1,12 @@
 from datetime import datetime, time
 from decimal import Decimal
 from io import BytesIO
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlparse
 from xml.sax.saxutils import escape
 import zipfile
 
 from django.contrib.auth import get_user_model, login, logout
+from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q
 from django.http import HttpResponse
@@ -27,6 +28,37 @@ from .forms import (
 )
 
 User = get_user_model()
+
+
+class RenderAwarePasswordResetView(auth_views.PasswordResetView):
+    """Use APP_BASE_URL when defined so reset links always use the public domain."""
+
+    def form_valid(self, form):
+        opts = {
+            "use_https": self.request.is_secure(),
+            "token_generator": self.token_generator,
+            "from_email": self.from_email,
+            "email_template_name": self.email_template_name,
+            "subject_template_name": self.subject_template_name,
+            "request": self.request,
+            "html_email_template_name": self.html_email_template_name,
+            "extra_email_context": self.extra_email_context,
+        }
+
+        app_base_url = (self.request.META.get("APP_BASE_URL") or "").strip()
+        if not app_base_url:
+            from django.conf import settings
+
+            app_base_url = getattr(settings, "APP_BASE_URL", "").strip()
+
+        if app_base_url:
+            parsed = urlparse(app_base_url)
+            if parsed.scheme in ("http", "https") and parsed.netloc:
+                opts["use_https"] = parsed.scheme == "https"
+                opts["domain_override"] = parsed.netloc
+
+        form.save(**opts)
+        return super(auth_views.PasswordResetView, self).form_valid(form)
 
 
 def _company_for_user(user):

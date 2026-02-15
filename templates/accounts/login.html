@@ -81,7 +81,7 @@
   <div class="auth-wrap">
     <div class="auth-card">
       <h1 class="auth-title">Acessar conta</h1>
-      <p class="auth-sub">Entre com email/usuario para continuar.</p>
+      <p class="auth-sub">Entre com e-mail ou usuário para continuar.</p>
 
       <form method="post" novalidate>
         {% csrf_token %}
@@ -105,12 +105,14 @@
 
         <div class="actions">
           <button class="btn primary" type="submit">Acessar conta</button>
-          <a class="hint" href="{% url 'password_reset' %}">Esqueci minha senha</a>
         </div>
       </form>
+      <p class="hint" style="margin-top:10px;">
+        <a href="{% url 'password_reset' %}">Esqueci minha senha</a>
+      </p>
 
       <p class="hint" style="margin-top:14px;">
-        Nao tem conta? <a href="{% url 'signup' %}">Criar conta</a>
+        Não tem conta? <a href="{% url 'signup' %}">Criar conta</a>
       </p>
     </div>
   </div>
