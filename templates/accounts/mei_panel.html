@@ -3,19 +3,115 @@
 {% block page_title %}Meu Painel{% endblock %}
 
 {% block content %}
-<div class="card">
-  <h2 style="margin-top:0;">Resumo do MEI</h2>
-  <div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:12px;">
-    <div class="card" style="padding:12px;">
-      <div class="muted">Contratos ativos</div>
-      <div style="font-size:28px;font-weight:800">{{ contracts_count }}</div>
-    </div>
-    <div class="card" style="padding:12px;">
-      <div class="muted">Batidas hoje</div>
-      <div style="font-size:28px;font-weight:800">{{ punches_today }}</div>
-    </div>
-  </div>
-  <p class="muted" style="margin-top:10px;">Acesse "Registrar batida" para controlar ponto.</p>
-</div>
-{% endblock %}
+  <style>
+    .mei-panel{display:grid;gap:14px}
+    .panel{
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      background:
+        linear-gradient(140deg, rgba(79,124,255,.10), transparent 42%),
+        linear-gradient(180deg, rgba(250,204,21,.06), rgba(255,255,255,.03));
+      padding:14px;
+    }
+    .row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+    .field{display:grid;gap:6px;min-width:240px;flex:1}
+    .field label{font-size:13px;color:var(--muted)}
+    .field select{
+      width:100%;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.06);
+      color:var(--text);
+      outline:none;
+    }
+    .k{color:var(--muted);font-size:12px}
+    .v{font-size:30px;font-weight:800;margin-top:4px}
+    .cards{display:grid;grid-template-columns:repeat(2, minmax(180px,1fr));gap:10px}
+    .stat{
+      border:1px solid var(--border);
+      border-radius:12px;
+      background:rgba(255,255,255,.04);
+      padding:12px;
+    }
+    .status{
+      border:1px solid var(--border);
+      border-radius:12px;
+      background:rgba(255,255,255,.03);
+      padding:12px;
+    }
+    .status.ok{
+      border-color:rgba(45,211,145,.35);
+      background:rgba(45,211,145,.10);
+    }
+    .status.warn{
+      border-color:rgba(255,176,32,.35);
+      background:rgba(255,176,32,.10);
+    }
+    @media (max-width: 760px){
+      .cards{grid-template-columns:1fr}
+    }
+  </style>
 
+  <div class="mei-panel">
+    <section class="panel">
+      <h2 style="margin:0 0 10px;">Resumo do MEI</h2>
+      {% if contracts_count == 0 %}
+        <p class="muted" style="margin:0;">Voce ainda nao possui contratos ativos.</p>
+      {% else %}
+        <form method="get" class="row">
+          {% if contracts_count > 1 %}
+            <div class="field">
+              <label>Contrato ativo</label>
+              <select name="contract" onchange="this.form.submit()">
+                {% for c in contracts %}
+                  <option value="{{ c.id }}" {% if selected_contract and c.id == selected_contract.id %}selected{% endif %}>
+                    {{ c.company.name }} - R$ {{ c.hourly_rate }}/h
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+          {% else %}
+            <div class="field">
+              <label>Contrato ativo</label>
+              <div><strong>{{ selected_contract.company.name }}</strong> - R$ {{ selected_contract.hourly_rate }}/h</div>
+            </div>
+          {% endif %}
+        </form>
+      {% endif %}
+    </section>
+
+    {% if contracts_count > 0 %}
+      <section class="cards">
+        <article class="stat">
+          <div class="k">Horas no mes</div>
+          <div class="v">{{ total_hours_month }}</div>
+        </article>
+        <article class="stat">
+          <div class="k">Valor acumulado no mes</div>
+          <div class="v">{{ accrued_value_brl }}</div>
+        </article>
+        <article class="stat">
+          <div class="k">Dias completos no mes</div>
+          <div class="v">{{ complete_days }}</div>
+        </article>
+        <article class="stat">
+          <div class="k">Dias incompletos no mes</div>
+          <div class="v">{{ incomplete_days }}</div>
+        </article>
+      </section>
+
+      {% if incomplete_days > 0 %}
+        <section class="status warn">
+          Voce possui <strong>{{ incomplete_days }}</strong> dia(s) com batidas incompletas.
+          <a class="btn" href="{% url 'mei_history' %}?contract={{ selected_contract.id }}" style="margin-left:8px;">Ver historico</a>
+        </section>
+      {% else %}
+        <section class="status ok">
+          Todas as batidas estao consistentes.
+          <a class="btn" href="{% url 'mei_history' %}?contract={{ selected_contract.id }}" style="margin-left:8px;">Ver historico</a>
+        </section>
+      {% endif %}
+    {% endif %}
+  </div>
+{% endblock %}

@@ -15,7 +15,7 @@ from django.utils import timezone
 
 from companies.models import Company, Employee
 from timeclock.models import ActivityReportRequest, Contract, Punch
-from timeclock.services import build_daily_summary, filter_punches_by_period
+from timeclock.services import build_daily_summary, compute_day_total, filter_punches_by_period, format_hhmm
 
 from .forms import (
     CompanyContractForm,
@@ -202,17 +202,15 @@ def _compute_report_metrics(punches):
     total_seconds = 0
     estimated_payment = Decimal("0")
     for (contract_id, _day), times in grouped.items():
-        sorted_times = sorted(times)
+        day_seconds, _is_incomplete = compute_day_total(times)
         hourly_rate = rates_by_contract.get(contract_id, Decimal("0"))
-        for idx in range(0, len(sorted_times) - 1, 2):
-            delta_seconds = int((sorted_times[idx + 1] - sorted_times[idx]).total_seconds())
-            total_seconds += delta_seconds
-            estimated_payment += (Decimal(delta_seconds) / Decimal("3600")) * hourly_rate
+        total_seconds += day_seconds
+        estimated_payment += (Decimal(day_seconds) / Decimal("3600")) * hourly_rate
 
-    total_hours = round(total_seconds / 3600, 2)
     return {
         "total_punches": len(punches),
-        "total_hours": total_hours,
+        "total_seconds": total_seconds,
+        "total_hours_hhmm": format_hhmm(total_seconds),
         "estimated_payment": estimated_payment.quantize(Decimal("0.01")),
     }
 
@@ -313,7 +311,7 @@ def dashboard_empresa(request):
     total_employees = 0
     total_active_contracts = 0
     total_punches_period = 0
-    total_hours_period = 0.0
+    total_hours_period = "00:00"
     date_from = ""
     date_to = ""
 
@@ -366,7 +364,9 @@ def dashboard_empresa(request):
         total_employees = active_contracts_base_qs.values("employee_user_id").distinct().count()
         total_active_contracts = active_contracts_base_qs.count()
         total_punches_period = punches_period_qs.count()
-        total_hours_period = round(total_punches_period / 2.0, 2)
+        period_daily_rows, _period_columns = build_daily_summary(list(punches_period_qs), min_punch_columns=4)
+        period_total_seconds = sum(row["total_seconds"] for row in period_daily_rows)
+        total_hours_period = format_hhmm(period_total_seconds)
         date_from = start_date.strftime("%Y-%m-%d")
         date_to = end_date.strftime("%Y-%m-%d")
 
@@ -625,13 +625,13 @@ def company_reports(request):
                 [
                     mei_name,
                     local_ts.strftime("%d/%m/%Y"),
-                    local_ts.strftime("%H:%M:%S"),
+                    local_ts.strftime("%H:%M"),
                     float(punch.contract.hourly_rate),
                     punch.note or "",
                 ]
             )
         rows.append([])
-        rows.append(["Total punches", metrics["total_punches"], "Total hours", metrics["total_hours"], "Estimated payment"])
+        rows.append(["Total punches", metrics["total_punches"], "Total hours", metrics["total_hours_hhmm"], "Estimated payment"])
         rows.append(["", "", "", "", float(metrics["estimated_payment"])])
         return _build_xlsx_response("horacerta_relatorio.xlsx", headers, rows)
 
@@ -648,7 +648,7 @@ def company_reports(request):
             f"MEI: {employee_name}",
             f"Periodo: {date_from_raw or '-'} ate {date_to_raw or '-'}",
             "",
-            f"Total de horas: {metrics['total_hours']}",
+            f"Total de horas: {metrics['total_hours_hhmm']}",
             f"Total de batidas: {metrics['total_punches']}",
             f"Pagamento estimado: R$ {metrics['estimated_payment']}",
             "",
@@ -670,7 +670,7 @@ def company_reports(request):
         "selected_employee": selected_employee,
         "date_from": date_from_raw,
         "date_to": date_to_raw,
-        "total_hours": metrics["total_hours"],
+        "total_hours": metrics["total_hours_hhmm"],
         "total_punches": metrics["total_punches"],
         "estimated_payment": metrics["estimated_payment"],
         "punches": punches[:300],
@@ -721,12 +721,64 @@ def mei_panel(request):
     denied = _redirect_if_not_mei(request)
     if denied:
         return denied
-    contracts = Contract.objects.filter(employee_user=request.user, is_active=True).select_related("company")
-    today = timezone.localdate()
-    start_today = timezone.make_aware(datetime.combine(today, time.min))
-    end_today = timezone.make_aware(datetime.combine(today, time.max))
-    punches_today = Punch.objects.filter(contract__in=contracts, timestamp__range=(start_today, end_today)).count()
-    return render(request, "accounts/mei_panel.html", {"contracts": contracts, "contracts_count": contracts.count(), "punches_today": punches_today})
+    contracts = (
+        Contract.objects.filter(employee_user=request.user, is_active=True)
+        .select_related("company")
+        .order_by("-created_at")
+    )
+
+    selected_contract = None
+    session_key = "mei_panel_contract_id"
+    selected_contract_id = request.GET.get("contract")
+
+    if contracts.exists():
+        if selected_contract_id:
+            selected_contract = contracts.filter(id=selected_contract_id).first()
+            if selected_contract:
+                request.session[session_key] = str(selected_contract.id)
+        if not selected_contract:
+            session_contract_id = request.session.get(session_key)
+            if session_contract_id:
+                selected_contract = contracts.filter(id=session_contract_id).first()
+        if not selected_contract:
+            selected_contract = contracts.first()
+            request.session[session_key] = str(selected_contract.id)
+
+    total_hours_month = "00:00"
+    accrued_value = Decimal("0.00")
+    accrued_value_brl = "R$ 0,00"
+    complete_days = 0
+    incomplete_days = 0
+
+    if selected_contract:
+        today = timezone.localdate()
+        month_start = today.replace(day=1)
+        start_dt = timezone.make_aware(datetime.combine(month_start, time.min))
+        end_dt = timezone.make_aware(datetime.combine(today, time.max))
+        monthly_punches = list(
+            Punch.objects.filter(contract=selected_contract, timestamp__range=(start_dt, end_dt)).order_by("timestamp")
+        )
+        month_rows, _max_cols = build_daily_summary(monthly_punches, min_punch_columns=4)
+        total_seconds = sum(row["total_seconds"] for row in month_rows)
+        total_hours_month = format_hhmm(total_seconds)
+        complete_days = sum(1 for row in month_rows if not row["is_incomplete"])
+        incomplete_days = sum(1 for row in month_rows if row["is_incomplete"])
+
+        hourly_rate = selected_contract.hourly_rate or Decimal("0")
+        accrued_value = ((Decimal(total_seconds) / Decimal("3600")) * hourly_rate).quantize(Decimal("0.01"))
+        brl = f"{accrued_value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        accrued_value_brl = f"R$ {brl}"
+
+    context = {
+        "contracts": contracts,
+        "contracts_count": contracts.count(),
+        "selected_contract": selected_contract,
+        "total_hours_month": total_hours_month,
+        "accrued_value_brl": accrued_value_brl,
+        "complete_days": complete_days,
+        "incomplete_days": incomplete_days,
+    }
+    return render(request, "accounts/mei_panel.html", context)
 
 
 @login_required

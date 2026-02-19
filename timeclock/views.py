@@ -18,7 +18,7 @@ from reportlab.lib.styles import getSampleStyleSheet
 from accounts.models import User
 from companies.models import Company
 from .models import ActivityReportRequest, Contract, Punch
-from .services import build_daily_summary, filter_punches_by_period
+from .services import build_daily_summary, filter_punches_by_period, format_hhmm
 
 
 def _only_employee(user):
@@ -164,6 +164,15 @@ def employee_dashboard(request):
     total_punches_today = punches_today.count()
     today_summary, _today_columns = build_daily_summary(punches_today, min_punch_columns=4)
     status_today = today_summary[0]["status"] if today_summary else "INCOMPLETO"
+    now_local = timezone.localtime()
+    current_hour = now_local.hour
+    if 5 <= current_hour <= 11:
+        greeting = "Bom dia"
+    elif 12 <= current_hour <= 17:
+        greeting = "Boa tarde"
+    else:
+        greeting = "Boa noite"
+    day_status_label = "Dia fechado" if total_punches_today % 2 == 0 else "Dia em andamento"
 
     history_filtered = list(qs_filtered.order_by("timestamp"))
     history_days, history_punch_columns = build_daily_summary(history_filtered, min_punch_columns=4)
@@ -174,6 +183,9 @@ def employee_dashboard(request):
         "punches_today": punches_today,
         "total_punches_today": total_punches_today,
         "status_today": status_today,
+        "greeting": greeting,
+        "today_date": now_local.date(),
+        "day_status_label": day_status_label,
         "history": qs_filtered.order_by("-timestamp")[:200],
         "history_days": history_days,
         "history_punch_columns": range(1, history_punch_columns + 1),
@@ -223,7 +235,7 @@ def export_csv(request):
     header = ["Empresa", "Data"]
     for idx in range(1, max_punches + 1):
         header.append(f"Batida {idx}")
-    header.extend(["Observacoes", "Total Horas (HH:MM)", "Total Horas (decimal)", "Status"])
+    header.extend(["Observacoes", "Total Horas (HH:MM)", "Status"])
     writer.writerow(header)
 
     for row in sorted(daily_rows, key=lambda x: x["date"], reverse=True):
@@ -234,7 +246,6 @@ def export_csv(request):
                 *row["punch_columns"],
                 row["notes_summary"],
                 row["total_hours_hhmm"],
-                row["total_hours_decimal"],
                 row["status"],
             ]
         )
@@ -284,7 +295,7 @@ def export_xlsx(request):
 
     for row in ws.iter_rows(min_row=2, max_row=ws.max_row):
         row[2].number_format = "DD/MM/YYYY"
-        row[3].number_format = "HH:MM:SS"
+        row[3].number_format = "HH:MM"
 
     ws.column_dimensions["A"].width = 28
     ws.column_dimensions["B"].width = 28
@@ -294,7 +305,7 @@ def export_xlsx(request):
 
     daily_rows, _max_cols = build_daily_summary(punches, min_punch_columns=4)
     total_seconds = sum(row["total_seconds"] for row in daily_rows)
-    total_hours = round(total_seconds / 3600, 2)
+    total_hours_hhmm = format_hhmm(total_seconds)
 
     ws.append([])
     ws.append(["Resumo", "", "", "", ""])
@@ -306,7 +317,7 @@ def export_xlsx(request):
     )
     ws.append(["Periodo", period_label, "", "", ""])
     ws.append(["Total de batidas", len(punches), "", "", ""])
-    ws.append(["Total de horas", total_hours, "", "", ""])
+    ws.append(["Total de horas", total_hours_hhmm, "", "", ""])
 
     output = BytesIO()
     wb.save(output)
@@ -349,7 +360,7 @@ def export_pdf(request):
 
     daily_rows, max_punches = build_daily_summary(punches, min_punch_columns=4)
     total_seconds = sum(row["total_seconds"] for row in daily_rows)
-    total_hours = round(total_seconds / 3600, 2)
+    total_hours_hhmm = format_hhmm(total_seconds)
 
     buffer = BytesIO()
     doc = SimpleDocTemplate(
@@ -368,7 +379,7 @@ def export_pdf(request):
     story.append(Paragraph(f"<b>Funcionario:</b> {employee_name}", styles["Normal"]))
     story.append(Paragraph(f"<b>Empresa:</b> {contract.company.name}", styles["Normal"]))
     story.append(Paragraph(f"<b>Periodo:</b> {period_label}", styles["Normal"]))
-    story.append(Paragraph(f"<b>Total de horas:</b> {total_hours}", styles["Normal"]))
+    story.append(Paragraph(f"<b>Total de horas:</b> {total_hours_hhmm}", styles["Normal"]))
     story.append(Paragraph(f"<b>Total de batidas:</b> {len(punches)}", styles["Normal"]))
     story.append(Spacer(1, 10))
 

@@ -3,11 +3,26 @@ from datetime import date, datetime, time
 from django.utils import timezone
 
 
+def format_punch_time(local_dt):
+    return local_dt.strftime("%H:%M")
+
+
 def format_hhmm(total_seconds):
-    total_minutes = int(total_seconds // 60)
+    total_minutes = int(round(total_seconds / 60))
     hours = total_minutes // 60
     minutes = total_minutes % 60
     return f"{hours:02d}:{minutes:02d}"
+
+
+def compute_day_total(local_datetimes):
+    ordered = sorted(local_datetimes)
+    minute_aligned = [dt.replace(second=0, microsecond=0) for dt in ordered]
+    total_seconds = 0
+    for idx in range(0, len(minute_aligned) - 1, 2):
+        delta = int((minute_aligned[idx + 1] - minute_aligned[idx]).total_seconds())
+        if delta > 0:
+            total_seconds += delta
+    return total_seconds, bool(len(minute_aligned) % 2)
 
 
 def filter_punches_by_period(base_qs, date_from_raw, date_to_raw, field_name="timestamp"):
@@ -58,22 +73,19 @@ def build_daily_summary(punches, min_punch_columns=4):
         points = sorted(by_day[day], key=lambda item: item["local_ts"])
         max_columns = max(max_columns, len(points))
 
-        total_seconds = 0
-        for idx in range(0, len(points) - 1, 2):
-            total_seconds += int((points[idx + 1]["local_ts"] - points[idx]["local_ts"]).total_seconds())
+        total_seconds, is_incomplete = compute_day_total([item["local_ts"] for item in points])
 
         notes = [item["note"] for item in points if item["note"]]
         rows.append(
             {
                 "date": day,
                 "punches_count": len(points),
-                "punch_times": [item["local_ts"].strftime("%H:%M:%S") for item in points],
+                "punch_times": [format_punch_time(item["local_ts"]) for item in points],
                 "notes_summary": " | ".join(notes[:3]) + (" ..." if len(notes) > 3 else ""),
                 "total_seconds": total_seconds,
-                "total_hours_decimal": round(total_seconds / 3600, 2),
                 "total_hours_hhmm": format_hhmm(total_seconds),
-                "status": "INCOMPLETO" if len(points) % 2 else "OK",
-                "is_incomplete": bool(len(points) % 2),
+                "status": "INCOMPLETO" if is_incomplete else "OK",
+                "is_incomplete": is_incomplete,
             }
         )
 
@@ -82,4 +94,3 @@ def build_daily_summary(punches, min_punch_columns=4):
         row["punch_columns"] = row["punch_times"] + ["-"] * (max_columns - len(row["punch_times"]))
 
     return rows, max_columns
-

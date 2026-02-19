@@ -1,275 +1,196 @@
 {% extends "accounts/base.html" %}
-{% load tz %}
+{% load static tz timeclock_formats %}
 {% block title %}HoraCerta - Registrar batida{% endblock %}
 {% block page_title %}Registrar batida{% endblock %}
 
-{% block content %}
-  <style>
-    .mei-wrap{display:grid;gap:14px;margin-top:12px}
-    .layout{display:grid;gap:14px}
-    .panel{
-      border:1px solid var(--border);
-      border-radius:var(--radius);
-      padding:14px;
-      background:
-        linear-gradient(140deg, rgba(79,124,255,.10), transparent 42%),
-        linear-gradient(180deg, rgba(250,204,21,.06), rgba(255,255,255,.03));
-    }
-    .muted{color:var(--muted)}
-    .small{font-size:13px;color:var(--muted)}
-    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
-    .field{display:flex;flex-direction:column;gap:6px;min-width:180px;flex:1}
-    label{font-size:13px;color:var(--muted)}
-    input, select, textarea{
-      width:100%;
-      padding:11px 12px;
-      border-radius:12px;
-      border:1px solid var(--border);
-      background:rgba(255,255,255,.06);
-      color:var(--text);
-      outline:none;
-    }
-    input:focus, select:focus, textarea:focus{
-      border-color:rgba(79,124,255,.55);
-      box-shadow:0 0 0 3px rgba(79,124,255,.16);
-    }
-    textarea{min-height:56px;resize:vertical}
-    .punch-btn{width:100%;padding:13px 14px;font-size:16px}
-    .badge{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding:7px 11px;
-      border-radius:999px;
-      border:1px solid var(--border);
-      font-size:13px;
-      font-weight:700;
-      background:rgba(255,255,255,.06);
-    }
-    .ok{color:#2dd391}
-    .warn{color:var(--yellow)}
-    .warn-box{
-      border:1px solid rgba(255,176,32,.4);
-      background:rgba(255,176,32,.14);
-      border-radius:12px;
-      padding:10px 12px;
-      font-size:14px;
-    }
-    .error-box{
-      border:1px solid rgba(255,90,90,.45);
-      background:rgba(255,90,90,.12);
-      border-radius:12px;
-      padding:10px 12px;
-      color:#ffe0e0;
-      font-size:13px;
-    }
-    .list{display:grid;gap:8px}
-    .item{
-      border:1px solid rgba(255,255,255,.09);
-      border-radius:12px;
-      padding:10px;
-      display:flex;
-      justify-content:space-between;
-      gap:10px;
-    }
-    .table-wrap{overflow:auto;border:1px solid var(--border);border-radius:12px}
-    .table{width:100%;border-collapse:collapse;min-width:740px}
-    .table th,.table td{
-      text-align:left;
-      padding:10px;
-      border-bottom:1px solid rgba(255,255,255,.08);
-      font-size:14px;
-      white-space:nowrap;
-    }
-    .table th{
-      color:#f3f6ff;
-      background:#20396b;
-      font-weight:700;
-    }
-    .table tr:last-child td{border-bottom:none}
-    @media (min-width: 980px){
-      .layout{grid-template-columns:1fr 1fr}
-      .punch-btn{width:auto}
-    }
-  </style>
+{% block extra_head %}
+  <link rel="stylesheet" href="{% static 'css/mei_registrar.css' %}">
+{% endblock %}
 
-  <div class="mei-wrap">
+{% block content %}
+  <div class="hc-page">
     {% if pending_report_requests %}
-      <section class="panel">
-        <h3 style="margin:0 0 8px;">Solicitacoes de relatorio</h3>
-        {% for req in pending_report_requests %}
-          <div class="item" style="display:block;margin-top:8px;">
-            <div class="small">
-              <strong>{{ req.company.name }}</strong>
-              {% if req.date_from or req.date_to %}
-                | {{ req.date_from|default:"-" }} ate {{ req.date_to|default:"-" }}
-              {% endif %}
-            </div>
-            {% if req.message %}
-              <div class="small" style="margin-top:4px;">Mensagem: {{ req.message }}</div>
-            {% endif %}
-            <form method="post" style="margin-top:8px;">
-              {% csrf_token %}
-              <input type="hidden" name="action" value="respond_activity_request">
-              <input type="hidden" name="request_id" value="{{ req.id }}">
-              {% if selected_contract %}
-                <input type="hidden" name="contract" value="{{ selected_contract.id }}">
-              {% endif %}
-              <div class="row">
-                <div class="field">
-                  <label>Sua resposta</label>
-                  <textarea name="response_text" placeholder="Descreva as atividades do periodo"></textarea>
-                </div>
-                <button class="btn primary" type="submit">Enviar</button>
+      <section class="hc-panel">
+        <h3 class="hc-section-title">Solicitacoes de relatorio</h3>
+        <div class="hc-request-list">
+          {% for req in pending_report_requests %}
+            <div class="hc-request-item">
+              <div class="hc-muted">
+                <strong>{{ req.company.name }}</strong>
+                {% if req.date_from or req.date_to %}
+                  | {{ req.date_from|default:"-" }} ate {{ req.date_to|default:"-" }}
+                {% endif %}
               </div>
-            </form>
-          </div>
-        {% endfor %}
+              {% if req.message %}
+                <div class="hc-muted" style="margin-top:4px;">Mensagem: {{ req.message }}</div>
+              {% endif %}
+              <form method="post" class="hc-request-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="respond_activity_request">
+                <input type="hidden" name="request_id" value="{{ req.id }}">
+                {% if selected_contract %}
+                  <input type="hidden" name="contract" value="{{ selected_contract.id }}">
+                {% endif %}
+                <div class="hc-row">
+                  <div class="hc-field">
+                    <label>Sua resposta</label>
+                    <textarea name="response_text" placeholder="Descreva as atividades do periodo"></textarea>
+                  </div>
+                  <button class="btn primary" type="submit">Enviar</button>
+                </div>
+              </form>
+            </div>
+          {% endfor %}
+        </div>
       </section>
     {% endif %}
 
     {% if no_contracts %}
-      <section class="panel">
-        <h2 style="margin:0 0 8px;">Voce ainda nao tem contrato ativo.</h2>
-        <p class="muted" style="margin:0;">Crie uma empresa de teste para registrar batidas no MEI.</p>
+      <section class="hc-panel">
+        <h2 class="hc-section-title">Voce ainda nao tem contrato ativo</h2>
+        <p class="hc-muted">Crie uma empresa de teste para registrar batidas no MEI.</p>
       </section>
 
-      <section class="panel">
-        <form method="post" class="row">
+      <section class="hc-panel">
+        <form method="post" class="hc-row">
           {% csrf_token %}
           <input type="hidden" name="action" value="create_test_contract">
-          <div class="field">
+          <div class="hc-field">
             <label>Nome da empresa</label>
             <input name="company_name" value="{{ create_company_initial.company_name }}" placeholder="Empresa Teste">
           </div>
-          <div class="field" style="max-width:180px;">
+          <div class="hc-field hc-field--sm">
             <label>Valor/hora (R$)</label>
             <input name="hourly_rate" value="{{ create_company_initial.hourly_rate }}" placeholder="30">
           </div>
           <button class="btn primary" type="submit">Criar empresa e contrato</button>
         </form>
         {% if create_company_errors %}
-          <div class="error-box" style="margin-top:10px;">
+          <div class="hc-error-box">
             {% for err in create_company_errors %}<div>{{ err }}</div>{% endfor %}
           </div>
         {% endif %}
       </section>
     {% else %}
-      <div class="layout">
-        <section class="panel">
-          <h2 style="margin:0 0 10px;">Registrar batida</h2>
+      <section class="hc-panel hc-main-card">
+        <p
+          id="hcGreetingLine"
+          class="hc-greeting"
+          data-display-name="{{ user.get_full_name|default:user.email|default:user.username }}"
+        >
+          {{ greeting }}, {{ user.get_full_name|default:user.email|default:user.username }}
+        </p>
+        <p id="hcDateLine" class="hc-date-line">{{ today_date|date:"d/m/Y" }}</p>
 
-          <form method="get" class="row">
-            <div class="field">
-              <label>Empresa / Contrato</label>
-              <select name="contract" onchange="this.form.submit()">
-                {% for c in contracts %}
-                  <option value="{{ c.id }}" {% if selected_contract and c.id == selected_contract.id %}selected{% endif %}>
-                    {{ c.company.name }} - R$ {{ c.hourly_rate }}/h
-                  </option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="badge">
-              {% if status_today == "OK" %}
-                <span class="ok">OK</span>
-              {% else %}
-                <span class="warn">⚠ Incompleto</span>
-              {% endif %}
-            </div>
+        <div id="hcClock" class="hc-clock" aria-live="polite">--:--</div>
+
+        <div id="hcBadge" class="hc-badge" data-today-count="{{ total_punches_today }}">Status</div>
+        <p id="hcBadgeHint" class="hc-badge-hint"></p>
+
+        <div class="hc-action-stack">
+          <form method="get" class="hc-field">
+            <label>Empresa / Contrato</label>
+            <select name="contract" onchange="this.form.submit()">
+              {% for c in contracts %}
+                <option value="{{ c.id }}" {% if selected_contract and c.id == selected_contract.id %}selected{% endif %}>
+                  {{ c.company.name }} - R$ {{ c.hourly_rate }}/h
+                </option>
+              {% endfor %}
+            </select>
           </form>
 
-          <form method="post" action="?contract={{ selected_contract.id }}" class="row" style="margin-top:10px;">
+          <form id="hcPunchForm" method="post" action="?contract={{ selected_contract.id }}" class="hc-field">
             {% csrf_token %}
             <input type="hidden" name="action" value="punch">
-            <div class="field">
-              <label>Observacao (opcional)</label>
-              <textarea name="note" placeholder="Ex: entrada antecipada"></textarea>
+            <button id="hcPunchBtn" class="hc-punch-btn" type="submit">
+              <span class="hc-punch-btn__label">REGISTRAR BATIDA</span>
+              <span class="hc-punch-btn__spinner" aria-hidden="true"></span>
+            </button>
+            <button id="hcObsToggle" class="hc-obs-toggle" type="button" aria-expanded="false">Adicionar observacao</button>
+            <div id="hcObsWrap" class="hc-obs-wrap" aria-hidden="true">
+              <label for="hcObsField">Observacao (opcional)</label>
+              <textarea id="hcObsField" name="note" placeholder="Ex: saida para almoco / consulta / entrada antecipada"></textarea>
             </div>
-            <button class="btn primary punch-btn" type="submit">Registrar batida agora</button>
           </form>
+        </div>
 
-          {% if status_today != "OK" %}
-            <div class="warn-box" style="margin-top:10px;">⚠ O dia atual esta incompleto (quantidade impar de batidas).</div>
-          {% endif %}
-
-          <div style="margin-top:12px;">
-            <h3 style="margin:0 0 8px;">Ultimas batidas de hoje</h3>
-            <div class="list">
-              {% for p in punches_today %}
-                <div class="item">
-                  <strong>{{ p.timestamp|localtime|date:"H:i:s" }}</strong>
-                  <span class="small">{% if p.note %}{{ p.note }}{% else %}-{% endif %}</span>
-                </div>
-              {% empty %}
-                <div class="small">Nenhuma batida registrada hoje.</div>
-              {% endfor %}
-            </div>
+        <section class="hc-today">
+          <h3 class="hc-today-title">Batidas de hoje</h3>
+          <div id="hcTodayChips" class="hc-chip-list">
+            {% for p in punches_today %}
+              <span class="hc-chip">{{ p.timestamp|localtime|hhmm }}</span>
+            {% empty %}
+              <span class="hc-empty-text">Nenhuma batida registrada hoje.</span>
+            {% endfor %}
           </div>
         </section>
+      </section>
 
-        <section class="panel">
-          <h2 style="margin:0 0 10px;">Historico estilo planilha</h2>
-          <form method="get" class="row">
-            <input type="hidden" name="contract" value="{{ selected_contract.id }}">
-            <div class="field">
-              <label>De</label>
-              <input type="date" name="date_from" value="{{ date_from }}">
-            </div>
-            <div class="field">
-              <label>Ate</label>
-              <input type="date" name="date_to" value="{{ date_to }}">
-            </div>
-            <button class="btn primary" type="submit">Filtrar</button>
-            <a class="btn" href="{% url 'employee_dashboard' %}?contract={{ selected_contract.id }}">Limpar</a>
-          </form>
-
-          <div class="row" style="margin-top:10px;">
-            <a class="btn" href="{% url 'export_csv' %}?contract={{ selected_contract.id }}&date_from={{ date_from }}&date_to={{ date_to }}">CSV</a>
-            <a class="btn" href="{% url 'export_xlsx' %}?contract={{ selected_contract.id }}&date_from={{ date_from }}&date_to={{ date_to }}">Excel</a>
-            <a class="btn primary" href="{% url 'export_pdf' %}?contract={{ selected_contract.id }}&date_from={{ date_from }}&date_to={{ date_to }}">PDF</a>
+      <section class="hc-panel">
+        <h3 class="hc-section-title">Historico completo</h3>
+        <form method="get" class="hc-row">
+          <input type="hidden" name="contract" value="{{ selected_contract.id }}">
+          <div class="hc-field">
+            <label>De</label>
+            <input type="date" name="date_from" value="{{ date_from }}">
           </div>
+          <div class="hc-field">
+            <label>Ate</label>
+            <input type="date" name="date_to" value="{{ date_to }}">
+          </div>
+          <button class="btn primary" type="submit">Filtrar</button>
+          <a class="btn" href="{% url 'employee_dashboard' %}?contract={{ selected_contract.id }}">Limpar</a>
+        </form>
 
-          <div class="table-wrap" style="margin-top:10px;">
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>Data</th>
-                  {% for n in history_punch_columns %}
-                    <th>Batida {{ n }}</th>
-                  {% endfor %}
-                  <th>Observacoes</th>
-                  <th>Total do dia</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for d in history_days %}
-                  <tr>
-                    <td>{{ d.date|date:"d/m/Y" }}</td>
-                    {% for bt in d.punch_columns %}
-                      <td>{{ bt }}</td>
-                    {% endfor %}
-                    <td>{% if d.notes_summary %}{{ d.notes_summary }}{% else %}-{% endif %}</td>
-                    <td>{{ d.total_hours_hhmm }}</td>
-                    <td>
-                      {% if d.is_incomplete %}
-                        <span class="warn">⚠ Incompleto</span>
-                      {% else %}
-                        <span class="ok">OK</span>
-                      {% endif %}
-                    </td>
-                  </tr>
-                {% empty %}
-                  <tr>
-                    <td colspan="20" class="small">Sem registros para o periodo.</td>
-                  </tr>
+        <div class="hc-row hc-export-row">
+          <a class="btn" href="{% url 'export_csv' %}?contract={{ selected_contract.id }}&date_from={{ date_from }}&date_to={{ date_to }}">CSV</a>
+          <a class="btn" href="{% url 'export_xlsx' %}?contract={{ selected_contract.id }}&date_from={{ date_from }}&date_to={{ date_to }}">Excel</a>
+          <a class="btn primary" href="{% url 'export_pdf' %}?contract={{ selected_contract.id }}&date_from={{ date_from }}&date_to={{ date_to }}">PDF</a>
+        </div>
+
+        <div class="hc-table-wrap">
+          <table class="hc-table">
+            <thead>
+              <tr>
+                <th>Data</th>
+                {% for n in history_punch_columns %}
+                  <th>Batida {{ n }}</th>
                 {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </div>
+                <th>Observacoes</th>
+                <th>Total do dia</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for d in history_days %}
+                <tr>
+                  <td>{{ d.date|date:"d/m/Y" }}</td>
+                  {% for bt in d.punch_columns %}
+                    <td>{{ bt }}</td>
+                  {% endfor %}
+                  <td>{% if d.notes_summary %}{{ d.notes_summary }}{% else %}-{% endif %}</td>
+                  <td>{{ d.total_hours_hhmm }}</td>
+                  <td>
+                    {% if d.is_incomplete %}
+                      <span class="hc-status-tag hc-status-tag--warn">Incompleto</span>
+                    {% else %}
+                      <span class="hc-status-tag hc-status-tag--ok">OK</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="20" class="hc-muted">Sem registros para o periodo.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
     {% endif %}
   </div>
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'js/mei_registrar.js' %}"></script>
 {% endblock %}

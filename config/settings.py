@@ -24,6 +24,10 @@ except ImportError:  # pragma: no cover - safety fallback for local dev before p
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
+def _env_bool(name, default=False):
+    return os.getenv(name, str(default)).lower() in ("1", "true", "yes", "on")
+
+
 def _load_dotenv(dotenv_path):
     if not dotenv_path.exists():
         return
@@ -50,10 +54,10 @@ SECRET_KEY = os.getenv(
 )
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv("DEBUG", "True").lower() in ("1", "true", "yes", "on")
+DEBUG = _env_bool("DEBUG", True)
 APP_BASE_URL = os.getenv("APP_BASE_URL", "").strip()
 
-ALLOWED_HOSTS = ["127.0.0.1", "localhost", "192.168.0.12"]
+ALLOWED_HOSTS = ["192.168.0.7","127.0.0.1", "localhost", "192.168.0.12"]
 for host in [host.strip() for host in os.getenv("ALLOWED_HOSTS", "").split(",") if host.strip()]:
     if host not in ALLOWED_HOSTS:
         ALLOWED_HOSTS.append(host)
@@ -61,7 +65,7 @@ render_external_hostname = os.getenv("RENDER_EXTERNAL_HOSTNAME", "").strip()
 if render_external_hostname and render_external_hostname not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append(render_external_hostname)
 
-USE_WHITENOISE = os.getenv("USE_WHITENOISE", "False").lower() in ("1", "true", "yes", "on")
+USE_WHITENOISE = _env_bool("USE_WHITENOISE", False)
 
 
 # Application definition
@@ -201,17 +205,19 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "dashboard"
 LOGOUT_REDIRECT_URL = "login"
-if DEBUG:
+USE_CONSOLE_EMAIL = _env_bool("USE_CONSOLE_EMAIL", DEBUG)
+
+if USE_CONSOLE_EMAIL:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 else:
-    EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 
 EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
 EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
-EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True").lower() in ("1", "true", "yes", "on")
-EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL", "False").lower() in ("1", "true", "yes", "on")
+EMAIL_USE_TLS = _env_bool("EMAIL_USE_TLS", True)
+EMAIL_USE_SSL = _env_bool("EMAIL_USE_SSL", False)
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER or "no-reply@horacerta.local")
 
 CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if origin.strip()]

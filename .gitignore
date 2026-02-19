@@ -1,6 +1,35 @@
+# Virtual environment
 .venv/
+venv/
+
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+
+# Database
 db.sqlite3
+
+# Environment variables
 .env
-*.tar.gz
+
+# Static build
+staticfiles/
+
+# VSCode
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Migrations cache
+*/migrations/__pycache__/
+
+# Python packaging
+build/
+dist/
+*.egg-info/
