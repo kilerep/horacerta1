@@ -62,7 +62,11 @@
         <a class="btn" href="{% url 'help' %}">Ajuda</a>
         <a class="btn" href="{% url 'terms' %}">Termos</a>
         {% if request.user.is_authenticated %}
-          <span class="pill">{{ request.user.email|default:request.user.username }}</span>
+          {% if header_mode == "company" %}
+            <span class="pill">Empresa: {{ header_company_name|default:"Empresa" }}</span>
+          {% else %}
+            <span class="pill">Logado como: {{ header_display_name|default:"Usuario" }}</span>
+          {% endif %}
           <a class="btn" href="{% url 'logout' %}">Sair</a>
         {% endif %}
       </div>

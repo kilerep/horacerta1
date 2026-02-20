@@ -7,7 +7,11 @@
 <body>
   <h1>Dashboard</h1>
 
-  <p>Logado como: <b>{{ request.user.email }}</b></p>
+  {% if header_mode == "company" %}
+    <p>Empresa: <b>{{ header_company_name|default:"Empresa" }}</b></p>
+  {% else %}
+    <p>Logado como: <b>{{ header_display_name|default:"Usuario" }}</b></p>
+  {% endif %}
 
   <p><a href="{% url 'logout' %}">Sair</a></p>
 </body>

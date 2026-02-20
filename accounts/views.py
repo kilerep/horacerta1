@@ -215,6 +215,24 @@ def _compute_report_metrics(punches):
     }
 
 
+def _month_label_ptbr(date_obj):
+    month_names = [
+        "janeiro",
+        "fevereiro",
+        "marco",
+        "abril",
+        "maio",
+        "junho",
+        "julho",
+        "agosto",
+        "setembro",
+        "outubro",
+        "novembro",
+        "dezembro",
+    ]
+    return f"{month_names[date_obj.month - 1].capitalize()} de {date_obj.year}"
+
+
 def signup(request):
     if request.user.is_authenticated:
         return _redirect_for_role(request.user)
@@ -728,27 +746,21 @@ def mei_panel(request):
     )
 
     selected_contract = None
-    session_key = "mei_panel_contract_id"
     selected_contract_id = request.GET.get("contract")
 
     if contracts.exists():
-        if selected_contract_id:
-            selected_contract = contracts.filter(id=selected_contract_id).first()
-            if selected_contract:
-                request.session[session_key] = str(selected_contract.id)
-        if not selected_contract:
-            session_contract_id = request.session.get(session_key)
-            if session_contract_id:
-                selected_contract = contracts.filter(id=session_contract_id).first()
+        selected_contract = contracts.filter(id=selected_contract_id).first() if selected_contract_id else contracts.first()
         if not selected_contract:
             selected_contract = contracts.first()
-            request.session[session_key] = str(selected_contract.id)
 
+    current_period_label = _month_label_ptbr(timezone.localdate())
     total_hours_month = "00:00"
     accrued_value = Decimal("0.00")
     accrued_value_brl = "R$ 0,00"
+    worked_days = 0
     complete_days = 0
     incomplete_days = 0
+    recent_today_punches = []
 
     if selected_contract:
         today = timezone.localdate()
@@ -761,8 +773,16 @@ def mei_panel(request):
         month_rows, _max_cols = build_daily_summary(monthly_punches, min_punch_columns=4)
         total_seconds = sum(row["total_seconds"] for row in month_rows)
         total_hours_month = format_hhmm(total_seconds)
+        worked_days = len(month_rows)
         complete_days = sum(1 for row in month_rows if not row["is_incomplete"])
         incomplete_days = sum(1 for row in month_rows if row["is_incomplete"])
+        today_start = timezone.make_aware(datetime.combine(today, time.min))
+        today_end = timezone.make_aware(datetime.combine(today, time.max))
+        recent_today_punches = [
+            timezone.localtime(p.timestamp).strftime("%H:%M")
+            for p in Punch.objects.filter(contract=selected_contract, timestamp__range=(today_start, today_end))
+            .order_by("-timestamp")[:6]
+        ]
 
         hourly_rate = selected_contract.hourly_rate or Decimal("0")
         accrued_value = ((Decimal(total_seconds) / Decimal("3600")) * hourly_rate).quantize(Decimal("0.01"))
@@ -773,10 +793,14 @@ def mei_panel(request):
         "contracts": contracts,
         "contracts_count": contracts.count(),
         "selected_contract": selected_contract,
+        "current_period_label": current_period_label,
         "total_hours_month": total_hours_month,
         "accrued_value_brl": accrued_value_brl,
+        "worked_days": worked_days,
         "complete_days": complete_days,
         "incomplete_days": incomplete_days,
+        "pending_days": incomplete_days,
+        "recent_today_punches": recent_today_punches,
     }
     return render(request, "accounts/mei_panel.html", context)
 

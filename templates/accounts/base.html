@@ -354,7 +354,11 @@
               {% endif %}
               <div class="title">{% block page_title %}HoraCerta{% endblock %}</div>
             </div>
-            <div class="meta">Logado como: <strong>{{ user_display_name|default:request.user.email|default:request.user.username }}</strong></div>
+            {% if header_mode == "company" %}
+              <div class="meta">Empresa: <strong>{{ header_company_name|default:"Empresa" }}</strong></div>
+            {% else %}
+              <div class="meta">Logado como: <strong>{{ header_display_name|default:"Usuario" }}</strong></div>
+            {% endif %}
           </div>
           <div class="top-actions">
             <a class="btn" href="{% url 'dashboard' %}">Dashboard</a>

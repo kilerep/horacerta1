@@ -48,6 +48,16 @@
       border-color:rgba(255,176,32,.35);
       background:rgba(255,176,32,.10);
     }
+    .mini-history{margin-top:12px}
+    .chips{display:flex;flex-wrap:wrap;gap:8px}
+    .chip{
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.05);
+      font-weight:700;
+      font-size:13px;
+    }
     @media (max-width: 760px){
       .cards{grid-template-columns:1fr}
     }
@@ -62,11 +72,11 @@
         <form method="get" class="row">
           {% if contracts_count > 1 %}
             <div class="field">
-              <label>Contrato ativo</label>
+              <label>Selecionar contrato</label>
               <select name="contract" onchange="this.form.submit()">
                 {% for c in contracts %}
                   <option value="{{ c.id }}" {% if selected_contract and c.id == selected_contract.id %}selected{% endif %}>
-                    {{ c.company.name }} - R$ {{ c.hourly_rate }}/h
+                    {{ c.company.name }} - Contrato {{ c.id|stringformat:"s"|slice:":8" }}
                   </option>
                 {% endfor %}
               </select>
@@ -84,20 +94,28 @@
     {% if contracts_count > 0 %}
       <section class="cards">
         <article class="stat">
+          <div class="k">Empresa</div>
+          <div class="v" style="font-size:24px">{{ selected_contract.company.name }}</div>
+        </article>
+        <article class="stat">
+          <div class="k">Periodo atual</div>
+          <div class="v" style="font-size:24px">{{ current_period_label }}</div>
+        </article>
+        <article class="stat">
           <div class="k">Horas no mes</div>
           <div class="v">{{ total_hours_month }}</div>
         </article>
         <article class="stat">
+          <div class="k">Dias trabalhados no mes</div>
+          <div class="v">{{ worked_days }}</div>
+        </article>
+        <article class="stat">
+          <div class="k">Dias com pendencia</div>
+          <div class="v">{{ pending_days }}</div>
+        </article>
+        <article class="stat">
           <div class="k">Valor acumulado no mes</div>
           <div class="v">{{ accrued_value_brl }}</div>
-        </article>
-        <article class="stat">
-          <div class="k">Dias completos no mes</div>
-          <div class="v">{{ complete_days }}</div>
-        </article>
-        <article class="stat">
-          <div class="k">Dias incompletos no mes</div>
-          <div class="v">{{ incomplete_days }}</div>
         </article>
       </section>
 
@@ -112,6 +130,17 @@
           <a class="btn" href="{% url 'mei_history' %}?contract={{ selected_contract.id }}" style="margin-left:8px;">Ver historico</a>
         </section>
       {% endif %}
+
+      <section class="panel mini-history">
+        <h3 style="margin:0 0 10px;">Ultimas batidas de hoje</h3>
+        <div class="chips">
+          {% for punch_time in recent_today_punches %}
+            <span class="chip">{{ punch_time }}</span>
+          {% empty %}
+            <span class="muted">Nenhuma batida registrada hoje neste contrato.</span>
+          {% endfor %}
+        </div>
+      </section>
     {% endif %}
   </div>
 {% endblock %}
