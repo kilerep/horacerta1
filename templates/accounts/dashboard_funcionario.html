@@ -76,9 +76,10 @@
         <p
           id="hcGreetingLine"
           class="hc-greeting"
-          data-display-name="{{ user.get_full_name|default:user.email|default:user.username }}"
+          data-display-name="{{ user_display_name }}"
         >
-          {{ greeting }}, {{ user.get_full_name|default:user.email|default:user.username }}
+          <span class="hc-greeting-salute">{{ greeting }},</span>
+          <strong class="hc-greeting-name">{{ user_display_name }}</strong>
         </p>
         <p id="hcDateLine" class="hc-date-line">{{ today_date|date:"d/m/Y" }}</p>
 

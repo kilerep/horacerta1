@@ -73,6 +73,22 @@
       color:var(--muted);
       font-size:13px;
       line-height:1.25;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+    .brand .sub-badge{
+      display:inline-flex;
+      align-items:center;
+      width:max-content;
+      font-size:11px;
+      font-weight:700;
+      letter-spacing:.3px;
+      color:rgba(255,255,255,.92);
+      background:rgba(47,124,255,.22);
+      border:1px solid rgba(47,124,255,.42);
+      border-radius:999px;
+      padding:3px 8px;
     }
 
     .menu{
@@ -241,7 +257,10 @@
       <aside class="sidebar">
         <div class="brand">
           <div class="name">HoraCerta</div>
-          <div class="sub">Controle de horas - RH/Empresa - MEI</div>
+          <div class="sub">
+            <span>Plataforma de Gestão de Jornada</span>
+            <span class="sub-badge">v1.0 Beta</span>
+          </div>
         </div>
 
         <nav class="menu">
@@ -335,7 +354,7 @@
               {% endif %}
               <div class="title">{% block page_title %}HoraCerta{% endblock %}</div>
             </div>
-            <div class="meta">Logado como: <strong>{{ request.user.email|default:request.user.username }}</strong></div>
+            <div class="meta">Logado como: <strong>{{ user_display_name|default:request.user.email|default:request.user.username }}</strong></div>
           </div>
           <div class="top-actions">
             <a class="btn" href="{% url 'dashboard' %}">Dashboard</a>

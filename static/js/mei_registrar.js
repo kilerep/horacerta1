@@ -1,5 +1,7 @@
 (function () {
   var greetingLine = document.getElementById("hcGreetingLine");
+  var greetingSalute = greetingLine ? greetingLine.querySelector(".hc-greeting-salute") : null;
+  var greetingName = greetingLine ? greetingLine.querySelector(".hc-greeting-name") : null;
   var dateLine = document.getElementById("hcDateLine");
   var clockEl = document.getElementById("hcClock");
   var badgeEl = document.getElementById("hcBadge");
@@ -19,7 +21,12 @@
   function applyGreetingAndDate(now) {
     if (greetingLine) {
       var displayName = greetingLine.getAttribute("data-display-name") || "usuario";
-      greetingLine.textContent = getGreeting(now.getHours()) + ", " + displayName;
+      if (greetingSalute) {
+        greetingSalute.textContent = getGreeting(now.getHours()) + ",";
+      }
+      if (greetingName) {
+        greetingName.textContent = displayName;
+      }
     }
 
     if (dateLine) {

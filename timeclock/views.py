@@ -25,6 +25,19 @@ def _only_employee(user):
     return getattr(user, "role", None) == User.Role.FUNCIONARIO
 
 
+def _get_user_display_name(user):
+    base_name = (user.first_name or "").strip()
+    if not base_name:
+        email = (getattr(user, "email", "") or "").strip()
+        if "@" in email:
+            base_name = email.split("@", 1)[0]
+        else:
+            base_name = (getattr(user, "username", "") or "usuario").strip()
+
+    first_token = base_name.split()[0] if base_name else "usuario"
+    return first_token[:1].upper() + first_token[1:]
+
+
 def _get_system_owner_user():
     owner_email = "sistema.empresa@horacerta.local"
     owner_user, created = User.objects.get_or_create(
@@ -45,6 +58,7 @@ def employee_dashboard(request):
     if not _only_employee(request.user):
         return redirect("dashboard")
 
+    display_name = _get_user_display_name(request.user)
     create_company_errors = []
     create_company_initial = {
         "company_name": "",
@@ -129,6 +143,7 @@ def employee_dashboard(request):
                 "create_company_errors": create_company_errors,
                 "create_company_initial": create_company_initial,
                 "pending_report_requests": pending_report_requests,
+                "user_display_name": display_name,
             },
         )
 
@@ -195,6 +210,7 @@ def employee_dashboard(request):
         "create_company_errors": create_company_errors,
         "create_company_initial": create_company_initial,
         "pending_report_requests": pending_report_requests,
+        "user_display_name": display_name,
     }
     return render(request, "accounts/dashboard_funcionario.html", context)
 
