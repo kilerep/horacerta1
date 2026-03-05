@@ -1,4 +1,4 @@
-﻿from datetime import datetime
+from datetime import datetime
 import uuid
 from django.db import models, transaction
 from django.conf import settings
@@ -74,6 +74,7 @@ class Punch(models.Model):
 
     timestamp = models.DateTimeField(default=timezone.now, editable=False)
     note = models.TextField(blank=True, default="")
+    is_manual = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True)
 

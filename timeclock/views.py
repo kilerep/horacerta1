@@ -4,9 +4,11 @@ from decimal import Decimal, InvalidOperation
 from io import BytesIO
 
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse
+from django.db import transaction
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 from openpyxl import Workbook
 from openpyxl.styles import Font
 from reportlab.lib import colors
@@ -200,6 +202,118 @@ def employee_dashboard(request):
 
 
 @login_required
+@require_POST
+def create_manual_punches(request):
+    if not _only_employee(request.user):
+        return JsonResponse({"ok": False, "errors": ["Perfil sem permissao para esta operacao."]}, status=403)
+
+    contract_id = (request.POST.get("contract") or "").strip()
+    manual_date_raw = (request.POST.get("manual_date") or "").strip()
+    note = (request.POST.get("note") or "").strip()
+    raw_times = request.POST.getlist("times")
+
+    errors = []
+    if not contract_id:
+        errors.append("Selecione um contrato.")
+    if not manual_date_raw:
+        errors.append("Informe a data do lancamento.")
+    if not note:
+        errors.append("A justificativa e obrigatoria.")
+
+    launch_date = None
+    if manual_date_raw:
+        try:
+            launch_date = datetime.strptime(manual_date_raw, "%Y-%m-%d").date()
+        except ValueError:
+            errors.append("Data invalida.")
+
+    parsed_times = []
+    invalid_times = []
+    for raw_value in raw_times:
+        value = (raw_value or "").strip()
+        if not value:
+            continue
+        try:
+            parsed_times.append(datetime.strptime(value, "%H:%M").time())
+        except ValueError:
+            invalid_times.append(value)
+
+    if invalid_times:
+        errors.append("Horario invalido: %s." % ", ".join(invalid_times))
+    if not parsed_times:
+        errors.append("Informe pelo menos 1 horario.")
+
+    seen_hm = set()
+    duplicated_payload_hm = []
+    for value in parsed_times:
+        hm = (value.hour, value.minute)
+        if hm in seen_hm:
+            duplicated_payload_hm.append(f"{value.hour:02d}:{value.minute:02d}")
+        else:
+            seen_hm.add(hm)
+    if duplicated_payload_hm:
+        unique_dup = sorted(set(duplicated_payload_hm))
+        errors.append("Horarios duplicados no lancamento: %s." % ", ".join(unique_dup))
+
+    if errors:
+        return JsonResponse({"ok": False, "errors": errors}, status=400)
+
+    contract = Contract.objects.filter(
+        id=contract_id,
+        employee_user=request.user,
+        is_active=True,
+    ).first()
+    if not contract:
+        return JsonResponse({"ok": False, "errors": ["Contrato invalido ou inativo."]}, status=400)
+
+    tz = timezone.get_current_timezone()
+    day_start = timezone.make_aware(datetime.combine(launch_date, time.min), tz)
+    day_end = timezone.make_aware(datetime.combine(launch_date, time.max), tz)
+    existing_hm = {
+        (local_ts.hour, local_ts.minute)
+        for ts in Punch.objects.filter(contract=contract, timestamp__range=(day_start, day_end)).values_list(
+            "timestamp", flat=True
+        )
+        for local_ts in [timezone.localtime(ts, tz)]
+    }
+
+    requested_hm = {(item.hour, item.minute) for item in parsed_times}
+    duplicated_existing = sorted(f"{hour:02d}:{minute:02d}" for hour, minute in requested_hm if (hour, minute) in existing_hm)
+    if duplicated_existing:
+        return JsonResponse(
+            {
+                "ok": False,
+                "errors": [
+                    "Ja existe batida para este contrato/data nos horarios: %s." % ", ".join(duplicated_existing)
+                ],
+            },
+            status=400,
+        )
+
+    ordered_hm = sorted(requested_hm)
+    with transaction.atomic():
+        for hour, minute in ordered_hm:
+            manual_timestamp = timezone.make_aware(
+                datetime.combine(launch_date, time(hour=hour, minute=minute)),
+                tz,
+            )
+            Punch.objects.create(
+                contract=contract,
+                timestamp=manual_timestamp,
+                note=note,
+                is_manual=True,
+            )
+
+    return JsonResponse(
+        {
+            "ok": True,
+            "created_count": len(ordered_hm),
+            "contract_id": str(contract.id),
+        }
+    )
+
+
+@login_required
 def edit_punch_note(request, punch_id):
     punch = get_object_or_404(Punch, id=punch_id, contract__employee_user=request.user)
     contract_id = request.GET.get("contract") or str(punch.contract.id)
@@ -386,7 +500,7 @@ def export_pdf(request):
     table_headers = ["Data"] + [f"Batida {idx}" for idx in range(1, max_punches + 1)] + ["Total do dia", "Status", "Observacao"]
     table_data = [table_headers]
     for row in daily_rows:
-        status_label = "⚠ Incompleto" if row["is_incomplete"] else "OK"
+        status_label = "âš  Incompleto" if row["is_incomplete"] else "OK"
         table_data.append(
             [
                 row["date"].strftime("%d/%m/%Y"),

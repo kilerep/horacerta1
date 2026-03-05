@@ -4,97 +4,226 @@
 
 {% block content %}
   <style>
-    .auth-wrap{
-      margin-top: 18px;
+    .auth-wrap {
+      min-height: clamp(72vh, 78vh, 86vh);
       display: grid;
-      gap: 14px;
+      place-items: center;
+      padding: 18px 12px 24px;
     }
-    .auth-card{
-      border:1px solid var(--border);
-      border-radius: var(--radius);
-      background:
-        linear-gradient(135deg, rgba(79,124,255,.14), transparent 42%),
-        linear-gradient(180deg, rgba(250,204,21,.06), rgba(255,255,255,.03));
-      padding: 18px;
-      max-width: 520px;
+
+    .auth-card {
       width: 100%;
+      max-width: 540px;
+      border-radius: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.10);
+      background:
+        radial-gradient(110% 110% at 0% 0%, rgba(79, 124, 255, 0.26), rgba(79, 124, 255, 0) 46%),
+        radial-gradient(90% 90% at 100% 0%, rgba(34, 211, 238, 0.16), rgba(34, 211, 238, 0) 48%),
+        rgba(10, 17, 34, 0.58);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow:
+        0 24px 50px rgba(2, 7, 23, 0.58),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      padding: 22px;
     }
-    .auth-title{
-      margin:0;
-      font-size: 28px;
-      line-height: 1.15;
+
+    .auth-title {
+      margin: 0;
+      font-size: clamp(1.62rem, 5.8vw, 2rem);
+      font-weight: 760;
+      line-height: 1.12;
+      letter-spacing: -0.02em;
     }
-    .auth-sub{
-      margin: 8px 0 0;
-      color: var(--muted);
+
+    .auth-sub {
+      margin: 10px 0 0;
+      color: rgba(221, 230, 245, 0.8);
+      font-size: 0.96rem;
+      line-height: 1.45;
     }
-    .form-grid{
-      margin-top: 16px;
+
+    .form-grid {
+      margin-top: 18px;
       display: grid;
       gap: 12px;
     }
-    .field label{
-      display:block;
-      margin-bottom:6px;
-      color: var(--muted);
-      font-size: 13px;
+
+    .field label {
+      display: block;
+      margin-bottom: 7px;
+      color: rgba(210, 223, 243, 0.86);
+      font-size: 0.83rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
     }
-    .field input{
-      width:100%;
-      padding:11px 12px;
+
+    .input-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
       border-radius: 12px;
-      border:1px solid var(--border);
-      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(148, 163, 184, 0.32);
+      background: rgba(14, 24, 44, 0.6);
+      padding: 0 12px;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
+
+    .input-wrap:focus-within {
+      border-color: rgba(83, 140, 255, 0.9);
+      box-shadow: 0 0 0 4px rgba(56, 131, 255, 0.18);
+      background: rgba(16, 27, 49, 0.84);
+    }
+
+    .input-icon {
+      flex: 0 0 auto;
+      width: 18px;
+      height: 18px;
+      color: rgba(179, 197, 226, 0.88);
+      opacity: 0.95;
+    }
+
+    .input-wrap input {
+      width: 100%;
+      border: 0;
+      outline: none;
+      background: transparent;
       color: var(--text);
-      outline:none;
+      padding: 12px 0;
+      min-height: 44px;
     }
-    .field input:focus{
-      border-color: rgba(79,124,255,.55);
-      box-shadow: 0 0 0 3px rgba(79,124,255,.16);
+
+    .input-wrap input::placeholder {
+      color: rgba(190, 207, 233, 0.52);
     }
-    .field-error{
-      margin-top:6px;
-      color:#ffd3d3;
-      font-size:13px;
+
+    .field-error {
+      margin-top: 6px;
+      color: #ffd3d3;
+      font-size: 0.82rem;
     }
-    .error-box{
-      margin-top:10px;
-      border:1px solid rgba(255,90,90,.45);
-      background: rgba(255,90,90,.12);
+
+    .error-box {
+      margin-top: 12px;
+      border: 1px solid rgba(255, 90, 90, 0.45);
+      background: rgba(255, 90, 90, 0.12);
       border-radius: 12px;
-      padding:10px 12px;
-      color:#ffe0e0;
+      padding: 10px 12px;
+      color: #ffe0e0;
     }
-    .actions{
-      margin-top: 14px;
-      display:flex;
-      gap:10px;
-      align-items:center;
-      flex-wrap:wrap;
+
+    .actions {
+      margin-top: 16px;
+      display: grid;
+      gap: 10px;
     }
-    .hint{
-      color: var(--muted);
-      font-size: 14px;
+
+    .btn.primary {
+      width: 100%;
+      min-height: 46px;
+      border: 0;
+      border-radius: 12px;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      color: #f7fbff;
+      background: linear-gradient(135deg, #2f6dff, #1896ff 55%, #45c4ff);
+      box-shadow: 0 10px 24px rgba(17, 79, 209, 0.38);
+      transition: transform 0.12s ease, box-shadow 0.16s ease, filter 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn.primary:hover {
+      filter: brightness(1.05);
+      box-shadow: 0 14px 28px rgba(17, 79, 209, 0.45);
+    }
+
+    .btn.primary:active {
+      transform: scale(0.98);
+      box-shadow: 0 6px 16px rgba(17, 79, 209, 0.34);
+    }
+
+    .btn-icon {
+      width: 14px;
+      height: 14px;
+      flex: 0 0 auto;
+    }
+
+    .auth-links {
+      margin-top: 12px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .hint {
+      margin: 0;
+      color: rgba(194, 210, 235, 0.78);
+      font-size: 0.9rem;
+      line-height: 1.45;
+    }
+
+    .hint a {
+      color: #6eb7ff;
+      text-decoration: none;
+      text-underline-offset: 0.2em;
+      transition: color 0.18s ease, text-decoration-color 0.18s ease, opacity 0.18s ease;
+    }
+
+    .hint a:hover {
+      color: #9bd0ff;
+      text-decoration: underline;
+      text-decoration-color: rgba(155, 208, 255, 0.75);
+    }
+
+    .hint a:active {
+      opacity: 0.8;
+    }
+
+    .hint-create {
+      text-align: center;
+      padding-top: 2px;
+    }
+
+    @media (min-width: 620px) {
+      .auth-wrap {
+        padding: 24px;
+      }
+
+      .auth-card {
+        padding: 26px;
+      }
     }
   </style>
 
   <div class="auth-wrap">
     <div class="auth-card">
       <h1 class="auth-title">Acessar conta</h1>
-      <p class="auth-sub">Entre com e-mail ou usuário para continuar.</p>
+      <p class="auth-sub">Entre com e-mail ou usuario para continuar.</p>
 
       <form method="post" novalidate>
         {% csrf_token %}
         <div class="form-grid">
           <div class="field">
             <label>{{ form.username.label }}</label>
-            {{ form.username }}
+            <div class="input-wrap">
+              <svg class="input-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M4 7.75A2.75 2.75 0 0 1 6.75 5h10.5A2.75 2.75 0 0 1 20 7.75v8.5A2.75 2.75 0 0 1 17.25 19H6.75A2.75 2.75 0 0 1 4 16.25v-8.5Zm1.5.07 5.91 4.23a1 1 0 0 0 1.18 0l5.91-4.23" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              {{ form.username }}
+            </div>
             {% if form.username.errors %}<div class="field-error">{{ form.username.errors }}</div>{% endif %}
           </div>
 
           <div class="field">
             <label>{{ form.password.label }}</label>
-            {{ form.password }}
+            <div class="input-wrap">
+              <svg class="input-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M7.5 10V8.5a4.5 4.5 0 0 1 9 0V10M6.75 10h10.5A1.75 1.75 0 0 1 19 11.75v6.5A1.75 1.75 0 0 1 17.25 20H6.75A1.75 1.75 0 0 1 5 18.25v-6.5A1.75 1.75 0 0 1 6.75 10Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              {{ form.password }}
+            </div>
             {% if form.password.errors %}<div class="field-error">{{ form.password.errors }}</div>{% endif %}
           </div>
         </div>
@@ -104,16 +233,24 @@
         {% endif %}
 
         <div class="actions">
-          <button class="btn primary" type="submit">Acessar conta</button>
+          <button class="btn primary" type="submit">
+            Acessar conta
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
         </div>
       </form>
-      <p class="hint" style="margin-top:10px;">
-        <a href="{% url 'password_reset' %}">Esqueci minha senha</a>
-      </p>
 
-      <p class="hint" style="margin-top:14px;">
-        Não tem conta? <a href="{% url 'signup' %}">Criar conta</a>
-      </p>
+      <div class="auth-links">
+        <p class="hint">
+          <a href="{% url 'password_reset' %}">Esqueci minha senha</a>
+        </p>
+
+        <p class="hint hint-create">
+          Nao tem conta? <a href="{% url 'signup' %}">Criar conta</a>
+        </p>
+      </div>
     </div>
   </div>
 {% endblock %}

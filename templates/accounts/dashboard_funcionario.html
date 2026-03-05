@@ -2,6 +2,7 @@
 {% load static tz timeclock_formats %}
 {% block title %}HoraCerta - Registrar batida{% endblock %}
 {% block page_title %}Registrar batida{% endblock %}
+{% block body_class %}page-me-registrar{% endblock %}
 
 {% block extra_head %}
   <link rel="stylesheet" href="{% static 'css/mei_registrar.css' %}">
@@ -107,6 +108,7 @@
               <span class="hc-punch-btn__label">REGISTRAR BATIDA</span>
               <span class="hc-punch-btn__spinner" aria-hidden="true"></span>
             </button>
+            <button id="hcManualOpen" class="btn hc-manual-open-btn" type="button">LANCAR MANUALMENTE</button>
             <button id="hcObsToggle" class="hc-obs-toggle" type="button" aria-expanded="false">Adicionar observacao</button>
             <div id="hcObsWrap" class="hc-obs-wrap" aria-hidden="true">
               <label for="hcObsField">Observacao (opcional)</label>
@@ -127,67 +129,58 @@
         </section>
       </section>
 
-      <section class="hc-panel">
-        <h3 class="hc-section-title">Historico completo</h3>
-        <form method="get" class="hc-row">
-          <input type="hidden" name="contract" value="{{ selected_contract.id }}">
-          <div class="hc-field">
-            <label>De</label>
-            <input type="date" name="date_from" value="{{ date_from }}">
-          </div>
-          <div class="hc-field">
-            <label>Ate</label>
-            <input type="date" name="date_to" value="{{ date_to }}">
-          </div>
-          <button class="btn primary" type="submit">Filtrar</button>
-          <a class="btn" href="{% url 'employee_dashboard' %}?contract={{ selected_contract.id }}">Limpar</a>
-        </form>
+      <div id="hcManualModal" class="hc-modal" aria-hidden="true">
+        <div id="hcManualOverlay" class="hc-overlay"></div>
+        <section class="hc-modal-card" role="dialog" aria-modal="true" aria-labelledby="hcManualTitle">
+          <header class="hc-modal-header">
+            <h3 id="hcManualTitle">Lancamento manual</h3>
+            <button id="hcManualCloseTop" type="button" class="hc-modal-close" aria-label="Fechar modal">x</button>
+          </header>
 
-        <div class="hc-row hc-export-row">
-          <a class="btn" href="{% url 'export_csv' %}?contract={{ selected_contract.id }}&date_from={{ date_from }}&date_to={{ date_to }}">CSV</a>
-          <a class="btn" href="{% url 'export_xlsx' %}?contract={{ selected_contract.id }}&date_from={{ date_from }}&date_to={{ date_to }}">Excel</a>
-          <a class="btn primary" href="{% url 'export_pdf' %}?contract={{ selected_contract.id }}&date_from={{ date_from }}&date_to={{ date_to }}">PDF</a>
-        </div>
+          <form id="hcManualForm" class="hc-modal-form" action="{% url 'create_manual_punches' %}" method="post">
+            {% csrf_token %}
+            <div id="hcManualErrors" class="hc-error-box hc-manual-errors" hidden></div>
 
-        <div class="hc-table-wrap">
-          <table class="hc-table">
-            <thead>
-              <tr>
-                <th>Data</th>
-                {% for n in history_punch_columns %}
-                  <th>Batida {{ n }}</th>
+            <div class="hc-field">
+              <label for="hcManualContract">Contrato</label>
+              <select id="hcManualContract" name="contract" required>
+                {% for c in contracts %}
+                  <option value="{{ c.id }}" {% if selected_contract and c.id == selected_contract.id %}selected{% endif %}>
+                    {{ c.company.name }} - R$ {{ c.hourly_rate }}/h
+                  </option>
                 {% endfor %}
-                <th>Observacoes</th>
-                <th>Total do dia</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for d in history_days %}
-                <tr>
-                  <td>{{ d.date|date:"d/m/Y" }}</td>
-                  {% for bt in d.punch_columns %}
-                    <td>{{ bt }}</td>
-                  {% endfor %}
-                  <td>{% if d.notes_summary %}{{ d.notes_summary }}{% else %}-{% endif %}</td>
-                  <td>{{ d.total_hours_hhmm }}</td>
-                  <td>
-                    {% if d.is_incomplete %}
-                      <span class="hc-status-tag hc-status-tag--warn">Incompleto</span>
-                    {% else %}
-                      <span class="hc-status-tag hc-status-tag--ok">OK</span>
-                    {% endif %}
-                  </td>
-                </tr>
-              {% empty %}
-                <tr>
-                  <td colspan="20" class="hc-muted">Sem registros para o periodo.</td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </section>
+              </select>
+            </div>
+
+            <div class="hc-field">
+              <label for="hcManualDate">Data</label>
+              <input id="hcManualDate" name="manual_date" type="date" value="{{ today_date|date:'Y-m-d' }}" required>
+            </div>
+
+            <div class="hc-field">
+              <label>Horarios</label>
+              <div id="hcTimesList" class="hc-times-list">
+                <div class="hc-time-row">
+                  <input type="time" name="times" step="60" required>
+                  <button type="button" class="btn hc-time-remove" aria-label="Remover horario">Remover</button>
+                </div>
+              </div>
+              <button id="hcAddTimeBtn" type="button" class="btn hc-add-time-btn">Adicionar horario</button>
+            </div>
+
+            <div class="hc-field">
+              <label for="hcManualNote">Observacao / Justificativa</label>
+              <textarea id="hcManualNote" name="note" placeholder="Descreva o motivo do lancamento manual" required></textarea>
+            </div>
+
+            <footer class="hc-modal-actions">
+              <button id="hcManualCancel" type="button" class="btn">Cancelar</button>
+              <button id="hcManualSave" type="submit" class="btn primary">Salvar lancamento</button>
+            </footer>
+          </form>
+        </section>
+      </div>
+
     {% endif %}
   </div>
 {% endblock %}

@@ -32,4 +32,15 @@ Thumbs.db
 # Python packaging
 build/
 dist/
+
 *.egg-info/
+# AWS / SSH keys
+*.pem
+*.key
+id_rsa
+id_rsa.pub
+
+# Local backups / dumps
+*.sqlite3
+*.dump
+*.sql

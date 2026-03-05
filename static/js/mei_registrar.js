@@ -12,6 +12,20 @@
   var obsToggle = document.getElementById("hcObsToggle");
   var obsWrap = document.getElementById("hcObsWrap");
 
+  var manualOpenBtn = document.getElementById("hcManualOpen");
+  var manualModal = document.getElementById("hcManualModal");
+  var manualOverlay = document.getElementById("hcManualOverlay");
+  var manualCloseTop = document.getElementById("hcManualCloseTop");
+  var manualCancel = document.getElementById("hcManualCancel");
+  var manualForm = document.getElementById("hcManualForm");
+  var manualSaveBtn = document.getElementById("hcManualSave");
+  var manualErrors = document.getElementById("hcManualErrors");
+  var manualContract = document.getElementById("hcManualContract");
+  var manualDate = document.getElementById("hcManualDate");
+  var manualNote = document.getElementById("hcManualNote");
+  var timesList = document.getElementById("hcTimesList");
+  var addTimeBtn = document.getElementById("hcAddTimeBtn");
+
   function getGreeting(hour) {
     if (hour >= 5 && hour <= 11) return "Bom dia";
     if (hour >= 12 && hour <= 17) return "Boa tarde";
@@ -127,11 +141,209 @@
     });
   }
 
+  function showManualErrors(messages) {
+    if (!manualErrors) return;
+    if (!messages || !messages.length) {
+      manualErrors.hidden = true;
+      manualErrors.innerHTML = "";
+      return;
+    }
+    manualErrors.hidden = false;
+    manualErrors.innerHTML = messages
+      .map(function (message) {
+        return "<div>" + message + "</div>";
+      })
+      .join("");
+  }
+
+  function syncRemoveButtons() {
+    if (!timesList) return;
+    var rows = timesList.querySelectorAll(".hc-time-row");
+    for (var i = 0; i < rows.length; i += 1) {
+      var removeBtn = rows[i].querySelector(".hc-time-remove");
+      if (!removeBtn) continue;
+      var shouldDisable = rows.length === 1;
+      removeBtn.disabled = shouldDisable;
+      removeBtn.hidden = shouldDisable;
+    }
+  }
+
+  function addTimeRow(defaultValue) {
+    if (!timesList) return;
+
+    var row = document.createElement("div");
+    row.className = "hc-time-row";
+
+    var input = document.createElement("input");
+    input.type = "time";
+    input.name = "times";
+    input.step = "60";
+    input.required = true;
+    if (defaultValue) input.value = defaultValue;
+
+    var removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "btn hc-time-remove";
+    removeBtn.setAttribute("aria-label", "Remover horario");
+    removeBtn.textContent = "Remover";
+    removeBtn.addEventListener("click", function () {
+      row.remove();
+      syncRemoveButtons();
+    });
+
+    row.appendChild(input);
+    row.appendChild(removeBtn);
+    timesList.appendChild(row);
+    syncRemoveButtons();
+  }
+
+  function openManualModal() {
+    if (!manualModal) return;
+    manualModal.classList.add("is-open");
+    manualModal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("hc-modal-open");
+    showManualErrors([]);
+
+    if (timesList && !timesList.querySelector(".hc-time-row")) {
+      addTimeRow("");
+    } else {
+      syncRemoveButtons();
+    }
+  }
+
+  function closeManualModal() {
+    if (!manualModal) return;
+    manualModal.classList.remove("is-open");
+    manualModal.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("hc-modal-open");
+    showManualErrors([]);
+  }
+
+  function bindManualModal() {
+    if (!manualModal || !manualForm) return;
+
+    if (manualOpenBtn) {
+      manualOpenBtn.addEventListener("click", openManualModal);
+    }
+    if (manualOverlay) {
+      manualOverlay.addEventListener("click", closeManualModal);
+    }
+    if (manualCloseTop) {
+      manualCloseTop.addEventListener("click", closeManualModal);
+    }
+    if (manualCancel) {
+      manualCancel.addEventListener("click", closeManualModal);
+    }
+
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape" && manualModal.classList.contains("is-open")) {
+        closeManualModal();
+      }
+    });
+
+    if (addTimeBtn) {
+      addTimeBtn.addEventListener("click", function () {
+        addTimeRow("");
+      });
+    }
+
+    if (timesList) {
+      var initialRows = timesList.querySelectorAll(".hc-time-row");
+      for (var i = 0; i < initialRows.length; i += 1) {
+        (function bindRowRemove(row) {
+          var btn = row.querySelector(".hc-time-remove");
+          if (!btn) return;
+          btn.addEventListener("click", function () {
+            row.remove();
+            syncRemoveButtons();
+          });
+        })(initialRows[i]);
+      }
+      syncRemoveButtons();
+    }
+
+    manualForm.addEventListener("submit", function (event) {
+      event.preventDefault();
+      showManualErrors([]);
+
+      var selectedContract = manualContract ? (manualContract.value || "").trim() : "";
+      var selectedDate = manualDate ? (manualDate.value || "").trim() : "";
+      var noteText = manualNote ? (manualNote.value || "").trim() : "";
+      var timeInputs = timesList ? timesList.querySelectorAll('input[name="times"]') : [];
+      var times = [];
+      for (var idx = 0; idx < timeInputs.length; idx += 1) {
+        var value = (timeInputs[idx].value || "").trim();
+        if (value) times.push(value);
+      }
+
+      var clientErrors = [];
+      if (!selectedContract) clientErrors.push("Selecione um contrato.");
+      if (!selectedDate) clientErrors.push("Informe a data do lancamento.");
+      if (!times.length) clientErrors.push("Informe pelo menos 1 horario.");
+      if (!noteText) clientErrors.push("A justificativa e obrigatoria.");
+
+      if (clientErrors.length) {
+        showManualErrors(clientErrors);
+        return;
+      }
+
+      var payload = new FormData();
+      var csrfInput = manualForm.querySelector('input[name="csrfmiddlewaretoken"]');
+      if (csrfInput) payload.append("csrfmiddlewaretoken", csrfInput.value);
+      payload.append("contract", selectedContract);
+      payload.append("manual_date", selectedDate);
+      payload.append("note", noteText);
+      for (var j = 0; j < times.length; j += 1) {
+        payload.append("times", times[j]);
+      }
+
+      if (manualSaveBtn) {
+        manualSaveBtn.disabled = true;
+        manualSaveBtn.textContent = "Salvando...";
+      }
+
+      fetch(manualForm.getAttribute("action"), {
+        method: "POST",
+        body: payload,
+        credentials: "same-origin",
+        headers: {
+          "X-Requested-With": "XMLHttpRequest"
+        }
+      })
+        .then(function (response) {
+          return response.json().catch(function () {
+            return { ok: false, errors: ["Falha ao processar resposta do servidor."] };
+          });
+        })
+        .then(function (data) {
+          if (!data || !data.ok) {
+            var backendErrors = data && data.errors && data.errors.length ? data.errors : ["Nao foi possivel salvar o lancamento manual."];
+            showManualErrors(backendErrors);
+            return;
+          }
+
+          closeManualModal();
+          var nextUrl = window.location.pathname + "?contract=" + encodeURIComponent(selectedContract);
+          window.location.assign(nextUrl);
+        })
+        .catch(function () {
+          showManualErrors(["Erro de rede ao enviar lancamento manual."]);
+        })
+        .finally(function () {
+          if (manualSaveBtn) {
+            manualSaveBtn.disabled = false;
+            manualSaveBtn.textContent = "Salvar lancamento";
+          }
+        });
+    });
+  }
+
   applyDayBadge();
   applyGreetingAndDate(new Date());
   renderClock();
   bindPunchSubmit();
   bindObservationToggle();
+  bindManualModal();
 
   setInterval(renderClock, 1000);
   setInterval(function () {

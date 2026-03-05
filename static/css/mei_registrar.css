@@ -1,7 +1,25 @@
+html,
+body{
+  overflow-x:hidden;
+  max-width:100%;
+}
+
+.wrap,
+.content,
+main,
+.hc-page,
+.hc-panel{
+  max-width:100%;
+  overflow-x:hidden;
+}
+
 .hc-page{
   display:grid;
   gap:16px;
   margin-top:10px;
+  width:100%;
+  max-width:100%;
+  min-width:0;
 }
 
 .hc-panel{
@@ -11,6 +29,9 @@
   background:
     radial-gradient(circle at 18% 0%, rgba(79,124,255,.20), transparent 42%),
     linear-gradient(180deg, rgba(250,204,21,.06), rgba(255,255,255,.03));
+  width:100%;
+  max-width:100%;
+  min-width:0;
 }
 
 .hc-section-title{
@@ -29,6 +50,8 @@
   align-items:flex-end;
   flex-wrap:wrap;
   gap:10px;
+  width:100%;
+  min-width:0;
 }
 
 .hc-field{
@@ -91,7 +114,8 @@
 }
 
 .hc-main-card{
-  max-width:760px;
+  width:100%;
+  max-width:520px;
   margin:0 auto;
   text-align:center;
 }
@@ -178,6 +202,8 @@
   display:grid;
   gap:10px;
   text-align:left;
+  width:100%;
+  min-width:0;
 }
 
 .hc-punch-btn{
@@ -212,6 +238,22 @@
 .hc-punch-btn[disabled]{
   cursor:not-allowed;
   opacity:.9;
+}
+
+.hc-manual-open-btn{
+  width:100%;
+  min-height:46px;
+  border-radius:14px;
+  border:1px solid rgba(129,171,255,.45);
+  background:rgba(63,119,255,.14);
+  color:#e8f0ff;
+  font-weight:800;
+  letter-spacing:.4px;
+}
+
+.hc-manual-open-btn:hover{
+  background:rgba(63,119,255,.2);
+  border-color:rgba(129,171,255,.6);
 }
 
 .hc-punch-btn__spinner{
@@ -256,6 +298,7 @@
   width:100%;
   max-width:520px;
   text-align:left;
+  min-width:0;
 }
 
 .hc-today-title{
@@ -289,52 +332,106 @@
   grid-column:1 / -1;
 }
 
-.hc-export-row{
-  margin-top:10px;
+.hc-modal{
+  position:fixed;
+  inset:0;
+  z-index:2200;
+  display:none;
 }
 
-.hc-table-wrap{
-  margin-top:10px;
+.hc-modal.is-open{
+  display:block;
+}
+
+.hc-overlay{
+  position:absolute;
+  inset:0;
+  background:rgba(1, 6, 18, .72);
+  backdrop-filter:blur(3px);
+}
+
+.hc-modal-card{
+  position:relative;
+  width:min(620px, calc(100% - 24px));
+  margin:clamp(16px, 5vh, 56px) auto;
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:20px;
+  padding:16px;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(79,124,255,.18), transparent 42%),
+    linear-gradient(180deg, rgba(11,20,48,.96), rgba(10,16,38,.94));
+  box-shadow:0 24px 56px rgba(0,0,0,.5);
+  max-height:calc(100vh - 32px);
   overflow:auto;
+}
+
+.hc-modal-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:8px;
+}
+
+.hc-modal-header h3{
+  margin:0;
+  font-size:18px;
+}
+
+.hc-modal-close{
+  width:32px;
+  height:32px;
+  border-radius:10px;
   border:1px solid var(--border);
-  border-radius:12px;
+  background:rgba(255,255,255,.08);
+  color:var(--text);
+  cursor:pointer;
 }
 
-.hc-table{
-  width:100%;
-  border-collapse:collapse;
-  min-width:760px;
+.hc-modal-form{
+  display:grid;
+  gap:10px;
 }
 
-.hc-table th,
-.hc-table td{
-  text-align:left;
-  padding:10px;
-  border-bottom:1px solid rgba(255,255,255,.08);
-  font-size:14px;
-  white-space:nowrap;
+.hc-manual-errors{
+  margin-top:0;
+  margin-bottom:2px;
 }
 
-.hc-table th{
-  color:#f3f6ff;
-  background:#20396b;
-  font-weight:700;
+.hc-times-list{
+  display:grid;
+  gap:8px;
 }
 
-.hc-table tr:last-child td{
-  border-bottom:none;
+.hc-time-row{
+  display:flex;
+  gap:8px;
+  align-items:center;
 }
 
-.hc-status-tag{
-  font-weight:700;
+.hc-time-row input[type="time"]{
+  flex:1;
 }
 
-.hc-status-tag--warn{
-  color:var(--yellow);
+.hc-time-remove{
+  min-width:90px;
+  padding:10px 12px;
 }
 
-.hc-status-tag--ok{
-  color:#2dd391;
+.hc-add-time-btn{
+  margin-top:8px;
+  width:max-content;
+}
+
+.hc-modal-actions{
+  margin-top:2px;
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+}
+
+body.hc-modal-open{
+  overflow:hidden;
 }
 
 @keyframes hc-spin{
@@ -357,4 +454,130 @@
     flex-wrap:wrap;
     gap:8px;
   }
+}
+/* =========================
+   MOBILE REAL (<= 768px)
+   ========================= */
+@media (max-width: 900px){
+
+  /* a pÃ¡gina nÃ£o pode ficar "centralizada pequena" */
+  .hc-page{
+    gap: 12px;
+    margin-top: 8px;
+    grid-template-columns: 1fr !important;
+  }
+
+  /* card principal ocupa a tela */
+  .hc-main-card{
+    max-width: 520px;
+    width: 100%;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  /* aumentar o relÃ³gio e dar mais presenÃ§a */
+  :root{
+    --clock-size: clamp(56px, 16vw, 74px);
+    --clock-letter-spacing: 1px;
+    --clock-margin-top: 6px;
+  }
+
+  /* stacks e seÃ§Ãµes full width */
+  .hc-action-stack,
+  .hc-today{
+    max-width: 520px;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* campos nÃ£o podem forÃ§ar largura mÃ­nima grande */
+  .hc-row{
+    align-items: stretch;
+  }
+
+  .hc-field{
+    min-width: 0; /* <- isso evita quebrar no mobile */
+    flex: 1 1 100%;
+  }
+
+  .hc-field--sm{
+    max-width: none;
+  }
+
+  /* chips de batidas ficam bonitos e grandes */
+  .hc-chip{
+    font-size: 16px;
+    min-height: 40px;
+  }
+
+  .hc-modal-card{
+    width:calc(100% - 16px);
+    margin:10px auto;
+    padding:14px;
+  }
+
+  .hc-time-row{
+    flex-wrap:wrap;
+  }
+
+  .hc-time-remove{
+    width:100%;
+  }
+
+  .hc-modal-actions{
+    flex-direction:column-reverse;
+  }
+
+  .hc-modal-actions .btn{
+    width:100%;
+  }
+
+  /* tabela: NÃƒO tentar caber. rolagem horizontal legÃ­vel */
+}
+/* ===== FIX DEFINITIVO: /me cortando no mobile ===== */
+.page-me-registrar * { max-width: 100%; }
+
+@media (max-width: 700px){
+  /* mata qualquer deslocamento lateral herdado do layout/side */
+  .page-me-registrar .wrap,
+  .page-me-registrar main,
+  .page-me-registrar .content,
+  .page-me-registrar .container,
+  .page-me-registrar .layout,
+  .page-me-registrar .app,
+  .page-me-registrar .shell,
+  .page-me-registrar .page,
+  .page-me-registrar .hc-page{
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    transform: none !important;
+    left: auto !important;
+    right: auto !important;
+  }
+
+  /* garante 1 coluna */
+  .page-me-registrar .hc-page{
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  /* centraliza e dÃ¡ respiro pro card principal */
+  .page-me-registrar .hc-panel{
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+  }
+  .page-me-registrar .hc-main-card{
+    width: 100% !important;
+    max-width: 520px !important;
+    margin: 0 auto !important;
+  }
+
+  /* a tabela NUNCA pode empurrar a tela */
 }
