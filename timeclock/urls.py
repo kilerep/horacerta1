@@ -1,7 +1,9 @@
 from django.urls import path
 from . import views
+from django.views.generic import TemplateView
 
 urlpatterns = [
+    path("", TemplateView.as_view(template_name="accounts/landing.html"), name="landing"),
     path("me/", views.employee_dashboard, name="employee_dashboard"),
     path("me/manual-punches/", views.create_manual_punches, name="create_manual_punches"),
     path("me/punch/<uuid:punch_id>/note/", views.edit_punch_note, name="edit_punch_note"),
