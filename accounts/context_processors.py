@@ -2,16 +2,34 @@ from companies.models import Company
 
 
 def _build_display_name(user):
-    base_name = (user.first_name or "").strip()
-    if not base_name:
-        email = (getattr(user, "email", "") or "").strip()
-        if "@" in email:
-            base_name = email.split("@", 1)[0]
-        else:
-            base_name = (getattr(user, "username", "") or "usuario").strip()
+    # 1) Para funcionario/MEI, prioriza o nome salvo no perfil
+    try:
+        employee = getattr(user, "employee_profile", None)
+        if employee and (employee.full_name or "").strip():
+            return employee.full_name.strip()
+    except Exception:
+        pass
 
-    first_token = base_name.split()[0] if base_name else "usuario"
-    return first_token[:1].upper() + first_token[1:]
+    # 2) Depois tenta nome + sobrenome do proprio user
+    full_name = user.get_full_name().strip()
+    if full_name:
+        return full_name
+
+    # 3) Depois tenta first_name sozinho
+    first_name = (user.first_name or "").strip()
+    if first_name:
+        return first_name
+
+    # 4) Fallback para email/username
+    email = (getattr(user, "email", "") or "").strip()
+    if "@" in email:
+        return email.split("@", 1)[0]
+
+    username = (getattr(user, "username", "") or "").strip()
+    if username:
+        return username
+
+    return "Usuario"
 
 
 def header_profile_media(request):
