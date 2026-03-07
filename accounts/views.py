@@ -850,12 +850,41 @@ def mei_history(request):
             punches, _, _ = filter_punches_by_period(base_punches, date_from_raw, date_to_raw)
 
     grouped_rows, max_punches = build_daily_summary(punches, min_punch_columns=4)
+    month_names_pt = [
+        "Janeiro",
+        "Fevereiro",
+        "Marco",
+        "Abril",
+        "Maio",
+        "Junho",
+        "Julho",
+        "Agosto",
+        "Setembro",
+        "Outubro",
+        "Novembro",
+        "Dezembro",
+    ]
+    history_month_groups = []
+    for row in grouped_rows:
+        row_date = row["date"]
+        month_key = (row_date.year, row_date.month)
+        if not history_month_groups or history_month_groups[-1]["key"] != month_key:
+            history_month_groups.append(
+                {
+                    "key": month_key,
+                    "label": f"{month_names_pt[row_date.month - 1]} {row_date.year}",
+                    "items": [],
+                }
+            )
+        history_month_groups[-1]["items"].append(row)
+
     context = {
         "contracts": contracts,
         "selected_contract": selected_contract,
         "date_from": date_from_raw,
         "date_to": date_to_raw,
         "history_days": grouped_rows,
+        "history_month_groups": history_month_groups,
         "history_punch_columns": range(1, max_punches + 1),
     }
     return render(request, "accounts/mei_history.html", context)

@@ -24,20 +24,99 @@
       color:var(--text);
       outline:none;
     }
-    .table-wrap{overflow:auto;border:1px solid var(--border);border-radius:12px;margin-top:12px}
-    .table{width:100%;border-collapse:collapse;min-width:780px}
+    .month-group{margin-top:14px}
+    .month-group:first-of-type{margin-top:12px}
+    .month-heading{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin:0 0 8px;
+      padding:10px 12px;
+      border:1px solid rgba(79,124,255,.35);
+      border-radius:12px;
+      background:linear-gradient(180deg, rgba(79,124,255,.22), rgba(79,124,255,.08));
+      color:#dbe7ff;
+      letter-spacing:.06em;
+      text-transform:uppercase;
+      font-size:12px;
+      font-weight:700;
+    }
+    .table-wrap{
+      overflow-x:auto;
+      overflow-y:hidden;
+      border:1px solid var(--border);
+      border-radius:12px;
+      background:rgba(255,255,255,.02);
+      -webkit-overflow-scrolling:touch;
+      scrollbar-width:thin;
+      scrollbar-color:rgba(79,124,255,.45) rgba(255,255,255,.06);
+    }
+    .table-wrap::-webkit-scrollbar{height:8px}
+    .table-wrap::-webkit-scrollbar-track{background:rgba(255,255,255,.06);border-radius:999px}
+    .table-wrap::-webkit-scrollbar-thumb{background:rgba(79,124,255,.45);border-radius:999px}
+    .table{width:100%;border-collapse:collapse;min-width:760px}
     .table th,.table td{
       text-align:left;
       padding:10px;
       border-bottom:1px solid rgba(255,255,255,.08);
       font-size:14px;
       white-space:nowrap;
+      vertical-align:top;
     }
     .table th{background:#20396b;color:#f3f6ff}
     .table tr:last-child td{border-bottom:none}
-    .ok{color:#2dd391}
-    .warn{color:var(--yellow)}
     .muted{color:var(--muted)}
+    .status-badge{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      font-weight:600;
+      border-radius:999px;
+      padding:4px 9px;
+      border:1px solid transparent;
+    }
+    .status-ok{
+      color:#2dd391;
+      background:rgba(45,211,145,.12);
+      border-color:rgba(45,211,145,.25);
+    }
+    .status-incomplete{
+      color:#ffcc66;
+      background:rgba(250,204,21,.12);
+      border-color:rgba(250,204,21,.25);
+    }
+    .notes-cell{white-space:normal;width:30%;min-width:180px;max-width:360px}
+    .note-text{
+      display:-webkit-box;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      -webkit-box-orient:vertical;
+      -webkit-line-clamp:2;
+      line-height:1.4;
+      word-break:break-word;
+      overflow-wrap:anywhere;
+    }
+    .empty-state{
+      margin-top:12px;
+      border:1px dashed var(--border);
+      border-radius:12px;
+      padding:18px 14px;
+      text-align:center;
+      color:var(--muted);
+      background:rgba(255,255,255,.02);
+    }
+    @media (max-width: 900px){
+      .panel{padding:12px}
+      .month-heading{padding:9px 10px}
+      .table{min-width:700px}
+    }
+    @media (max-width: 640px){
+      .field{min-width:100%}
+      .row .btn{width:100%}
+      .table th,.table td{padding:9px;font-size:13px}
+      .notes-cell{min-width:160px;max-width:240px}
+    }
   </style>
 
   <section class="panel">
@@ -64,43 +143,50 @@
       <button class="btn primary" type="submit">Filtrar</button>
     </form>
 
-    <div class="table-wrap">
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Data</th>
-            {% for n in history_punch_columns %}
-              <th>Batida {{ n }}</th>
-            {% endfor %}
-            <th>Observacoes</th>
-            <th>Total do dia</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for d in history_days %}
-            <tr>
-              <td>{{ d.date|date:"d/m/Y" }}</td>
-              {% for bt in d.punch_columns %}
-                <td>{{ bt }}</td>
-              {% endfor %}
-              <td>{% if d.notes_summary %}{{ d.notes_summary }}{% else %}-{% endif %}</td>
-              <td>{{ d.total_hours_hhmm }}</td>
-              <td>
-                {% if d.is_incomplete %}
-                  <span class="warn">⚠ Incompleto</span>
-                {% else %}
-                  <span class="ok">OK</span>
-                {% endif %}
-              </td>
-            </tr>
-          {% empty %}
-            <tr>
-              <td colspan="20" class="muted">Sem registros no periodo.</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+    {% if history_month_groups %}
+      {% for month_group in history_month_groups %}
+        <section class="month-group">
+          <h3 class="month-heading">{{ month_group.label }}</h3>
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  {% for n in history_punch_columns %}
+                    <th>Batida {{ n }}</th>
+                  {% endfor %}
+                  <th>Observacoes</th>
+                  <th>Total do dia</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for d in month_group.items %}
+                  <tr>
+                    <td>{{ d.date|date:"d/m/Y" }}</td>
+                    {% for bt in d.punch_columns %}
+                      <td>{{ bt }}</td>
+                    {% endfor %}
+                    <td class="notes-cell" title="{{ d.notes_summary|default:'-' }}">
+                      <span class="note-text">{% if d.notes_summary %}{{ d.notes_summary }}{% else %}-{% endif %}</span>
+                    </td>
+                    <td>{{ d.total_hours_hhmm }}</td>
+                    <td>
+                      {% if d.is_incomplete %}
+                        <span class="status-badge status-incomplete">Incompleto</span>
+                      {% else %}
+                        <span class="status-badge status-ok">OK</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state">Sem registros no periodo.</div>
+    {% endif %}
   </section>
 {% endblock %}
