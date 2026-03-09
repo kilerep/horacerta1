@@ -135,7 +135,7 @@ class CompanyContractForm(forms.ModelForm):
         self.fields["notes"].required = False
 
         if company:
-            employee_user_ids = Employee.objects.filter(company=company).values_list("user_id", flat=True)
+            employee_user_ids = Employee.objects.filter(companies=company).values_list("user_id", flat=True).distinct()
             self.fields["employee_user"].queryset = User.objects.filter(
                 id__in=employee_user_ids,
                 role=User.Role.FUNCIONARIO,

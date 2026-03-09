@@ -39,11 +39,9 @@ class Employee(models.Model):
     )
 
     # ✅ agora pode ser vazio (MEI ainda sem empresa)
-    company = models.ForeignKey(
-        Company,
-        on_delete=models.PROTECT,
+    companies = models.ManyToManyField(
+        "Company",
         related_name="employees",
-        null=True,
         blank=True,
     )
 
@@ -62,5 +60,4 @@ class Employee(models.Model):
         ordering = ["full_name"]
 
     def __str__(self) -> str:
-        company_name = self.company.name if self.company else "Sem empresa"
-        return f"{self.full_name} ({company_name})"
+        return self.full_name

@@ -113,9 +113,8 @@ def employee_dashboard(request):
             )
 
             employee_profile = getattr(request.user, "employee_profile", None)
-            if employee_profile and not employee_profile.company:
-                employee_profile.company = company
-                employee_profile.save(update_fields=["company"])
+            if employee_profile and not employee_profile.companies.filter(id=company.id).exists():
+                employee_profile.companies.add(company)
 
             return redirect(f"{request.path}?contract={contract.id}")
 

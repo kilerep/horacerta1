@@ -269,7 +269,6 @@ def signup(request):
             )
             Employee.objects.create(
                 user=user,
-                company=None,
                 full_name=full_name,
                 is_active=True,
             )
@@ -443,7 +442,7 @@ def company_meis(request):
         return denied
     company = _company_for_user(request.user)
     form = EmployeeSearchForm(request.GET or None)
-    qs = Employee.objects.filter(company=company).select_related("user") if company else Employee.objects.none()
+    qs = Employee.objects.filter(companies=company).select_related("user").distinct() if company else Employee.objects.none()
     if form.is_valid():
         q = (form.cleaned_data.get("q") or "").strip()
         if q:
@@ -505,7 +504,7 @@ def company_history(request):
 
     company = _company_for_user(request.user)
     period_form = PeriodSearchForm(request.GET or None)
-    employees = Employee.objects.filter(company=company).select_related("user").order_by("full_name") if company else Employee.objects.none()
+    employees = Employee.objects.filter(companies=company).select_related("user").distinct().order_by("full_name") if company else Employee.objects.none()
 
     selected_employee = (request.GET.get("employee") or "").strip()
     page_raw = (request.GET.get("page") or "1").strip()
@@ -568,7 +567,7 @@ def company_reports(request):
     if denied:
         return denied
     company = _company_for_user(request.user)
-    employees = Employee.objects.filter(company=company).select_related("user").order_by("full_name") if company else Employee.objects.none()
+    employees = Employee.objects.filter(companies=company).select_related("user").distinct().order_by("full_name") if company else Employee.objects.none()
     contracts = Contract.objects.filter(company=company).select_related("employee_user", "employee_user__employee_profile") if company else Contract.objects.none()
 
     selected_employee = (request.GET.get("employee") or "").strip()
@@ -815,7 +814,6 @@ def mei_profile(request):
     if not employee:
         employee = Employee.objects.create(
             user=request.user,
-            company=None,
             full_name=request.user.get_full_name() or request.user.username,
             is_active=True,
         )
