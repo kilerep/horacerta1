@@ -1,7 +1,7 @@
 {% extends "accounts/base.html" %}
 {% load static tz timeclock_formats %}
-{% block title %}HoraCerta - Registrar batida{% endblock %}
-{% block page_title %}Registrar batida{% endblock %}
+{% block title %}HoraCerta - Registrar horario{% endblock %}
+{% block page_title %}Registrar horario{% endblock %}
 {% block body_class %}page-me-registrar{% endblock %}
 
 {% block extra_head %}
@@ -49,7 +49,7 @@
     {% if no_contracts %}
       <section class="hc-panel">
         <h2 class="hc-section-title">Voce ainda nao tem contrato ativo</h2>
-        <p class="hc-muted">Crie uma empresa de teste para registrar batidas no MEI.</p>
+        <p class="hc-muted">Crie uma empresa de teste para registrar horarios no MEI.</p>
       </section>
 
       <section class="hc-panel">
@@ -105,10 +105,10 @@
             {% csrf_token %}
             <input type="hidden" name="action" value="punch">
             <button id="hcPunchBtn" class="hc-punch-btn" type="submit">
-              <span class="hc-punch-btn__label">REGISTRAR BATIDA</span>
+              <span class="hc-punch-btn__label">REGISTRAR HORARIO</span>
               <span class="hc-punch-btn__spinner" aria-hidden="true"></span>
             </button>
-            <button id="hcManualOpen" class="btn hc-manual-open-btn" type="button">LANCAR MANUALMENTE</button>
+            <button id="hcManualOpen" class="btn hc-manual-open-btn" type="button">ADICIONAR HORARIO MANUAL</button>
             <button id="hcObsToggle" class="hc-obs-toggle" type="button" aria-expanded="false">Adicionar observacao</button>
             <div id="hcObsWrap" class="hc-obs-wrap" aria-hidden="true">
               <label for="hcObsField">Observacao (opcional)</label>
@@ -118,12 +118,12 @@
         </div>
 
         <section class="hc-today">
-          <h3 class="hc-today-title">Batidas de hoje</h3>
+          <h3 class="hc-today-title">Horarios de hoje</h3>
           <div id="hcTodayChips" class="hc-chip-list">
             {% for p in punches_today %}
               <span class="hc-chip">{{ p.timestamp|localtime|hhmm }}</span>
             {% empty %}
-              <span class="hc-empty-text">Nenhuma batida registrada hoje.</span>
+              <span class="hc-empty-text">Nenhum horario registrado hoje.</span>
             {% endfor %}
           </div>
         </section>

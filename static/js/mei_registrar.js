@@ -69,22 +69,22 @@
     badgeEl.classList.remove("hc-badge--warn", "hc-badge--ok", "hc-badge--neutral");
 
     if (count === 0) {
-      badgeEl.textContent = "Sem batidas hoje";
+      badgeEl.textContent = "Sem horarios hoje";
       badgeEl.classList.add("hc-badge--neutral");
-      if (badgeHint) badgeHint.textContent = "Registre a primeira batida para iniciar o dia.";
+      if (badgeHint) badgeHint.textContent = "Registre o primeiro horario para iniciar o dia.";
       return;
     }
 
     if (count % 2 === 0) {
       badgeEl.textContent = "Dia completo";
       badgeEl.classList.add("hc-badge--ok");
-      if (badgeHint) badgeHint.textContent = "Todas as batidas de hoje estao pareadas.";
+      if (badgeHint) badgeHint.textContent = "Todos os horarios de hoje estao pareados.";
       return;
     }
 
     badgeEl.textContent = "Dia em andamento";
     badgeEl.classList.add("hc-badge--warn");
-    if (badgeHint) badgeHint.textContent = "Existe uma batida sem par ate o momento.";
+    if (badgeHint) badgeHint.textContent = "Existe um horario sem par ate o momento.";
   }
 
   function setSubmittingState(isLoading) {
@@ -99,7 +99,7 @@
     punchBtn.disabled = false;
     punchBtn.classList.remove("is-loading");
     punchBtn.removeAttribute("aria-busy");
-    punchLabel.textContent = "REGISTRAR BATIDA";
+    punchLabel.textContent = "REGISTRAR HORARIO";
   }
 
   function bindPunchSubmit() {

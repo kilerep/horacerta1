@@ -600,6 +600,47 @@ def company_reports(request):
 
     punches = list(punches_qs.order_by("-timestamp")[:5000])
     metrics = _compute_report_metrics(punches)
+    daily_report_rows = []
+
+    punches_by_contract = {}
+    for punch in punches:
+        punches_by_contract.setdefault(punch.contract_id, []).append(punch)
+
+    for contract_punches in punches_by_contract.values():
+        if not contract_punches:
+            continue
+        contract_punches_sorted = sorted(contract_punches, key=lambda item: item.timestamp)
+        contract = contract_punches_sorted[0].contract
+        mei_name = (
+            getattr(getattr(contract.employee_user, "employee_profile", None), "full_name", "")
+            or contract.employee_user.email
+            or contract.employee_user.username
+        )
+        daily_rows, _max_cols = build_daily_summary(contract_punches_sorted, min_punch_columns=4)
+        for row in daily_rows:
+            note_text = (row.get("notes_summary") or "").strip()
+            daily_report_rows.append(
+                {
+                    "date": row["date"],
+                    "company_name": contract.company.name,
+                    "mei_name": mei_name,
+                    "contract_label": f"{contract.company.name} - R$ {contract.hourly_rate}/h",
+                    "status": row["status"],
+                    "total_hours_hhmm": row["total_hours_hhmm"],
+                    "punches_label": " | ".join(row["punch_times"]) if row["punch_times"] else "-",
+                    "note": note_text,
+                    "has_note": bool(note_text),
+                }
+            )
+
+    daily_report_rows.sort(
+        key=lambda item: (
+            item["date"],
+            item["company_name"].lower(),
+            item["mei_name"].lower(),
+        ),
+        reverse=True,
+    )
 
     if request.method == "POST" and request.POST.get("action") == "request_activity_report":
         employee_user_id = (request.POST.get("employee_user") or "").strip()
@@ -691,6 +732,7 @@ def company_reports(request):
         "total_punches": metrics["total_punches"],
         "estimated_payment": metrics["estimated_payment"],
         "punches": punches[:300],
+        "daily_report_rows": daily_report_rows[:500],
         "requests": requests_qs.order_by("-requested_at")[:200],
     }
     return render(request, "accounts/company_reports.html", context)
@@ -903,13 +945,28 @@ def mei_contract(request):
     if denied:
         return denied
 
-    active_contract = (
+    active_contracts = list(
         Contract.objects.filter(employee_user=request.user, is_active=True)
         .select_related("company")
         .order_by("-created_at")
-        .first()
     )
-    return render(request, "accounts/mei_contract.html", {"active_contract": active_contract})
+    selected_contract_id = (request.GET.get("contract") or "").strip()
+
+    active_contract = None
+    if active_contracts:
+        if selected_contract_id:
+            active_contract = next((c for c in active_contracts if str(c.id) == selected_contract_id), None)
+        if not active_contract:
+            active_contract = active_contracts[0]
+
+    return render(
+        request,
+        "accounts/mei_contract.html",
+        {
+            "active_contract": active_contract,
+            "active_contracts": active_contracts,
+        },
+    )
 
 
 @login_required

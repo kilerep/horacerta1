@@ -496,32 +496,30 @@ def export_pdf(request):
     story.append(Paragraph(f"<b>Total de batidas:</b> {len(punches)}", styles["Normal"]))
     story.append(Spacer(1, 10))
 
-    table_headers = ["Data"] + [f"Batida {idx}" for idx in range(1, max_punches + 1)] + ["Total do dia", "Status", "Observacao"]
+    table_headers = ["Data"] + [f"Batida {idx}" for idx in range(1, max_punches + 1)] + ["Total do dia", "Status"]
     table_data = [table_headers]
     for row in daily_rows:
-        status_label = "âš  Incompleto" if row["is_incomplete"] else "OK"
+        status_label = "Incompleto" if row["is_incomplete"] else "OK"
         table_data.append(
             [
                 row["date"].strftime("%d/%m/%Y"),
                 *row["punch_columns"],
                 row["total_hours_hhmm"],
                 status_label,
-                row["notes_summary"] or "-",
             ]
         )
 
     if len(table_data) == 1:
-        table_data.append(["-"] + ["-"] * max_punches + ["00:00", "OK", "Sem batidas no periodo."])
+        table_data.append(["-"] + ["-"] * max_punches + ["00:00", "OK"])
 
     date_width = 24 * mm
     total_width = 26 * mm
     status_width = 24 * mm
-    notes_width = 58 * mm
     usable_width = (landscape(A4)[0] - doc.leftMargin - doc.rightMargin) - (
-        date_width + total_width + status_width + notes_width
+        date_width + total_width + status_width
     )
     each_punch_width = max(16 * mm, usable_width / max(1, max_punches))
-    col_widths = [date_width] + [each_punch_width] * max_punches + [total_width, status_width, notes_width]
+    col_widths = [date_width] + [each_punch_width] * max_punches + [total_width, status_width]
 
     table = Table(table_data, colWidths=col_widths, repeatRows=1)
     table.setStyle(

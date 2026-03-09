@@ -50,9 +50,49 @@
     }
     .table th{ color:var(--muted); font-weight:700; }
     .table tr:last-child td{ border-bottom:none; }
+    .table .notes-cell{
+      white-space:normal;
+      word-break:break-word;
+      overflow-wrap:anywhere;
+      min-width:240px;
+      max-width:420px;
+    }
+    .table-wrap{
+      overflow-x:auto;
+      border:1px solid var(--border);
+      border-radius:14px;
+      margin-top:10px;
+    }
+    .table-wrap .table{
+      margin-top:0;
+      border:none;
+      border-radius:0;
+      min-width:860px;
+    }
+    .mobile-cards{ display:none; gap:10px; margin-top:10px; }
+    .report-card{
+      border:1px solid var(--border);
+      border-radius:12px;
+      background:rgba(255,255,255,.03);
+      padding:12px;
+      display:grid;
+      gap:8px;
+    }
+    .report-card .line{ font-size:13px; color:var(--muted); }
+    .report-card .line strong{ color:var(--text); font-size:14px; }
+    .report-card .obs{
+      border-top:1px dashed rgba(255,255,255,.14);
+      padding-top:8px;
+      white-space:normal;
+      word-break:break-word;
+      overflow-wrap:anywhere;
+      line-height:1.45;
+    }
     .muted{ color:var(--muted); }
     @media (max-width: 980px){
       .card-grid{ grid-template-columns: 1fr; }
+      .table-wrap{ display:none; }
+      .mobile-cards{ display:grid; }
     }
   </style>
 
@@ -103,32 +143,57 @@
     </section>
 
     <section class="panel">
-      <h2 style="margin:0;">Batidas detalhadas</h2>
-      <table class="table">
-        <thead>
-          <tr>
-            <th>MEI</th>
-            <th>Data</th>
-            <th>Hora</th>
-            <th>Valor/h</th>
-            <th>Obs</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for p in punches %}
+      <h2 style="margin:0;">Relatorio diario</h2>
+      <p class="muted" style="margin:8px 0 0;">Data, contrato, status, total do dia e observacao quando existir.</p>
+
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
             <tr>
-              <td>{{ p.contract.employee_user.employee_profile.full_name|default:p.contract.employee_user.email|default:p.contract.employee_user.username }}</td>
-              <td>{{ p.timestamp|date:"d/m/Y" }}</td>
-              <td>{{ p.timestamp|date:"H:i" }}</td>
-              <td>R$ {{ p.contract.hourly_rate }}</td>
-              <td>{% if p.note %}{{ p.note }}{% else %}<span class="muted">-</span>{% endif %}</td>
+              <th>Data</th>
+              <th>MEI</th>
+              <th>Empresa / contrato</th>
+              <th>Horarios</th>
+              <th>Total do dia</th>
+              <th>Status</th>
+              <th>Observacao / justificativa</th>
             </tr>
-          {% empty %}
-            <tr><td colspan="5" class="muted">Sem batidas para os filtros.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-      <p class="muted" style="margin-top:8px;">Mostrando no maximo 300 linhas na tela.</p>
+          </thead>
+          <tbody>
+            {% for row in daily_report_rows %}
+              <tr>
+                <td>{{ row.date|date:"d/m/Y" }}</td>
+                <td>{{ row.mei_name }}</td>
+                <td>{{ row.contract_label }}</td>
+                <td>{{ row.punches_label }}</td>
+                <td>{{ row.total_hours_hhmm }}</td>
+                <td>{{ row.status }}</td>
+                <td class="notes-cell">{% if row.has_note %}{{ row.note }}{% else %}<span class="muted">-</span>{% endif %}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="7" class="muted">Sem registros para os filtros.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mobile-cards">
+        {% for row in daily_report_rows %}
+          <article class="report-card">
+            <div class="line"><strong>{{ row.date|date:"d/m/Y" }}</strong> | {{ row.contract_label }}</div>
+            <div class="line">MEI: <strong>{{ row.mei_name }}</strong></div>
+            <div class="line">Status: <strong>{{ row.status }}</strong></div>
+            <div class="line">Total do dia: <strong>{{ row.total_hours_hhmm }}</strong></div>
+            <div class="line">Horarios: <strong>{{ row.punches_label }}</strong></div>
+            {% if row.has_note %}
+              <div class="obs"><strong>Observacao:</strong> {{ row.note }}</div>
+            {% endif %}
+          </article>
+        {% empty %}
+          <div class="muted">Sem registros para os filtros.</div>
+        {% endfor %}
+      </div>
+      <p class="muted" style="margin-top:8px;">Mostrando no maximo 500 linhas diarias.</p>
     </section>
 
     <section class="panel">
