@@ -93,13 +93,13 @@
       punchBtn.disabled = true;
       punchBtn.classList.add("is-loading");
       punchBtn.setAttribute("aria-busy", "true");
-      punchLabel.textContent = "Registrando...";
+      punchLabel.textContent = "Registrando horário...";
       return;
     }
     punchBtn.disabled = false;
     punchBtn.classList.remove("is-loading");
     punchBtn.removeAttribute("aria-busy");
-    punchLabel.textContent = "REGISTRAR HORARIO";
+    punchLabel.textContent = "REGISTRAR HORÁRIO";
   }
 
   function bindPunchSubmit() {

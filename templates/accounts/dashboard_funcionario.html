@@ -1,7 +1,7 @@
 {% extends "accounts/base.html" %}
 {% load static tz timeclock_formats %}
-{% block title %}HoraCerta - Registrar horario{% endblock %}
-{% block page_title %}Registrar horario{% endblock %}
+{% block title %}HoraCerta - Registrar horário{% endblock %}
+{% block page_title %}Registrar horário{% endblock %}
 {% block body_class %}page-me-registrar{% endblock %}
 
 {% block extra_head %}
@@ -105,10 +105,10 @@
             {% csrf_token %}
             <input type="hidden" name="action" value="punch">
             <button id="hcPunchBtn" class="hc-punch-btn" type="submit">
-              <span class="hc-punch-btn__label">REGISTRAR HORARIO</span>
+              <span class="hc-punch-btn__label">REGISTRAR HORÁRIO</span>
               <span class="hc-punch-btn__spinner" aria-hidden="true"></span>
             </button>
-            <button id="hcManualOpen" class="btn hc-manual-open-btn" type="button">ADICIONAR HORARIO MANUAL</button>
+            <button id="hcManualOpen" class="btn hc-manual-open-btn" type="button">ADICIONAR HORÁRIO MANUAL</button>
             <button id="hcObsToggle" class="hc-obs-toggle" type="button" aria-expanded="false">Adicionar observacao</button>
             <div id="hcObsWrap" class="hc-obs-wrap" aria-hidden="true">
               <label for="hcObsField">Observacao (opcional)</label>
