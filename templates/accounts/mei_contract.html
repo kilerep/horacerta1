@@ -47,30 +47,8 @@
       color:var(--text);
       outline:none;
     }
-    .contracts-list{
-      display:grid;
-      grid-template-columns: repeat(2, minmax(240px, 1fr));
-      gap:10px;
-      margin-top:10px;
-    }
-    .contract-item{
-      border:1px solid var(--border);
-      border-radius:12px;
-      background:rgba(255,255,255,.04);
-      padding:12px;
-      display:grid;
-      gap:6px;
-    }
-    .contract-item.is-selected{
-      border-color: rgba(79,124,255,.65);
-      box-shadow: 0 0 0 2px rgba(79,124,255,.2);
-      background: rgba(79,124,255,.12);
-    }
-    .contract-item .title{ font-size:16px; font-weight:700; }
-    .contract-item .line{ color:var(--muted); font-size:13px; }
     @media (max-width: 900px){
       .grid{ grid-template-columns: 1fr; }
-      .contracts-list{ grid-template-columns: 1fr; }
       .row .btn{ width:100%; }
       .field{ min-width:100%; }
     }
@@ -126,24 +104,6 @@
             <a class="btn" href="{{ active_contract.contract_file.url }}" target="_blank" rel="noopener">Download PDF do contrato</a>
           {% endif %}
           <a class="btn" href="{% url 'employee_dashboard' %}">Voltar ao painel</a>
-        </div>
-      </section>
-
-      <section class="panel">
-        <h2 style="margin:0;">Contratos ativos</h2>
-        <p class="muted" style="margin:8px 0 0;">Selecione um contrato para atualizar o card principal.</p>
-        <div class="contracts-list">
-          {% for c in active_contracts %}
-            <article class="contract-item {% if active_contract and c.id == active_contract.id %}is-selected{% endif %}">
-              <div class="title">{{ c.company.name }}</div>
-              <div class="line">Valor por hora: R$ {{ c.hourly_rate }}</div>
-              <div class="line">Status: {% if c.is_active %}Ativo{% else %}Inativo{% endif %}</div>
-              <div class="line">Inicio: {{ c.start_date|date:"d/m/Y"|default:"-" }}</div>
-              <div>
-                <a class="btn" href="?contract={{ c.id }}">Selecionar</a>
-              </div>
-            </article>
-          {% endfor %}
         </div>
       </section>
     {% else %}
