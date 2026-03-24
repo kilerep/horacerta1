@@ -505,7 +505,7 @@ body.hc-modal-open{
     max-width: none;
   }
 
-  /* chips de batidas ficam bonitos e grandes */
+  /* chips de horários ficam bonitos e grandes */
   .hc-chip{
     font-size: 16px;
     min-height: 40px;

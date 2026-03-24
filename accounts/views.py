@@ -702,16 +702,16 @@ def company_reports(request):
                 employee_name = emp_obj.full_name
 
         lines = [
-            "HoraCerta - Relatorio de Batidas",
+            "HoraCerta - Relatorio de horários",
             f"Empresa: {company.name if company else '-'}",
             f"MEI: {employee_name}",
             f"Periodo: {date_from_raw or '-'} ate {date_to_raw or '-'}",
             "",
             f"Total de horas: {metrics['total_hours_hhmm']}",
-            f"Total de batidas: {metrics['total_punches']}",
+            f"Total de horários: {metrics['total_punches']}",
             f"Pagamento estimado: R$ {metrics['estimated_payment']}",
             "",
-            "Batidas (ultimas 25):",
+            "horários (ultimas 25):",
         ]
         for punch in punches[:25]:
             mei_name = getattr(getattr(punch.contract.employee_user, "employee_profile", None), "full_name", "") or punch.contract.employee_user.email

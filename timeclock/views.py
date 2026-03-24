@@ -283,7 +283,7 @@ def create_manual_punches(request):
             {
                 "ok": False,
                 "errors": [
-                    "Ja existe batida para este contrato/data nos horarios: %s." % ", ".join(duplicated_existing)
+                    "Ja existe horário para este contrato/data nos horarios: %s." % ", ".join(duplicated_existing)
                 ],
             },
             status=400,
@@ -347,7 +347,7 @@ def export_csv(request):
     writer = csv.writer(response)
     header = ["Empresa", "Data"]
     for idx in range(1, max_punches + 1):
-        header.append(f"Batida {idx}")
+        header.append(f"horário {idx}")
     header.extend(["Observacoes", "Total Horas (HH:MM)", "Status"])
     writer.writerow(header)
 
@@ -389,7 +389,7 @@ def export_xlsx(request):
 
     wb = Workbook()
     ws = wb.active
-    ws.title = "Batidas"
+    ws.title = "horários"
 
     headers = ["Funcionario", "Empresa", "Data", "Hora", "Observacao"]
     ws.append(headers)
@@ -429,7 +429,7 @@ def export_xlsx(request):
         else "Periodo completo"
     )
     ws.append(["Periodo", period_label, "", "", ""])
-    ws.append(["Total de batidas", len(punches), "", "", ""])
+    ws.append(["Total de horários", len(punches), "", "", ""])
     ws.append(["Total de horas", total_hours_hhmm, "", "", ""])
 
     output = BytesIO()
@@ -440,7 +440,7 @@ def export_xlsx(request):
         output.getvalue(),
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
-    response["Content-Disposition"] = f'attachment; filename="horacerta_{contract.company.name}_batidas.xlsx"'
+    response["Content-Disposition"] = f'attachment; filename="horacerta_{contract.company.name}_horários.xlsx"'
     return response
 
 
@@ -487,16 +487,16 @@ def export_pdf(request):
     styles = getSampleStyleSheet()
     story = []
 
-    story.append(Paragraph("HoraCerta - Resumo de Batidas", styles["Title"]))
+    story.append(Paragraph("HoraCerta - Resumo de horários", styles["Title"]))
     story.append(Spacer(1, 6))
     story.append(Paragraph(f"<b>Funcionario:</b> {employee_name}", styles["Normal"]))
     story.append(Paragraph(f"<b>Empresa:</b> {contract.company.name}", styles["Normal"]))
     story.append(Paragraph(f"<b>Periodo:</b> {period_label}", styles["Normal"]))
     story.append(Paragraph(f"<b>Total de horas:</b> {total_hours_hhmm}", styles["Normal"]))
-    story.append(Paragraph(f"<b>Total de batidas:</b> {len(punches)}", styles["Normal"]))
+    story.append(Paragraph(f"<b>Total de horários:</b> {len(punches)}", styles["Normal"]))
     story.append(Spacer(1, 10))
 
-    table_headers = ["Data"] + [f"Batida {idx}" for idx in range(1, max_punches + 1)] + ["Total do dia", "Status"]
+    table_headers = ["Data"] + [f"horário {idx}" for idx in range(1, max_punches + 1)] + ["Total do dia", "Status"]
     table_data = [table_headers]
     for row in daily_rows:
         status_label = "Incompleto" if row["is_incomplete"] else "OK"
