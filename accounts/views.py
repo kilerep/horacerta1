@@ -65,6 +65,12 @@ def _company_for_user(user):
     return Company.objects.filter(owner=user).first()
 
 
+def _pending_reports_count_for_company(company):
+    if not company:
+        return 0
+    return ActivityReportRequest.objects.filter(company=company, is_answered=False).count()
+
+
 def _redirect_for_role(user):
     if user.role == User.Role.EMPRESA:
         return redirect("dashboard_empresa")
@@ -431,7 +437,7 @@ def dashboard_empresa(request):
         "total_punches_period": total_punches_period,
         "total_hours_period": total_hours_period,
         "punches_period": punch_rows,
-        "relatorios_pendentes": 2,
+        "pending_reports_count": _pending_reports_count_for_company(company),
     }
     return render(request, "accounts/dashboard_empresa.html", context)
 
@@ -443,12 +449,38 @@ def company_meis(request):
         return denied
     company = _company_for_user(request.user)
     form = EmployeeSearchForm(request.GET or None)
-    qs = Employee.objects.filter(companies=company).select_related("user").distinct() if company else Employee.objects.none()
+
+    if company:
+        qs = (
+            Employee.objects.filter(companies=company)
+            .select_related("user")
+            .annotate(
+                total_contracts=Count(
+                    "user__contracts",
+                    filter=Q(
+                        user__contracts__company=company,
+                        user__contracts__is_active=True,
+                    ),
+                    distinct=True,
+                )
+            )
+            .distinct()
+        )
+    else:
+        qs = Employee.objects.none()
+
     if form.is_valid():
         q = (form.cleaned_data.get("q") or "").strip()
         if q:
             qs = qs.filter(Q(full_name__icontains=q) | Q(user__email__icontains=q) | Q(user__username__icontains=q))
-    return render(request, "accounts/company_meis.html", {"company": company, "employees": qs.order_by("full_name")[:300], "employee_search_form": form})
+
+    context = {
+        "company": company,
+        "employees": qs.order_by("full_name")[:300],
+        "employee_search_form": form,
+        "pending_reports_count": _pending_reports_count_for_company(company),
+    }
+    return render(request, "accounts/company_meis.html", context)
 
 
 @login_required

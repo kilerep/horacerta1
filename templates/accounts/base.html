@@ -2,6 +2,8 @@
 <!doctype html>
 <html lang="pt-br">
 <head>
+  <link rel="manifest" href="{% static 'manifest.json' %}">
+  <meta name="theme-color" content="#0b1220">
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{% block title %}HoraCerta{% endblock %}</title>
@@ -411,8 +413,8 @@
               <div>
                 <strong>
                   Relatórios
-                  {% if relatorios_pendentes > 0 %}
-                    <span class="badge">{{ relatorios_pendentes }}</span>
+                  {% if pending_reports_count %}
+                    <span class="badge">{{ pending_reports_count }}</span>
                   {% endif %}
                 </strong>
                 <div class="muted" style="font-size:12px">resumo diario</div>
@@ -538,3 +540,9 @@
   {% endif %}
 </body>
 </html>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/static/js/sw.js')
+    .then(() => console.log('SW registrado'));
+}
+</script>

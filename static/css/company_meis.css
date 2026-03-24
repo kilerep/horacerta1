@@ -1,0 +1,132 @@
+.company-meis {
+  display: grid;
+  gap: 14px;
+}
+
+.company-meis__header {
+  display: grid;
+  gap: 10px;
+}
+
+.company-meis__title {
+  margin: 0;
+}
+
+.company-meis__search {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.company-meis__search-field {
+  min-width: 260px;
+  flex: 1;
+}
+
+.company-meis__table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.company-meis__table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  min-width: 680px;
+}
+
+.company-meis__table th,
+.company-meis__table td {
+  text-align: left;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+.company-meis__table th {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.company-meis__table tbody tr {
+  transition: background-color 0.16s ease;
+}
+
+.company-meis__table tbody tr:hover {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.company-meis__table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.company-meis__col-contracts,
+.company-meis__contracts {
+  text-align: right;
+  width: 160px;
+  white-space: nowrap;
+}
+
+.company-meis__pill {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.company-meis__pill--warn {
+  border-color: rgba(250, 204, 21, 0.45);
+  background: rgba(250, 204, 21, 0.12);
+  color: #fff0b5;
+}
+
+@media (max-width: 760px) {
+  .company-meis__table {
+    min-width: 0;
+    border: none;
+  }
+
+  .company-meis__table thead {
+    display: none;
+  }
+
+  .company-meis__table tbody {
+    display: grid;
+    gap: 10px;
+  }
+
+  .company-meis__table tr {
+    display: grid;
+    gap: 8px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  .company-meis__table td {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    border-bottom: none;
+    padding: 0;
+  }
+
+  .company-meis__table td::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .company-meis__col-contracts,
+  .company-meis__contracts {
+    width: auto;
+    text-align: left;
+  }
+}

@@ -1,4 +1,5 @@
 from companies.models import Company
+from timeclock.models import ActivityReportRequest
 
 
 def _build_display_name(user):
@@ -41,6 +42,7 @@ def header_profile_media(request):
     header_display_name = _build_display_name(request.user)
     header_company_name = "Empresa"
     header_mode = "mei"
+    pending_reports_count = 0
 
     try:
         if request.user.role == "EMPRESA":
@@ -52,6 +54,11 @@ def header_profile_media(request):
                 header_company_name = company.name
             if company and company.logo:
                 logo_url = company.logo.url
+            if company:
+                pending_reports_count = ActivityReportRequest.objects.filter(
+                    company=company,
+                    is_answered=False,
+                ).count()
         else:
             employee = getattr(request.user, "employee_profile", None)
             if employee and employee.profile_photo:
@@ -66,4 +73,5 @@ def header_profile_media(request):
         "header_display_name": header_display_name,
         "header_company_name": header_company_name,
         "header_mode": header_mode,
+        "pending_reports_count": pending_reports_count,
     }
