@@ -176,9 +176,7 @@ class CompanyContractForm(forms.ModelForm):
             ).select_related("user").order_by("full_name")
 
         if self.instance and self.instance.pk:
-            employee_profile = getattr(self.instance.employee_user, "employee_profile", None)
-            if employee_profile:
-                self.initial["employee"] = employee_profile
+            self.initial["employee"] = self.instance.employee
 
     def clean(self):
         data = super().clean()
@@ -205,7 +203,7 @@ class CompanyContractForm(forms.ModelForm):
         contract = super().save(commit=False)
         employee = self.cleaned_data.get("employee")
         if employee:
-            contract.employee_user = employee.user
+            contract.employee = employee
         if self.company and not contract.company_id:
             contract.company = self.company
         if commit:

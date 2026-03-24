@@ -3,7 +3,7 @@ import uuid
 from django.db import models, transaction
 from django.conf import settings
 from django.utils import timezone
-from companies.models import Company
+from companies.models import Company, Employee
 
 
 class Contract(models.Model):
@@ -14,15 +14,19 @@ class Contract(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
-    employee_user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
+    employee = models.ForeignKey(
+        Employee,
+        on_delete=models.PROTECT,
         related_name="contracts",
+        null=False,
+        blank=False,
     )
     company = models.ForeignKey(
         Company,
         on_delete=models.PROTECT,
         related_name="contracts",
+        null=False,
+        blank=False,
     )
 
     hourly_rate = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -38,23 +42,29 @@ class Contract(models.Model):
         ordering = ["company__name"]
         constraints = [
             models.UniqueConstraint(
-                fields=["company", "employee_user"],
+                fields=["company", "employee"],
                 condition=models.Q(is_active=True),
                 name="unique_active_contract_per_company_employee",
             ),
         ]
 
     def __str__(self):
-        return f"{self.company.name} (R$ {self.hourly_rate}/h)"
+        return (
+            f"Contract<{self.id}> {self.company.name} -> "
+            f"{self.employee.full_name} [{self.employee.user.email}] (R$ {self.hourly_rate}/h)"
+        )
 
     def save(self, *args, **kwargs):
         with transaction.atomic():
-            if self.is_active and self.company_id and self.employee_user_id:
+            if self.employee_id and self.company_id and self.employee.company_id != self.company_id:
+                raise ValueError("Contract.employee must belong to Contract.company.")
+
+            if self.is_active and self.company_id and self.employee_id:
                 (
                     Contract.objects.select_for_update()
                     .filter(
                         company_id=self.company_id,
-                        employee_user_id=self.employee_user_id,
+                        employee_id=self.employee_id,
                         is_active=True,
                     )
                     .exclude(pk=self.pk)
@@ -106,10 +116,12 @@ class ActivityReportRequest(models.Model):
         on_delete=models.PROTECT,
         related_name="activity_report_requests",
     )
-    employee_user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
+    employee = models.ForeignKey(
+        Employee,
+        on_delete=models.PROTECT,
         related_name="activity_report_requests",
+        null=False,
+        blank=False,
     )
     requested_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -130,4 +142,4 @@ class ActivityReportRequest(models.Model):
         ordering = ["-requested_at"]
 
     def __str__(self):
-        return f"Solicitacao {self.company.name} -> {self.employee_user.email}"
+        return f"ActivityReportRequest<{self.id}> {self.company.name} -> {self.employee.full_name}"

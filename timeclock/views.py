@@ -53,11 +53,12 @@ def employee_dashboard(request):
         "hourly_rate": "30",
     }
 
-    contracts = Contract.objects.filter(employee_user=request.user, is_active=True).select_related("company")
+    contracts = Contract.objects.filter(employee__user=request.user, is_active=True).select_related("company")
+    employee_profile = getattr(request.user, "employee_profile", None)
     pending_report_requests = ActivityReportRequest.objects.filter(
-        employee_user=request.user,
+        employee=employee_profile,
         is_answered=False,
-    ).select_related("company", "requested_by")[:20]
+    ).select_related("company", "requested_by", "employee", "employee__user")[:20]
 
     if request.method == "POST" and request.POST.get("action") == "respond_activity_request":
         request_id = (request.POST.get("request_id") or "").strip()
@@ -67,7 +68,7 @@ def employee_dashboard(request):
         report_request = get_object_or_404(
             ActivityReportRequest,
             id=request_id,
-            employee_user=request.user,
+            employee=employee_profile,
             is_answered=False,
         )
         if response_text:
@@ -106,7 +107,7 @@ def employee_dashboard(request):
                 owner=owner_user,
             )
             contract = Contract.objects.create(
-                employee_user=request.user,
+                employee=request.user.employee_profile,
                 company=company,
                 hourly_rate=hourly_rate,
                 is_active=True,
@@ -119,7 +120,7 @@ def employee_dashboard(request):
 
             return redirect(f"{request.path}?contract={contract.id}")
 
-    contracts = Contract.objects.filter(employee_user=request.user, is_active=True).select_related("company")
+    contracts = Contract.objects.filter(employee__user=request.user, is_active=True).select_related("company")
 
     if not contracts.exists():
         return render(
@@ -135,7 +136,7 @@ def employee_dashboard(request):
         )
 
     selected_contract_id = request.GET.get("contract") or str(contracts.first().id)
-    selected_contract = get_object_or_404(Contract, id=selected_contract_id, employee_user=request.user)
+    selected_contract = get_object_or_404(Contract, id=selected_contract_id, employee__user=request.user)
 
     if request.method == "POST" and request.POST.get("action") == "punch":
         note = (request.POST.get("note") or "").strip()
@@ -260,7 +261,7 @@ def create_manual_punches(request):
 
     contract = Contract.objects.filter(
         id=contract_id,
-        employee_user=request.user,
+        employee__user=request.user,
         is_active=True,
     ).first()
     if not contract:
@@ -315,7 +316,7 @@ def create_manual_punches(request):
 
 @login_required
 def edit_punch_note(request, punch_id):
-    punch = get_object_or_404(Punch, id=punch_id, contract__employee_user=request.user)
+    punch = get_object_or_404(Punch, id=punch_id, contract__employee__user=request.user)
     contract_id = request.GET.get("contract") or str(punch.contract.id)
 
     if request.method == "POST":
@@ -332,7 +333,7 @@ def export_csv(request):
         return redirect("dashboard")
 
     contract_id = request.GET.get("contract")
-    contract = get_object_or_404(Contract, id=contract_id, employee_user=request.user)
+    contract = get_object_or_404(Contract, id=contract_id, employee__user=request.user)
 
     base_punches = Punch.objects.filter(contract=contract).order_by("timestamp")
     punches, _start, _end = filter_punches_by_period(
@@ -378,7 +379,7 @@ def export_xlsx(request):
         return redirect("dashboard")
 
     contract_id = request.GET.get("contract")
-    contract = get_object_or_404(Contract, id=contract_id, employee_user=request.user)
+    contract = get_object_or_404(Contract, id=contract_id, employee__user=request.user)
 
     base_punches = Punch.objects.filter(contract=contract).order_by("timestamp")
     punches, start_date, end_date = filter_punches_by_period(
@@ -397,11 +398,7 @@ def export_xlsx(request):
     for cell in ws[1]:
         cell.font = Font(bold=True)
 
-    employee_name = (
-        getattr(getattr(contract.employee_user, "employee_profile", None), "full_name", "")
-        or contract.employee_user.email
-        or contract.employee_user.username
-    )
+    employee_name = contract.employee.full_name or contract.employee.user.email or contract.employee.user.username
 
     for punch in punches:
         local_ts = timezone.localtime(punch.timestamp)
@@ -451,7 +448,7 @@ def export_pdf(request):
         return redirect("dashboard")
 
     contract_id = request.GET.get("contract")
-    contract = get_object_or_404(Contract, id=contract_id, employee_user=request.user)
+    contract = get_object_or_404(Contract, id=contract_id, employee__user=request.user)
 
     base_punches = Punch.objects.filter(contract=contract).order_by("timestamp")
     punches, start_date, end_date = filter_punches_by_period(
@@ -461,11 +458,7 @@ def export_pdf(request):
     )
     punches = list(punches)
 
-    employee_name = (
-        getattr(getattr(contract.employee_user, "employee_profile", None), "full_name", "")
-        or contract.employee_user.email
-        or contract.employee_user.username
-    )
+    employee_name = contract.employee.full_name or contract.employee.user.email or contract.employee.user.username
     period_label = (
         f"{start_date.strftime('%d/%m/%Y')} ate {end_date.strftime('%d/%m/%Y')}"
         if start_date and end_date

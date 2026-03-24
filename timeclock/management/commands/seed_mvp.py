@@ -75,7 +75,7 @@ class Command(BaseCommand):
             employee.save(update_fields=["company"])
 
         contract, contract_created = Contract.objects.get_or_create(
-            employee_user=mei_user,
+            employee=employee,
             company=company,
             defaults={
                 "hourly_rate": hourly_rate,

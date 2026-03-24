@@ -11,8 +11,8 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         active_contracts = list(
             Contract.objects.filter(is_active=True)
-            .select_related("company", "employee_user", "employee_user__employee_profile")
-            .order_by("company__name", "employee_user__email", "-created_at")
+            .select_related("company", "employee", "employee__user")
+            .order_by("company__name", "employee__user__email", "-created_at")
         )
 
         if not active_contracts:
@@ -25,13 +25,12 @@ class Command(BaseCommand):
 
         for contract in active_contracts:
             company_totals[contract.company_id] += 1
-            company_meis[contract.company_id].add(contract.employee_user_id)
+            company_meis[contract.company_id].add(contract.employee_id)
 
-            key = (contract.company_id, contract.employee_user_id)
+            key = (contract.company_id, contract.employee_id)
             duplicates[key].append(contract.id)
 
-            profile = getattr(contract.employee_user, "employee_profile", None)
-            mei_name = getattr(profile, "full_name", "") or contract.employee_user.email or contract.employee_user.username
+            mei_name = contract.employee.full_name or contract.employee.user.email or contract.employee.user.username
             self.stdout.write(
                 f"[{contract.company.name} | {str(contract.company_id)[:8]}] {mei_name} | contrato={contract.id} | ativo={contract.is_active}"
             )
@@ -45,11 +44,15 @@ class Command(BaseCommand):
             )
 
         duplicate_found = False
-        for (company_id, user_id), contract_ids in duplicates.items():
+        for (company_id, employee_id), contract_ids in duplicates.items():
             if len(contract_ids) > 1:
                 duplicate_found = True
                 company_name = next(c.company.name for c in active_contracts if c.company_id == company_id)
-                user_email = next(c.employee_user.email for c in active_contracts if c.company_id == company_id and c.employee_user_id == user_id)
+                user_email = next(
+                    c.employee.user.email
+                    for c in active_contracts
+                    if c.company_id == company_id and c.employee_id == employee_id
+                )
                 self.stdout.write(
                     self.style.ERROR(
                         f"DUPLICIDADE: empresa={company_name} mei={user_email} contratos_ativos={', '.join(str(cid) for cid in contract_ids)}"

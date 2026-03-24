@@ -58,7 +58,7 @@
           <select name="employee">
             <option value="">Todos</option>
             {% for e in employees %}
-              <option value="{{ e.user_id }}" {% if selected_employee and selected_employee == e.user_id|stringformat:"s" %}selected{% endif %}>
+              <option value="{{ e.id }}" {% if selected_employee and selected_employee == e.id|stringformat:"s" %}selected{% endif %}>
                 {{ e.full_name }} - {{ e.user.email|default:e.user.username }}
               </option>
             {% endfor %}
@@ -93,7 +93,7 @@
         <tbody>
           {% for p in punches %}
             <tr>
-              <td>{{ p.contract.employee_user.employee_profile.full_name|default:p.contract.employee_user.email|default:p.contract.employee_user.username }}</td>
+              <td>{{ p.contract.employee.full_name|default:p.contract.employee.user.email|default:p.contract.employee.user.username }}</td>
               <td>{{ p.timestamp|date:"d/m/Y" }}</td>
               <td>{{ p.timestamp|date:"H:i" }}</td>
               <td>{% if p.note %}{{ p.note }}{% else %}<span class="muted">-</span>{% endif %}</td>

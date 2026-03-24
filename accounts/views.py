@@ -267,21 +267,10 @@ def signup(request):
                 login(request, user, backend="accounts.backends.EmailOrUsernameBackend")
                 return _redirect_for_role(user)
 
-            mei_email = form.cleaned_data["mei_email"].strip().lower()
-            full_name = form.cleaned_data["full_name"].strip()
-            user = User.objects.create_user(
-                username=mei_email,
-                email=mei_email,
-                password=pwd,
-                role=User.Role.FUNCIONARIO,
+            form.add_error(
+                "account_type",
+                "Cadastro de MEI e feito pela empresa, na area de MEIs.",
             )
-            Employee.objects.create(
-                user=user,
-                full_name=full_name,
-                is_active=True,
-            )
-            login(request, user, backend="accounts.backends.EmailOrUsernameBackend")
-            return _redirect_for_role(user)
     else:
         form = UnifiedSignupForm()
 
@@ -342,12 +331,12 @@ def dashboard_empresa(request):
 
     if company:
         contracts_base_qs = Contract.objects.filter(company=company).select_related(
-            "employee_user",
-            "employee_user__employee_profile",
+            "employee",
+            "employee__user",
         )
         active_contracts_base_qs = contracts_base_qs.filter(is_active=True)
-        active_user_ids_qs = active_contracts_base_qs.values_list("employee_user_id", flat=True).distinct()
-        employees_base_qs = Employee.objects.filter(user_id__in=active_user_ids_qs).select_related("user")
+        active_employee_ids_qs = active_contracts_base_qs.values_list("employee_id", flat=True).distinct()
+        employees_base_qs = Employee.objects.filter(id__in=active_employee_ids_qs).select_related("user")
 
         q = ""
         if employee_search_form.is_valid():
@@ -360,9 +349,9 @@ def dashboard_empresa(request):
                 | Q(user__username__icontains=q)
             )
             contracts_qs = active_contracts_base_qs.filter(
-                Q(employee_user__email__icontains=q)
-                | Q(employee_user__username__icontains=q)
-                | Q(employee_user__employee_profile__full_name__icontains=q)
+                Q(employee__user__email__icontains=q)
+                | Q(employee__user__username__icontains=q)
+                | Q(employee__full_name__icontains=q)
             )
         else:
             employees_qs = employees_base_qs
@@ -384,9 +373,9 @@ def dashboard_empresa(request):
         punches_period_qs = Punch.objects.filter(
             contract__in=active_contracts_base_qs,
             timestamp__range=(start_dt, end_dt),
-        ).select_related("contract", "contract__employee_user")
+        ).select_related("contract", "contract__employee", "contract__employee__user")
 
-        total_employees = active_contracts_base_qs.values("employee_user_id").distinct().count()
+        total_employees = active_contracts_base_qs.values("employee_id").distinct().count()
         total_active_contracts = active_contracts_base_qs.count()
         total_punches_period = punches_period_qs.count()
         period_daily_rows, _period_columns = build_daily_summary(list(punches_period_qs), min_punch_columns=4)
@@ -403,28 +392,30 @@ def dashboard_empresa(request):
     }
 
     active_contracts_by_user = {
-        row["employee_user_id"]: row["count"]
-        for row in contracts_qs.values("employee_user_id").annotate(count=Count("id"))
+        row["employee_id"]: row["count"]
+        for row in contracts_qs.values("employee_id").annotate(count=Count("id"))
     }
 
     employee_rows = [
         {
             "employee": employee,
-            "active_contracts": active_contracts_by_user.get(employee.user_id, 0),
+            "active_contracts": active_contracts_by_user.get(employee.id, 0),
         }
         for employee in employees_qs.order_by("full_name")[:200]
     ]
 
     contract_rows = []
-    for contract in contracts_qs.order_by("-start_date", "-created_at", "employee_user__username")[:300]:
-        profile = getattr(contract.employee_user, "employee_profile", None)
-        mei_name = getattr(profile, "full_name", "") or contract.employee_user.email or contract.employee_user.username
+    for contract in contracts_qs.order_by("-start_date", "-created_at", "employee__user__username")[:300]:
+        mei_name = contract.employee.full_name or contract.employee.user.email or contract.employee.user.username
         contract_rows.append({"contract": contract, "mei_name": mei_name})
 
     punch_rows = []
     for punch in punches_period_qs.order_by("-timestamp")[:120]:
-        profile = getattr(punch.contract.employee_user, "employee_profile", None)
-        mei_name = getattr(profile, "full_name", "") or punch.contract.employee_user.email or punch.contract.employee_user.username
+        mei_name = (
+            punch.contract.employee.full_name
+            or punch.contract.employee.user.email
+            or punch.contract.employee.user.username
+        )
         punch_rows.append({"punch": punch, "mei_name": mei_name})
 
     context = {
@@ -478,10 +469,10 @@ def company_meis(request):
             .select_related("user")
             .annotate(
                 total_contracts=Count(
-                    "user__contracts",
+                    "contracts",
                     filter=Q(
-                        user__contracts__company=company,
-                        user__contracts__is_active=True,
+                        contracts__company=company,
+                        contracts__is_active=True,
                     ),
                     distinct=True,
                 )
@@ -513,7 +504,7 @@ def company_contracts(request):
 
     company = _company_for_user(request.user)
     contracts = (
-        Contract.objects.filter(company=company).select_related("employee_user", "employee_user__employee_profile")
+        Contract.objects.filter(company=company).select_related("employee", "employee__user")
         if company
         else Contract.objects.none()
     )
@@ -544,7 +535,7 @@ def company_contracts(request):
         "accounts/company_contracts.html",
         {
             "company": company,
-            "contracts": contracts.order_by("-is_active", "-start_date", "employee_user__username")[:400],
+            "contracts": contracts.order_by("-is_active", "-start_date", "employee__user__username")[:400],
             "form": form,
             "edit_contract": edit_contract,
         },
@@ -566,11 +557,11 @@ def company_history(request):
 
     contracts = Contract.objects.filter(company=company) if company else Contract.objects.none()
     punches = Punch.objects.filter(contract__in=contracts).select_related(
-        "contract", "contract__employee_user", "contract__employee_user__employee_profile"
+        "contract", "contract__employee", "contract__employee__user"
     )
 
     if selected_employee:
-        punches = punches.filter(contract__employee_user_id=selected_employee)
+        punches = punches.filter(contract__employee_id=selected_employee)
 
     if period_form.is_valid():
         d1 = period_form.cleaned_data.get("date_from")
@@ -623,7 +614,7 @@ def company_reports(request):
         return denied
     company = _company_for_user(request.user)
     employees = Employee.objects.filter(company=company).select_related("user").order_by("full_name") if company else Employee.objects.none()
-    contracts = Contract.objects.filter(company=company).select_related("employee_user", "employee_user__employee_profile") if company else Contract.objects.none()
+    contracts = Contract.objects.filter(company=company).select_related("employee", "employee__user") if company else Contract.objects.none()
 
     selected_employee = (request.GET.get("employee") or "").strip()
     date_from_raw = (request.GET.get("date_from") or "").strip()
@@ -631,11 +622,11 @@ def company_reports(request):
     export_kind = (request.GET.get("export") or "").strip().lower()
 
     punches_qs = Punch.objects.filter(contract__in=contracts).select_related(
-        "contract", "contract__employee_user", "contract__employee_user__employee_profile"
+        "contract", "contract__employee", "contract__employee__user"
     )
 
     if selected_employee:
-        punches_qs = punches_qs.filter(contract__employee_user_id=selected_employee)
+        punches_qs = punches_qs.filter(contract__employee_id=selected_employee)
 
     date_from = None
     date_to = None
@@ -667,9 +658,9 @@ def company_reports(request):
         contract_punches_sorted = sorted(contract_punches, key=lambda item: item.timestamp)
         contract = contract_punches_sorted[0].contract
         mei_name = (
-            getattr(getattr(contract.employee_user, "employee_profile", None), "full_name", "")
-            or contract.employee_user.email
-            or contract.employee_user.username
+            contract.employee.full_name
+            or contract.employee.user.email
+            or contract.employee.user.username
         )
         daily_rows, _max_cols = build_daily_summary(contract_punches_sorted, min_punch_columns=4)
         for row in daily_rows:
@@ -698,13 +689,13 @@ def company_reports(request):
     )
 
     if request.method == "POST" and request.POST.get("action") == "request_activity_report":
-        employee_user_id = (request.POST.get("employee_user") or "").strip()
+        employee_id = (request.POST.get("employee") or "").strip()
         message = (request.POST.get("message") or "").strip()
         req_from = (request.POST.get("req_date_from") or "").strip()
         req_to = (request.POST.get("req_date_to") or "").strip()
 
-        employee_obj = get_object_or_404(User, id=employee_user_id, role=User.Role.FUNCIONARIO)
-        if not employees.filter(user=employee_obj).exists():
+        employee_obj = get_object_or_404(Employee, id=employee_id, company=company, user__role=User.Role.FUNCIONARIO)
+        if not employees.filter(id=employee_obj.id).exists():
             return redirect("company_reports")
 
         req_date_from = None
@@ -720,7 +711,7 @@ def company_reports(request):
 
         ActivityReportRequest.objects.create(
             company=company,
-            employee_user=employee_obj,
+            employee=employee_obj,
             requested_by=request.user,
             date_from=req_date_from,
             date_to=req_date_to,
@@ -732,7 +723,7 @@ def company_reports(request):
         headers = ["MEI", "Data", "Hora", "Valor/h", "Observacao"]
         rows = []
         for punch in punches:
-            mei_name = getattr(getattr(punch.contract.employee_user, "employee_profile", None), "full_name", "") or punch.contract.employee_user.email
+            mei_name = punch.contract.employee.full_name or punch.contract.employee.user.email
             local_ts = timezone.localtime(punch.timestamp)
             rows.append(
                 [
@@ -751,7 +742,7 @@ def company_reports(request):
     if export_kind == "pdf":
         employee_name = "Todos"
         if selected_employee:
-            emp_obj = employees.filter(user_id=selected_employee).first()
+            emp_obj = employees.filter(id=selected_employee).first()
             if emp_obj:
                 employee_name = emp_obj.full_name
 
@@ -768,14 +759,14 @@ def company_reports(request):
             "horários (ultimas 25):",
         ]
         for punch in punches[:25]:
-            mei_name = getattr(getattr(punch.contract.employee_user, "employee_profile", None), "full_name", "") or punch.contract.employee_user.email
+            mei_name = punch.contract.employee.full_name or punch.contract.employee.user.email
             local_ts = timezone.localtime(punch.timestamp)
             lines.append(f"{local_ts:%d/%m/%Y %H:%M} | {mei_name} | {punch.note or '-'}")
         return _build_pdf_response("horacerta_relatorio.pdf", lines)
 
-    requests_qs = ActivityReportRequest.objects.filter(company=company).select_related("employee_user", "employee_user__employee_profile")
+    requests_qs = ActivityReportRequest.objects.filter(company=company).select_related("employee", "employee__user")
     if selected_employee:
-        requests_qs = requests_qs.filter(employee_user_id=selected_employee)
+        requests_qs = requests_qs.filter(employee_id=selected_employee)
 
     context = {
         "company": company,
@@ -836,7 +827,7 @@ def mei_panel(request):
     if denied:
         return denied
     contracts = (
-        Contract.objects.filter(employee_user=request.user, is_active=True)
+        Contract.objects.filter(employee__user=request.user, is_active=True)
         .select_related("company")
         .order_by("-created_at")
     )
@@ -909,8 +900,17 @@ def mei_profile(request):
 
     employee = getattr(request.user, "employee_profile", None)
     if not employee:
+        active_contract = (
+            Contract.objects.filter(employee__user=request.user)
+            .select_related("company")
+            .order_by("-created_at")
+            .first()
+        )
+        if not active_contract:
+            return redirect("mei_panel")
         employee = Employee.objects.create(
             user=request.user,
+            company=active_contract.company,
             full_name=request.user.get_full_name() or request.user.username,
             is_active=True,
         )
@@ -931,7 +931,7 @@ def mei_history(request):
     denied = _redirect_if_not_mei(request)
     if denied:
         return denied
-    contracts = Contract.objects.filter(employee_user=request.user, is_active=True).select_related("company")
+    contracts = Contract.objects.filter(employee__user=request.user, is_active=True).select_related("company")
     selected_contract = None
     punches = Punch.objects.none()
     selected_contract_id = request.GET.get("contract")
@@ -990,7 +990,7 @@ def mei_export(request):
     denied = _redirect_if_not_mei(request)
     if denied:
         return denied
-    contracts = Contract.objects.filter(employee_user=request.user, is_active=True).select_related("company")
+    contracts = Contract.objects.filter(employee__user=request.user, is_active=True).select_related("company")
     return render(request, "accounts/mei_export.html", {"contracts": contracts})
 
 
@@ -1001,7 +1001,7 @@ def mei_contract(request):
         return denied
 
     active_contracts = list(
-        Contract.objects.filter(employee_user=request.user, is_active=True)
+        Contract.objects.filter(employee__user=request.user, is_active=True)
         .select_related("company")
         .order_by("-created_at")
     )

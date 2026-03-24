@@ -42,8 +42,8 @@ class Employee(models.Model):
         "Company",
         on_delete=models.PROTECT,
         related_name="employees",
-        null=True,
-        blank=True,
+        null=False,
+        blank=False,
     )
 
     full_name = models.CharField(max_length=120)
@@ -61,4 +61,4 @@ class Employee(models.Model):
         ordering = ["full_name"]
 
     def __str__(self) -> str:
-        return self.full_name
+        return f"Employee<{self.id}> {self.full_name} [{self.user.email}] - {self.company.name}"

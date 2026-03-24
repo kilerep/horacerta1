@@ -151,8 +151,8 @@
           {% for c in contracts %}
             <tr>
               <td>
-                {{ c.employee_user.employee_profile.full_name|default:c.employee_user.username }}
-                <span class="muted">({{ c.employee_user.email|default:c.employee_user.username }})</span>
+                {{ c.employee.full_name|default:c.employee.user.username }}
+                <span class="muted">({{ c.employee.user.email|default:c.employee.user.username }})</span>
               </td>
               <td>R$ {{ c.hourly_rate }}</td>
               <td>
