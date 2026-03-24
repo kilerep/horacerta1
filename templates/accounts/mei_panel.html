@@ -121,23 +121,23 @@
 
       {% if incomplete_days > 0 %}
         <section class="status warn">
-          Voce possui <strong>{{ incomplete_days }}</strong> dia(s) com batidas incompletas.
+          Voce possui <strong>{{ incomplete_days }}</strong> dia(s) com horários incompletos.
           <a class="btn" href="{% url 'mei_history' %}?contract={{ selected_contract.id }}" style="margin-left:8px;">Ver historico</a>
         </section>
       {% else %}
         <section class="status ok">
-          Todas as batidas estao consistentes.
+          Todos os horários estão consistentes.
           <a class="btn" href="{% url 'mei_history' %}?contract={{ selected_contract.id }}" style="margin-left:8px;">Ver historico</a>
         </section>
       {% endif %}
 
       <section class="panel mini-history">
-        <h3 style="margin:0 0 10px;">Ultimas batidas de hoje</h3>
+        <h3 style="margin:0 0 10px;">Últimos horários de hoje</h3>
         <div class="chips">
           {% for punch_time in recent_today_punches %}
             <span class="chip">{{ punch_time }}</span>
           {% empty %}
-            <span class="muted">Nenhuma batida registrada hoje neste contrato.</span>
+            <span class="muted">Sem horários hoje neste contrato.</span>
           {% endfor %}
         </div>
       </section>

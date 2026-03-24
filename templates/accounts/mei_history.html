@@ -1,6 +1,6 @@
 {% extends "accounts/base.html" %}
-{% block title %}Historico de Batidas{% endblock %}
-{% block page_title %}Historico de Batidas{% endblock %}
+{% block title %}Histórico de horários{% endblock %}
+{% block page_title %}Histórico de horários{% endblock %}
 
 {% block content %}
   <style>
@@ -153,7 +153,7 @@
                 <tr>
                   <th>Data</th>
                   {% for n in history_punch_columns %}
-                    <th>Batida {{ n }}</th>
+                    <th>Horário {{ n }}</th>
                   {% endfor %}
                   <th>Observacoes</th>
                   <th>Total do dia</th>

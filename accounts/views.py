@@ -431,6 +431,7 @@ def dashboard_empresa(request):
         "total_punches_period": total_punches_period,
         "total_hours_period": total_hours_period,
         "punches_period": punch_rows,
+        "relatorios_pendentes": 2,
     }
     return render(request, "accounts/dashboard_empresa.html", context)
 

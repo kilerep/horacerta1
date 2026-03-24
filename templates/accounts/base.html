@@ -131,6 +131,14 @@
       font-weight:800;
     }
     .item.muted{ opacity:.7; }
+    .badge {
+      background-color: #3b82f6;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 12px;
+      margin-left: 6px;
+    }
 
     .main{
       flex:1;
@@ -400,11 +408,19 @@
             </a>
             <a class="item" href="{% url 'company_reports' %}">
               <div class="icon">R</div>
-              <div><strong>Relatorios</strong><div class="muted" style="font-size:12px">resumo diario</div></div>
+              <div>
+                <strong>
+                  Relatórios
+                  {% if relatorios_pendentes > 0 %}
+                    <span class="badge">{{ relatorios_pendentes }}</span>
+                  {% endif %}
+                </strong>
+                <div class="muted" style="font-size:12px">resumo diario</div>
+              </div>
             </a>
             <a class="item" href="{% url 'company_history' %}">
               <div class="icon">H</div>
-              <div><strong>Historico</strong><div class="muted" style="font-size:12px">batidas</div></div>
+              <div><strong>Historico</strong><div class="muted" style="font-size:12px">horários</div></div>
             </a>
             <a class="item muted" href="{% url 'company_docs' %}">
               <div class="icon">D</div>

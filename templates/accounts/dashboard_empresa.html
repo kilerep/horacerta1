@@ -92,27 +92,8 @@
         <div class="panel">
           <div class="k">Horas no periodo</div>
           <div class="v">{{ total_hours_period }}</div>
-          <small class="muted">Batidas: {{ total_punches_period }} (estimativa simples)</small>
+          <small class="muted">Horários: {{ total_punches_period }} (estimativa simples)</small>
         </div>
-      </section>
-
-      <section class="panel">
-        <h3 style="margin:0 0 8px;">Periodo do relatorio</h3>
-        <form method="get" class="row">
-          <input type="hidden" name="q" value="{{ employee_search_form.q.value|default:'' }}">
-          <div class="field">
-            <label>{{ period_form.date_from.label }}</label>
-            {{ period_form.date_from }}
-          </div>
-          <div class="field">
-            <label>{{ period_form.date_to.label }}</label>
-            {{ period_form.date_to }}
-          </div>
-          <button class="btn primary" type="submit">Aplicar periodo</button>
-        </form>
-        <p class="muted" style="margin:8px 0 0;">
-          Periodo atual: <strong>{{ period_result.date_from }}</strong> ate <strong>{{ period_result.date_to }}</strong>
-        </p>
       </section>
 
       <div class="cols">
@@ -193,33 +174,6 @@
         </section>
       </div>
 
-      <section class="panel">
-        <h3 style="margin:0;">Base de relatorio (batidas no periodo)</h3>
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Data</th>
-              <th>MEI</th>
-              <th>Valor/h</th>
-              <th>Observacao</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for row in punches_period %}
-              <tr>
-                <td>{{ row.punch.timestamp|date:"d/m/Y H:i" }}</td>
-                <td>{{ row.mei_name }}</td>
-                <td>R$ {{ row.punch.contract.hourly_rate }}</td>
-                <td>{% if row.punch.note %}{{ row.punch.note }}{% else %}<span class="muted">-</span>{% endif %}</td>
-              </tr>
-            {% empty %}
-              <tr>
-                <td colspan="4" class="muted">Sem batidas para o periodo informado.</td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </section>
     </div>
   {% endif %}
 {% endblock %}

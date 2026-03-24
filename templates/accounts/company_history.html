@@ -1,6 +1,6 @@
 {% extends "accounts/base.html" %}
-{% block title %}Historico (batidas){% endblock %}
-{% block page_title %}Historico (batidas){% endblock %}
+{% block title %}Histórico de horários{% endblock %}
+{% block page_title %}Histórico de horários{% endblock %}
 
 {% block content %}
   <style>
@@ -80,7 +80,7 @@
     </section>
 
     <section class="panel">
-      <h2 style="margin:0;">Batidas</h2>
+      <h2 style="margin:0;">Horários</h2>
       <table class="table">
         <thead>
           <tr>
@@ -100,7 +100,7 @@
             </tr>
           {% empty %}
             <tr>
-              <td colspan="4" class="muted">Sem batidas para os filtros selecionados.</td>
+              <td colspan="4" class="muted">Sem horários para os filtros selecionados.</td>
             </tr>
           {% endfor %}
         </tbody>

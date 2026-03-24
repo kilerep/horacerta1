@@ -1,7 +1,7 @@
 {% extends "accounts/base.html" %}
 {% load static tz timeclock_formats %}
-{% block title %}HoraCerta - Registrar hor√°rio{% endblock %}
-{% block page_title %}Registrar hor√°rio{% endblock %}
+{% block title %}HoraCerta - Registrar hor·rio{% endblock %}
+{% block page_title %}Registrar hor·rio{% endblock %}
 {% block body_class %}page-me-registrar{% endblock %}
 
 {% block extra_head %}
@@ -105,7 +105,7 @@
             {% csrf_token %}
             <input type="hidden" name="action" value="punch">
             <button id="hcPunchBtn" class="hc-punch-btn" type="submit">
-              <span class="hc-punch-btn__label">REGISTRAR HOR√ÅRIO</span>
+              <span class="hc-punch-btn__label">Registrar hor·rio</span>
               <span class="hc-punch-btn__spinner" aria-hidden="true"></span>
             </button>
             <button id="hcManualOpen" class="btn hc-manual-open-btn" type="button">ADICIONAR HOR√ÅRIO MANUAL</button>
