@@ -9,6 +9,39 @@
 
 {% block content %}
   <div class="company-meis card">
+    <header class="company-meis__header" style="margin-bottom:14px;">
+      <h2 class="company-meis__title">Novo MEI</h2>
+    </header>
+    <form method="post" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:16px;">
+      {% csrf_token %}
+      <div>
+        <label>{{ create_mei_form.full_name.label }}</label>
+        {{ create_mei_form.full_name }}
+        {% if create_mei_form.full_name.errors %}<div class="muted">{{ create_mei_form.full_name.errors }}</div>{% endif %}
+      </div>
+      <div>
+        <label>{{ create_mei_form.mei_email.label }}</label>
+        {{ create_mei_form.mei_email }}
+        {% if create_mei_form.mei_email.errors %}<div class="muted">{{ create_mei_form.mei_email.errors }}</div>{% endif %}
+      </div>
+      <div>
+        <label>{{ create_mei_form.password1.label }}</label>
+        {{ create_mei_form.password1 }}
+        {% if create_mei_form.password1.errors %}<div class="muted">{{ create_mei_form.password1.errors }}</div>{% endif %}
+      </div>
+      <div>
+        <label>{{ create_mei_form.password2.label }}</label>
+        {{ create_mei_form.password2 }}
+        {% if create_mei_form.password2.errors %}<div class="muted">{{ create_mei_form.password2.errors }}</div>{% endif %}
+      </div>
+      <div style="display:flex;align-items:flex-end;">
+        <button class="btn primary" type="submit">Criar MEI</button>
+      </div>
+      {% if create_mei_form.non_field_errors %}
+        <div class="muted" style="grid-column:1/-1;">{{ create_mei_form.non_field_errors }}</div>
+      {% endif %}
+    </form>
+
     <header class="company-meis__header">
       <h2 class="company-meis__title">MEIs</h2>
       <form method="get" class="company-meis__search">

@@ -38,10 +38,11 @@ class Employee(models.Model):
         related_name="employee_profile",
     )
 
-    # ✅ agora pode ser vazio (MEI ainda sem empresa)
-    companies = models.ManyToManyField(
+    company = models.ForeignKey(
         "Company",
+        on_delete=models.PROTECT,
         related_name="employees",
+        null=True,
         blank=True,
     )
 

@@ -104,16 +104,47 @@ class PeriodSearchForm(forms.Form):
     )
 
 
+class CompanyMEICreateForm(forms.Form):
+    full_name = forms.CharField(
+        label="Nome completo",
+        max_length=120,
+    )
+    mei_email = forms.EmailField(label="Email do MEI")
+    password1 = forms.CharField(label="Senha", widget=forms.PasswordInput)
+    password2 = forms.CharField(label="Confirmar senha", widget=forms.PasswordInput)
+
+    def clean(self):
+        data = super().clean()
+        password1 = data.get("password1")
+        password2 = data.get("password2")
+        if password1 and password2 and password1 != password2:
+            self.add_error("password2", "As senhas nao conferem.")
+        return data
+
+    def clean_mei_email(self):
+        email = (self.cleaned_data.get("mei_email") or "").strip().lower()
+        if User.objects.filter(email__iexact=email).exists() or User.objects.filter(username__iexact=email).exists():
+            raise forms.ValidationError("Ja existe um usuario com esse email.")
+        return email
+
+
+class EmployeeChoiceField(forms.ModelChoiceField):
+    def label_from_instance(self, obj):
+        email = (getattr(obj.user, "email", "") or getattr(obj.user, "username", "")).strip()
+        if email:
+            return f"{obj.full_name} - {email}"
+        return obj.full_name
+
+
 class CompanyContractForm(forms.ModelForm):
-    employee_user = forms.ModelChoiceField(
+    employee = EmployeeChoiceField(
         label="MEI",
-        queryset=User.objects.none(),
+        queryset=Employee.objects.none(),
     )
 
     class Meta:
         model = Contract
         fields = [
-            "employee_user",
             "hourly_rate",
             "start_date",
             "end_date",
@@ -127,19 +158,27 @@ class CompanyContractForm(forms.ModelForm):
             "notes": forms.Textarea(attrs={"rows": 3, "placeholder": "Observacoes do contrato (opcional)"}),
         }
 
-    def __init__(self, *args, company=None, **kwargs):
+    def __init__(self, *args, company=None, request=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.company = company
+        if self.company is None and request is not None and getattr(request.user, "is_authenticated", False):
+            self.company = Company.objects.filter(owner=request.user).first()
+
         self.fields["contract_file"].required = False
         self.fields["end_date"].required = False
         self.fields["notes"].required = False
 
-        if company:
-            employee_user_ids = Employee.objects.filter(companies=company).values_list("user_id", flat=True).distinct()
-            self.fields["employee_user"].queryset = User.objects.filter(
-                id__in=employee_user_ids,
-                role=User.Role.FUNCIONARIO,
-            ).order_by("email")
+        if self.company:
+            self.fields["employee"].queryset = Employee.objects.filter(
+                company=self.company,
+                is_active=True,
+                user__role=User.Role.FUNCIONARIO,
+            ).select_related("user").order_by("full_name")
+
+        if self.instance and self.instance.pk:
+            employee_profile = getattr(self.instance.employee_user, "employee_profile", None)
+            if employee_profile:
+                self.initial["employee"] = employee_profile
 
     def clean(self):
         data = super().clean()
@@ -147,6 +186,10 @@ class CompanyContractForm(forms.ModelForm):
         end_date = data.get("end_date")
         if start_date and end_date and end_date < start_date:
             self.add_error("end_date", "A data final nao pode ser anterior a data inicial.")
+
+        employee = data.get("employee")
+        if self.company and employee and employee.company_id != self.company.id:
+            self.add_error("employee", "Selecione um MEI da sua empresa.")
         return data
 
     def clean_contract_file(self):
@@ -157,6 +200,17 @@ class CompanyContractForm(forms.ModelForm):
         if not file_obj.name.lower().endswith(".pdf"):
             raise forms.ValidationError("Envie um arquivo PDF (.pdf).")
         return file_obj
+
+    def save(self, commit=True):
+        contract = super().save(commit=False)
+        employee = self.cleaned_data.get("employee")
+        if employee:
+            contract.employee_user = employee.user
+        if self.company and not contract.company_id:
+            contract.company = self.company
+        if commit:
+            contract.save()
+        return contract
 
 
 class CompanyProfileForm(forms.ModelForm):

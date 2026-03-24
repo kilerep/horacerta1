@@ -65,12 +65,14 @@ class Command(BaseCommand):
         employee, employee_created = Employee.objects.get_or_create(
             user=mei_user,
             defaults={
+                "company": company,
                 "full_name": mei_user.get_full_name() or mei_user.username,
                 "is_active": True,
             },
         )
-        if not employee.companies.filter(id=company.id).exists():
-            employee.companies.add(company)
+        if employee.company_id != company.id:
+            employee.company = company
+            employee.save(update_fields=["company"])
 
         contract, contract_created = Contract.objects.get_or_create(
             employee_user=mei_user,

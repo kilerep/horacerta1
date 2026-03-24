@@ -8,6 +8,7 @@ import zipfile
 from django.contrib.auth import get_user_model, login, logout
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required
+from django.db import transaction
 from django.db.models import Count, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -19,6 +20,7 @@ from timeclock.services import build_daily_summary, compute_day_total, filter_pu
 
 from .forms import (
     CompanyContractForm,
+    CompanyMEICreateForm,
     CompanyProfileForm,
     EmployeeSearchForm,
     LoginForm,
@@ -449,10 +451,30 @@ def company_meis(request):
         return denied
     company = _company_for_user(request.user)
     form = EmployeeSearchForm(request.GET or None)
+    create_mei_form = CompanyMEICreateForm()
+
+    if request.method == "POST":
+        create_mei_form = CompanyMEICreateForm(request.POST)
+        if company and create_mei_form.is_valid():
+            with transaction.atomic():
+                mei_email = create_mei_form.cleaned_data["mei_email"].strip().lower()
+                user = User.objects.create_user(
+                    username=mei_email,
+                    email=mei_email,
+                    password=create_mei_form.cleaned_data["password1"],
+                    role=User.Role.FUNCIONARIO,
+                )
+                Employee.objects.create(
+                    user=user,
+                    company=company,
+                    full_name=create_mei_form.cleaned_data["full_name"].strip(),
+                    is_active=True,
+                )
+            return redirect("company_meis")
 
     if company:
         qs = (
-            Employee.objects.filter(companies=company)
+            Employee.objects.filter(company=company)
             .select_related("user")
             .annotate(
                 total_contracts=Count(
@@ -464,7 +486,6 @@ def company_meis(request):
                     distinct=True,
                 )
             )
-            .distinct()
         )
     else:
         qs = Employee.objects.none()
@@ -478,6 +499,7 @@ def company_meis(request):
         "company": company,
         "employees": qs.order_by("full_name")[:300],
         "employee_search_form": form,
+        "create_mei_form": create_mei_form,
         "pending_reports_count": _pending_reports_count_for_company(company),
     }
     return render(request, "accounts/company_meis.html", context)
@@ -507,7 +529,7 @@ def company_contracts(request):
         if contract_id and company:
             instance = get_object_or_404(Contract, id=contract_id, company=company)
 
-        form = CompanyContractForm(request.POST, request.FILES, instance=instance, company=company)
+        form = CompanyContractForm(request.POST, request.FILES, instance=instance, company=company, request=request)
         if form.is_valid():
             contract = form.save(commit=False)
             contract.company = company
@@ -515,7 +537,7 @@ def company_contracts(request):
             return redirect("company_contracts")
         edit_contract = instance
     else:
-        form = CompanyContractForm(instance=edit_contract, company=company)
+        form = CompanyContractForm(instance=edit_contract, company=company, request=request)
 
     return render(
         request,
@@ -537,7 +559,7 @@ def company_history(request):
 
     company = _company_for_user(request.user)
     period_form = PeriodSearchForm(request.GET or None)
-    employees = Employee.objects.filter(companies=company).select_related("user").distinct().order_by("full_name") if company else Employee.objects.none()
+    employees = Employee.objects.filter(company=company).select_related("user").order_by("full_name") if company else Employee.objects.none()
 
     selected_employee = (request.GET.get("employee") or "").strip()
     page_raw = (request.GET.get("page") or "1").strip()
@@ -600,7 +622,7 @@ def company_reports(request):
     if denied:
         return denied
     company = _company_for_user(request.user)
-    employees = Employee.objects.filter(companies=company).select_related("user").distinct().order_by("full_name") if company else Employee.objects.none()
+    employees = Employee.objects.filter(company=company).select_related("user").order_by("full_name") if company else Employee.objects.none()
     contracts = Contract.objects.filter(company=company).select_related("employee_user", "employee_user__employee_profile") if company else Contract.objects.none()
 
     selected_employee = (request.GET.get("employee") or "").strip()
