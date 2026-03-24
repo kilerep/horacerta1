@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AuthenticationForm
+from django.db import transaction
 from companies.models import Company, Employee
 from timeclock.models import Contract
 
@@ -126,6 +127,29 @@ class CompanyMEICreateForm(forms.Form):
         if User.objects.filter(email__iexact=email).exists() or User.objects.filter(username__iexact=email).exists():
             raise forms.ValidationError("Ja existe um usuario com esse email.")
         return email
+
+    def clean_full_name(self):
+        return (self.cleaned_data.get("full_name") or "").strip()
+
+    def create_mei_for_company(self, company):
+        if not company:
+            raise ValueError("Company is required to create MEI.")
+
+        with transaction.atomic():
+            mei_email = self.cleaned_data["mei_email"].strip().lower()
+            user = User.objects.create_user(
+                username=mei_email,
+                email=mei_email,
+                password=self.cleaned_data["password1"],
+                role=User.Role.FUNCIONARIO,
+            )
+            employee = Employee.objects.create(
+                user=user,
+                company=company,
+                full_name=self.cleaned_data["full_name"],
+                is_active=True,
+            )
+        return employee
 
 
 class EmployeeChoiceField(forms.ModelChoiceField):

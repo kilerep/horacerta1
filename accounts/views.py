@@ -8,7 +8,6 @@ import zipfile
 from django.contrib.auth import get_user_model, login, logout
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required
-from django.db import transaction
 from django.db.models import Count, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -446,21 +445,10 @@ def company_meis(request):
 
     if request.method == "POST":
         create_mei_form = CompanyMEICreateForm(request.POST)
-        if company and create_mei_form.is_valid():
-            with transaction.atomic():
-                mei_email = create_mei_form.cleaned_data["mei_email"].strip().lower()
-                user = User.objects.create_user(
-                    username=mei_email,
-                    email=mei_email,
-                    password=create_mei_form.cleaned_data["password1"],
-                    role=User.Role.FUNCIONARIO,
-                )
-                Employee.objects.create(
-                    user=user,
-                    company=company,
-                    full_name=create_mei_form.cleaned_data["full_name"].strip(),
-                    is_active=True,
-                )
+        if not company:
+            create_mei_form.add_error(None, "Empresa nao encontrada para criar MEI.")
+        elif create_mei_form.is_valid():
+            create_mei_form.create_mei_for_company(company)
             return redirect("company_meis")
 
     if company:
