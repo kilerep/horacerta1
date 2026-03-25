@@ -19,7 +19,7 @@ def backfill_employee_company(apps, schema_editor):
         },
     )
     if created:
-        owner_user.set_unusable_password()
+        owner_user.password = "!"
         owner_user.save(update_fields=["password"])
 
     fallback_company, _created = Company.objects.get_or_create(

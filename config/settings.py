@@ -128,13 +128,24 @@ if DATABASE_URL:
             "DATABASE_URL definido, mas dj-database-url nao esta instalado. "
             "Instale as dependencias de requirements.txt."
         )
-    DATABASES = {
-        "default": dj_database_url.parse(
+    try:
+        db_config = dj_database_url.parse(
             DATABASE_URL,
             conn_max_age=600,
-            ssl_require=True,
         )
-    }
+        if db_config.get("ENGINE") != "django.db.backends.sqlite3":
+            options = db_config.setdefault("OPTIONS", {})
+            options.setdefault("sslmode", "require")
+        DATABASES = {"default": db_config}
+    except Exception as exc:
+        if _env_bool("STRICT_DATABASE_URL", False):
+            raise ImproperlyConfigured(f"DATABASE_URL invalido: {exc}") from exc
+        DATABASES = {
+            "default": {
+                "ENGINE": "django.db.backends.sqlite3",
+                "NAME": BASE_DIR / "db.sqlite3",
+            }
+        }
 else:
     DATABASES = {
         "default": {
