@@ -56,6 +56,11 @@ class Contract(models.Model):
 
     def save(self, *args, **kwargs):
         with transaction.atomic():
+            if not self.employee_id:
+                raise ValueError("Contract.employee is required.")
+            if not self.company_id:
+                raise ValueError("Contract.company is required.")
+
             if self.employee_id and self.company_id and self.employee.company_id != self.company_id:
                 raise ValueError("Contract.employee must belong to Contract.company.")
 

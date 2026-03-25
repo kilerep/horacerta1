@@ -510,6 +510,20 @@ def company_contracts(request):
 
         form = CompanyContractForm(request.POST, request.FILES, instance=instance, company=company, request=request)
         if form.is_valid():
+            employee = form.cleaned_data.get("employee")
+            if not employee or not Employee.objects.filter(id=employee.id, company=company).exists():
+                form.add_error("employee", "MEI invalido para esta empresa.")
+                edit_contract = instance
+                return render(
+                    request,
+                    "accounts/company_contracts.html",
+                    {
+                        "company": company,
+                        "contracts": contracts.order_by("-is_active", "-start_date", "employee__user__username")[:400],
+                        "form": form,
+                        "edit_contract": edit_contract,
+                    },
+                )
             contract = form.save(commit=False)
             contract.company = company
             contract.save()

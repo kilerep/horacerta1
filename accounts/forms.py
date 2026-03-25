@@ -206,10 +206,14 @@ class CompanyContractForm(forms.ModelForm):
         data = super().clean()
         start_date = data.get("start_date")
         end_date = data.get("end_date")
+        employee = data.get("employee")
+
+        if not employee:
+            self.add_error("employee", "Selecione um MEI valido.")
+
         if start_date and end_date and end_date < start_date:
             self.add_error("end_date", "A data final nao pode ser anterior a data inicial.")
 
-        employee = data.get("employee")
         if self.company and employee and employee.company_id != self.company.id:
             self.add_error("employee", "Selecione um MEI da sua empresa.")
         return data
