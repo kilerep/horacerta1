@@ -57,7 +57,7 @@
             <th>Nome</th>
             <th>Email</th>
             <th>Status</th>
-            <th class="company-meis__col-contracts">Contratos ativos</th>
+            <th class="company-meis__col-contracts">Contratos</th>
           </tr>
         </thead>
         <tbody>
@@ -72,7 +72,7 @@
                   <span class="company-meis__pill company-meis__pill--warn">Inativo</span>
                 {% endif %}
               </td>
-              <td data-label="Contratos ativos" class="company-meis__contracts">{{ e.total_contracts|default:0 }}</td>
+              <td data-label="Contratos" class="company-meis__contracts">{{ e.total_contracts|default:0 }}</td>
             </tr>
           {% empty %}
             <tr>
