@@ -2,6 +2,7 @@ from datetime import datetime
 import uuid
 from django.db import models, transaction
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.utils import timezone
 from companies.models import Company, Employee
 
@@ -49,21 +50,25 @@ class Contract(models.Model):
         ]
 
     def __str__(self):
-        return (
-            f"Contract<{self.id}> {self.company.name} -> "
-            f"{self.employee.full_name} [{self.employee.user.email}] (R$ {self.hourly_rate}/h)"
-        )
+        return f"Contract<{self.id}> company={self.company_id} employee={self.employee_id} (R$ {self.hourly_rate}/h)"
+
+    def clean(self):
+        errors = {}
+        if not self.employee_id:
+            errors["employee"] = "Contract precisa de um employee valido."
+        if not self.company_id:
+            errors["company"] = "Contract precisa de uma company valida."
+        if self.employee_id and self.company_id and not Employee.objects.filter(
+            id=self.employee_id,
+            company_id=self.company_id,
+        ).exists():
+            errors["employee"] = "Employee do contrato precisa pertencer a empresa do contrato."
+        if errors:
+            raise ValidationError(errors)
 
     def save(self, *args, **kwargs):
+        self.full_clean()
         with transaction.atomic():
-            if not self.employee_id:
-                raise ValueError("Contract.employee is required.")
-            if not self.company_id:
-                raise ValueError("Contract.company is required.")
-
-            if self.employee_id and self.company_id and self.employee.company_id != self.company_id:
-                raise ValueError("Contract.employee must belong to Contract.company.")
-
             if self.is_active and self.company_id and self.employee_id:
                 (
                     Contract.objects.select_for_update()
@@ -145,6 +150,24 @@ class ActivityReportRequest(models.Model):
 
     class Meta:
         ordering = ["-requested_at"]
+
+    def clean(self):
+        errors = {}
+        if not self.employee_id:
+            errors["employee"] = "Solicitacao precisa de um employee valido."
+        if not self.company_id:
+            errors["company"] = "Solicitacao precisa de uma company valida."
+        if self.employee_id and self.company_id and not Employee.objects.filter(
+            id=self.employee_id,
+            company_id=self.company_id,
+        ).exists():
+            errors["employee"] = "Employee da solicitacao precisa pertencer a empresa."
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
 
     def __str__(self):
         return f"ActivityReportRequest<{self.id}> {self.company.name} -> {self.employee.full_name}"

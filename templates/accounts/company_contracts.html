@@ -15,6 +15,14 @@
     }
     .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
     .field{ display:flex; flex-direction:column; gap:6px; min-width:210px; flex:1; }
+    .form-grid{
+      display:grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap:12px;
+      margin-top:10px;
+    }
+    .field.span-2{ grid-column: span 2; }
+    .field.span-4{ grid-column: 1 / -1; }
     label{ color:var(--muted); font-size:13px; }
     input, select, textarea{
       width:100%;
@@ -29,13 +37,32 @@
       border-color: rgba(79,124,255,.55);
       box-shadow: 0 0 0 3px rgba(79,124,255,.16);
     }
+    .alert{
+      margin-top:10px;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid rgba(46, 204, 113, .35);
+      background:rgba(46, 204, 113, .14);
+      color:#d7ffe9;
+      font-size:13px;
+    }
+    .hint{
+      color:var(--muted);
+      font-size:12px;
+      margin-top:4px;
+    }
+    .table-wrap{
+      width:100%;
+      overflow-x:auto;
+      margin-top:10px;
+      border:1px solid var(--border);
+      border-radius:14px;
+    }
     .table{
       width:100%;
       border-collapse: collapse;
-      border:1px solid var(--border);
-      border-radius:14px;
-      overflow:hidden;
-      margin-top:10px;
+      table-layout: fixed;
+      min-width: 860px;
     }
     .table th, .table td{
       text-align:left;
@@ -45,6 +72,14 @@
     }
     .table th{ color:var(--muted); font-weight:700; }
     .table tr:last-child td{ border-bottom:none; }
+    .col-mei{ width:30%; }
+    .col-rate{ width:12%; }
+    .col-status{ width:12%; }
+    .col-start{ width:12%; }
+    .col-file{ width:20%; }
+    .col-action{ width:14%; text-align:right; }
+    .table td.col-action{ text-align:right; white-space:nowrap; }
+    .table td.col-rate, .table td.col-start{ white-space:nowrap; }
     .pill{
       display:inline-block;
       border:1px solid var(--border);
@@ -60,6 +95,10 @@
     }
     .error{ color:#ffd3d3; font-size:12px; margin-top:4px; }
     .muted{ color:var(--muted); }
+    @media (max-width: 860px){
+      .form-grid{ grid-template-columns: 1fr; }
+      .field.span-2, .field.span-4{ grid-column:auto; }
+    }
   </style>
 
   <div class="wrap-grid">
@@ -68,6 +107,11 @@
       <p class="muted" style="margin:8px 0 0;">
         Crie ou edite contratos sem precisar do admin.
       </p>
+      {% if request.GET.status == "created" %}
+        <div class="alert">Contrato criado com sucesso.</div>
+      {% elif request.GET.status == "updated" %}
+        <div class="alert">Contrato atualizado com sucesso.</div>
+      {% endif %}
 
       <form method="post" enctype="multipart/form-data" style="margin-top:10px;">
         {% csrf_token %}
@@ -75,11 +119,14 @@
           <input type="hidden" name="contract_id" value="{{ edit_contract.id }}">
         {% endif %}
 
-        <div class="row">
+        <div class="form-grid">
           <div class="field">
             <label>{{ form.employee.label }}</label>
             {{ form.employee }}
             {% if form.employee.errors %}<div class="error">{{ form.employee.errors }}</div>{% endif %}
+            {% if not form.fields.employee.queryset %}
+              <div class="hint">Nenhum MEI ativo encontrado para esta empresa.</div>
+            {% endif %}
           </div>
 
           <div class="field">
@@ -99,22 +146,20 @@
             {{ form.end_date }}
             {% if form.end_date.errors %}<div class="error">{{ form.end_date.errors }}</div>{% endif %}
           </div>
-        </div>
 
-        <div class="row" style="margin-top:10px;">
-          <div class="field">
+          <div class="field span-2">
             <label>{{ form.contract_file.label }}</label>
             {{ form.contract_file }}
             {% if form.contract_file.errors %}<div class="error">{{ form.contract_file.errors }}</div>{% endif %}
           </div>
 
-          <div class="field">
+          <div class="field span-2">
             <label>{{ form.notes.label }}</label>
             {{ form.notes }}
             {% if form.notes.errors %}<div class="error">{{ form.notes.errors }}</div>{% endif %}
           </div>
 
-          <div class="field" style="min-width:120px;flex:0 0 120px;">
+          <div class="field">
             <label>{{ form.is_active.label }}</label>
             <div style="padding-top:8px;">{{ form.is_active }}</div>
             {% if form.is_active.errors %}<div class="error">{{ form.is_active.errors }}</div>{% endif %}
@@ -136,51 +181,53 @@
 
     <section class="panel">
       <h2 style="margin:0;">Lista de contratos</h2>
-      <table class="table">
-        <thead>
-          <tr>
-            <th>MEI</th>
-            <th>Valor/h</th>
-            <th>Status</th>
-            <th>Inicio</th>
-            <th>PDF</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for c in contracts %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
             <tr>
-              <td>
-                {{ c.employee.full_name|default:c.employee.user.username }}
-                <span class="muted">({{ c.employee.user.email|default:c.employee.user.username }})</span>
-              </td>
-              <td>R$ {{ c.hourly_rate }}</td>
-              <td>
-                {% if c.is_active %}
-                  <span class="pill">Ativo</span>
-                {% else %}
-                  <span class="pill warn">Inativo</span>
-                {% endif %}
-              </td>
-              <td>{{ c.start_date|date:"d/m/Y" }}</td>
-              <td>
-                {% if c.contract_file %}
-                  <a class="btn" href="{{ c.contract_file.url }}" target="_blank" rel="noopener">Download PDF</a>
-                {% else %}
-                  <span class="muted">Sem arquivo</span>
-                {% endif %}
-              </td>
-              <td>
-                <a class="btn" href="{% url 'company_contracts' %}?edit={{ c.id }}">Editar</a>
-              </td>
+              <th class="col-mei">MEI</th>
+              <th class="col-rate">Valor/h</th>
+              <th class="col-status">Status</th>
+              <th class="col-start">Inicio</th>
+              <th class="col-file">PDF</th>
+              <th class="col-action">Acoes</th>
             </tr>
-          {% empty %}
-            <tr>
-              <td colspan="6" class="muted">Sem contratos cadastrados.</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {% for c in contracts %}
+              <tr>
+                <td class="col-mei">
+                  {{ c.employee.full_name|default:c.employee.user.username }}
+                  <span class="muted">({{ c.employee.user.email|default:c.employee.user.username }})</span>
+                </td>
+                <td class="col-rate">R$ {{ c.hourly_rate }}</td>
+                <td class="col-status">
+                  {% if c.is_active %}
+                    <span class="pill">Ativo</span>
+                  {% else %}
+                    <span class="pill warn">Inativo</span>
+                  {% endif %}
+                </td>
+                <td class="col-start">{{ c.start_date|date:"d/m/Y" }}</td>
+                <td class="col-file">
+                  {% if c.contract_file %}
+                    <a class="btn" href="{{ c.contract_file.url }}" target="_blank" rel="noopener">Download PDF</a>
+                  {% else %}
+                    <span class="muted">Sem arquivo</span>
+                  {% endif %}
+                </td>
+                <td class="col-action">
+                  <a class="btn primary" href="{% url 'company_contracts' %}?edit={{ c.id }}">Editar</a>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="6" class="muted">Sem contratos cadastrados.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </section>
   </div>
 {% endblock %}

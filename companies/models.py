@@ -1,5 +1,6 @@
 import uuid
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 
 
@@ -60,5 +61,24 @@ class Employee(models.Model):
         verbose_name_plural = "Employees"
         ordering = ["full_name"]
 
+    def clean(self):
+        errors = {}
+        if not self.user_id:
+            errors["user"] = "Employee precisa de um usuario valido."
+        if not self.company_id:
+            errors["company"] = "Employee precisa de uma empresa valida."
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
     def __str__(self) -> str:
-        return f"Employee<{self.id}> {self.full_name} [{self.user.email}] - {self.company.name}"
+        user_label = "-"
+        company_label = "-"
+        if getattr(self, "user", None):
+            user_label = self.user.email or self.user.username or "-"
+        if getattr(self, "company", None):
+            company_label = self.company.name or "-"
+        return f"Employee<{self.id}> {self.full_name} [{user_label}] - {company_label}"

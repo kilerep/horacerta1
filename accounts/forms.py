@@ -216,6 +216,10 @@ class CompanyContractForm(forms.ModelForm):
 
         if self.company and employee and employee.company_id != self.company.id:
             self.add_error("employee", "Selecione um MEI da sua empresa.")
+        if employee and not employee.user_id:
+            self.add_error("employee", "MEI selecionado sem usuario valido.")
+        if employee and not employee.company_id:
+            self.add_error("employee", "MEI selecionado sem empresa valida.")
         return data
 
     def clean_contract_file(self):
@@ -270,3 +274,11 @@ class MEIProfileForm(forms.ModelForm):
         widgets = {
             "address": forms.Textarea(attrs={"rows": 3}),
         }
+
+    def clean(self):
+        data = super().clean()
+        if self.instance and not self.instance.company_id:
+            raise forms.ValidationError("Perfil MEI sem empresa vinculada.")
+        if self.instance and not self.instance.user_id:
+            raise forms.ValidationError("Perfil MEI sem usuario vinculado.")
+        return data

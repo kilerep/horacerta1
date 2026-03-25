@@ -11,6 +11,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 
 from companies.models import Company, Employee
@@ -552,7 +553,8 @@ def company_contracts(request):
             contract = form.save(commit=False)
             contract.company = company
             contract.save()
-            return redirect("company_contracts")
+            status = "updated" if instance else "created"
+            return redirect(f"{reverse('company_contracts')}?status={status}")
         edit_contract = instance
     else:
         form = CompanyContractForm(instance=edit_contract, company=company, request=request)
