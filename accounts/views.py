@@ -72,6 +72,27 @@ def _pending_reports_count_for_company(company):
     return ActivityReportRequest.objects.filter(company=company, is_answered=False).count()
 
 
+def _contract_mei_label(contract):
+    employee = getattr(contract, "employee", None)
+    if not employee:
+        return "MEI indisponivel"
+
+    full_name = (getattr(employee, "full_name", "") or "").strip()
+    if full_name:
+        return full_name
+
+    user = getattr(employee, "user", None)
+    if user:
+        email = (getattr(user, "email", "") or "").strip()
+        if email:
+            return email
+        username = (getattr(user, "username", "") or "").strip()
+        if username:
+            return username
+
+    return "MEI indisponivel"
+
+
 def _redirect_for_role(user):
     if user.role == User.Role.EMPRESA:
         return redirect("dashboard_empresa")
@@ -329,7 +350,11 @@ def dashboard_empresa(request):
     date_to = ""
 
     if company:
-        contracts_base_qs = Contract.objects.filter(company=company).select_related(
+        contracts_base_qs = Contract.objects.filter(
+            company=company,
+            employee__isnull=False,
+            employee__user__isnull=False,
+        ).select_related(
             "employee",
             "employee__user",
         )
@@ -405,16 +430,12 @@ def dashboard_empresa(request):
 
     contract_rows = []
     for contract in contracts_qs.order_by("-start_date", "-created_at", "employee__user__username")[:300]:
-        mei_name = contract.employee.full_name or contract.employee.user.email or contract.employee.user.username
+        mei_name = _contract_mei_label(contract)
         contract_rows.append({"contract": contract, "mei_name": mei_name})
 
     punch_rows = []
     for punch in punches_period_qs.order_by("-timestamp")[:120]:
-        mei_name = (
-            punch.contract.employee.full_name
-            or punch.contract.employee.user.email
-            or punch.contract.employee.user.username
-        )
+        mei_name = _contract_mei_label(punch.contract)
         punch_rows.append({"punch": punch, "mei_name": mei_name})
 
     context = {
@@ -492,7 +513,11 @@ def company_contracts(request):
 
     company = _company_for_user(request.user)
     contracts = (
-        Contract.objects.filter(company=company).select_related("employee", "employee__user")
+        Contract.objects.filter(
+            company=company,
+            employee__isnull=False,
+            employee__user__isnull=False,
+        ).select_related("employee", "employee__user")
         if company
         else Contract.objects.none()
     )
@@ -557,7 +582,15 @@ def company_history(request):
     selected_employee = (request.GET.get("employee") or "").strip()
     page_raw = (request.GET.get("page") or "1").strip()
 
-    contracts = Contract.objects.filter(company=company) if company else Contract.objects.none()
+    contracts = (
+        Contract.objects.filter(
+            company=company,
+            employee__isnull=False,
+            employee__user__isnull=False,
+        )
+        if company
+        else Contract.objects.none()
+    )
     punches = Punch.objects.filter(contract__in=contracts).select_related(
         "contract", "contract__employee", "contract__employee__user"
     )
@@ -616,7 +649,15 @@ def company_reports(request):
         return denied
     company = _company_for_user(request.user)
     employees = Employee.objects.filter(company=company).select_related("user").order_by("full_name") if company else Employee.objects.none()
-    contracts = Contract.objects.filter(company=company).select_related("employee", "employee__user") if company else Contract.objects.none()
+    contracts = (
+        Contract.objects.filter(
+            company=company,
+            employee__isnull=False,
+            employee__user__isnull=False,
+        ).select_related("employee", "employee__user")
+        if company
+        else Contract.objects.none()
+    )
 
     selected_employee = (request.GET.get("employee") or "").strip()
     date_from_raw = (request.GET.get("date_from") or "").strip()
@@ -659,11 +700,7 @@ def company_reports(request):
             continue
         contract_punches_sorted = sorted(contract_punches, key=lambda item: item.timestamp)
         contract = contract_punches_sorted[0].contract
-        mei_name = (
-            contract.employee.full_name
-            or contract.employee.user.email
-            or contract.employee.user.username
-        )
+        mei_name = _contract_mei_label(contract)
         daily_rows, _max_cols = build_daily_summary(contract_punches_sorted, min_punch_columns=4)
         for row in daily_rows:
             note_text = (row.get("notes_summary") or "").strip()
@@ -725,7 +762,7 @@ def company_reports(request):
         headers = ["MEI", "Data", "Hora", "Valor/h", "Observacao"]
         rows = []
         for punch in punches:
-            mei_name = punch.contract.employee.full_name or punch.contract.employee.user.email
+            mei_name = _contract_mei_label(punch.contract)
             local_ts = timezone.localtime(punch.timestamp)
             rows.append(
                 [
@@ -761,7 +798,7 @@ def company_reports(request):
             "horários (ultimas 25):",
         ]
         for punch in punches[:25]:
-            mei_name = punch.contract.employee.full_name or punch.contract.employee.user.email
+            mei_name = _contract_mei_label(punch.contract)
             local_ts = timezone.localtime(punch.timestamp)
             lines.append(f"{local_ts:%d/%m/%Y %H:%M} | {mei_name} | {punch.note or '-'}")
         return _build_pdf_response("horacerta_relatorio.pdf", lines)
@@ -830,7 +867,7 @@ def mei_panel(request):
         return denied
     contracts = (
         Contract.objects.filter(employee__user=request.user, is_active=True)
-        .select_related("company")
+        .select_related("company", "employee", "employee__user")
         .order_by("-created_at")
     )
 
@@ -904,7 +941,7 @@ def mei_profile(request):
     if not employee:
         active_contract = (
             Contract.objects.filter(employee__user=request.user)
-            .select_related("company")
+            .select_related("company", "employee", "employee__user")
             .order_by("-created_at")
             .first()
         )
@@ -933,7 +970,7 @@ def mei_history(request):
     denied = _redirect_if_not_mei(request)
     if denied:
         return denied
-    contracts = Contract.objects.filter(employee__user=request.user, is_active=True).select_related("company")
+    contracts = Contract.objects.filter(employee__user=request.user, is_active=True).select_related("company", "employee", "employee__user")
     selected_contract = None
     punches = Punch.objects.none()
     selected_contract_id = request.GET.get("contract")
@@ -992,7 +1029,7 @@ def mei_export(request):
     denied = _redirect_if_not_mei(request)
     if denied:
         return denied
-    contracts = Contract.objects.filter(employee__user=request.user, is_active=True).select_related("company")
+    contracts = Contract.objects.filter(employee__user=request.user, is_active=True).select_related("company", "employee", "employee__user")
     return render(request, "accounts/mei_export.html", {"contracts": contracts})
 
 
@@ -1004,7 +1041,7 @@ def mei_contract(request):
 
     active_contracts = list(
         Contract.objects.filter(employee__user=request.user, is_active=True)
-        .select_related("company")
+        .select_related("company", "employee", "employee__user")
         .order_by("-created_at")
     )
     selected_contract_id = (request.GET.get("contract") or "").strip()
@@ -1040,3 +1077,4 @@ def terms_view(request):
 
 def help_view(request):
     return render(request, "accounts/help.html")
+

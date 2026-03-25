@@ -27,6 +27,27 @@ def _only_employee(user):
     return getattr(user, "role", None) == User.Role.FUNCIONARIO
 
 
+def _contract_employee_label(contract):
+    employee = getattr(contract, "employee", None)
+    if not employee:
+        return "MEI indisponivel"
+
+    full_name = (getattr(employee, "full_name", "") or "").strip()
+    if full_name:
+        return full_name
+
+    user = getattr(employee, "user", None)
+    if user:
+        email = (getattr(user, "email", "") or "").strip()
+        if email:
+            return email
+        username = (getattr(user, "username", "") or "").strip()
+        if username:
+            return username
+
+    return "MEI indisponivel"
+
+
 def _get_system_owner_user():
     owner_email = "sistema.empresa@horacerta.local"
     owner_user, created = User.objects.get_or_create(
@@ -53,7 +74,12 @@ def employee_dashboard(request):
         "hourly_rate": "30",
     }
 
-    contracts = Contract.objects.filter(employee__user=request.user, is_active=True).select_related("company")
+    contracts = Contract.objects.filter(
+        employee__user=request.user,
+        employee__isnull=False,
+        employee__user__isnull=False,
+        is_active=True,
+    ).select_related("company", "employee", "employee__user")
     employee_profile = getattr(request.user, "employee_profile", None)
     pending_report_requests = ActivityReportRequest.objects.filter(
         employee=employee_profile,
@@ -106,21 +132,30 @@ def employee_dashboard(request):
                 email=None,
                 owner=owner_user,
             )
+            employee_profile = getattr(request.user, "employee_profile", None)
+            if not employee_profile:
+                create_company_errors.append("MEI sem perfil valido para criar contrato.")
+                return redirect(request.path)
+
             contract = Contract.objects.create(
-                employee=request.user.employee_profile,
+                employee=employee_profile,
                 company=company,
                 hourly_rate=hourly_rate,
                 is_active=True,
             )
 
-            employee_profile = getattr(request.user, "employee_profile", None)
             if employee_profile and employee_profile.company_id != company.id:
                 employee_profile.company = company
                 employee_profile.save(update_fields=["company"])
 
             return redirect(f"{request.path}?contract={contract.id}")
 
-    contracts = Contract.objects.filter(employee__user=request.user, is_active=True).select_related("company")
+    contracts = Contract.objects.filter(
+        employee__user=request.user,
+        employee__isnull=False,
+        employee__user__isnull=False,
+        is_active=True,
+    ).select_related("company", "employee", "employee__user")
 
     if not contracts.exists():
         return render(
@@ -136,7 +171,13 @@ def employee_dashboard(request):
         )
 
     selected_contract_id = request.GET.get("contract") or str(contracts.first().id)
-    selected_contract = get_object_or_404(Contract, id=selected_contract_id, employee__user=request.user)
+    selected_contract = get_object_or_404(
+        Contract.objects.select_related("company", "employee", "employee__user"),
+        id=selected_contract_id,
+        employee__user=request.user,
+        employee__isnull=False,
+        employee__user__isnull=False,
+    )
 
     if request.method == "POST" and request.POST.get("action") == "punch":
         note = (request.POST.get("note") or "").strip()
@@ -259,7 +300,7 @@ def create_manual_punches(request):
     if errors:
         return JsonResponse({"ok": False, "errors": errors}, status=400)
 
-    contract = Contract.objects.filter(
+    contract = Contract.objects.select_related("company", "employee", "employee__user").filter(
         id=contract_id,
         employee__user=request.user,
         is_active=True,
@@ -333,7 +374,11 @@ def export_csv(request):
         return redirect("dashboard")
 
     contract_id = request.GET.get("contract")
-    contract = get_object_or_404(Contract, id=contract_id, employee__user=request.user)
+    contract = get_object_or_404(
+        Contract.objects.select_related("company", "employee", "employee__user"),
+        id=contract_id,
+        employee__user=request.user,
+    )
 
     base_punches = Punch.objects.filter(contract=contract).order_by("timestamp")
     punches, _start, _end = filter_punches_by_period(
@@ -379,7 +424,11 @@ def export_xlsx(request):
         return redirect("dashboard")
 
     contract_id = request.GET.get("contract")
-    contract = get_object_or_404(Contract, id=contract_id, employee__user=request.user)
+    contract = get_object_or_404(
+        Contract.objects.select_related("company", "employee", "employee__user"),
+        id=contract_id,
+        employee__user=request.user,
+    )
 
     base_punches = Punch.objects.filter(contract=contract).order_by("timestamp")
     punches, start_date, end_date = filter_punches_by_period(
@@ -398,7 +447,7 @@ def export_xlsx(request):
     for cell in ws[1]:
         cell.font = Font(bold=True)
 
-    employee_name = contract.employee.full_name or contract.employee.user.email or contract.employee.user.username
+    employee_name = _contract_employee_label(contract)
 
     for punch in punches:
         local_ts = timezone.localtime(punch.timestamp)
@@ -448,7 +497,11 @@ def export_pdf(request):
         return redirect("dashboard")
 
     contract_id = request.GET.get("contract")
-    contract = get_object_or_404(Contract, id=contract_id, employee__user=request.user)
+    contract = get_object_or_404(
+        Contract.objects.select_related("company", "employee", "employee__user"),
+        id=contract_id,
+        employee__user=request.user,
+    )
 
     base_punches = Punch.objects.filter(contract=contract).order_by("timestamp")
     punches, start_date, end_date = filter_punches_by_period(
@@ -458,7 +511,7 @@ def export_pdf(request):
     )
     punches = list(punches)
 
-    employee_name = contract.employee.full_name or contract.employee.user.email or contract.employee.user.username
+    employee_name = _contract_employee_label(contract)
     period_label = (
         f"{start_date.strftime('%d/%m/%Y')} ate {end_date.strftime('%d/%m/%Y')}"
         if start_date and end_date
