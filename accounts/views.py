@@ -466,12 +466,13 @@ def company_meis(request):
     create_mei_form = CompanyMEICreateForm()
 
     if request.method == "POST":
-        create_mei_form = CompanyMEICreateForm(request.POST)
+        create_mei_form = CompanyMEICreateForm(request.POST, request.FILES)
         if not company:
             create_mei_form.add_error(None, "Empresa nao encontrada para criar MEI.")
         elif create_mei_form.is_valid():
-            create_mei_form.create_mei_for_company(company)
-            return redirect("company_meis")
+            _employee, contract = create_mei_form.create_mei_and_optional_contract(company)
+            status = "created_with_contract" if contract else "created_mei"
+            return redirect(f"{reverse('company_meis')}?status={status}")
 
     if company:
         qs = (

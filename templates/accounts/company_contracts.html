@@ -161,12 +161,6 @@
             {{ form.notes }}
             {% if form.notes.errors %}<div class="error">{{ form.notes.errors }}</div>{% endif %}
           </div>
-
-          <div class="field">
-            <label>{{ form.is_active.label }}</label>
-            <div style="padding-top:8px;">{{ form.is_active }}</div>
-            {% if form.is_active.errors %}<div class="error">{{ form.is_active.errors }}</div>{% endif %}
-          </div>
         </div>
 
         {% if form.non_field_errors %}

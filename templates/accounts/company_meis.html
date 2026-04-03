@@ -11,35 +11,77 @@
   <div class="company-meis card">
     <header class="company-meis__header" style="margin-bottom:14px;">
       <h2 class="company-meis__title">Novo MEI</h2>
+      <p class="muted company-meis__subtitle">
+        Cadastre o MEI e, se quiser, ja deixe o primeiro contrato criado.
+      </p>
     </header>
-    <form method="post" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:16px;">
+
+    {% if request.GET.status == "created_mei" %}
+      <div class="company-meis__alert">MEI criado com sucesso.</div>
+    {% elif request.GET.status == "created_with_contract" %}
+      <div class="company-meis__alert">MEI e contrato inicial criados com sucesso.</div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" class="company-meis__create-form">
       {% csrf_token %}
-      <div>
-        <label>{{ create_mei_form.full_name.label }}</label>
+      <div class="company-meis__section-title">Dados do MEI</div>
+
+      <div class="company-meis__field">
+        <label for="{{ create_mei_form.full_name.id_for_label }}">{{ create_mei_form.full_name.label }}</label>
         {{ create_mei_form.full_name }}
-        {% if create_mei_form.full_name.errors %}<div class="muted">{{ create_mei_form.full_name.errors }}</div>{% endif %}
+        {% if create_mei_form.full_name.errors %}<div class="company-meis__error">{{ create_mei_form.full_name.errors }}</div>{% endif %}
       </div>
-      <div>
-        <label>{{ create_mei_form.mei_email.label }}</label>
+      <div class="company-meis__field">
+        <label for="{{ create_mei_form.mei_email.id_for_label }}">{{ create_mei_form.mei_email.label }}</label>
         {{ create_mei_form.mei_email }}
-        {% if create_mei_form.mei_email.errors %}<div class="muted">{{ create_mei_form.mei_email.errors }}</div>{% endif %}
+        {% if create_mei_form.mei_email.errors %}<div class="company-meis__error">{{ create_mei_form.mei_email.errors }}</div>{% endif %}
       </div>
-      <div>
-        <label>{{ create_mei_form.password1.label }}</label>
+      <div class="company-meis__field">
+        <label for="{{ create_mei_form.password1.id_for_label }}">{{ create_mei_form.password1.label }}</label>
         {{ create_mei_form.password1 }}
-        {% if create_mei_form.password1.errors %}<div class="muted">{{ create_mei_form.password1.errors }}</div>{% endif %}
+        {% if create_mei_form.password1.errors %}<div class="company-meis__error">{{ create_mei_form.password1.errors }}</div>{% endif %}
       </div>
-      <div>
-        <label>{{ create_mei_form.password2.label }}</label>
+      <div class="company-meis__field">
+        <label for="{{ create_mei_form.password2.id_for_label }}">{{ create_mei_form.password2.label }}</label>
         {{ create_mei_form.password2 }}
-        {% if create_mei_form.password2.errors %}<div class="muted">{{ create_mei_form.password2.errors }}</div>{% endif %}
+        {% if create_mei_form.password2.errors %}<div class="company-meis__error">{{ create_mei_form.password2.errors }}</div>{% endif %}
       </div>
-      <div style="display:flex;align-items:flex-end;">
+
+      <div class="company-meis__section-title company-meis__section-title--spaced">Primeiro contrato (opcional)</div>
+
+      <div class="company-meis__field">
+        <label for="{{ create_mei_form.contract_hourly_rate.id_for_label }}">{{ create_mei_form.contract_hourly_rate.label }}</label>
+        {{ create_mei_form.contract_hourly_rate }}
+        {% if create_mei_form.contract_hourly_rate.errors %}<div class="company-meis__error">{{ create_mei_form.contract_hourly_rate.errors }}</div>{% endif %}
+      </div>
+      <div class="company-meis__field">
+        <label for="{{ create_mei_form.contract_start_date.id_for_label }}">{{ create_mei_form.contract_start_date.label }}</label>
+        {{ create_mei_form.contract_start_date }}
+        {% if create_mei_form.contract_start_date.errors %}<div class="company-meis__error">{{ create_mei_form.contract_start_date.errors }}</div>{% endif %}
+      </div>
+      <div class="company-meis__field">
+        <label for="{{ create_mei_form.contract_end_date.id_for_label }}">{{ create_mei_form.contract_end_date.label }}</label>
+        {{ create_mei_form.contract_end_date }}
+        {% if create_mei_form.contract_end_date.errors %}<div class="company-meis__error">{{ create_mei_form.contract_end_date.errors }}</div>{% endif %}
+      </div>
+      <div class="company-meis__field">
+        <label for="{{ create_mei_form.contract_file.id_for_label }}">{{ create_mei_form.contract_file.label }}</label>
+        {{ create_mei_form.contract_file }}
+        {% if create_mei_form.contract_file.errors %}<div class="company-meis__error">{{ create_mei_form.contract_file.errors }}</div>{% endif %}
+      </div>
+      <div class="company-meis__field company-meis__field--wide">
+        <label for="{{ create_mei_form.contract_notes.id_for_label }}">{{ create_mei_form.contract_notes.label }}</label>
+        {{ create_mei_form.contract_notes }}
+        {% if create_mei_form.contract_notes.errors %}<div class="company-meis__error">{{ create_mei_form.contract_notes.errors }}</div>{% endif %}
+      </div>
+
+      {% if create_mei_form.non_field_errors %}
+        <div class="company-meis__error company-meis__error--wide">{{ create_mei_form.non_field_errors }}</div>
+      {% endif %}
+
+      <div class="company-meis__actions">
         <button class="btn primary" type="submit">Criar MEI</button>
       </div>
-      {% if create_mei_form.non_field_errors %}
-        <div class="muted" style="grid-column:1/-1;">{{ create_mei_form.non_field_errors }}</div>
-      {% endif %}
     </form>
 
     <header class="company-meis__header">

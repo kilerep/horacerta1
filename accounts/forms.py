@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AuthenticationForm
 from django.db import transaction
 from django.db.models import Q
+from django.utils import timezone
 
 from companies.models import Company, Employee
 from timeclock.models import Contract
@@ -115,6 +116,44 @@ class CompanyMEICreateForm(forms.Form):
     mei_email = forms.EmailField(label="Email do MEI")
     password1 = forms.CharField(label="Senha", widget=forms.PasswordInput)
     password2 = forms.CharField(label="Confirmar senha", widget=forms.PasswordInput)
+    contract_hourly_rate = forms.DecimalField(
+        label="Valor/hora inicial (opcional)",
+        required=False,
+        max_digits=10,
+        decimal_places=2,
+        min_value=0,
+    )
+    contract_start_date = forms.DateField(
+        label="Inicio do contrato (opcional)",
+        required=False,
+        widget=forms.DateInput(attrs={"type": "date"}),
+    )
+    contract_end_date = forms.DateField(
+        label="Fim do contrato (opcional)",
+        required=False,
+        widget=forms.DateInput(attrs={"type": "date"}),
+    )
+    contract_file = forms.FileField(
+        label="PDF do contrato (opcional)",
+        required=False,
+    )
+    contract_notes = forms.CharField(
+        label="Observacoes (opcional)",
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 3}),
+    )
+
+    def _contract_requested(self, data):
+        notes = (data.get("contract_notes") or "").strip()
+        return any(
+            [
+                data.get("contract_hourly_rate") is not None,
+                data.get("contract_start_date"),
+                data.get("contract_end_date"),
+                data.get("contract_file"),
+                notes,
+            ]
+        )
 
     def clean(self):
         data = super().clean()
@@ -122,6 +161,18 @@ class CompanyMEICreateForm(forms.Form):
         password2 = data.get("password2")
         if password1 and password2 and password1 != password2:
             self.add_error("password2", "As senhas nao conferem.")
+
+        contract_requested = self._contract_requested(data)
+        start_date = data.get("contract_start_date")
+        end_date = data.get("contract_end_date")
+        hourly_rate = data.get("contract_hourly_rate")
+
+        if contract_requested and hourly_rate is None:
+            self.add_error("contract_hourly_rate", "Informe o valor/hora para criar o contrato inicial.")
+
+        if contract_requested and start_date and end_date and end_date < start_date:
+            self.add_error("contract_end_date", "A data final nao pode ser anterior a data inicial.")
+
         return data
 
     def clean_mei_email(self):
@@ -133,7 +184,15 @@ class CompanyMEICreateForm(forms.Form):
     def clean_full_name(self):
         return (self.cleaned_data.get("full_name") or "").strip()
 
-    def create_mei_for_company(self, company):
+    def clean_contract_file(self):
+        file_obj = self.cleaned_data.get("contract_file")
+        if not file_obj:
+            return file_obj
+        if not file_obj.name.lower().endswith(".pdf"):
+            raise forms.ValidationError("Envie um arquivo PDF (.pdf).")
+        return file_obj
+
+    def create_mei_and_optional_contract(self, company):
         if not company:
             raise ValueError("Company is required to create MEI.")
 
@@ -151,6 +210,24 @@ class CompanyMEICreateForm(forms.Form):
                 full_name=self.cleaned_data["full_name"],
                 is_active=True,
             )
+
+            contract = None
+            if self._contract_requested(self.cleaned_data):
+                contract = Contract.objects.create(
+                    employee=employee,
+                    company=company,
+                    hourly_rate=self.cleaned_data["contract_hourly_rate"],
+                    start_date=self.cleaned_data.get("contract_start_date") or timezone.localdate(),
+                    end_date=self.cleaned_data.get("contract_end_date"),
+                    contract_file=self.cleaned_data.get("contract_file"),
+                    notes=(self.cleaned_data.get("contract_notes") or "").strip(),
+                    is_active=True,
+                )
+
+        return employee, contract
+
+    def create_mei_for_company(self, company):
+        employee, _contract = self.create_mei_and_optional_contract(company)
         return employee
 
 
@@ -176,7 +253,6 @@ class CompanyContractForm(forms.ModelForm):
             "start_date",
             "end_date",
             "contract_file",
-            "is_active",
             "notes",
         ]
         widgets = {
@@ -251,6 +327,8 @@ class CompanyContractForm(forms.ModelForm):
             contract.employee = employee
         if self.company and not contract.company_id:
             contract.company = self.company
+        if not contract.pk:
+            contract.is_active = True
         if commit:
             contract.save()
         return contract
