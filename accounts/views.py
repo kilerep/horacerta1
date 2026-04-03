@@ -526,6 +526,7 @@ def company_contracts(request):
     )
 
     edit_contract = None
+    form = None
     invalid_edit_contract = False
     edit_id = (request.GET.get("edit") or "").strip()
     if edit_id and company:
@@ -534,35 +535,24 @@ def company_contracts(request):
 
     if request.method == "POST":
         contract_id = (request.POST.get("contract_id") or "").strip()
-        instance = None
-        if contract_id and company:
-            instance = contracts.filter(id=contract_id).first()
+        instance = contracts.filter(id=contract_id).first() if contract_id and company else None
+        if not instance:
+            invalid_edit_contract = True
+        else:
+            form = CompanyContractForm(request.POST, request.FILES, instance=instance, company=company, request=request)
+            if form.is_valid():
+                employee = form.cleaned_data.get("employee")
+                if not employee or not Employee.objects.filter(id=employee.id, company=company).exists():
+                    form.add_error("employee", "MEI invalido para esta empresa.")
+                    edit_contract = instance
+                else:
+                    contract = form.save(commit=False)
+                    contract.company = company
+                    contract.save()
+                    return redirect(f"{reverse('company_contracts')}?status=updated")
+            edit_contract = instance
 
-        form = CompanyContractForm(request.POST, request.FILES, instance=instance, company=company, request=request)
-        if contract_id and instance is None:
-            form.add_error(None, "Contrato invalido para edicao. Atualize a pagina e tente novamente.")
-        if form.is_valid():
-            employee = form.cleaned_data.get("employee")
-            if not employee or not Employee.objects.filter(id=employee.id, company=company).exists():
-                form.add_error("employee", "MEI invalido para esta empresa.")
-                edit_contract = instance
-                return render(
-                    request,
-                    "accounts/company_contracts.html",
-                    {
-                        "company": company,
-                        "contracts": contracts.order_by("-is_active", "-start_date", "employee__user__username")[:400],
-                        "form": form,
-                        "edit_contract": edit_contract,
-                    },
-                )
-            contract = form.save(commit=False)
-            contract.company = company
-            contract.save()
-            status = "updated" if instance else "created"
-            return redirect(f"{reverse('company_contracts')}?status={status}")
-        edit_contract = instance
-    else:
+    if request.method != "POST" and edit_contract:
         form = CompanyContractForm(instance=edit_contract, company=company, request=request)
 
     return render(

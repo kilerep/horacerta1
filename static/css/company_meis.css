@@ -8,6 +8,10 @@
   gap: 12px;
 }
 
+.company-meis__hero {
+  padding: 4px 2px 0;
+}
+
 .company-meis__title {
   margin: 0;
   font-size: 1.15rem;
@@ -29,13 +33,31 @@
 
 .company-meis__create-form {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: 1fr;
+  gap: 14px;
   margin-bottom: 16px;
 }
 
+.company-meis__group-card {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px;
+  background:
+    linear-gradient(160deg, rgba(79,124,255,0.08), transparent 48%),
+    rgba(255, 255, 255, 0.02);
+}
+
+.company-meis__group-head {
+  margin-bottom: 10px;
+}
+
+.company-meis__group-subtitle {
+  margin: 6px 0 0;
+  font-size: 13px;
+}
+
 .company-meis__section-title {
-  grid-column: 1 / -1;
+  margin: 0;
   font-size: 13px;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.82);
@@ -51,6 +73,12 @@
   flex-direction: column;
   gap: 6px;
   min-width: 0;
+}
+
+.company-meis__group-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
 }
 
 .company-meis__field--wide {
@@ -213,6 +241,10 @@
   }
 
   .company-meis__create-form {
+    gap: 10px;
+  }
+
+  .company-meis__group-grid {
     grid-template-columns: 1fr;
   }
 
