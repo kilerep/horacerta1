@@ -112,6 +112,9 @@
       {% elif request.GET.status == "updated" %}
         <div class="alert">Contrato atualizado com sucesso.</div>
       {% endif %}
+      {% if invalid_edit_contract %}
+        <div class="error" style="margin-top:8px;">Contrato invalido para edicao.</div>
+      {% endif %}
 
       <form method="post" enctype="multipart/form-data" style="margin-top:10px;">
         {% csrf_token %}
@@ -197,8 +200,12 @@
             {% for c in contracts %}
               <tr>
                 <td class="col-mei">
-                  {{ c.employee.full_name|default:c.employee.user.username }}
-                  <span class="muted">({{ c.employee.user.email|default:c.employee.user.username }})</span>
+                  {% if c.employee and c.employee.user %}
+                    {{ c.employee.full_name|default:c.employee.user.username }}
+                    <span class="muted">({{ c.employee.user.email|default:c.employee.user.username }})</span>
+                  {% else %}
+                    <span class="muted">Contrato invalido</span>
+                  {% endif %}
                 </td>
                 <td class="col-rate">R$ {{ c.hourly_rate }}</td>
                 <td class="col-status">
@@ -217,7 +224,11 @@
                   {% endif %}
                 </td>
                 <td class="col-action">
-                  <a class="btn primary" href="{% url 'company_contracts' %}?edit={{ c.id }}">Editar</a>
+                  {% if c.employee and c.employee.user %}
+                    <a class="btn primary" href="{% url 'company_contracts' %}?edit={{ c.id }}">Editar</a>
+                  {% else %}
+                    <span class="muted">Indisponivel</span>
+                  {% endif %}
                 </td>
               </tr>
             {% empty %}

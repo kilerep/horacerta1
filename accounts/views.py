@@ -518,23 +518,28 @@ def company_contracts(request):
             company=company,
             employee__isnull=False,
             employee__user__isnull=False,
+            employee__company=company,
         ).select_related("employee", "employee__user")
         if company
         else Contract.objects.none()
     )
 
     edit_contract = None
+    invalid_edit_contract = False
     edit_id = (request.GET.get("edit") or "").strip()
     if edit_id and company:
-        edit_contract = get_object_or_404(Contract, id=edit_id, company=company)
+        edit_contract = contracts.filter(id=edit_id).first()
+        invalid_edit_contract = edit_contract is None
 
     if request.method == "POST":
         contract_id = (request.POST.get("contract_id") or "").strip()
         instance = None
         if contract_id and company:
-            instance = get_object_or_404(Contract, id=contract_id, company=company)
+            instance = contracts.filter(id=contract_id).first()
 
         form = CompanyContractForm(request.POST, request.FILES, instance=instance, company=company, request=request)
+        if contract_id and instance is None:
+            form.add_error(None, "Contrato invalido para edicao. Atualize a pagina e tente novamente.")
         if form.is_valid():
             employee = form.cleaned_data.get("employee")
             if not employee or not Employee.objects.filter(id=employee.id, company=company).exists():
@@ -567,6 +572,7 @@ def company_contracts(request):
             "contracts": contracts.order_by("-is_active", "-start_date", "employee__user__username")[:400],
             "form": form,
             "edit_contract": edit_contract,
+            "invalid_edit_contract": invalid_edit_contract,
         },
     )
 

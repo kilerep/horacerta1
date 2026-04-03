@@ -2,6 +2,8 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AuthenticationForm
 from django.db import transaction
+from django.db.models import Q
+
 from companies.models import Company, Employee
 from timeclock.models import Contract
 
@@ -154,7 +156,8 @@ class CompanyMEICreateForm(forms.Form):
 
 class EmployeeChoiceField(forms.ModelChoiceField):
     def label_from_instance(self, obj):
-        email = (getattr(obj.user, "email", "") or getattr(obj.user, "username", "")).strip()
+        user = getattr(obj, "user", None)
+        email = (getattr(user, "email", "") or getattr(user, "username", "")).strip()
         if email:
             return f"{obj.full_name} - {email}"
         return obj.full_name
@@ -192,15 +195,25 @@ class CompanyContractForm(forms.ModelForm):
         self.fields["end_date"].required = False
         self.fields["notes"].required = False
 
+        employee_queryset = Employee.objects.none()
         if self.company:
-            self.fields["employee"].queryset = Employee.objects.filter(
+            employee_queryset = Employee.objects.filter(
                 company=self.company,
-                is_active=True,
                 user__role=User.Role.FUNCIONARIO,
-            ).select_related("user").order_by("full_name")
+                user__isnull=False,
+            )
+            if self.instance and self.instance.pk and self.instance.employee_id:
+                employee_queryset = employee_queryset.filter(Q(is_active=True) | Q(id=self.instance.employee_id))
+            else:
+                employee_queryset = employee_queryset.filter(is_active=True)
+            employee_queryset = employee_queryset.select_related("user").order_by("full_name")
 
-        if self.instance and self.instance.pk:
-            self.initial["employee"] = self.instance.employee
+        self.fields["employee"].queryset = employee_queryset
+
+        if self.instance and self.instance.pk and self.instance.employee_id:
+            initial_employee = self.fields["employee"].queryset.filter(id=self.instance.employee_id).first()
+            if initial_employee:
+                self.initial["employee"] = initial_employee
 
     def clean(self):
         data = super().clean()
