@@ -1,11 +1,16 @@
 {% extends "accounts/base.html" %}
-{% block title %}Contratos/Docs{% endblock %}
-{% block page_title %}Contratos/Docs{% endblock %}
+{% block title %}Documentos de contrato{% endblock %}
+{% block page_title %}Documentos de contrato{% endblock %}
 
 {% block content %}
-<div class="card">
-  <h2 style="margin-top:0;">Contratos/Docs</h2>
-  <p class="muted">Em breve: upload e organizacao de documentos por MEI/contrato.</p>
-</div>
+<section class="card">
+  <h2 style="margin-top:0;">Documentos de contrato</h2>
+  <p class="muted">
+    Esta rota permanece apenas por compatibilidade tecnica. No MVP atual, a gestao de documentos
+    e feita diretamente na area de Contratos.
+  </p>
+  <div style="margin-top:10px;">
+    <a class="btn primary" href="{% url 'company_contracts' %}">Ir para Contratos</a>
+  </div>
+</section>
 {% endblock %}
-
