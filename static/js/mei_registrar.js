@@ -93,13 +93,13 @@
       punchBtn.disabled = true;
       punchBtn.classList.add("is-loading");
       punchBtn.setAttribute("aria-busy", "true");
-      punchLabel.textContent = "Registrando horário...";
+      punchLabel.textContent = "Registrando horario...";
       return;
     }
     punchBtn.disabled = false;
     punchBtn.classList.remove("is-loading");
     punchBtn.removeAttribute("aria-busy");
-    punchLabel.textContent = "REGISTRAR HORÁRIO";
+    punchLabel.textContent = "Registrar horario";
   }
 
   function bindPunchSubmit() {
@@ -350,3 +350,4 @@
     applyGreetingAndDate(new Date());
   }, 30000);
 })();
+

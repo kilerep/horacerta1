@@ -1,1012 +1,743 @@
-﻿<html lang="pt-BR">
+﻿<!doctype html>
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HoraCerta | Controle de jornada inteligente</title>
-  <meta name="description" content="HoraCerta é uma plataforma de controle de jornada inteligente para empresas e prestadores de serviço. Registre horários, acompanhe históricos e organize pagamentos com mais clareza.">
+  <title>HoraCerta | Controle de horas para empresas com prestadores e MEI</title>
+  <meta name="description" content="HoraCerta e um sistema para empresas cadastrarem prestadores e profissionais MEI, receberem registros de horario e acompanharem historico com mais clareza operacional.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-main: #071426;
-      --bg-alt: #050b18;
-      --bg-soft: rgba(13, 26, 47, 0.78);
-      --card: rgba(13, 26, 47, 0.88);
-      --card-strong: rgba(11, 20, 38, 0.96);
-      --text-main: #eef4ff;
-      --text-muted: #a8b8cf;
-      --text-soft: #d5e2f5;
-      --border: rgba(255, 255, 255, 0.08);
-      --border-strong: rgba(255, 255, 255, 0.14);
+      --bg-1: #040c1c;
+      --bg-2: #071224;
+      --bg-3: #0a1630;
+      --panel: rgba(10, 20, 38, 0.82);
+      --panel-strong: rgba(8, 17, 33, 0.94);
+      --line: rgba(255, 255, 255, 0.12);
+      --line-soft: rgba(255, 255, 255, 0.07);
+      --text: #eef5ff;
+      --muted: #9eb2cc;
       --blue-1: #2f6bff;
-      --blue-2: #3da9f5;
-      --blue-3: #7ecbff;
-      --glow: rgba(47, 107, 255, 0.32);
-      --shadow-soft: 0 18px 42px rgba(1, 8, 20, 0.4);
-      --shadow-strong: 0 28px 70px rgba(0, 0, 0, 0.42);
-      --radius-xl: 28px;
-      --radius-lg: 22px;
-      --radius-md: 16px;
-      --radius-sm: 12px;
-      --max-width: 1180px;
+      --blue-2: #2ea2ef;
+      --blue-3: #74c6ff;
+      --ok: #33c98b;
+      --warn: #f4be48;
+      --maxw: 1180px;
+      --shadow-soft: 0 20px 48px rgba(0, 0, 0, 0.32);
+      --shadow-strong: 0 28px 70px rgba(0, 0, 0, 0.44);
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     html,
     body {
       margin: 0;
       padding: 0;
       min-height: 100%;
-      font-family: "Inter", sans-serif;
-      color: var(--text-main);
+      font-family: "Manrope", "Segoe UI", sans-serif;
+      color: var(--text);
       background:
-        radial-gradient(900px 420px at 15% -5%, rgba(61, 169, 245, 0.16), transparent 60%),
-        radial-gradient(900px 420px at 85% 0%, rgba(47, 107, 255, 0.16), transparent 58%),
-        linear-gradient(180deg, var(--bg-main) 0%, var(--bg-alt) 100%);
+        radial-gradient(820px 360px at 10% -3%, rgba(46, 162, 239, 0.2), transparent 56%),
+        radial-gradient(950px 400px at 94% 1%, rgba(47, 107, 255, 0.22), transparent 54%),
+        linear-gradient(180deg, var(--bg-1), var(--bg-2) 40%, var(--bg-3));
     }
 
     body {
-      line-height: 1.6;
-      letter-spacing: 0.01em;
+      line-height: 1.58;
       overflow-x: hidden;
     }
 
-    a {
-      color: inherit;
-      text-decoration: none;
-    }
-
-    img {
-      max-width: 100%;
-      display: block;
-    }
+    a { color: inherit; text-decoration: none; }
 
     .container {
-      width: min(var(--max-width), 92vw);
+      width: min(var(--maxw), 92vw);
       margin: 0 auto;
     }
 
-    .section {
-      padding: 88px 0;
+    .site-header-wrap {
+      padding-top: 14px;
+      position: relative;
+      z-index: 30;
     }
 
-    .section-title {
-      margin: 0;
-      font-size: clamp(2rem, 4vw, 3rem);
-      line-height: 1.08;
-      letter-spacing: -0.04em;
+    .site-header {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 12px 14px;
+      background: rgba(7, 16, 32, 0.72);
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow-soft);
     }
 
-    .section-subtitle {
-      margin: 16px 0 0;
-      max-width: 700px;
-      color: var(--text-muted);
+    .site-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: linear-gradient(135deg, rgba(47, 107, 255, 0.38), rgba(46, 162, 239, 0.16));
+      display: grid;
+      place-items: center;
+      font-size: 15px;
+      font-weight: 800;
+      color: #deefff;
+      flex: 0 0 auto;
+    }
+
+    .brand-name {
+      font-weight: 800;
+      letter-spacing: -0.02em;
       font-size: 1rem;
+    }
+
+    .brand-sub {
+      color: var(--muted);
+      font-size: 0.78rem;
+      margin-top: -1px;
+    }
+
+    .menu-toggle {
+      display: none;
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text);
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    .site-menu {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .site-link {
+      min-height: 40px;
+      padding: 0 12px;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      color: var(--muted);
+      display: inline-flex;
+      align-items: center;
+      font-size: 14px;
+    }
+
+    .site-link:hover {
+      color: var(--text);
+      border-color: var(--line);
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .btn {
+      min-height: 44px;
+      padding: 0 16px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.03);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      transition: transform .18s ease, filter .18s ease, border-color .18s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .btn.primary {
+      border: 0;
+      color: #fff;
+      background: linear-gradient(130deg, var(--blue-1), var(--blue-2));
+      box-shadow: 0 12px 34px rgba(47, 107, 255, 0.4);
+    }
+
+    .hero {
+      padding: 68px 0 28px;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.07fr 0.93fr;
+      gap: 28px;
+      align-items: center;
     }
 
     .eyebrow {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      margin-bottom: 18px;
-      padding: 7px 12px;
       border-radius: 999px;
-      border: 1px solid rgba(126, 203, 255, 0.18);
-      background: rgba(126, 203, 255, 0.08);
-      color: #cfe8ff;
-      font-size: 0.82rem;
+      border: 1px solid rgba(116, 198, 255, 0.28);
+      background: rgba(116, 198, 255, 0.1);
+      color: #d8ecff;
+      font-size: 0.8rem;
       font-weight: 700;
-      letter-spacing: 0.02em;
       text-transform: uppercase;
+      letter-spacing: 0.02em;
+      padding: 7px 12px;
     }
 
-    .eyebrow::before {
-      content: "";
-      width: 8px;
-      height: 8px;
-      border-radius: 999px;
-      background: linear-gradient(135deg, var(--blue-1), var(--blue-2));
-      box-shadow: 0 0 0 4px rgba(61, 169, 245, 0.12);
-    }
-
-    .topbar-wrap {
-      position: sticky;
-      top: 14px;
-      z-index: 20;
-      padding-top: 14px;
-    }
-
-    .topbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 20px;
-      padding: 16px 18px;
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      background: rgba(8, 18, 35, 0.68);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      box-shadow: var(--shadow-soft);
-    }
-
-    .brand {
-      display: inline-flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .brand-mark {
-      width: 40px;
-      height: 40px;
-      border-radius: 14px;
-      display: grid;
-      place-items: center;
-      border: 1px solid rgba(255,255,255,0.1);
-      background:
-        linear-gradient(145deg, rgba(47, 107, 255, 0.3), rgba(61, 169, 245, 0.16)),
-        rgba(255, 255, 255, 0.02);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
-    }
-
-    .brand-mark svg {
-      color: #dff1ff;
-    }
-
-    .brand-copy {
-      display: grid;
-      gap: 2px;
-    }
-
-    .brand-name {
-      font-size: 1rem;
-      font-weight: 800;
-      line-height: 1;
-      letter-spacing: -0.02em;
-    }
-
-    .brand-sub {
-      font-size: 0.78rem;
-      color: var(--text-muted);
-      line-height: 1;
-    }
-
-    .topbar-actions {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-    }
-
-    .nav-link {
-      min-height: 40px;
-      padding: 0 13px;
-      border-radius: 12px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--text-muted);
-      border: 1px solid transparent;
-      transition: all 0.2s ease;
-    }
-
-    .nav-link:hover {
-      color: var(--text-main);
-      border-color: var(--border);
-      background: rgba(255,255,255,0.04);
-    }
-
-    .btn-primary,
-    .btn-secondary {
-      min-height: 48px;
-      padding: 0 18px;
-      border-radius: 14px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      transition: all 0.2s ease;
-      white-space: nowrap;
-    }
-
-    .btn-primary {
-      border: 0;
-      color: #fff;
-      background: linear-gradient(135deg, var(--blue-1), var(--blue-2));
-      box-shadow: 0 14px 34px rgba(47, 107, 255, 0.35);
-    }
-
-    .btn-primary:hover {
-      filter: brightness(1.05);
-      box-shadow: 0 18px 38px rgba(47, 107, 255, 0.44);
-      transform: translateY(-1px);
-    }
-
-    .btn-secondary {
-      border: 1px solid var(--border-strong);
-      color: var(--text-main);
-      background: rgba(255,255,255,0.02);
-    }
-
-    .btn-secondary:hover {
-      border-color: rgba(255,255,255,0.2);
-      background: rgba(255,255,255,0.05);
-    }
-
-    .hero {
-      position: relative;
-      padding: 72px 0 28px;
-      overflow: hidden;
-    }
-
-    .hero-grid {
-      display: grid;
-      grid-template-columns: 1.05fr 0.95fr;
-      gap: 36px;
-      align-items: center;
-    }
-
-    .hero-copy h1 {
-      margin: 0;
-      font-size: clamp(2.7rem, 6vw, 5.1rem);
+    .hero h1 {
+      margin: 14px 0 0;
+      font-size: clamp(2.4rem, 5.5vw, 4.9rem);
       line-height: 0.98;
-      letter-spacing: -0.06em;
+      letter-spacing: -0.05em;
       max-width: 720px;
     }
 
-    .hero-copy p {
-      margin: 24px 0 0;
-      max-width: 620px;
-      color: var(--text-muted);
-      font-size: 1.06rem;
-    }
-
-    .hero-copy strong {
-      color: var(--text-soft);
-      font-weight: 700;
+    .hero p {
+      margin: 18px 0 0;
+      color: var(--muted);
+      max-width: 640px;
+      font-size: 1.04rem;
     }
 
     .hero-actions {
-      margin-top: 28px;
+      margin-top: 24px;
       display: flex;
-      gap: 12px;
+      gap: 10px;
       flex-wrap: wrap;
     }
 
     .hero-points {
-      margin: 28px 0 0;
+      margin: 24px 0 0;
       padding: 0;
       list-style: none;
       display: grid;
-      gap: 12px;
-      max-width: 620px;
+      gap: 10px;
+      max-width: 640px;
     }
 
     .hero-points li {
-      display: flex;
-      align-items: center;
-      gap: 10px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 11px 12px;
       color: #dce9fb;
-      padding: 12px 14px;
-      border-radius: 14px;
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,0.03);
     }
 
-    .hero-points li::before {
-      content: "✔";
-      color: #8ad0ff;
-      font-weight: 800;
-    }
-
-    .hero-visual {
-      position: relative;
-      min-height: 520px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .hero-glow {
-      position: absolute;
-      width: 420px;
-      height: 420px;
-      border-radius: 999px;
-      background: radial-gradient(circle, rgba(47, 107, 255, 0.26), transparent 65%);
-      filter: blur(10px);
-      z-index: 0;
-    }
-
-    .app-preview {
-      position: relative;
-      z-index: 1;
-      width: min(100%, 520px);
-      border-radius: 28px;
-      border: 1px solid rgba(255,255,255,0.09);
-      background:
-        linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02)),
-        rgba(10, 18, 35, 0.96);
+    .hero-preview {
+      border-radius: 24px;
+      border: 1px solid var(--line);
+      background: var(--panel-strong);
       box-shadow: var(--shadow-strong);
       overflow: hidden;
     }
 
-    .app-preview-top {
+    .preview-top {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line-soft);
       display: flex;
-      align-items: center;
       justify-content: space-between;
       gap: 10px;
-      padding: 14px 16px;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-      background: rgba(255,255,255,0.02);
-    }
-
-    .app-preview-dots {
-      display: flex;
-      gap: 6px;
-    }
-
-    .app-preview-dots span {
-      width: 9px;
-      height: 9px;
-      border-radius: 999px;
-      background: rgba(255,255,255,0.18);
-    }
-
-    .app-preview-label {
-      color: var(--text-muted);
+      color: var(--muted);
       font-size: 0.82rem;
-      font-weight: 600;
+      background: rgba(255, 255, 255, 0.03);
     }
 
-    .app-preview-body {
-      padding: 18px;
+    .preview-body {
+      padding: 16px;
       display: grid;
-      gap: 16px;
-    }
-
-    .preview-hero-card {
-      border-radius: 22px;
-      padding: 20px;
-      border: 1px solid rgba(126,203,255,0.12);
-      background:
-        radial-gradient(circle at 0% 0%, rgba(61,169,245,0.14), transparent 38%),
-        linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015));
-    }
-
-    .preview-kicker {
-      color: var(--text-muted);
-      font-size: 0.82rem;
-      font-weight: 600;
-      margin-bottom: 8px;
-    }
-
-    .preview-title {
-      margin: 0;
-      font-size: 1.45rem;
-      font-weight: 800;
-      line-height: 1.1;
-      letter-spacing: -0.03em;
-    }
-
-    .preview-clock {
-      margin-top: 16px;
-      font-size: 3rem;
-      font-weight: 900;
-      line-height: 1;
-      letter-spacing: -0.04em;
-    }
-
-    .preview-badge {
-      margin-top: 12px;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      min-height: 34px;
-      padding: 0 12px;
-      border-radius: 999px;
-      border: 1px solid rgba(45, 211, 145, 0.24);
-      background: rgba(45, 211, 145, 0.08);
-      color: #d5ffeb;
-      font-size: 0.84rem;
-      font-weight: 700;
+      gap: 10px;
     }
 
     .preview-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
+      border: 1px solid var(--line-soft);
+      border-radius: 13px;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 11px;
     }
 
-    .preview-mini-card {
-      border-radius: 18px;
-      padding: 16px;
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,0.03);
+    .preview-label {
+      color: var(--muted);
+      font-size: 12px;
     }
 
-    .preview-mini-label {
-      color: var(--text-muted);
-      font-size: 0.78rem;
-      margin-bottom: 8px;
-    }
-
-    .preview-mini-value {
-      font-size: 1.28rem;
+    .preview-value {
+      margin-top: 4px;
+      font-size: 1.22rem;
       font-weight: 800;
-      letter-spacing: -0.03em;
     }
 
-    .preview-table {
-      border-radius: 18px;
-      padding: 16px;
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,0.03);
-    }
-
-    .preview-table-head,
-    .preview-table-row {
+    .preview-grid {
       display: grid;
-      grid-template-columns: 1.2fr 1fr 1fr;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 10px;
-      align-items: center;
     }
 
-    .preview-table-head {
-      color: var(--text-muted);
-      font-size: 0.78rem;
-      padding-bottom: 10px;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-      margin-bottom: 10px;
-    }
-
-    .preview-table-row {
-      font-size: 0.9rem;
-      padding: 10px 0;
-      color: #dce8f8;
-    }
-
-    .preview-table-row + .preview-table-row {
-      border-top: 1px solid rgba(255,255,255,0.05);
-    }
-
-    .preview-status {
-      justify-self: start;
-      min-height: 28px;
-      padding: 0 10px;
-      border-radius: 999px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.76rem;
-      font-weight: 700;
-      border: 1px solid rgba(255,255,255,0.1);
-      background: rgba(255,255,255,0.04);
-    }
-
-    .preview-status.ok {
-      border-color: rgba(45, 211, 145, 0.24);
-      background: rgba(45, 211, 145, 0.08);
-      color: #ddffeb;
-    }
-
-    .preview-status.warn {
-      border-color: rgba(250, 204, 21, 0.24);
-      background: rgba(250, 204, 21, 0.08);
-      color: #fff5ca;
-    }
-
-    .impact {
-      padding-top: 28px;
-    }
-
-    .impact-grid {
+    .preview-log {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 18px;
-      margin-top: 28px;
+      gap: 8px;
+      margin-top: 2px;
     }
 
-    .impact-card {
-      padding: 24px 22px;
-      border-radius: 24px;
-      border: 1px solid var(--border);
-      background: var(--card);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+    .preview-log-item {
+      border: 1px solid var(--line-soft);
+      border-radius: 10px;
+      padding: 8px 10px;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 0.88rem;
+      color: #d6e5f9;
+      background: rgba(255, 255, 255, 0.02);
     }
 
-    .impact-card h3 {
+    .preview-status-ok { color: var(--ok); font-weight: 700; }
+    .preview-status-warn { color: var(--warn); font-weight: 700; }
+
+    .section { padding: 78px 0; }
+
+    .section h2 {
       margin: 0;
-      font-size: 1.1rem;
-      letter-spacing: -0.02em;
+      font-size: clamp(1.84rem, 4vw, 3.05rem);
+      line-height: 1.09;
+      letter-spacing: -0.04em;
+      max-width: 780px;
     }
 
-    .impact-card p {
-      margin: 12px 0 0;
-      color: var(--text-muted);
-      font-size: 0.95rem;
+    .section-intro {
+      margin: 14px 0 0;
+      color: var(--muted);
+      max-width: 780px;
     }
 
-    .steps-grid {
+    .cards-3,
+    .cards-2,
+    .steps,
+    .mobile-grid {
+      margin-top: 24px;
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 18px;
-      margin-top: 30px;
+      gap: 14px;
     }
 
-    .step-card {
-      padding: 24px;
-      border-radius: 24px;
-      border: 1px solid var(--border);
-      background: var(--card);
-      position: relative;
-      overflow: hidden;
+    .cards-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .cards-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .steps { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .mobile-grid { grid-template-columns: 0.52fr 0.48fr; align-items: center; }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--panel);
+      padding: 18px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
     }
 
-    .step-number {
-      width: 42px;
-      height: 42px;
-      border-radius: 14px;
-      display: grid;
-      place-items: center;
-      font-size: 0.95rem;
-      font-weight: 800;
-      margin-bottom: 14px;
-      background: linear-gradient(135deg, rgba(47,107,255,0.26), rgba(61,169,245,0.2));
-      border: 1px solid rgba(126,203,255,0.16);
-      color: #dff2ff;
-    }
-
-    .step-card h3 {
+    .card h3 {
       margin: 0;
       font-size: 1.08rem;
       letter-spacing: -0.02em;
     }
 
-    .step-card p {
-      margin: 12px 0 0;
-      color: var(--text-muted);
+    .card p {
+      margin: 10px 0 0;
+      color: var(--muted);
       font-size: 0.95rem;
     }
 
-    .audience {
-      padding-top: 24px;
-    }
-
-    .audience-grid {
+    .step-index {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-      margin-top: 30px;
+      place-items: center;
+      margin-bottom: 10px;
+      font-size: 0.84rem;
+      font-weight: 800;
+      border: 1px solid rgba(116, 198, 255, 0.25);
+      background: linear-gradient(130deg, rgba(47, 107, 255, 0.33), rgba(46, 162, 239, 0.2));
     }
 
-    .audience-card {
-      border-radius: 28px;
-      border: 1px solid var(--border);
-      background: var(--card-strong);
-      padding: 28px;
-      box-shadow: var(--shadow-soft);
-    }
-
-    .audience-card h3 {
-      margin: 0;
-      font-size: 1.4rem;
-      letter-spacing: -0.03em;
-    }
-
-    .audience-card p {
+    .list {
       margin: 12px 0 0;
-      color: var(--text-muted);
-    }
-
-    .audience-list {
-      list-style: none;
-      padding: 0;
-      margin: 18px 0 0;
+      padding-left: 16px;
+      color: var(--muted);
       display: grid;
-      gap: 12px;
+      gap: 6px;
     }
 
-    .audience-list li {
-      display: flex;
-      gap: 10px;
-      color: #dce8fb;
-      align-items: flex-start;
+    .phone {
+      width: min(360px, 100%);
+      margin: 0 auto;
+      border-radius: 30px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: #09152c;
+      padding: 14px;
+      box-shadow: var(--shadow-strong);
     }
 
-    .audience-list li::before {
-      content: "•";
-      color: var(--blue-3);
-      font-size: 1.2rem;
-      line-height: 1;
-      margin-top: 2px;
+    .phone-screen {
+      border-radius: 22px;
+      border: 1px solid var(--line);
+      background: rgba(8, 16, 32, 0.96);
+      padding: 12px;
+      display: grid;
+      gap: 8px;
     }
 
-    .cta-final {
-      padding-top: 24px;
+    .phone-box {
+      border: 1px solid var(--line-soft);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 10px;
+      font-size: 0.9rem;
     }
 
     .cta-box {
-      border-radius: 30px;
-      border: 1px solid rgba(255,255,255,0.12);
-      background:
-        radial-gradient(circle at 0% 0%, rgba(47,107,255,0.2), transparent 36%),
-        radial-gradient(circle at 100% 100%, rgba(61,169,245,0.16), transparent 34%),
-        linear-gradient(180deg, rgba(12, 21, 40, 0.94), rgba(8, 15, 30, 0.98));
-      box-shadow: var(--shadow-strong);
-      padding: 38px 28px;
+      margin-top: 24px;
+      border-radius: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      padding: 30px 20px;
       text-align: center;
+      background:
+        radial-gradient(circle at 0% 0%, rgba(47, 107, 255, 0.24), transparent 34%),
+        radial-gradient(circle at 100% 100%, rgba(46, 162, 239, 0.18), transparent 34%),
+        linear-gradient(180deg, rgba(10, 20, 38, 0.95), rgba(7, 14, 28, 0.98));
+      box-shadow: var(--shadow-strong);
     }
 
-    .cta-box h2 {
-      margin: 0;
-      font-size: clamp(1.9rem, 4vw, 3.1rem);
-      line-height: 1.05;
-      letter-spacing: -0.05em;
-    }
+    .cta-box h2 { margin: 0; }
 
     .cta-box p {
-      margin: 16px auto 0;
+      margin: 12px auto 0;
       max-width: 700px;
-      color: var(--text-muted);
+      color: var(--muted);
     }
 
-    .cta-box .hero-actions {
-      margin-top: 24px;
-      justify-content: center;
-    }
+    .cta-box .hero-actions { justify-content: center; }
 
     footer {
-      border-top: 1px solid var(--border);
-      margin-top: 60px;
-      padding: 28px 0 42px;
+      border-top: 1px solid var(--line-soft);
+      margin-top: 54px;
+      padding: 24px 0 34px;
     }
 
-    .footer-grid {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 16px;
-      align-items: center;
-    }
-
-    .footer-copy {
-      margin: 0;
-      color: var(--text-muted);
-      font-size: 0.93rem;
-    }
-
-    .footer-links {
+    .footer-row {
       display: flex;
+      justify-content: space-between;
+      gap: 12px;
       flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
+      color: var(--muted);
+      font-size: 0.92rem;
     }
 
-    .footer-links a {
-      color: #d4e1f5;
-      font-size: 0.93rem;
-    }
+    @media (max-width: 1080px) {
+      .hero-grid,
+      .mobile-grid { grid-template-columns: 1fr; }
 
-    .footer-links a:hover {
-      color: #fff;
-      text-decoration: underline;
-      text-underline-offset: 0.2em;
-    }
-
-    .divider {
-      color: rgba(255,255,255,0.22);
-    }
-
-    @media (max-width: 1100px) {
-      .hero-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .hero-copy {
-        text-align: center;
-      }
+      .hero-copy { text-align: center; }
 
       .hero-copy p,
-      .hero-points {
-        margin-left: auto;
-        margin-right: auto;
+      .hero-points { margin-left: auto; margin-right: auto; }
+
+      .hero-actions { justify-content: center; }
+    }
+
+    @media (max-width: 920px) {
+      .cards-3,
+      .cards-2,
+      .steps { grid-template-columns: 1fr; }
+
+      .section { padding: 62px 0; }
+    }
+
+    @media (max-width: 760px) {
+      .site-header-wrap {
+        position: static;
+        padding-top: 10px;
       }
 
-      .hero-actions {
+      .site-header {
+        backdrop-filter: none;
+      }
+
+      .menu-toggle { display: inline-flex; }
+
+      .site-menu {
+        width: 100%;
+        display: none;
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid var(--line-soft);
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .site-header.is-open .site-menu { display: flex; }
+
+      .site-link,
+      .site-menu .btn {
+        width: 100%;
         justify-content: center;
       }
 
-      .hero-visual {
-        min-height: auto;
-      }
-    }
-
-    @media (max-width: 900px) {
-      .section {
-        padding: 72px 0;
-      }
-
-      .impact-grid,
-      .steps-grid,
-      .audience-grid,
-      .features-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .footer-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    @media (max-width: 640px) {
-      .topbar {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-
-      .topbar-actions {
-        width: 100%;
-        justify-content: space-between;
-      }
-
-      .nav-link,
-      .topbar-actions .btn-primary {
-        flex: 1;
-      }
-
-      .hero {
-        padding-top: 54px;
-      }
-
-      .hero-copy h1 {
-        font-size: clamp(2.3rem, 11vw, 3.5rem);
-      }
-
-      .app-preview-body {
-        padding: 14px;
-      }
-
-      .preview-row,
-      .preview-table-head,
-      .preview-table-row {
-        grid-template-columns: 1fr;
-      }
-
-      .preview-table-head {
-        display: none;
-      }
-
-      .preview-table-row {
-        gap: 8px;
-        padding: 12px 0;
-      }
-
-      .preview-table-row span {
-        display: block;
-      }
-
-      .preview-status {
-        margin-top: 4px;
-      }
+      .hero { padding-top: 54px; }
     }
   </style>
 </head>
 <body>
-  <header class="topbar-wrap">
+  <header class="site-header-wrap">
     <div class="container">
-      <nav class="topbar" aria-label="Navegação principal">
-        <a class="brand" href="/" aria-label="HoraCerta">
-          <span class="brand-mark" aria-hidden="true">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M12 4v8l5 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
-              <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.8"></circle>
-            </svg>
-          </span>
-          <span class="brand-copy">
-            <strong class="brand-name">HoraCerta</strong>
-            <span class="brand-sub">Controle de jornada inteligente</span>
-          </span>
-        </a>
+      <nav class="site-header" id="siteHeader" aria-label="Navegacao principal">
+        <div class="site-header-row">
+          <a class="brand" href="/" aria-label="HoraCerta">
+            <span class="brand-mark" aria-hidden="true">HC</span>
+            <span>
+              <div class="brand-name">HoraCerta</div>
+              <div class="brand-sub">Controle de horas para operacao real</div>
+            </span>
+          </a>
 
-        <div class="topbar-actions">
-          <a class="nav-link" href="/help/">Ajuda</a>
-          <a class="nav-link" href="/terms/">Termos</a>
-          <a class="btn-primary" href="/login/">Entrar</a>
+          <button class="menu-toggle" id="menuToggle" type="button" aria-label="Abrir menu" aria-expanded="false">Menu</button>
+
+          <div class="site-menu" id="siteMenu">
+            <a class="site-link" href="#problema">Problema</a>
+            <a class="site-link" href="#solucao">Solucao</a>
+            <a class="site-link" href="#como-funciona">Como funciona</a>
+            <a class="site-link" href="#para-quem">Para quem</a>
+            <a class="btn" href="/login/">Entrar no sistema</a>
+            <a class="btn primary" href="/signup/">Criar conta da empresa</a>
+          </div>
         </div>
       </nav>
     </div>
   </header>
 
   <main>
-    <section class="hero">
+    <section class="hero" id="hero">
       <div class="container hero-grid">
         <div class="hero-copy">
-          <span class="eyebrow">HoraCerta</span>
-          <h1>Controle de jornada inteligente para empresas e prestadores de serviço</h1>
+          <span class="eyebrow">MVP do HoraCerta hoje</span>
+          <h1>Controle horas de prestadores e profissionais MEI com mais clareza para a empresa</h1>
           <p>
-            Organize horários, acompanhe históricos e tenha <strong>mais clareza no controle das horas trabalhadas</strong> com uma plataforma simples, moderna e feita para a rotina real de empresas e profissionais MEI.
+            O HoraCerta foi feito para operacao de verdade: a empresa contrata, cadastra o profissional, recebe os registros e acompanha historico para reduzir retrabalho na conferencia e no pagamento.
           </p>
 
           <div class="hero-actions">
-            <a class="btn-primary" href="/signup/">Criar conta</a>
-            <a class="btn-secondary" href="/login/">Entrar no sistema</a>
+            <a class="btn primary" href="/signup/">Criar conta da empresa</a>
+            <a class="btn" href="/login/">Entrar no sistema</a>
           </div>
 
-          <ul class="hero-points" aria-label="Destaques do HoraCerta">
-            <li>Registro simples de horários no computador ou celular</li>
-            <li>Histórico organizado por período, contrato e jornada</li>
-            <li>Mais transparência entre empresa e prestador no acompanhamento das horas</li>
+          <ul class="hero-points">
+            <li>Cadastro centralizado de profissionais feito pela empresa.</li>
+            <li>Registro de horarios pelo profissional na conta vinculada.</li>
+            <li>Historico confiavel para RH, financeiro e operacao.</li>
           </ul>
         </div>
 
-        <div class="hero-visual">
-          <div class="hero-glow" aria-hidden="true"></div>
-
-          <div class="app-preview" aria-label="Prévia da plataforma HoraCerta">
-            <div class="app-preview-top">
-              <div class="app-preview-dots" aria-hidden="true">
-                <span></span>
-                <span></span>
-                <span></span>
-              </div>
-              <div class="app-preview-label">Painel do HoraCerta</div>
+        <div class="hero-preview" aria-label="Previa do painel da empresa">
+          <div class="preview-top">
+            <span>Painel da empresa</span>
+            <span>Visao operacional</span>
+          </div>
+          <div class="preview-body">
+            <div class="preview-row">
+              <div class="preview-label">Profissionais ativos</div>
+              <div class="preview-value">32</div>
             </div>
-
-            <div class="app-preview-body">
-              <div class="preview-hero-card">
-                <div class="preview-kicker">Registro de jornada</div>
-                <h2 class="preview-title">Boa tarde, João</h2>
-                <div class="preview-clock">14:32</div>
-                <div class="preview-badge">Dia em andamento</div>
-              </div>
-
+            <div class="preview-grid">
               <div class="preview-row">
-                <div class="preview-mini-card">
-                  <div class="preview-mini-label">Empresa / Contrato</div>
-                  <div class="preview-mini-value">MetalWorks</div>
-                </div>
-
-                <div class="preview-mini-card">
-                  <div class="preview-mini-label">Valor por hora</div>
-                  <div class="preview-mini-value">R$ 47,50</div>
-                </div>
+                <div class="preview-label">Registros da semana</div>
+                <div class="preview-value">486</div>
               </div>
-
-              <div class="preview-table">
-                <div class="preview-table-head">
-                  <span>Data</span>
-                  <span>Total</span>
-                  <span>Status</span>
-                </div>
-
-                <div class="preview-table-row">
-                  <span>07/03/2026</span>
-                  <span>08:10</span>
-                  <span class="preview-status ok">OK</span>
-                </div>
-
-                <div class="preview-table-row">
-                  <span>06/03/2026</span>
-                  <span>07:45</span>
-                  <span class="preview-status ok">OK</span>
-                </div>
-
-                <div class="preview-table-row">
-                  <span>05/03/2026</span>
-                  <span>04:20</span>
-                  <span class="preview-status warn">Incompleto</span>
-                </div>
+              <div class="preview-row">
+                <div class="preview-label">Dias com alerta</div>
+                <div class="preview-value">9</div>
               </div>
+            </div>
+            <div class="preview-log">
+              <div class="preview-log-item"><span>Ana Souza</span><span class="preview-status-ok">08:06 OK</span></div>
+              <div class="preview-log-item"><span>Bruno Lima</span><span class="preview-status-warn">05:42 Revisar</span></div>
+              <div class="preview-log-item"><span>Caio Ribeiro</span><span class="preview-status-ok">07:55 OK</span></div>
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <section class="section impact">
+    <section class="section" id="problema">
       <div class="container">
-        <span class="eyebrow">Por que usar</span>
-        <h2 class="section-title">Mais controle. Mais clareza. Mais organização.</h2>
-        <p class="section-subtitle">
-          O HoraCerta foi pensado para simplificar o acompanhamento das horas trabalhadas sem transformar a rotina em algo pesado ou complicado.
+        <h2>Problema real da operacao: planilha, mensagem solta e pouca confianca no historico.</h2>
+        <p class="section-intro">
+          Quando horarios ficam espalhados em planilhas, mensagens e anotacoes, a empresa perde controle, demora para fechar conferencias e aumenta risco de erro no pagamento.
         </p>
 
-        <div class="impact-grid">
-          <article class="impact-card">
-            <h3>Registro rápido de horários</h3>
-            <p>Entrada, pausa e saída com poucos toques, mantendo a rotina prática para quem usa no dia a dia.</p>
+        <div class="cards-3">
+          <article class="card">
+            <h3>Planilhas paralelas</h3>
+            <p>Diferentes versoes para os mesmos dados deixam a conferencia lenta e insegura.</p>
           </article>
-
-          <article class="impact-card">
-            <h3>Histórico organizado</h3>
-            <p>Visualize registros por período, contrato e jornada com mais clareza para conferência e acompanhamento.</p>
+          <article class="card">
+            <h3>Registros fora do sistema</h3>
+            <p>Horario enviado por chat e dificil de rastrear quando a rotina aperta.</p>
           </article>
-
-          <article class="impact-card">
-            <h3>Transparência no pagamento</h3>
-            <p>Horas registradas, observações e valores por contrato organizados de forma mais confiável para empresa e prestador.</p>
+          <article class="card">
+            <h3>Fechamento operacional fraco</h3>
+            <p>Sem historico organizado, RH e financeiro trabalham sempre no modo urgencia.</p>
           </article>
         </div>
       </div>
     </section>
 
-    <section class="section">
+    <section class="section" id="solucao">
       <div class="container">
-        <span class="eyebrow">Como funciona</span>
-        <h2 class="section-title">Uma rotina simples em três passos</h2>
-        <p class="section-subtitle">
-          O fluxo do HoraCerta foi desenhado para ser leve no uso, mas forte na organização das informações.
+        <h2>Como o HoraCerta resolve: fluxo direto, historico organizado e visao de gestao.</h2>
+        <p class="section-intro">
+          O MVP atual foi desenhado para a estrutura que funciona hoje: empresa como cliente principal e profissional MEI como usuario operacional.
         </p>
 
-        <div class="steps-grid">
-          <article class="step-card">
-            <div class="step-number">01</div>
-            <h3>A empresa organiza o vínculo</h3>
-            <p>Cadastre a empresa, vincule o profissional e defina o contexto de trabalho de forma clara e centralizada.</p>
+        <div class="cards-3">
+          <article class="card">
+            <h3>A empresa cadastra</h3>
+            <p>Cadastro do profissional feito no painel da empresa com vinculo ativo definido.</p>
           </article>
-
-          <article class="step-card">
-            <div class="step-number">02</div>
-            <h3>O profissional registra os horários</h3>
-            <p>Os registros são feitos com rapidez no sistema, inclusive no celular, sem burocracia desnecessária.</p>
+          <article class="card">
+            <h3>O profissional registra</h3>
+            <p>Registro de horarios simples no dia a dia, com contexto da empresa vinculada.</p>
           </article>
-
-          <article class="step-card">
-            <div class="step-number">03</div>
-            <h3>O sistema organiza e mostra o histórico</h3>
-            <p>As horas ficam disponíveis para consulta, revisão, exportação e acompanhamento dos pagamentos.</p>
+          <article class="card">
+            <h3>A empresa acompanha</h3>
+            <p>Historico, registros recentes e alertas de inconsistencias em uma unica visao.</p>
           </article>
         </div>
       </div>
     </section>
 
-    <section class="section audience">
+    <section class="section" id="como-funciona">
       <div class="container">
-        <span class="eyebrow">Feito para os dois lados</span>
-        <h2 class="section-title">Funciona bem para empresas e para profissionais MEI</h2>
-        <p class="section-subtitle">
-          O HoraCerta foi criado para equilibrar simplicidade de uso com clareza nas informações, tanto para quem contrata quanto para quem presta o serviço.
+        <h2>Como funciona</h2>
+        <p class="section-intro">Quatro passos simples para implementar na rotina sem complicacao.</p>
+
+        <div class="steps">
+          <article class="card">
+            <div class="step-index">01</div>
+            <h3>Criar conta da empresa</h3>
+            <p>Defina o acesso principal de RH/Admin no sistema.</p>
+          </article>
+          <article class="card">
+            <div class="step-index">02</div>
+            <h3>Cadastrar profissional MEI</h3>
+            <p>Inclua o profissional e habilite o vinculo para uso.</p>
+          </article>
+          <article class="card">
+            <div class="step-index">03</div>
+            <h3>Registrar horarios</h3>
+            <p>O profissional registra os horarios na conta vinculada.</p>
+          </article>
+          <article class="card">
+            <div class="step-index">04</div>
+            <h3>Acompanhar historico</h3>
+            <p>A empresa consulta registros e organiza a rotina operacional.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="para-quem">
+      <div class="container">
+        <h2>Para quem e</h2>
+        <p class="section-intro">
+          Empresas que trabalham com prestadores e profissionais MEI e precisam de controle com mais seriedade para tomada de decisao.
         </p>
 
-        <div class="audience-grid">
-          <article class="audience-card">
-            <h3>Empresas</h3>
-            <p>Tenha uma visão mais organizada das horas registradas e acompanhe jornadas, contratos e históricos com mais confiança.</p>
-            <ul class="audience-list">
-              <li>Controle de horas de profissionais prestadores</li>
-              <li>Histórico centralizado para conferência</li>
-              <li>Mais clareza no acompanhamento e no pagamento</li>
+        <div class="cards-2">
+          <article class="card">
+            <h3>Empresa (RH, financeiro e operacao)</h3>
+            <ul class="list">
+              <li>Padronizar cadastro e vinculacao de profissionais.</li>
+              <li>Consolidar registros para conferencia mais rapida.</li>
+              <li>Ganhar previsibilidade no acompanhamento de horas.</li>
             </ul>
           </article>
-
-          <article class="audience-card">
-            <h3>Profissionais MEI</h3>
-            <p>Registre horários com facilidade, acompanhe o que foi feito e mantenha uma visão mais segura da própria rotina de trabalho.</p>
-            <ul class="audience-list">
-              <li>Registro simples e rápido no dia a dia</li>
-              <li>Acesso ao histórico de jornadas e observações</li>
-              <li>Mais organização das horas trabalhadas</li>
+          <article class="card">
+            <h3>Profissional MEI (usuario do sistema)</h3>
+            <ul class="list">
+              <li>Registrar horarios com clareza na conta vinculada.</li>
+              <li>Visualizar empresa atual e vinculo ativo.</li>
+              <li>Consultar historico recente sem depender de planilha.</li>
             </ul>
           </article>
         </div>
       </div>
     </section>
 
-    <section class="section cta-final">
+    <section class="section" id="beneficios">
+      <div class="container">
+        <h2>Beneficio para empresa e profissional</h2>
+        <p class="section-intro">Mais controle para quem gerencia e mais organizacao para quem registra.</p>
+
+        <div class="cards-2">
+          <article class="card">
+            <h3>Para a empresa</h3>
+            <p>Menos ruido operacional, mais transparencia dos registros e base mais segura para conferencia de rotina e pagamento.</p>
+          </article>
+          <article class="card">
+            <h3>Para o profissional</h3>
+            <p>Rotina de registro objetiva, historico visivel e menos retrabalho na troca de informacoes com a empresa.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="mobile">
+      <div class="container">
+        <h2>Uso no celular</h2>
+        <p class="section-intro">A experiencia mobile foi pensada para registrar rapido e manter o fluxo funcionando em campo ou no escritorio.</p>
+
+        <div class="mobile-grid">
+          <div class="phone" aria-label="Previa mobile do HoraCerta">
+            <div class="phone-screen">
+              <div class="phone-box"><strong>Boa tarde, Felipe</strong><br><span style="color:var(--muted); font-size:12px;">Empresa: Grupo Orion</span></div>
+              <div class="phone-box">Contrato ativo: #A93F8B2C</div>
+              <div class="phone-box">Status do dia: <span class="preview-status-warn">em andamento</span></div>
+              <div class="phone-box">Registros: 08:02 | 12:01 | 13:03</div>
+              <div class="phone-box"><span class="preview-status-ok">Acao principal: Registrar horario</span></div>
+            </div>
+          </div>
+
+          <article class="card">
+            <h3>Pratico para o usuario e util para a gestao</h3>
+            <p>
+              O profissional registra no celular em poucos toques e a empresa enxerga os mesmos dados organizados no painel para acompanhar a operacao com mais seguranca.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="cta-final">
       <div class="container">
         <div class="cta-box">
-          <h2>Comece a organizar suas horas hoje</h2>
+          <h2>Implemente um controle de horas mais claro na sua operacao</h2>
           <p>
-            Dê mais clareza para a rotina de trabalho, reduza confusões no acompanhamento das horas e transforme o controle da jornada em algo mais simples.
+            Estruture o cadastro de profissionais, padronize registros de horario e acompanhe historico com uma visao que ajuda a empresa a decidir melhor.
           </p>
-
           <div class="hero-actions">
-            <a class="btn-primary" href="/signup/">Criar conta</a>
-            <a class="btn-secondary" href="/login/">Entrar</a>
+            <a class="btn primary" href="/signup/">Criar conta da empresa</a>
+            <a class="btn" href="/login/">Entrar no sistema</a>
           </div>
         </div>
       </div>
@@ -1014,20 +745,32 @@
   </main>
 
   <footer>
-    <div class="container footer-grid">
-      <p class="footer-copy">
-        © 2026 HoraCerta<br>
-        Controle de jornada inteligente para empresas e prestadores de serviço.
-      </p>
-
-      <div class="footer-links">
-        <a href="/help/">Ajuda</a>
-        <span class="divider">|</span>
-        <a href="/terms/">Termos</a>
-        <span class="divider">|</span>
-        <a href="/terms/">Privacidade</a>
-      </div>
+    <div class="container footer-row">
+      <span>© 2026 HoraCerta | Plataforma para controle de horas de prestadores e profissionais MEI.</span>
+      <span><a href="/help/">Ajuda</a> | <a href="/terms/">Termos</a></span>
     </div>
   </footer>
+
+  <script>
+    (function () {
+      var header = document.getElementById("siteHeader");
+      var toggle = document.getElementById("menuToggle");
+      if (!header || !toggle) return;
+
+      toggle.addEventListener("click", function () {
+        var isOpen = header.classList.toggle("is-open");
+        toggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+      });
+
+      document.addEventListener("click", function (event) {
+        if (!header.classList.contains("is-open")) return;
+        if (header.contains(event.target)) return;
+        header.classList.remove("is-open");
+        toggle.setAttribute("aria-expanded", "false");
+      });
+    })();
+  </script>
 </body>
 </html>
+
+

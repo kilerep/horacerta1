@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 import os
 from pathlib import Path
+from urllib.parse import urlparse
 
 from django.core.exceptions import ImproperlyConfigured
 
@@ -57,13 +58,24 @@ SECRET_KEY = os.getenv(
 DEBUG = _env_bool("DEBUG", True)
 APP_BASE_URL = os.getenv("APP_BASE_URL", "").strip()
 
-ALLOWED_HOSTS = ['*']
+DEFAULT_ALLOWED_HOSTS = [
+    "horacertagestao.com.br",
+    "www.horacertagestao.com.br",
+    "3.128.144.176",
+    "127.0.0.1",
+    "localhost",
+]
+ALLOWED_HOSTS = list(DEFAULT_ALLOWED_HOSTS)
 for host in [host.strip() for host in os.getenv("ALLOWED_HOSTS", "").split(",") if host.strip()]:
     if host not in ALLOWED_HOSTS:
         ALLOWED_HOSTS.append(host)
 render_external_hostname = os.getenv("RENDER_EXTERNAL_HOSTNAME", "").strip()
 if render_external_hostname and render_external_hostname not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append(render_external_hostname)
+if APP_BASE_URL:
+    app_base_host = (urlparse(APP_BASE_URL).hostname or "").strip()
+    if app_base_host and app_base_host not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(app_base_host)
 
 USE_WHITENOISE = _env_bool("USE_WHITENOISE", False)
 
@@ -235,7 +247,17 @@ EMAIL_USE_TLS = _env_bool("EMAIL_USE_TLS", True)
 EMAIL_USE_SSL = _env_bool("EMAIL_USE_SSL", False)
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER or "no-reply@horacerta.local")
 
-CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if origin.strip()]
+DEFAULT_CSRF_TRUSTED_ORIGINS = [
+    "https://horacertagestao.com.br",
+    "https://www.horacertagestao.com.br",
+    "http://3.128.144.176",
+    "http://127.0.0.1:8000",
+    "http://localhost:8000",
+]
+CSRF_TRUSTED_ORIGINS = list(DEFAULT_CSRF_TRUSTED_ORIGINS)
+for origin in [origin.strip() for origin in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if origin.strip()]:
+    if origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(origin)
 if render_external_hostname:
     render_origin = f"https://{render_external_hostname}"
     if render_origin not in CSRF_TRUSTED_ORIGINS:

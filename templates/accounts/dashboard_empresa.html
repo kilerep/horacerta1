@@ -1,179 +1,381 @@
-{% extends "accounts/base.html" %}
-{% block title %}HoraCerta - Empresa{% endblock %}
-{% block page_title %}Painel da empresa (RH/Admin){% endblock %}
+﻿{% extends "accounts/base.html" %}
+{% block title %}HoraCerta - Dashboard da Empresa{% endblock %}
+{% block page_title %}Dashboard da empresa{% endblock %}
 
 {% block content %}
   <style>
-    .wrap-grid{ margin-top:14px; display:grid; gap:14px; }
-    .cards-grid{ display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; }
-    .cols{ display:grid; grid-template-columns: 1.1fr .9fr; gap:14px; }
-    .panel{
-      border:1px solid var(--border);
+    .company-dashboard {
+      margin-top: 14px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .company-panel {
+      border: 1px solid var(--border);
       border-radius: var(--radius);
       background:
-        linear-gradient(140deg, rgba(79,124,255,.10), transparent 42%),
-        linear-gradient(180deg, rgba(250,204,21,.06), rgba(255,255,255,.03));
-      padding:14px;
+        radial-gradient(circle at 18% 0%, rgba(79,124,255,.18), transparent 42%),
+        linear-gradient(180deg, rgba(250,204,21,.05), rgba(255,255,255,.03));
+      padding: 14px;
     }
-    .k{ color:var(--muted); font-size:12px; }
-    .v{ font-size:28px; font-weight:800; margin-top:2px; }
-    .muted{ color:var(--muted); }
-    .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
-    .field{ display:flex; flex-direction:column; gap:6px; min-width:220px; flex:1; }
-    label{ color:var(--muted); font-size:13px; }
-    input, select{
-      width:100%;
-      padding:10px 12px;
-      border-radius:12px;
-      border:1px solid var(--border);
-      background:rgba(255,255,255,.06);
-      color:var(--text);
-      outline:none;
+
+    .company-title {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: .2px;
     }
-    input:focus, select:focus{
+
+    .company-subtitle {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .company-kpis {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .kpi-card {
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 14px;
+      padding: 12px;
+      background: rgba(255,255,255,.03);
+    }
+
+    .kpi-label {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .kpi-value {
+      margin-top: 4px;
+      font-size: 30px;
+      line-height: 1;
+      font-weight: 900;
+    }
+
+    .kpi-hint {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .company-grid {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 14px;
+    }
+
+    .company-search-row {
+      margin-top: 10px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: end;
+    }
+
+    .company-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 220px;
+      flex: 1;
+    }
+
+    .company-field label {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .company-field input,
+    .company-field select {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      outline: none;
+    }
+
+    .company-field input:focus,
+    .company-field select:focus {
       border-color: rgba(79,124,255,.55);
       box-shadow: 0 0 0 3px rgba(79,124,255,.16);
     }
-    .pill{
-      display:inline-block;
-      border:1px solid var(--border);
-      border-radius:999px;
-      padding:4px 10px;
-      font-size:12px;
+
+    .company-table-wrap {
+      margin-top: 10px;
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    .company-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      min-width: 620px;
+    }
+
+    .company-table th,
+    .company-table td {
+      text-align: left;
+      padding: 10px;
+      border-bottom: 1px solid rgba(255,255,255,.07);
+      font-size: 14px;
+      vertical-align: top;
+    }
+
+    .company-table th {
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .company-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0 10px;
+      font-size: 12px;
       background: rgba(255,255,255,.05);
     }
-    .pill.warn{
-      border-color: rgba(250,204,21,.45);
-      background: rgba(250,204,21,.12);
-      color: #fff0b5;
-    }
-    .table{
-      width:100%;
-      border-collapse: collapse;
-      border:1px solid var(--border);
-      border-radius:14px;
-      overflow:hidden;
-      margin-top:10px;
-    }
-    .table th, .table td{
-      text-align:left;
-      padding:10px;
-      border-bottom:1px solid rgba(255,255,255,.07);
-      font-size:14px;
-    }
-    .table th{ color:var(--muted); font-weight:700; }
-    .table tr:last-child td{ border-bottom:none; }
-    .right{ text-align:right; }
 
-    @media (max-width: 980px){
-      .cards-grid{ grid-template-columns: 1fr; }
-      .cols{ grid-template-columns: 1fr; }
+    .pill.warn {
+      border-color: rgba(250,204,21,.4);
+      background: rgba(250,204,21,.1);
+      color: #fff2be;
+    }
+
+    .quick-links {
+      margin-top: 12px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .quick-link {
+      display: block;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 12px;
+      padding: 10px;
+      background: rgba(255,255,255,.03);
+    }
+
+    .quick-link strong {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 2px;
+    }
+
+    .quick-link span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    @media (max-width: 1024px) {
+      .company-kpis {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .company-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .company-kpis {
+        grid-template-columns: 1fr;
+      }
+
+      .company-title {
+        font-size: 18px;
+      }
+
+      .kpi-value {
+        font-size: 26px;
+      }
     }
   </style>
 
   {% if not company %}
-    <div class="wrap-grid">
-      <section class="panel">
-        <h2 style="margin:0 0 8px;">Empresa nao encontrada</h2>
-        <p class="muted" style="margin:0;">Esse usuario ainda nao tem empresa vinculada.</p>
+    <div class="company-dashboard">
+      <section class="company-panel">
+        <h2 class="company-title">Empresa nao encontrada</h2>
+        <p class="company-subtitle">Este usuario ainda nao tem empresa vinculada.</p>
       </section>
     </div>
   {% else %}
-    <div class="wrap-grid">
-      <section class="cards-grid">
-        <div class="panel">
-          <div class="k">MEIs ativos</div>
-          <div class="v">{{ total_employees }}</div>
-        </div>
-        <div class="panel">
-          <div class="k">Contratos ativos</div>
-          <div class="v">{{ total_active_contracts }}</div>
-        </div>
-        <div class="panel">
-          <div class="k">Horas no periodo</div>
-          <div class="v">{{ total_hours_period }}</div>
-          <small class="muted">Horários: {{ total_punches_period }} (estimativa simples)</small>
-        </div>
+    <div class="company-dashboard">
+      <section class="company-panel">
+        <h2 class="company-title">Visao operacional da empresa</h2>
+        <p class="company-subtitle">
+          Acompanhe profissionais ativos, registros recentes e dias com inconsistencias no periodo selecionado.
+        </p>
       </section>
 
-      <div class="cols">
-        <section class="panel">
-          <h3 style="margin:0;">MEIs</h3>
-          <form method="get" class="row" style="margin-top:10px;">
-            <input type="hidden" name="date_from" value="{{ period_form.date_from.value|default:'' }}">
-            <input type="hidden" name="date_to" value="{{ period_form.date_to.value|default:'' }}">
-            <div class="field">
+      <section class="company-kpis">
+        <article class="kpi-card">
+          <div class="kpi-label">Profissionais ativos</div>
+          <div class="kpi-value">{{ total_employees }}</div>
+          <div class="kpi-hint">Com contrato ativo no sistema</div>
+        </article>
+        <article class="kpi-card">
+          <div class="kpi-label">Contratos ativos</div>
+          <div class="kpi-value">{{ total_active_contracts }}</div>
+          <div class="kpi-hint">Vinculos ativos hoje</div>
+        </article>
+        <article class="kpi-card">
+          <div class="kpi-label">Registros no periodo</div>
+          <div class="kpi-value">{{ total_punches_period }}</div>
+          <div class="kpi-hint">De {{ period_result.date_from|default:"-" }} ate {{ period_result.date_to|default:"-" }}</div>
+        </article>
+        <article class="kpi-card">
+          <div class="kpi-label">Dias com inconsistencias</div>
+          <div class="kpi-value">{{ inconsistency_days_period }}</div>
+          <div class="kpi-hint">Dias incompletos no periodo analisado</div>
+        </article>
+      </section>
+
+      <div class="company-grid">
+        <section class="company-panel">
+          <h3 style="margin:0;">Profissionais e registros recentes</h3>
+
+          <form method="get" class="company-search-row">
+            <div class="company-field">
               <label>{{ employee_search_form.q.label }}</label>
               {{ employee_search_form.q }}
             </div>
-            <button class="btn primary" type="submit">Buscar</button>
+            <div class="company-field">
+              <label>{{ period_form.date_from.label }}</label>
+              {{ period_form.date_from }}
+            </div>
+            <div class="company-field">
+              <label>{{ period_form.date_to.label }}</label>
+              {{ period_form.date_to }}
+            </div>
+            <button class="btn primary" type="submit">Atualizar visao</button>
           </form>
 
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Nome</th>
-                <th>Email</th>
-                <th>Status</th>
-                <th class="right">Contratos ativos</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for row in employees %}
+          <div class="company-table-wrap">
+            <table class="company-table">
+              <thead>
                 <tr>
-                  <td>{{ row.employee.full_name }}</td>
-                  <td>{{ row.employee.user.email|default:row.employee.user.username }}</td>
-                  <td>
-                    {% if row.employee.is_active %}
-                      <span class="pill">Ativo</span>
-                    {% else %}
-                      <span class="pill warn">Inativo</span>
-                    {% endif %}
-                  </td>
-                  <td class="right">{{ row.active_contracts }}</td>
+                  <th>Profissional</th>
+                  <th>Email</th>
+                  <th>Contratos ativos</th>
+                  <th>Status</th>
                 </tr>
-              {% empty %}
+              </thead>
+              <tbody>
+                {% for row in employees %}
+                  <tr>
+                    <td>{{ row.employee.full_name }}</td>
+                    <td>{{ row.employee.user.email|default:row.employee.user.username }}</td>
+                    <td>{{ row.active_contracts }}</td>
+                    <td>
+                      {% if row.employee.is_active %}
+                        <span class="pill">Ativo</span>
+                      {% else %}
+                        <span class="pill warn">Inativo</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% empty %}
+                  <tr>
+                    <td colspan="4" class="muted">Nenhum profissional encontrado para este filtro.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="company-table-wrap">
+            <table class="company-table">
+              <thead>
                 <tr>
-                  <td colspan="4" class="muted">Nenhum MEI encontrado.</td>
+                  <th>Registro recente</th>
+                  <th>Profissional</th>
+                  <th>Empresa</th>
+                  <th>Contrato</th>
                 </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {% for row in punches_period %}
+                  <tr>
+                    <td>{{ row.punch.timestamp|date:"d/m/Y H:i" }}</td>
+                    <td>{{ row.mei_name }}</td>
+                    <td>{{ row.punch.contract.company.name }}</td>
+                    <td>R$ {{ row.punch.contract.hourly_rate }}/h</td>
+                  </tr>
+                {% empty %}
+                  <tr>
+                    <td colspan="4" class="muted">Sem registros no periodo selecionado.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
         </section>
 
-        <section class="panel">
-          <h3 style="margin:0;">Contratos</h3>
-          <table class="table">
-            <thead>
-              <tr>
-                <th>MEI</th>
-                <th>Valor/h</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for row in contracts %}
+        <section class="company-panel">
+          <h3 style="margin:0;">Atalhos de gestao</h3>
+          <div class="quick-links">
+            {% for link in quick_links %}
+              <a class="quick-link" href="{{ link.url }}">
+                <strong>{{ link.label }}</strong>
+                <span>{{ link.hint }}</span>
+              </a>
+            {% endfor %}
+          </div>
+
+          <h3 style="margin:16px 0 0;">Contratos ativos</h3>
+          <div class="company-table-wrap" style="margin-top:8px;">
+            <table class="company-table" style="min-width:0;">
+              <thead>
                 <tr>
-                  <td>{{ row.mei_name }}</td>
-                  <td>R$ {{ row.contract.hourly_rate }}</td>
-                  <td>
-                    {% if row.contract.is_active %}
-                      <span class="pill">Ativo</span>
-                    {% else %}
-                      <span class="pill warn">Inativo</span>
-                    {% endif %}
-                  </td>
+                  <th>Profissional</th>
+                  <th>Valor/h</th>
+                  <th>Status</th>
                 </tr>
-              {% empty %}
-                <tr>
-                  <td colspan="3" class="muted">Sem contratos para esta empresa.</td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {% for row in contracts %}
+                  <tr>
+                    <td>{{ row.mei_name }}</td>
+                    <td>R$ {{ row.contract.hourly_rate }}</td>
+                    <td>
+                      {% if row.contract.is_active %}
+                        <span class="pill">Ativo</span>
+                      {% else %}
+                        <span class="pill warn">Inativo</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% empty %}
+                  <tr>
+                    <td colspan="3" class="muted">Sem contratos ativos.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
         </section>
       </div>
-
     </div>
   {% endif %}
 {% endblock %}
+

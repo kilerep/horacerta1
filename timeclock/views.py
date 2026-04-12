@@ -1,6 +1,5 @@
 import csv
 from datetime import datetime, time
-from decimal import Decimal, InvalidOperation
 from io import BytesIO
 
 from django.contrib.auth.decorators import login_required
@@ -18,7 +17,6 @@ from reportlab.platypus import SimpleDocTemplate, Spacer, Table, TableStyle, Par
 from reportlab.lib.styles import getSampleStyleSheet
 
 from accounts.models import User
-from companies.models import Company
 from .models import ActivityReportRequest, Contract, Punch
 from .services import build_daily_summary, filter_punches_by_period, format_hhmm
 
@@ -48,19 +46,36 @@ def _contract_employee_label(contract):
     return "MEI indisponivel"
 
 
-def _get_system_owner_user():
-    owner_email = "sistema.empresa@horacerta.local"
-    owner_user, created = User.objects.get_or_create(
-        email=owner_email,
-        defaults={
-            "username": owner_email,
-            "role": User.Role.EMPRESA,
-        },
+def _active_contracts_for_employee_user(user):
+    return (
+        Contract.objects.filter(
+            employee__user=user,
+            employee__isnull=False,
+            employee__user__isnull=False,
+            is_active=True,
+        )
+        .select_related("company", "employee", "employee__user")
+        .order_by("-start_date", "-created_at")
     )
-    if created:
-        owner_user.set_unusable_password()
-        owner_user.save(update_fields=["password"])
-    return owner_user
+
+
+def _resolve_selected_contract(contracts_qs, contract_id):
+    if not contracts_qs.exists():
+        return None
+    if contract_id:
+        selected = contracts_qs.filter(id=contract_id).first()
+        if selected:
+            return selected
+    return contracts_qs.first()
+
+
+def _sync_employee_company_with_contract(contract):
+    if not contract or not contract.employee_id or not contract.company_id:
+        return
+    if contract.employee.company_id == contract.company_id:
+        return
+    contract.employee.company_id = contract.company_id
+    contract.employee.save(update_fields=["company"])
 
 
 @login_required
@@ -68,33 +83,26 @@ def employee_dashboard(request):
     if not _only_employee(request.user):
         return redirect("dashboard")
 
-    create_company_errors = []
-    create_company_initial = {
-        "company_name": "",
-        "hourly_rate": "30",
-    }
+    contracts = _active_contracts_for_employee_user(request.user)
+    selected_contract_id = (request.GET.get("contract") or "").strip()
+    selected_contract = _resolve_selected_contract(contracts, selected_contract_id)
 
-    contracts = Contract.objects.filter(
-        employee__user=request.user,
-        employee__isnull=False,
-        employee__user__isnull=False,
-        is_active=True,
-    ).select_related("company", "employee", "employee__user")
-    employee_profile = getattr(request.user, "employee_profile", None)
+    if selected_contract:
+        _sync_employee_company_with_contract(selected_contract)
+
     pending_report_requests = ActivityReportRequest.objects.filter(
-        employee=employee_profile,
+        employee__user=request.user,
         is_answered=False,
     ).select_related("company", "requested_by", "employee", "employee__user")[:20]
 
     if request.method == "POST" and request.POST.get("action") == "respond_activity_request":
         request_id = (request.POST.get("request_id") or "").strip()
         response_text = (request.POST.get("response_text") or "").strip()
-        contract_id = (request.POST.get("contract") or "").strip()
 
         report_request = get_object_or_404(
             ActivityReportRequest,
             id=request_id,
-            employee=employee_profile,
+            employee__user=request.user,
             is_answered=False,
         )
         if response_text:
@@ -104,58 +112,9 @@ def employee_dashboard(request):
             report_request.save(update_fields=["response_text", "is_answered", "responded_at"])
 
         redirect_url = request.path
-        if contract_id:
-            redirect_url = f"{redirect_url}?contract={contract_id}"
+        if selected_contract:
+            redirect_url = f"{redirect_url}?contract={selected_contract.id}"
         return redirect(redirect_url)
-
-    if request.method == "POST" and request.POST.get("action") == "create_test_contract":
-        company_name = (request.POST.get("company_name") or "").strip()
-        hourly_rate_raw = (request.POST.get("hourly_rate") or "30").strip()
-        create_company_initial["company_name"] = company_name
-        create_company_initial["hourly_rate"] = hourly_rate_raw
-
-        if not company_name:
-            create_company_errors.append("Informe o nome da empresa.")
-
-        try:
-            hourly_rate = Decimal(hourly_rate_raw)
-            if hourly_rate <= 0:
-                create_company_errors.append("O valor/hora precisa ser maior que zero.")
-        except (InvalidOperation, ValueError):
-            create_company_errors.append("Valor/hora invalido.")
-            hourly_rate = Decimal("30")
-
-        if not create_company_errors:
-            owner_user = _get_system_owner_user()
-            company = Company.objects.create(
-                name=company_name,
-                email=None,
-                owner=owner_user,
-            )
-            employee_profile = getattr(request.user, "employee_profile", None)
-            if not employee_profile:
-                create_company_errors.append("MEI sem perfil valido para criar contrato.")
-                return redirect(request.path)
-
-            contract = Contract.objects.create(
-                employee=employee_profile,
-                company=company,
-                hourly_rate=hourly_rate,
-                is_active=True,
-            )
-
-            if employee_profile and employee_profile.company_id != company.id:
-                employee_profile.company = company
-                employee_profile.save(update_fields=["company"])
-
-            return redirect(f"{request.path}?contract={contract.id}")
-
-    contracts = Contract.objects.filter(
-        employee__user=request.user,
-        employee__isnull=False,
-        employee__user__isnull=False,
-        is_active=True,
-    ).select_related("company", "employee", "employee__user")
 
     if not contracts.exists():
         return render(
@@ -164,20 +123,9 @@ def employee_dashboard(request):
             {
                 "no_contracts": True,
                 "contracts": [],
-                "create_company_errors": create_company_errors,
-                "create_company_initial": create_company_initial,
                 "pending_report_requests": pending_report_requests,
             },
         )
-
-    selected_contract_id = request.GET.get("contract") or str(contracts.first().id)
-    selected_contract = get_object_or_404(
-        Contract.objects.select_related("company", "employee", "employee__user"),
-        id=selected_contract_id,
-        employee__user=request.user,
-        employee__isnull=False,
-        employee__user__isnull=False,
-    )
 
     if request.method == "POST" and request.POST.get("action") == "punch":
         note = (request.POST.get("note") or "").strip()
@@ -220,6 +168,9 @@ def employee_dashboard(request):
 
     history_filtered = list(qs_filtered.order_by("timestamp"))
     history_days, history_punch_columns = build_daily_summary(history_filtered, min_punch_columns=4)
+    history_days_desc = sorted(history_days, key=lambda row: row["date"], reverse=True)
+    recent_history_days = history_days_desc[:7]
+    recent_inconsistencies = [row for row in history_days_desc[:20] if row["is_incomplete"]][:5]
 
     context = {
         "contracts": contracts,
@@ -231,13 +182,13 @@ def employee_dashboard(request):
         "today_date": now_local.date(),
         "day_status_label": day_status_label,
         "history": qs_filtered.order_by("-timestamp")[:200],
-        "history_days": history_days,
+        "history_days": history_days_desc,
+        "recent_history_days": recent_history_days,
+        "recent_inconsistencies": recent_inconsistencies,
         "history_punch_columns": range(1, history_punch_columns + 1),
         "date_from": date_from_raw or "",
         "date_to": date_to_raw or "",
         "no_contracts": False,
-        "create_company_errors": create_company_errors,
-        "create_company_initial": create_company_initial,
         "pending_report_requests": pending_report_requests,
     }
     return render(request, "accounts/dashboard_funcionario.html", context)
@@ -300,11 +251,7 @@ def create_manual_punches(request):
     if errors:
         return JsonResponse({"ok": False, "errors": errors}, status=400)
 
-    contract = Contract.objects.select_related("company", "employee", "employee__user").filter(
-        id=contract_id,
-        employee__user=request.user,
-        is_active=True,
-    ).first()
+    contract = _active_contracts_for_employee_user(request.user).filter(id=contract_id).first()
     if not contract:
         return JsonResponse({"ok": False, "errors": ["Contrato invalido ou inativo."]}, status=400)
 
@@ -357,7 +304,12 @@ def create_manual_punches(request):
 
 @login_required
 def edit_punch_note(request, punch_id):
-    punch = get_object_or_404(Punch, id=punch_id, contract__employee__user=request.user)
+    punch = get_object_or_404(
+        Punch,
+        id=punch_id,
+        contract__employee__user=request.user,
+        contract__is_active=True,
+    )
     contract_id = request.GET.get("contract") or str(punch.contract.id)
 
     if request.method == "POST":
@@ -378,6 +330,7 @@ def export_csv(request):
         Contract.objects.select_related("company", "employee", "employee__user"),
         id=contract_id,
         employee__user=request.user,
+        is_active=True,
     )
 
     base_punches = Punch.objects.filter(contract=contract).order_by("timestamp")
@@ -428,6 +381,7 @@ def export_xlsx(request):
         Contract.objects.select_related("company", "employee", "employee__user"),
         id=contract_id,
         employee__user=request.user,
+        is_active=True,
     )
 
     base_punches = Punch.objects.filter(contract=contract).order_by("timestamp")
@@ -501,6 +455,7 @@ def export_pdf(request):
         Contract.objects.select_related("company", "employee", "employee__user"),
         id=contract_id,
         employee__user=request.user,
+        is_active=True,
     )
 
     base_punches = Punch.objects.filter(contract=contract).order_by("timestamp")

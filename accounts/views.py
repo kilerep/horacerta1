@@ -94,6 +94,21 @@ def _contract_mei_label(contract):
     return "MEI indisponivel"
 
 
+def _count_inconsistency_days(punches):
+    grouped = {}
+    for punch in punches:
+        local_ts = timezone.localtime(punch.timestamp)
+        key = (punch.contract_id, local_ts.date())
+        grouped.setdefault(key, []).append(local_ts)
+
+    total_inconsistent = 0
+    for times in grouped.values():
+        _seconds, is_incomplete = compute_day_total(times)
+        if is_incomplete:
+            total_inconsistent += 1
+    return total_inconsistent
+
+
 def _redirect_for_role(user):
     if user.role == User.Role.EMPRESA:
         return redirect("dashboard_empresa")
@@ -347,6 +362,7 @@ def dashboard_empresa(request):
     total_active_contracts = 0
     total_punches_period = 0
     total_hours_period = "00:00"
+    inconsistency_days_period = 0
     date_from = ""
     date_to = ""
 
@@ -403,9 +419,11 @@ def dashboard_empresa(request):
         total_employees = active_contracts_base_qs.values("employee_id").distinct().count()
         total_active_contracts = active_contracts_base_qs.count()
         total_punches_period = punches_period_qs.count()
-        period_daily_rows, _period_columns = build_daily_summary(list(punches_period_qs), min_punch_columns=4)
+        period_punches = list(punches_period_qs)
+        period_daily_rows, _period_columns = build_daily_summary(period_punches, min_punch_columns=4)
         period_total_seconds = sum(row["total_seconds"] for row in period_daily_rows)
         total_hours_period = format_hhmm(period_total_seconds)
+        inconsistency_days_period = _count_inconsistency_days(period_punches)
         date_from = start_date.strftime("%Y-%m-%d")
         date_to = end_date.strftime("%Y-%m-%d")
 
@@ -439,6 +457,13 @@ def dashboard_empresa(request):
         mei_name = _contract_mei_label(punch.contract)
         punch_rows.append({"punch": punch, "mei_name": mei_name})
 
+    quick_links = [
+        {"label": "Gerenciar profissionais", "url": reverse("company_meis"), "hint": "Cadastro e status dos MEIs"},
+        {"label": "Ver contratos", "url": reverse("company_contracts"), "hint": "Vinculos e valores/hora"},
+        {"label": "Abrir historico", "url": reverse("company_history"), "hint": "Conferencia por periodo"},
+        {"label": "Relatorios", "url": reverse("company_reports"), "hint": "Resumo e exportacao"},
+    ]
+
     context = {
         "company": company,
         "employees": employee_rows,
@@ -450,7 +475,9 @@ def dashboard_empresa(request):
         "total_active_contracts": total_active_contracts,
         "total_punches_period": total_punches_period,
         "total_hours_period": total_hours_period,
+        "inconsistency_days_period": inconsistency_days_period,
         "punches_period": punch_rows,
+        "quick_links": quick_links,
         "pending_reports_count": _pending_reports_count_for_company(company),
     }
     return render(request, "accounts/dashboard_empresa.html", context)
@@ -519,7 +546,6 @@ def company_contracts(request):
             company=company,
             employee__isnull=False,
             employee__user__isnull=False,
-            employee__company=company,
         ).select_related("employee", "employee__user")
         if company
         else Contract.objects.none()

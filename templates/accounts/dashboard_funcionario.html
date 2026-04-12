@@ -1,7 +1,7 @@
-{% extends "accounts/base.html" %}
+﻿{% extends "accounts/base.html" %}
 {% load static tz timeclock_formats %}
-{% block title %}HoraCerta - Registrar horário{% endblock %}
-{% block page_title %}Registrar horário{% endblock %}
+{% block title %}HoraCerta - Painel do Profissional{% endblock %}
+{% block page_title %}Painel do profissional{% endblock %}
 {% block body_class %}page-me-registrar{% endblock %}
 
 {% block extra_head %}
@@ -11,11 +11,11 @@
 {% block content %}
   <div class="hc-page">
     {% if pending_report_requests %}
-      <section class="hc-panel">
-        <h3 class="hc-section-title">Solicitacoes de relatorio</h3>
+      <section class="hc-panel hc-panel--requests">
+        <h3 class="hc-section-title">Solicitacoes de relatorio pendentes</h3>
         <div class="hc-request-list">
           {% for req in pending_report_requests %}
-            <div class="hc-request-item">
+            <article class="hc-request-item">
               <div class="hc-muted">
                 <strong>{{ req.company.name }}</strong>
                 {% if req.date_from or req.date_to %}
@@ -37,10 +37,10 @@
                     <label>Sua resposta</label>
                     <textarea name="response_text" placeholder="Descreva as atividades do periodo"></textarea>
                   </div>
-                  <button class="btn primary" type="submit">Enviar</button>
+                  <button class="btn primary" type="submit">Enviar resposta</button>
                 </div>
               </form>
-            </div>
+            </article>
           {% endfor %}
         </div>
       </section>
@@ -48,37 +48,15 @@
 
     {% if no_contracts %}
       <section class="hc-panel">
-        <h2 class="hc-section-title">Voce ainda nao tem contrato ativo</h2>
-        <p class="hc-muted">Crie uma empresa de teste para registrar horarios no MEI.</p>
-      </section>
-
-      <section class="hc-panel">
-        <form method="post" class="hc-row">
-          {% csrf_token %}
-          <input type="hidden" name="action" value="create_test_contract">
-          <div class="hc-field">
-            <label>Nome da empresa</label>
-            <input name="company_name" value="{{ create_company_initial.company_name }}" placeholder="Empresa Teste">
-          </div>
-          <div class="hc-field hc-field--sm">
-            <label>Valor/hora (R$)</label>
-            <input name="hourly_rate" value="{{ create_company_initial.hourly_rate }}" placeholder="30">
-          </div>
-          <button class="btn primary" type="submit">Criar empresa e contrato</button>
-        </form>
-        {% if create_company_errors %}
-          <div class="hc-error-box">
-            {% for err in create_company_errors %}<div>{{ err }}</div>{% endfor %}
-          </div>
-        {% endif %}
+        <h2 class="hc-section-title">Sem vinculo ativo</h2>
+        <p class="hc-muted" style="margin:0;">
+          Seu acesso existe, mas nao ha contrato ativo liberado para registro de horarios.
+          Peça para sua empresa cadastrar ou ativar seu contrato no painel dela.
+        </p>
       </section>
     {% else %}
       <section class="hc-panel hc-main-card">
-        <p
-          id="hcGreetingLine"
-          class="hc-greeting"
-          data-display-name="{{ header_display_name }}"
-        >
+        <p id="hcGreetingLine" class="hc-greeting" data-display-name="{{ header_display_name }}">
           <span class="hc-greeting-salute">{{ greeting }},</span>
           <strong class="hc-greeting-name">{{ header_display_name }}</strong>
         </p>
@@ -86,16 +64,31 @@
 
         <div id="hcClock" class="hc-clock" aria-live="polite">--:--</div>
 
+        <div class="hc-meta-grid">
+          <article class="hc-mini-card">
+            <span class="hc-mini-label">Empresa vinculada</span>
+            <strong class="hc-mini-value">{{ selected_contract.company.name }}</strong>
+          </article>
+          <article class="hc-mini-card">
+            <span class="hc-mini-label">Vinculo ativo</span>
+            <strong class="hc-mini-value">Contrato {{ selected_contract.id|stringformat:"s"|slice:":8"|upper }}</strong>
+          </article>
+          <article class="hc-mini-card">
+            <span class="hc-mini-label">Valor por hora</span>
+            <strong class="hc-mini-value">R$ {{ selected_contract.hourly_rate }}</strong>
+          </article>
+        </div>
+
         <div id="hcBadge" class="hc-badge" data-today-count="{{ total_punches_today }}">Status</div>
         <p id="hcBadgeHint" class="hc-badge-hint"></p>
 
         <div class="hc-action-stack">
           <form method="get" class="hc-field">
-            <label>Empresa / Contrato</label>
+            <label>Selecionar vinculo ativo</label>
             <select name="contract" onchange="this.form.submit()">
               {% for c in contracts %}
                 <option value="{{ c.id }}" {% if selected_contract and c.id == selected_contract.id %}selected{% endif %}>
-                  {{ c.company.name }} - R$ {{ c.hourly_rate }}/h
+                  {{ c.company.name }} | R$ {{ c.hourly_rate }}/h
                 </option>
               {% endfor %}
             </select>
@@ -105,28 +98,58 @@
             {% csrf_token %}
             <input type="hidden" name="action" value="punch">
             <button id="hcPunchBtn" class="hc-punch-btn" type="submit">
-              <span class="hc-punch-btn__label">Registrar horário</span>
+              <span class="hc-punch-btn__label">Registrar horario</span>
               <span class="hc-punch-btn__spinner" aria-hidden="true"></span>
             </button>
-            <button id="hcManualOpen" class="btn hc-manual-open-btn" type="button">ADICIONAR HORÁRIO MANUAL</button>
+            <button id="hcManualOpen" class="btn hc-manual-open-btn" type="button">Adicionar horario manual</button>
             <button id="hcObsToggle" class="hc-obs-toggle" type="button" aria-expanded="false">Adicionar observacao</button>
             <div id="hcObsWrap" class="hc-obs-wrap" aria-hidden="true">
               <label for="hcObsField">Observacao (opcional)</label>
-              <textarea id="hcObsField" name="note" placeholder="Ex: saida para almoco / consulta / entrada antecipada"></textarea>
+              <textarea id="hcObsField" name="note" placeholder="Ex: deslocamento, pausa, atividade externa"></textarea>
             </div>
           </form>
         </div>
+      </section>
 
-        <section class="hc-today">
-          <h3 class="hc-today-title">Horarios de hoje</h3>
-          <div id="hcTodayChips" class="hc-chip-list">
-            {% for p in punches_today %}
-              <span class="hc-chip">{{ p.timestamp|localtime|hhmm }}</span>
-            {% empty %}
-              <span class="hc-empty-text">Nenhum horario registrado hoje.</span>
+      <section class="hc-panel">
+        <h3 class="hc-section-title">Status do dia e historico recente</h3>
+        <div class="hc-chip-list" id="hcTodayChips">
+          {% for p in punches_today %}
+            <span class="hc-chip">{{ p.timestamp|localtime|hhmm }}</span>
+          {% empty %}
+            <span class="hc-empty-text">Nenhum horario registrado hoje.</span>
+          {% endfor %}
+        </div>
+
+        <div class="hc-history-list">
+          {% for day in recent_history_days %}
+            <article class="hc-history-item {% if day.is_incomplete %}is-warn{% else %}is-ok{% endif %}">
+              <div>
+                <strong>{{ day.date|date:"d/m/Y" }}</strong>
+                <span class="hc-muted"> | {{ day.total_hours_hhmm }} | {{ day.status }}</span>
+              </div>
+              <div class="hc-muted">{{ day.punch_times|join:" - "|default:"-" }}</div>
+            </article>
+          {% empty %}
+            <p class="hc-muted">Sem historico no periodo.</p>
+          {% endfor %}
+        </div>
+      </section>
+
+      <section class="hc-panel">
+        <h3 class="hc-section-title">Alertas de inconsistencias</h3>
+        {% if recent_inconsistencies %}
+          <div class="hc-alert-list">
+            {% for day in recent_inconsistencies %}
+              <article class="hc-alert-item">
+                <strong>{{ day.date|date:"d/m/Y" }}</strong>
+                <span>{{ day.status }} | {{ day.total_hours_hhmm }}</span>
+              </article>
             {% endfor %}
           </div>
-        </section>
+        {% else %}
+          <p class="hc-muted" style="margin:0;">Nenhuma inconsistencia recente. Bom trabalho na rotina.</p>
+        {% endif %}
       </section>
 
       <div id="hcManualModal" class="hc-modal" aria-hidden="true">
@@ -180,7 +203,6 @@
           </form>
         </section>
       </div>
-
     {% endif %}
   </div>
 {% endblock %}
@@ -188,3 +210,4 @@
 {% block extra_js %}
   <script src="{% static 'js/mei_registrar.js' %}"></script>
 {% endblock %}
+
