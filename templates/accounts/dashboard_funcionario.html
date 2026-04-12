@@ -48,11 +48,15 @@
 
     {% if no_contracts %}
       <section class="hc-panel">
-        <h2 class="hc-section-title">Sem vinculo ativo</h2>
-        <p class="hc-muted" style="margin:0;">
-          Seu acesso existe, mas nao ha contrato ativo liberado para registro de horarios.
-          Peça para sua empresa cadastrar ou ativar seu contrato no painel dela.
+        <h2 class="hc-section-title">Cadastro confirmado, aguardando liberacao operacional</h2>
+        <p class="hc-muted" style="margin:0 0 8px;">
+          Seu cadastro no HoraCerta esta ativo{% if employee_company_name %} para <strong>{{ employee_company_name }}</strong>{% endif %},
+          mas ainda nao existe contrato operacional vigente para registrar horarios.
         </p>
+        {% if state_context %}
+          <p class="hc-muted" style="margin:0;"><strong>Estado atual:</strong> {{ state_context.label }} - {{ state_context.hint }}</p>
+        {% endif %}
+        <p class="hc-muted" style="margin:8px 0 0;">Peça para sua empresa criar ou ativar o contrato no painel de gestao.</p>
       </section>
     {% else %}
       <section class="hc-panel hc-main-card">

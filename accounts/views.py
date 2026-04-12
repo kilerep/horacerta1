@@ -4,11 +4,12 @@ from io import BytesIO
 from urllib.parse import urlencode, urlparse
 from xml.sax.saxutils import escape
 import zipfile
+from collections import defaultdict
 
 from django.contrib.auth import get_user_model, login, logout
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required
-from django.db.models import Count, Q
+from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -17,6 +18,15 @@ from django.utils import timezone
 from companies.models import Company, Employee
 from timeclock.models import ActivityReportRequest, Contract, Punch
 from timeclock.services import build_daily_summary, compute_day_total, filter_punches_by_period, format_hhmm
+from timeclock.state import (
+    contract_is_operational,
+    contract_operational_q,
+    employee_lifecycle_summary,
+    PROFESSIONAL_STATE_AGUARDANDO,
+    PROFESSIONAL_STATE_ATIVO,
+    PROFESSIONAL_STATE_CADASTRADO,
+    PROFESSIONAL_STATE_INATIVO,
+)
 
 from .forms import (
     CompanyContractForm,
@@ -107,6 +117,27 @@ def _count_inconsistency_days(punches):
         if is_incomplete:
             total_inconsistent += 1
     return total_inconsistent
+
+
+def _contracts_by_employee(company, employees):
+    employee_ids = [employee.id for employee in employees]
+    if not company or not employee_ids:
+        return {}
+
+    contract_list = list(
+        Contract.objects.filter(
+            company=company,
+            employee_id__in=employee_ids,
+            employee__isnull=False,
+            employee__user__isnull=False,
+        )
+        .select_related("employee", "employee__user", "company")
+        .order_by("-start_date", "-created_at")
+    )
+    by_employee = defaultdict(list)
+    for contract in contract_list:
+        by_employee[contract.employee_id].append(contract)
+    return by_employee
 
 
 def _redirect_for_role(user):
@@ -358,15 +389,26 @@ def dashboard_empresa(request):
     contracts_qs = Contract.objects.none()
     punches_period_qs = Punch.objects.none()
 
-    total_employees = 0
+    total_registered_professionals = 0
+    total_active_professionals = 0
+    total_pending_contract = 0
+    total_inactive_professionals = 0
     total_active_contracts = 0
     total_punches_period = 0
     total_hours_period = "00:00"
     inconsistency_days_period = 0
     date_from = ""
     date_to = ""
+    pending_professionals = []
+    state_counters = {
+        PROFESSIONAL_STATE_CADASTRADO: 0,
+        PROFESSIONAL_STATE_AGUARDANDO: 0,
+        PROFESSIONAL_STATE_ATIVO: 0,
+        PROFESSIONAL_STATE_INATIVO: 0,
+    }
 
     if company:
+        employees_base_qs = Employee.objects.filter(company=company).select_related("user")
         contracts_base_qs = Contract.objects.filter(
             company=company,
             employee__isnull=False,
@@ -374,10 +416,9 @@ def dashboard_empresa(request):
         ).select_related(
             "employee",
             "employee__user",
+            "company",
         )
-        active_contracts_base_qs = contracts_base_qs.filter(is_active=True)
-        active_employee_ids_qs = active_contracts_base_qs.values_list("employee_id", flat=True).distinct()
-        employees_base_qs = Employee.objects.filter(id__in=active_employee_ids_qs).select_related("user")
+        operational_contracts_base_qs = contracts_base_qs.filter(contract_operational_q())
 
         q = ""
         if employee_search_form.is_valid():
@@ -389,14 +430,36 @@ def dashboard_empresa(request):
                 | Q(user__email__icontains=q)
                 | Q(user__username__icontains=q)
             )
-            contracts_qs = active_contracts_base_qs.filter(
+            contracts_qs = operational_contracts_base_qs.filter(
                 Q(employee__user__email__icontains=q)
                 | Q(employee__user__username__icontains=q)
                 | Q(employee__full_name__icontains=q)
             )
         else:
             employees_qs = employees_base_qs
-            contracts_qs = active_contracts_base_qs
+            contracts_qs = operational_contracts_base_qs
+
+        all_employees = list(employees_base_qs.order_by("full_name")[:500])
+        contracts_by_employee_all = _contracts_by_employee(company, all_employees)
+        for employee in all_employees:
+            summary = employee_lifecycle_summary(employee, contracts_by_employee_all.get(employee.id, []))
+            state_counters[summary["key"]] += 1
+            if summary["key"] != PROFESSIONAL_STATE_ATIVO and len(pending_professionals) < 8:
+                employee_contracts = contracts_by_employee_all.get(employee.id, [])
+                latest_contract = employee_contracts[0] if employee_contracts else None
+                pending_professionals.append(
+                    {
+                        "employee": employee,
+                        "state": summary,
+                        "latest_contract": latest_contract,
+                        "action_url": (
+                            f"{reverse('company_contracts')}?create_for={employee.id}"
+                            if not latest_contract
+                            else f"{reverse('company_contracts')}?edit={latest_contract.id}"
+                        ),
+                        "action_label": "Criar contrato" if not latest_contract else "Editar contrato",
+                    }
+                )
 
         today = timezone.localdate()
         first_day = today.replace(day=1)
@@ -412,12 +475,15 @@ def dashboard_empresa(request):
         start_dt = timezone.make_aware(datetime.combine(start_date, time.min))
         end_dt = timezone.make_aware(datetime.combine(end_date, time.max))
         punches_period_qs = Punch.objects.filter(
-            contract__in=active_contracts_base_qs,
+            contract__in=contracts_qs,
             timestamp__range=(start_dt, end_dt),
         ).select_related("contract", "contract__employee", "contract__employee__user")
 
-        total_employees = active_contracts_base_qs.values("employee_id").distinct().count()
-        total_active_contracts = active_contracts_base_qs.count()
+        total_registered_professionals = len(all_employees)
+        total_active_professionals = state_counters[PROFESSIONAL_STATE_ATIVO]
+        total_pending_contract = state_counters[PROFESSIONAL_STATE_CADASTRADO] + state_counters[PROFESSIONAL_STATE_AGUARDANDO]
+        total_inactive_professionals = state_counters[PROFESSIONAL_STATE_INATIVO]
+        total_active_contracts = operational_contracts_base_qs.count()
         total_punches_period = punches_period_qs.count()
         period_punches = list(punches_period_qs)
         period_daily_rows, _period_columns = build_daily_summary(period_punches, min_punch_columns=4)
@@ -433,18 +499,16 @@ def dashboard_empresa(request):
         "total_punches": total_punches_period,
         "total_hours": total_hours_period,
     }
-
-    active_contracts_by_user = {
-        row["employee_id"]: row["count"]
-        for row in contracts_qs.values("employee_id").annotate(count=Count("id"))
-    }
-
+    employees_list = list(employees_qs.order_by("full_name")[:300])
+    contracts_by_employee = _contracts_by_employee(company, employees_list)
     employee_rows = [
         {
             "employee": employee,
-            "active_contracts": active_contracts_by_user.get(employee.id, 0),
+            "active_contracts": sum(1 for c in contracts_by_employee.get(employee.id, []) if contract_is_operational(c)),
+            "total_contracts": len(contracts_by_employee.get(employee.id, [])),
+            "state": employee_lifecycle_summary(employee, contracts_by_employee.get(employee.id, [])),
         }
-        for employee in employees_qs.order_by("full_name")[:200]
+        for employee in employees_list
     ]
 
     contract_rows = []
@@ -471,12 +535,17 @@ def dashboard_empresa(request):
         "employee_search_form": employee_search_form,
         "period_form": period_form,
         "period_result": period_result,
-        "total_employees": total_employees,
+        "total_registered_professionals": total_registered_professionals,
+        "total_active_professionals": total_active_professionals,
+        "total_pending_contract": total_pending_contract,
+        "total_inactive_professionals": total_inactive_professionals,
+        "state_counters": state_counters,
         "total_active_contracts": total_active_contracts,
         "total_punches_period": total_punches_period,
         "total_hours_period": total_hours_period,
         "inconsistency_days_period": inconsistency_days_period,
         "punches_period": punch_rows,
+        "pending_professionals": pending_professionals,
         "quick_links": quick_links,
         "pending_reports_count": _pending_reports_count_for_company(company),
     }
@@ -502,20 +571,7 @@ def company_meis(request):
             return redirect(f"{reverse('company_meis')}?status={status}")
 
     if company:
-        qs = (
-            Employee.objects.filter(company=company)
-            .select_related("user")
-            .annotate(
-                total_contracts=Count(
-                    "contracts",
-                    filter=Q(
-                        contracts__company=company,
-                        contracts__is_active=True,
-                    ),
-                    distinct=True,
-                )
-            )
-        )
+        qs = Employee.objects.filter(company=company).select_related("user")
     else:
         qs = Employee.objects.none()
 
@@ -524,9 +580,33 @@ def company_meis(request):
         if q:
             qs = qs.filter(Q(full_name__icontains=q) | Q(user__email__icontains=q) | Q(user__username__icontains=q))
 
+    employees_list = list(qs.order_by("full_name")[:300])
+    contracts_by_employee = _contracts_by_employee(company, employees_list)
+    employee_rows = []
+    for employee in employees_list:
+        employee_contracts = contracts_by_employee.get(employee.id, [])
+        lifecycle = employee_lifecycle_summary(employee, employee_contracts)
+        latest_contract = employee_contracts[0] if employee_contracts else None
+        operational_count = sum(1 for contract in employee_contracts if contract_is_operational(contract))
+        employee_rows.append(
+            {
+                "employee": employee,
+                "state": lifecycle,
+                "total_contracts": len(employee_contracts),
+                "active_contracts": operational_count,
+                "latest_contract": latest_contract,
+                "action_url": (
+                    f"{reverse('company_contracts')}?create_for={employee.id}"
+                    if not latest_contract
+                    else f"{reverse('company_contracts')}?edit={latest_contract.id}"
+                ),
+                "action_label": "Criar contrato" if not latest_contract else "Editar contrato",
+            }
+        )
+
     context = {
         "company": company,
-        "employees": qs.order_by("full_name")[:300],
+        "employees": employee_rows,
         "employee_search_form": form,
         "create_mei_form": create_mei_form,
         "pending_reports_count": _pending_reports_count_for_company(company),
@@ -541,7 +621,7 @@ def company_contracts(request):
         return denied
 
     company = _company_for_user(request.user)
-    contracts = (
+    contracts_qs = (
         Contract.objects.filter(
             company=company,
             employee__isnull=False,
@@ -552,44 +632,110 @@ def company_contracts(request):
     )
 
     edit_contract = None
-    form = None
+    edit_form = None
+    create_form = None
     invalid_edit_contract = False
     edit_id = (request.GET.get("edit") or "").strip()
+    create_for_id = (request.GET.get("create_for") or "").strip()
+    create_for_employee = None
+
+    if create_for_id and company:
+        create_for_employee = Employee.objects.filter(
+            id=create_for_id,
+            company=company,
+            user__role=User.Role.FUNCIONARIO,
+        ).select_related("user").first()
+
     if edit_id and company:
-        edit_contract = contracts.filter(id=edit_id).first()
+        edit_contract = contracts_qs.filter(id=edit_id).first()
         invalid_edit_contract = edit_contract is None
 
     if request.method == "POST":
-        contract_id = (request.POST.get("contract_id") or "").strip()
-        instance = contracts.filter(id=contract_id).first() if contract_id and company else None
-        if not instance:
-            invalid_edit_contract = True
-        else:
-            form = CompanyContractForm(request.POST, request.FILES, instance=instance, company=company, request=request)
-            if form.is_valid():
-                employee = form.cleaned_data.get("employee")
+        action = (request.POST.get("action") or "").strip().lower()
+        if action == "create":
+            create_form = CompanyContractForm(request.POST, request.FILES, company=company, request=request)
+            if create_form.is_valid():
+                employee = create_form.cleaned_data.get("employee")
                 if not employee or not Employee.objects.filter(id=employee.id, company=company).exists():
-                    form.add_error("employee", "MEI invalido para esta empresa.")
-                    edit_contract = instance
+                    create_form.add_error("employee", "MEI invalido para esta empresa.")
                 else:
-                    contract = form.save(commit=False)
+                    contract = create_form.save(commit=False)
                     contract.company = company
                     contract.save()
-                    return redirect(f"{reverse('company_contracts')}?status=updated")
-            edit_contract = instance
+                    return redirect(f"{reverse('company_contracts')}?status=created")
+        else:
+            contract_id = (request.POST.get("contract_id") or "").strip()
+            instance = contracts_qs.filter(id=contract_id).first() if contract_id and company else None
+            if not instance:
+                invalid_edit_contract = True
+            else:
+                edit_form = CompanyContractForm(request.POST, request.FILES, instance=instance, company=company, request=request)
+                if edit_form.is_valid():
+                    employee = edit_form.cleaned_data.get("employee")
+                    if not employee or not Employee.objects.filter(id=employee.id, company=company).exists():
+                        edit_form.add_error("employee", "MEI invalido para esta empresa.")
+                        edit_contract = instance
+                    else:
+                        contract = edit_form.save(commit=False)
+                        contract.company = company
+                        contract.save()
+                        return redirect(f"{reverse('company_contracts')}?status=updated")
+                edit_contract = instance
 
-    if request.method != "POST" and edit_contract:
-        form = CompanyContractForm(instance=edit_contract, company=company, request=request)
+    if request.method != "POST":
+        if edit_contract:
+            edit_form = CompanyContractForm(instance=edit_contract, company=company, request=request)
+        create_form_initial = {}
+        if create_for_employee:
+            create_form_initial["employee"] = create_for_employee
+        create_form = CompanyContractForm(company=company, request=request, initial=create_form_initial)
+    elif create_form is None:
+        create_form_initial = {}
+        if create_for_employee:
+            create_form_initial["employee"] = create_for_employee
+        create_form = CompanyContractForm(company=company, request=request, initial=create_form_initial)
+
+    employees = list(
+        Employee.objects.filter(company=company, user__role=User.Role.FUNCIONARIO)
+        .select_related("user")
+        .order_by("full_name")[:400]
+    ) if company else []
+    contracts_by_employee = _contracts_by_employee(company, employees)
+    pending_without_contracts = []
+    for employee in employees:
+        employee_contracts = contracts_by_employee.get(employee.id, [])
+        lifecycle = employee_lifecycle_summary(employee, employee_contracts)
+        if lifecycle["key"] in (PROFESSIONAL_STATE_CADASTRADO, PROFESSIONAL_STATE_AGUARDANDO):
+            pending_without_contracts.append(
+                {
+                    "employee": employee,
+                    "state": lifecycle,
+                    "create_url": f"{reverse('company_contracts')}?create_for={employee.id}",
+                }
+            )
+
+    contracts = list(contracts_qs.order_by("-is_active", "-start_date", "employee__user__username")[:400])
+    contract_rows = []
+    for contract in contracts:
+        contract_rows.append(
+            {
+                "contract": contract,
+                "is_operational": contract_is_operational(contract),
+            }
+        )
 
     return render(
         request,
         "accounts/company_contracts.html",
         {
             "company": company,
-            "contracts": contracts.order_by("-is_active", "-start_date", "employee__user__username")[:400],
-            "form": form,
+            "contracts": contract_rows,
+            "create_form": create_form,
+            "edit_form": edit_form,
             "edit_contract": edit_contract,
+            "create_for_employee": create_for_employee,
             "invalid_edit_contract": invalid_edit_contract,
+            "pending_without_contracts": pending_without_contracts[:12],
         },
     )
 
@@ -1064,11 +1210,13 @@ def mei_contract(request):
     if denied:
         return denied
 
-    active_contracts = list(
-        Contract.objects.filter(employee__user=request.user, is_active=True)
+    all_contracts = list(
+        Contract.objects.filter(employee__user=request.user)
         .select_related("company", "employee", "employee__user")
-        .order_by("-created_at")
+        .order_by("-start_date", "-created_at")
     )
+    active_contracts = [contract for contract in all_contracts if contract_is_operational(contract)]
+    inactive_contracts = [contract for contract in all_contracts if contract not in active_contracts]
     selected_contract_id = (request.GET.get("contract") or "").strip()
 
     active_contract = None
@@ -1084,6 +1232,8 @@ def mei_contract(request):
         {
             "active_contract": active_contract,
             "active_contracts": active_contracts,
+            "inactive_contracts": inactive_contracts,
+            "all_contracts": all_contracts,
         },
     )
 

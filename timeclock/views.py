@@ -19,6 +19,7 @@ from reportlab.lib.styles import getSampleStyleSheet
 from accounts.models import User
 from .models import ActivityReportRequest, Contract, Punch
 from .services import build_daily_summary, filter_punches_by_period, format_hhmm
+from .state import contract_operational_q, employee_lifecycle_summary
 
 
 def _only_employee(user):
@@ -52,8 +53,8 @@ def _active_contracts_for_employee_user(user):
             employee__user=user,
             employee__isnull=False,
             employee__user__isnull=False,
-            is_active=True,
         )
+        .filter(contract_operational_q())
         .select_related("company", "employee", "employee__user")
         .order_by("-start_date", "-created_at")
     )
@@ -69,15 +70,6 @@ def _resolve_selected_contract(contracts_qs, contract_id):
     return contracts_qs.first()
 
 
-def _sync_employee_company_with_contract(contract):
-    if not contract or not contract.employee_id or not contract.company_id:
-        return
-    if contract.employee.company_id == contract.company_id:
-        return
-    contract.employee.company_id = contract.company_id
-    contract.employee.save(update_fields=["company"])
-
-
 @login_required
 def employee_dashboard(request):
     if not _only_employee(request.user):
@@ -86,9 +78,6 @@ def employee_dashboard(request):
     contracts = _active_contracts_for_employee_user(request.user)
     selected_contract_id = (request.GET.get("contract") or "").strip()
     selected_contract = _resolve_selected_contract(contracts, selected_contract_id)
-
-    if selected_contract:
-        _sync_employee_company_with_contract(selected_contract)
 
     pending_report_requests = ActivityReportRequest.objects.filter(
         employee__user=request.user,
@@ -117,12 +106,19 @@ def employee_dashboard(request):
         return redirect(redirect_url)
 
     if not contracts.exists():
+        employee = getattr(request.user, "employee_profile", None)
+        state_context = employee_lifecycle_summary(employee, []) if employee else None
+        employee_company_name = ""
+        if employee and getattr(employee, "company", None):
+            employee_company_name = employee.company.name
         return render(
             request,
             "accounts/dashboard_funcionario.html",
             {
                 "no_contracts": True,
                 "contracts": [],
+                "state_context": state_context,
+                "employee_company_name": employee_company_name,
                 "pending_report_requests": pending_report_requests,
             },
         )
@@ -189,6 +185,7 @@ def employee_dashboard(request):
         "date_from": date_from_raw or "",
         "date_to": date_to_raw or "",
         "no_contracts": False,
+        "state_context": employee_lifecycle_summary(selected_contract.employee, contracts),
         "pending_report_requests": pending_report_requests,
     }
     return render(request, "accounts/dashboard_funcionario.html", context)

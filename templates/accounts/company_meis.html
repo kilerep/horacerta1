@@ -1,7 +1,7 @@
 {% extends "accounts/base.html" %}
 {% load static %}
-{% block title %}MEIs{% endblock %}
-{% block page_title %}MEIs da Empresa{% endblock %}
+{% block title %}Profissionais MEI{% endblock %}
+{% block page_title %}Profissionais da empresa{% endblock %}
 
 {% block extra_head %}
   <link rel="stylesheet" href="{% static 'css/company_meis.css' %}">
@@ -9,33 +9,46 @@
 
 {% block content %}
   <div class="company-meis card">
-    <header class="company-meis__header company-meis__hero">
-      <h2 class="company-meis__title">Cadastro de MEI</h2>
-      <p class="muted company-meis__subtitle">
-        Cadastre o MEI e, no mesmo fluxo, adicione o primeiro contrato se necessario.
-      </p>
+    <header class="company-meis__hero">
+      <div>
+        <h2 class="company-meis__title">Cadastro de profissional/MEI</h2>
+        <p class="company-meis__subtitle">
+          Cadastre o profissional e libere a operacao por etapas: cadastro, contrato e rotina ativa.
+        </p>
+      </div>
+      <div class="company-meis__hero-badge">Fluxo MVP: empresa cadastra, profissional registra, empresa acompanha</div>
     </header>
 
     {% if request.GET.status == "created_mei" %}
-      <div class="company-meis__alert">MEI criado com sucesso.</div>
+      <div class="company-meis__alert">
+        Profissional cadastrado com sucesso. Proximo passo: criar contrato para liberar operacao completa.
+      </div>
     {% elif request.GET.status == "created_with_contract" %}
-      <div class="company-meis__alert">MEI e contrato inicial criados com sucesso.</div>
+      <div class="company-meis__alert">Profissional e contrato inicial criados com sucesso.</div>
     {% endif %}
 
     <form method="post" enctype="multipart/form-data" class="company-meis__create-form">
       {% csrf_token %}
-      <section class="company-meis__group-card">
-        <header class="company-meis__group-head">
-          <h3 class="company-meis__section-title">Dados do MEI</h3>
-          <p class="muted company-meis__group-subtitle">Informacoes de acesso e identificacao do profissional.</p>
+      <section class="company-meis__section">
+        <header class="company-meis__section-head">
+          <h3>Dados do profissional</h3>
+          <p>Informacoes de identificacao que a empresa precisa para localizar e organizar a rotina.</p>
         </header>
-
-        <div class="company-meis__group-grid">
+        <div class="company-meis__grid company-meis__grid--two">
           <div class="company-meis__field">
             <label for="{{ create_mei_form.full_name.id_for_label }}">{{ create_mei_form.full_name.label }}</label>
             {{ create_mei_form.full_name }}
             {% if create_mei_form.full_name.errors %}<div class="company-meis__error">{{ create_mei_form.full_name.errors }}</div>{% endif %}
           </div>
+        </div>
+      </section>
+
+      <section class="company-meis__section">
+        <header class="company-meis__section-head">
+          <h3>Dados de acesso</h3>
+          <p>Credenciais para o profissional acessar a conta vinculada a sua empresa.</p>
+        </header>
+        <div class="company-meis__grid">
           <div class="company-meis__field">
             <label for="{{ create_mei_form.mei_email.id_for_label }}">{{ create_mei_form.mei_email.label }}</label>
             {{ create_mei_form.mei_email }}
@@ -54,13 +67,12 @@
         </div>
       </section>
 
-      <section class="company-meis__group-card">
-        <header class="company-meis__group-head">
-          <h3 class="company-meis__section-title company-meis__section-title--spaced">Primeiro contrato (opcional)</h3>
-          <p class="muted company-meis__group-subtitle">Preencha somente se ja quiser sair com contrato ativo.</p>
+      <section class="company-meis__section company-meis__section--optional">
+        <header class="company-meis__section-head">
+          <h3>Primeiro contrato <span class="company-meis__badge">Opcional</span></h3>
+          <p>Se preencher agora, o profissional ja entra como ativo operacional.</p>
         </header>
-
-        <div class="company-meis__group-grid">
+        <div class="company-meis__grid">
           <div class="company-meis__field">
             <label for="{{ create_mei_form.contract_hourly_rate.id_for_label }}">{{ create_mei_form.contract_hourly_rate.label }}</label>
             {{ create_mei_form.contract_hourly_rate }}
@@ -81,7 +93,7 @@
             {{ create_mei_form.contract_file }}
             {% if create_mei_form.contract_file.errors %}<div class="company-meis__error">{{ create_mei_form.contract_file.errors }}</div>{% endif %}
           </div>
-          <div class="company-meis__field company-meis__field--wide">
+          <div class="company-meis__field company-meis__field--full">
             <label for="{{ create_mei_form.contract_notes.id_for_label }}">{{ create_mei_form.contract_notes.label }}</label>
             {{ create_mei_form.contract_notes }}
             {% if create_mei_form.contract_notes.errors %}<div class="company-meis__error">{{ create_mei_form.contract_notes.errors }}</div>{% endif %}
@@ -94,49 +106,57 @@
       {% endif %}
 
       <div class="company-meis__actions">
-        <button class="btn primary" type="submit">Criar MEI</button>
+        <button class="btn primary company-meis__submit" type="submit">Cadastrar profissional</button>
       </div>
     </form>
 
-    <header class="company-meis__header">
-      <h2 class="company-meis__title">MEIs</h2>
-      <form method="get" class="company-meis__search">
-        <div class="company-meis__search-field">{{ employee_search_form.q }}</div>
-        <button class="btn primary" type="submit">Buscar</button>
-      </form>
-    </header>
+    <section class="company-meis__list-block">
+      <header class="company-meis__list-header">
+        <h2 class="company-meis__title">Profissionais cadastrados</h2>
+        <form method="get" class="company-meis__search">
+          <div class="company-meis__search-field">{{ employee_search_form.q }}</div>
+          <button class="btn primary" type="submit">Buscar</button>
+        </form>
+      </header>
 
-    <div class="company-meis__table-wrap">
-      <table class="company-meis__table">
-        <thead>
-          <tr>
-            <th>Nome</th>
-            <th>Email</th>
-            <th>Status</th>
-            <th class="company-meis__col-contracts">Contratos</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for e in employees %}
+      <div class="company-meis__table-wrap">
+        <table class="company-meis__table">
+          <thead>
             <tr>
-              <td data-label="Nome">{{ e.full_name }}</td>
-              <td data-label="Email">{{ e.user.email|default:e.user.username }}</td>
-              <td data-label="Status">
-                {% if e.is_active %}
-                  <span class="company-meis__pill">Ativo</span>
-                {% else %}
-                  <span class="company-meis__pill company-meis__pill--warn">Inativo</span>
-                {% endif %}
-              </td>
-              <td data-label="Contratos" class="company-meis__contracts">{{ e.total_contracts|default:0 }}</td>
+              <th>Profissional</th>
+              <th>Estado no sistema</th>
+              <th>Contratos</th>
+              <th>Acoes</th>
             </tr>
-          {% empty %}
-            <tr>
-              <td colspan="4" class="muted">Nenhum MEI encontrado.</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {% for row in employees %}
+              <tr>
+                <td data-label="Profissional">
+                  <strong>{{ row.employee.full_name }}</strong><br>
+                  <span class="company-meis__muted">{{ row.employee.user.email|default:row.employee.user.username }}</span>
+                </td>
+                <td data-label="Estado">
+                  <span class="company-meis__pill company-meis__pill--{{ row.state.tone }}">{{ row.state.label }}</span>
+                  <div class="company-meis__state-hint">{{ row.state.hint }}</div>
+                </td>
+                <td data-label="Contratos">
+                  <span class="company-meis__number">{{ row.total_contracts }}</span>
+                  <span class="company-meis__muted">({{ row.active_contracts }} operacional)</span>
+                </td>
+                <td data-label="Acoes" class="company-meis__actions-cell">
+                  <a class="btn primary" href="{{ row.action_url }}">{{ row.action_label }}</a>
+                  <a class="btn" href="{% url 'company_contracts' %}?create_for={{ row.employee.id }}">Ver situacao</a>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="4" class="company-meis__muted">Nenhum profissional encontrado.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
   </div>
 {% endblock %}
