@@ -1,17 +1,301 @@
-<a class="btn secondary" href="{% url 'dashboard' %}">⬅ Voltar à Dashboard</a>
-{% extends "base.html" %}
-{% block title %}HoraCerta • Ajuda{% endblock %}
-{% block subtitle %}Como usar o HoraCerta{% endblock %}
+{% extends "accounts/base.html" %}
+{% block title %}Central de ajuda{% endblock %}
+{% block page_title %}Central de ajuda{% endblock %}
+
 {% block content %}
-  <div class="grid">
-    <div class="card">
-      <h2>Ajuda</h2>
-      <ul>
-        <li>Empresa cria a conta e cadastra funcionários (MEIs).</li>
-        <li>Funcionário registra horários e pode adicionar observações.</li>
-        <li>Horas são imutáveis (sem edição de horário). Só texto/observação pode ser editado.</li>
-        <li>Relatórios podem ser exportados (PDF/CSV).</li>
-      </ul>
-    </div>
-  </div>
+<style>
+  .help-wrap{
+    display:grid;
+    gap:14px;
+  }
+  .help-hero{
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:18px;
+    background:
+      radial-gradient(900px 380px at 8% -20%, rgba(47,124,255,.24), transparent 62%),
+      linear-gradient(180deg, rgba(11,20,48,.74), rgba(10,16,38,.7));
+    box-shadow:0 18px 48px rgba(0,0,0,.28);
+  }
+  .help-kicker{
+    display:inline-flex;
+    align-items:center;
+    font-size:11px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.7px;
+    border-radius:999px;
+    border:1px solid rgba(47,124,255,.4);
+    background:rgba(47,124,255,.2);
+    color:#eef4ff;
+    padding:4px 10px;
+    margin-bottom:8px;
+  }
+  .help-hero h2{
+    margin:0;
+    font-size:22px;
+  }
+  .help-hero p{
+    margin:8px 0 0;
+    color:var(--muted);
+    max-width:760px;
+    line-height:1.5;
+  }
+  .help-grid{
+    display:grid;
+    gap:12px;
+    grid-template-columns:repeat(12, minmax(0, 1fr));
+  }
+  .help-card{
+    grid-column:span 12;
+    border:1px solid var(--border);
+    border-radius:14px;
+    background:linear-gradient(180deg, rgba(255,255,255,.032), rgba(255,255,255,.016));
+    padding:14px;
+  }
+  .help-card h3{
+    margin:0 0 8px;
+    font-size:16px;
+  }
+  .help-card p{
+    margin:0;
+    color:var(--muted);
+    line-height:1.5;
+  }
+  .help-steps{
+    display:grid;
+    gap:10px;
+  }
+  .help-step{
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:12px;
+    background:rgba(255,255,255,.02);
+    padding:10px;
+    display:grid;
+    gap:4px;
+  }
+  .help-step strong{
+    font-size:14px;
+  }
+  .help-step p{
+    margin:0;
+    color:var(--muted);
+    font-size:13px;
+    line-height:1.45;
+  }
+  .help-chip{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:24px;
+    height:24px;
+    border-radius:999px;
+    border:1px solid rgba(47,124,255,.4);
+    background:rgba(47,124,255,.24);
+    color:#eaf2ff;
+    font-size:12px;
+    font-weight:700;
+    margin-right:6px;
+  }
+  .area-list{
+    display:grid;
+    gap:8px;
+  }
+  .area-item{
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:12px;
+    padding:10px;
+    background:rgba(255,255,255,.02);
+  }
+  .area-item strong{
+    display:block;
+    margin-bottom:4px;
+    font-size:14px;
+  }
+  .area-item span{
+    color:var(--muted);
+    font-size:13px;
+    line-height:1.45;
+  }
+  .faq-list{
+    display:grid;
+    gap:8px;
+  }
+  .faq-item{
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:12px;
+    padding:10px;
+    background:rgba(255,255,255,.02);
+  }
+  .faq-item strong{
+    display:block;
+    margin-bottom:4px;
+    font-size:14px;
+  }
+  .faq-item p{
+    margin:0;
+    color:var(--muted);
+    font-size:13px;
+    line-height:1.45;
+  }
+  .first-steps{
+    display:grid;
+    gap:8px;
+    margin:0;
+    padding-left:18px;
+  }
+  .first-steps li{
+    color:var(--text);
+    line-height:1.45;
+  }
+  .help-actions{
+    margin-top:10px;
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  @media (min-width: 980px){
+    .help-card--main{ grid-column:span 8; }
+    .help-card--side{ grid-column:span 4; }
+  }
+</style>
+
+<div class="help-wrap">
+  <section class="help-hero">
+    <span class="help-kicker">Suporte operacional</span>
+    <h2>Central de ajuda do HoraCerta</h2>
+    <p>
+      Guia rapido para uso do MVP atual. O foco do sistema e dar controle operacional para a empresa
+      cadastrar profissionais, liberar contratos e acompanhar jornadas com historico e relatorios.
+    </p>
+  </section>
+
+  <section class="help-grid">
+    <article class="help-card help-card--main">
+      <h3>1. O que e o HoraCerta</h3>
+      <p>
+        O HoraCerta e uma plataforma de gestao de jornada para operacoes com profissionais MEI.
+        Foi pensado para empresas que precisam organizar cadastro, contratos, registros de horario
+        e acompanhamento de inconsistencias com rastreabilidade.
+      </p>
+    </article>
+
+    <article class="help-card help-card--side">
+      <h3>Primeiro principio do MVP</h3>
+      <p>
+        A empresa e o cliente principal da operacao. O profissional registra horario somente
+        quando existe contrato operacional vigente.
+      </p>
+    </article>
+
+    <article class="help-card">
+      <h3>2. Como funciona</h3>
+      <div class="help-steps">
+        <div class="help-step">
+          <strong><span class="help-chip">1</span>A empresa cadastra o profissional</strong>
+          <p>O cadastro e feito na area de MEIs com os dados basicos do profissional.</p>
+        </div>
+        <div class="help-step">
+          <strong><span class="help-chip">2</span>A empresa cria ou libera o contrato</strong>
+          <p>Na area de Contratos, a empresa define valor/hora, vigencia e documento do contrato.</p>
+        </div>
+        <div class="help-step">
+          <strong><span class="help-chip">3</span>O profissional registra horarios</strong>
+          <p>Com contrato operacional ativo, o profissional passa a registrar jornada no painel.</p>
+        </div>
+        <div class="help-step">
+          <strong><span class="help-chip">4</span>A empresa acompanha a operacao</strong>
+          <p>Dashboard, Historico e Relatorios mostram volume, jornadas registradas e inconsistencias.</p>
+        </div>
+      </div>
+    </article>
+
+    <article class="help-card help-card--main">
+      <h3>3. Como usar cada area</h3>
+      <div class="area-list">
+        <div class="area-item">
+          <strong>Dashboard</strong>
+          <span>Visao geral da operacao com indicadores de profissionais, contratos e registros.</span>
+        </div>
+        <div class="area-item">
+          <strong>MEIs</strong>
+          <span>Cadastro e gestao da base de profissionais vinculados a empresa.</span>
+        </div>
+        <div class="area-item">
+          <strong>Contratos</strong>
+          <span>Gestao do vinculo operacional: criar, editar e acompanhar status de contrato e documento.</span>
+        </div>
+        <div class="area-item">
+          <strong>Relatorios</strong>
+          <span>Resumo consolidado para consulta gerencial e exportacoes.</span>
+        </div>
+        <div class="area-item">
+          <strong>Historico</strong>
+          <span>Consulta detalhada dos horarios registrados por periodo.</span>
+        </div>
+        <div class="area-item">
+          <strong>Perfil da empresa</strong>
+          <span>Dados institucionais e branding da conta (nome, CNPJ, contatos, endereco e logo).</span>
+        </div>
+        <div class="area-item">
+          <strong>Configuracoes</strong>
+          <span>Central de ajustes do ambiente operacional no MVP atual.</span>
+        </div>
+        <div class="area-item">
+          <strong>Painel do profissional</strong>
+          <span>Registro da jornada e consulta das informacoes liberadas para o profissional.</span>
+        </div>
+      </div>
+    </article>
+
+    <article class="help-card help-card--side">
+      <h3>4. Duvidas frequentes</h3>
+      <div class="faq-list">
+        <div class="faq-item">
+          <strong>Por que o profissional nao consegue registrar horario?</strong>
+          <p>Sem contrato operacional vigente, o registro de jornada fica bloqueado.</p>
+        </div>
+        <div class="faq-item">
+          <strong>O que significa "aguardando contrato"?</strong>
+          <p>Profissional cadastrado, mas sem contrato criado/liberado para operar.</p>
+        </div>
+        <div class="faq-item">
+          <strong>O que significa "nenhum contrato criado ainda"?</strong>
+          <p>A empresa concluiu o cadastro do profissional, mas ainda nao criou o primeiro contrato.</p>
+        </div>
+        <div class="faq-item">
+          <strong>Onde a empresa cria o contrato?</strong>
+          <p>Na area Contratos, usando a acao de criar contrato para o profissional.</p>
+        </div>
+        <div class="faq-item">
+          <strong>Profissional cadastrado, mas nao ativo. Por que?</strong>
+          <p>Cadastro sem vigencia contratual ativa nao habilita registro de horario.</p>
+        </div>
+        <div class="faq-item">
+          <strong>Onde consultar horarios registrados?</strong>
+          <p>Na area Historico, com filtros por periodo e profissional.</p>
+        </div>
+        <div class="faq-item">
+          <strong>Onde exportar relatorios?</strong>
+          <p>Na area Relatorios, com opcoes de exportacao disponiveis no MVP.</p>
+        </div>
+      </div>
+    </article>
+
+    <article class="help-card">
+      <h3>5. Primeiros passos para empresa</h3>
+      <ol class="first-steps">
+        <li>Atualize o Perfil da empresa com dados institucionais e logo.</li>
+        <li>Cadastre os profissionais na area de MEIs.</li>
+        <li>Crie os contratos de cada profissional na area de Contratos.</li>
+        <li>Valide se os profissionais ja aparecem como ativos para operacao.</li>
+        <li>Acompanhe Dashboard, Historico e Relatorios para controle continuo.</li>
+      </ol>
+      <div class="help-actions">
+        <a class="btn" href="{% url 'company_meis' %}">Ir para MEIs</a>
+        <a class="btn primary" href="{% url 'company_contracts' %}">Ir para Contratos</a>
+      </div>
+    </article>
+  </section>
+</div>
 {% endblock %}

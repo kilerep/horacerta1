@@ -1,14 +1,192 @@
-<a class="btn secondary" href="{% url 'dashboard' %}">⬅ Voltar à Dashboard</a>
-{% extends "base.html" %}
-{% block title %}HoraCerta • Termos{% endblock %}
-{% block subtitle %}Termos de uso{% endblock %}
+{% extends "accounts/base.html" %}
+{% block title %}Termos de uso{% endblock %}
+{% block page_title %}Termos de uso{% endblock %}
+
 {% block content %}
-  <div class="grid">
-    <div class="card">
-      <h2>Termos de Uso (rascunho)</h2>
-      <p class="muted">
-        Aqui vamos escrever um texto profissional depois (transparência, responsabilidades, privacidade, etc.).
+<style>
+  .terms-wrap{
+    display:grid;
+    gap:14px;
+  }
+  .terms-hero{
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:18px;
+    background:
+      radial-gradient(900px 360px at 10% -18%, rgba(47,124,255,.24), transparent 62%),
+      linear-gradient(180deg, rgba(11,20,48,.74), rgba(10,16,38,.7));
+    box-shadow:0 18px 48px rgba(0,0,0,.28);
+  }
+  .terms-kicker{
+    display:inline-flex;
+    align-items:center;
+    font-size:11px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.7px;
+    border-radius:999px;
+    border:1px solid rgba(47,124,255,.4);
+    background:rgba(47,124,255,.2);
+    color:#eef4ff;
+    padding:4px 10px;
+    margin-bottom:8px;
+  }
+  .terms-hero h2{
+    margin:0;
+    font-size:22px;
+  }
+  .terms-hero p{
+    margin:8px 0 0;
+    color:var(--muted);
+    line-height:1.5;
+    max-width:820px;
+  }
+  .terms-meta{
+    margin-top:10px;
+    color:rgba(255,255,255,.7);
+    font-size:12px;
+  }
+  .terms-grid{
+    display:grid;
+    gap:12px;
+  }
+  .terms-card{
+    border:1px solid var(--border);
+    border-radius:14px;
+    background:linear-gradient(180deg, rgba(255,255,255,.032), rgba(255,255,255,.016));
+    padding:14px;
+  }
+  .terms-card h3{
+    margin:0 0 8px;
+    font-size:16px;
+  }
+  .terms-card p{
+    margin:0;
+    color:var(--muted);
+    line-height:1.52;
+  }
+  .terms-card ul{
+    margin:8px 0 0;
+    padding-left:18px;
+    display:grid;
+    gap:6px;
+  }
+  .terms-card li{
+    color:var(--muted);
+    line-height:1.48;
+  }
+  .terms-note{
+    border:1px dashed rgba(255,255,255,.22);
+    border-radius:12px;
+    padding:10px;
+    background:rgba(255,255,255,.02);
+    margin-top:10px;
+    color:var(--muted);
+    font-size:13px;
+    line-height:1.45;
+  }
+</style>
+
+<div class="terms-wrap">
+  <section class="terms-hero">
+    <span class="terms-kicker">Documento institucional</span>
+    <h2>Termos de uso do HoraCerta</h2>
+    <p>
+      Estes termos estabelecem as condicoes gerais de uso da plataforma HoraCerta no estagio atual do MVP.
+      O objetivo e garantir clareza sobre responsabilidades, limites operacionais e condutas esperadas de empresas
+      e usuarios cadastrados.
+    </p>
+    <div class="terms-meta">Versao atual: MVP | Data de referencia: {% now "d/m/Y" %}</div>
+  </section>
+
+  <section class="terms-grid">
+    <article class="terms-card">
+      <h3>1. Objeto</h3>
+      <p>
+        O HoraCerta e uma plataforma de gestao de jornada, acompanhamento de registros e organizacao operacional
+        entre empresa contratante e profissionais cadastrados no sistema.
       </p>
-    </div>
-  </div>
+    </article>
+
+    <article class="terms-card">
+      <h3>2. Aceitacao</h3>
+      <p>
+        Ao acessar e utilizar a plataforma, o usuario declara que leu, compreendeu e concorda com estes termos de uso.
+      </p>
+    </article>
+
+    <article class="terms-card">
+      <h3>3. Cadastro e acesso</h3>
+      <ul>
+        <li>A empresa e responsavel por cadastrar profissionais conforme seu fluxo operacional.</li>
+        <li>Os acessos sao individuais e nao devem ser compartilhados.</li>
+        <li>Cada usuario deve manter sigilo sobre login e senha da propria conta.</li>
+      </ul>
+    </article>
+
+    <article class="terms-card">
+      <h3>4. Uso da plataforma</h3>
+      <ul>
+        <li>O uso deve ocorrer para finalidade profissional e de forma licita.</li>
+        <li>E vedado qualquer uso indevido, fraudulento ou que comprometa integridade dos dados.</li>
+        <li>Registros e vinculos dependem da configuracao realizada pela empresa no ambiente.</li>
+      </ul>
+    </article>
+
+    <article class="terms-card">
+      <h3>5. Responsabilidades da empresa</h3>
+      <ul>
+        <li>Cadastrar corretamente profissionais e dados institucionais.</li>
+        <li>Configurar contratos e vinculos operacionais de forma adequada.</li>
+        <li>Revisar dados e acompanhar o uso operacional do sistema.</li>
+        <li>Utilizar a plataforma de forma compativel com suas obrigacoes internas.</li>
+      </ul>
+    </article>
+
+    <article class="terms-card">
+      <h3>6. Responsabilidades do profissional/usuario</h3>
+      <ul>
+        <li>Utilizar o proprio acesso de forma correta e pessoal.</li>
+        <li>Registrar informacoes dentro do fluxo liberado no sistema.</li>
+        <li>Respeitar as regras de uso definidas para a conta e para a operacao.</li>
+      </ul>
+    </article>
+
+    <article class="terms-card">
+      <h3>7. Disponibilidade da plataforma</h3>
+      <p>
+        O HoraCerta pode passar por manutencoes, ajustes, atualizacoes tecnicas e melhorias evolutivas.
+        Nao ha promessa de disponibilidade absoluta e ininterrupta em tempo integral.
+      </p>
+    </article>
+
+    <article class="terms-card">
+      <h3>8. Dados e privacidade</h3>
+      <p>
+        O sistema trata dados necessarios para operacao do MVP, incluindo cadastro de empresa, profissionais e registros de jornada.
+        O tratamento ocorre com finalidade operacional da plataforma, sem promessas de recursos que nao estejam disponiveis no estagio atual.
+      </p>
+    </article>
+
+    <article class="terms-card">
+      <h3>9. Alteracoes dos termos</h3>
+      <p>
+        Estes termos podem ser atualizados a qualquer momento para refletir ajustes operacionais, legais ou evolutivos do produto.
+        Recomenda-se consulta periodica desta pagina.
+      </p>
+    </article>
+
+    <article class="terms-card">
+      <h3>10. Contato</h3>
+      <p>
+        Para duvidas institucionais sobre estes termos, utilize os canais oficiais da empresa responsavel pela conta
+        ou o canal de suporte institucional que vier a ser disponibilizado.
+      </p>
+      <div class="terms-note">
+        Este texto representa uma base formal minima de uso para o MVP atual do HoraCerta e pode ser expandido
+        conforme evolucao funcional e regulatoria da plataforma.
+      </div>
+    </article>
+  </section>
+</div>
 {% endblock %}

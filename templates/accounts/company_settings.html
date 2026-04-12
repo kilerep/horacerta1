@@ -3,9 +3,57 @@
 {% block page_title %}Configuracoes{% endblock %}
 
 {% block content %}
-<div class="card">
-  <h2 style="margin-top:0;">Configuracoes da Empresa</h2>
-  <p class="muted">Em breve: preferencias, politicas e parametros operacionais.</p>
-</div>
-{% endblock %}
+<style>
+  .settings-grid{
+    display:grid;
+    gap:12px;
+    grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));
+  }
+  .settings-item{
+    border:1px solid var(--border);
+    border-radius:14px;
+    background:rgba(255,255,255,.03);
+    padding:14px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .settings-item h3{
+    margin:0;
+    font-size:16px;
+  }
+  .settings-item p{
+    margin:0;
+    color:var(--muted);
+    font-size:13px;
+  }
+</style>
 
+<section class="card">
+  <h2 style="margin-top:0;">Configuracoes da Empresa</h2>
+  <p class="muted">Central de ajustes operacionais do MVP.</p>
+
+  <div class="settings-grid" style="margin-top:12px;">
+    <article class="settings-item">
+      <h3>Perfil da empresa</h3>
+      <p>Atualize razao social, contato, endereco e logo usados no sistema.</p>
+      <div><a class="btn primary" href="{% url 'company_profile' %}">Abrir perfil</a></div>
+    </article>
+
+    <article class="settings-item">
+      <h3>Contratos e documentos</h3>
+      <p>O arquivo de contrato e gerido dentro da area de Contratos, no proprio vinculo.</p>
+      <div><a class="btn" href="{% url 'company_contracts' %}">Ir para contratos</a></div>
+    </article>
+
+    <article class="settings-item">
+      <h3>Regras e suporte</h3>
+      <p>Acesse ajuda operacional e termos vigentes do produto.</p>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <a class="btn" href="{% url 'help' %}">Ajuda</a>
+        <a class="btn" href="{% url 'terms' %}">Termos</a>
+      </div>
+    </article>
+  </div>
+</section>
+{% endblock %}

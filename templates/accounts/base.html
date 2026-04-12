@@ -104,35 +104,71 @@
       margin-top:14px;
       display:flex;
       flex-direction:column;
-      gap:10px;
+      gap:6px;
+    }
+    .menu-group{
+      display:grid;
+      gap:4px;
+      padding-bottom:10px;
+      margin-bottom:8px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+    }
+    .menu-group:last-of-type{
+      border-bottom:none;
+      margin-bottom:0;
+      padding-bottom:0;
+    }
+    .menu-label{
+      font-size:11px;
+      font-weight:700;
+      letter-spacing:.8px;
+      text-transform:uppercase;
+      color:rgba(255,255,255,.48);
+      padding:4px 10px 2px;
     }
     .item{
       display:flex;
       align-items:center;
       gap:10px;
-      padding:12px 12px;
-      border:1px solid var(--stroke);
-      border-radius: 16px;
-      background: rgba(255,255,255,.03);
-      transition: transform .08s ease, border-color .12s ease, background .12s ease;
+      padding:10px 10px;
+      border:1px solid transparent;
+      border-radius: 12px;
+      background: transparent;
+      transition: transform .08s ease, border-color .14s ease, background .14s ease;
     }
     .item:hover{
       transform: translateY(-1px);
-      background: rgba(255,255,255,.05);
-      border-color: rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      border-color: rgba(255,255,255,.10);
+    }
+    .item.is-active{
+      background: linear-gradient(90deg, rgba(47,124,255,.24), rgba(47,124,255,.06));
+      border-color: rgba(47,124,255,.34);
+      box-shadow: inset 0 0 0 1px rgba(47,124,255,.14);
+    }
+    .item.is-active strong{
+      color:#ffffff;
     }
     .item .icon{
-      width:36px;
-      height:36px;
-      border-radius: 12px;
+      width:30px;
+      height:30px;
+      border-radius: 10px;
       display:grid;
       place-items:center;
-      background: rgba(47,124,255,.14);
-      border:1px solid rgba(47,124,255,.22);
+      background: rgba(47,124,255,.12);
+      border:1px solid rgba(47,124,255,.20);
       color: rgba(255,255,255,.92);
-      font-weight:800;
+      font-weight:700;
+      font-size:12px;
     }
-    .item.muted{ opacity:.7; }
+    .item strong{
+      font-size:14px;
+      line-height:1.2;
+    }
+    .item .item-sub{
+      font-size:12px;
+    }
+    .item.muted{ opacity:.76; }
     .badge {
       background-color: #3b82f6;
       color: white;
@@ -371,14 +407,14 @@
       }
     }
 
-    /* ✅ NOVO: permite páginas colocarem classe no body */
-    /* (sem CSS aqui, só habilita o hook no template) */
+    /* Novo: permite paginas colocarem classe no body */
+    /* (sem CSS aqui, so habilita o hook no template) */
   </style>
 
   {% block extra_head %}{% endblock %}
 </head>
 
-<!-- ✅ MUDANÇA AQUI -->
+<!-- Mudanca aqui -->
 <body class="{% block body_class %}{% endblock %}">
   {% if request.user.is_authenticated %}
     <div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true"></div>
@@ -389,53 +425,57 @@
         <div class="brand">
           <div class="name">HoraCerta</div>
           <div class="sub">
-            <span>Plataforma de Gestão de Jornada</span>
+            <span>Plataforma de Gestao de Jornada</span>
             <span class="sub-badge">v1.0 Beta</span>
           </div>
         </div>
 
         <nav class="menu">
           {% if request.user.role == "EMPRESA" %}
-            <a class="item" href="{% url 'dashboard_empresa' %}">
-              <div class="icon">D</div>
-              <div><strong>Dashboard</strong><div class="muted" style="font-size:12px">visao geral</div></div>
-            </a>
-            <a class="item" href="{% url 'company_meis' %}">
-              <div class="icon">M</div>
-              <div><strong>MEIs</strong><div class="muted" style="font-size:12px">lista</div></div>
-            </a>
-            <a class="item" href="{% url 'company_contracts' %}">
-              <div class="icon">C</div>
-              <div><strong>Contratos</strong><div class="muted" style="font-size:12px">ativos</div></div>
-            </a>
-            <a class="item" href="{% url 'company_reports' %}">
-              <div class="icon">R</div>
-              <div>
-                <strong>
-                  Relatórios
-                  {% if pending_reports_count %}
-                    <span class="badge">{{ pending_reports_count }}</span>
-                  {% endif %}
-                </strong>
-                <div class="muted" style="font-size:12px">resumo diario</div>
+            {% with current=request.resolver_match.url_name %}
+              <div class="menu-group">
+                <div class="menu-label">Operacao</div>
+                <a class="item {% if current == 'dashboard_empresa' %}is-active{% endif %}" href="{% url 'dashboard_empresa' %}">
+                  <div class="icon">D</div>
+                  <div><strong>Dashboard</strong><div class="muted item-sub">visao geral</div></div>
+                </a>
+                <a class="item {% if current == 'company_meis' %}is-active{% endif %}" href="{% url 'company_meis' %}">
+                  <div class="icon">M</div>
+                  <div><strong>MEIs</strong><div class="muted item-sub">cadastro e status</div></div>
+                </a>
+                <a class="item {% if current == 'company_contracts' or current == 'company_docs' %}is-active{% endif %}" href="{% url 'company_contracts' %}">
+                  <div class="icon">C</div>
+                  <div><strong>Contratos</strong><div class="muted item-sub">vinculos e documentos</div></div>
+                </a>
+                <a class="item {% if current == 'company_reports' %}is-active{% endif %}" href="{% url 'company_reports' %}">
+                  <div class="icon">R</div>
+                  <div>
+                    <strong>
+                      Relatorios
+                      {% if pending_reports_count %}
+                        <span class="badge">{{ pending_reports_count }}</span>
+                      {% endif %}
+                    </strong>
+                    <div class="muted item-sub">resumo e exportacao</div>
+                  </div>
+                </a>
+                <a class="item {% if current == 'company_history' or current == 'company_history_legacy' %}is-active{% endif %}" href="{% url 'company_history' %}">
+                  <div class="icon">H</div>
+                  <div><strong>Historico</strong><div class="muted item-sub">lancamentos por periodo</div></div>
+                </a>
               </div>
-            </a>
-            <a class="item" href="{% url 'company_history' %}">
-              <div class="icon">H</div>
-              <div><strong>Historico</strong><div class="muted" style="font-size:12px">horários</div></div>
-            </a>
-            <a class="item muted" href="{% url 'company_docs' %}">
-              <div class="icon">D</div>
-              <div><strong>Contratos/Docs</strong><div class="muted" style="font-size:12px">em breve</div></div>
-            </a>
-            <a class="item muted" href="{% url 'company_settings' %}">
-              <div class="icon">S</div>
-              <div><strong>Configuracoes</strong><div class="muted" style="font-size:12px">em breve</div></div>
-            </a>
-            <a class="item" href="{% url 'company_profile' %}">
-              <div class="icon">P</div>
-              <div><strong>Perfil</strong><div class="muted" style="font-size:12px">empresa</div></div>
-            </a>
+              <div class="menu-group">
+                <div class="menu-label">Conta</div>
+                <a class="item {% if current == 'company_settings' %}is-active{% endif %}" href="{% url 'company_settings' %}">
+                  <div class="icon">S</div>
+                  <div><strong>Configuracoes</strong><div class="muted item-sub">organizacao e operacao</div></div>
+                </a>
+                <a class="item {% if current == 'company_profile' %}is-active{% endif %}" href="{% url 'company_profile' %}">
+                  <div class="icon">P</div>
+                  <div><strong>Perfil</strong><div class="muted item-sub">dados da empresa</div></div>
+                </a>
+              </div>
+            {% endwith %}
           {% else %}
             <a class="item" href="{% url 'mei_panel' %}">
               <div class="icon">P</div>
@@ -469,11 +509,11 @@
 
           <a class="item" href="{% url 'help' %}">
             <div class="icon">?</div>
-            <div><strong>Ajuda</strong><div class="muted" style="font-size:12px">como usar</div></div>
+            <div><strong>Central de ajuda</strong><div class="muted" style="font-size:12px">como usar</div></div>
           </a>
           <a class="item" href="{% url 'terms' %}">
             <div class="icon">T</div>
-            <div><strong>Termos</strong><div class="muted" style="font-size:12px">uso e privacidade</div></div>
+            <div><strong>Termos de uso</strong><div class="muted" style="font-size:12px">condicoes da plataforma</div></div>
           </a>
           <a class="item" href="{% url 'logout' %}">
             <div class="icon">X</div>
@@ -519,8 +559,8 @@
           <span>HoraCerta</span>
         </div>
         <div class="guestactions">
-          <a class="btn" href="{% url 'help' %}">Ajuda</a>
-          <a class="btn" href="{% url 'terms' %}">Termos</a>
+          <a class="btn" href="{% url 'help' %}">Central de ajuda</a>
+          <a class="btn" href="{% url 'terms' %}">Termos de uso</a>
         </div>
       </div>
       <main class="main" style="width: min(980px, 100%);">
@@ -546,3 +586,4 @@ if ('serviceWorker' in navigator) {
     .then(() => console.log('SW registrado'));
 }
 </script>
+

@@ -45,6 +45,7 @@
       font-size:12px; font-weight:700; background:rgba(255,255,255,.05);
     }
     .contracts-pill.success{ border-color:rgba(45,211,145,.35); background:rgba(45,211,145,.12); color:#ccffea; }
+    .contracts-pill.pending{ border-color:rgba(255,176,32,.42); background:rgba(255,176,32,.14); color:#ffe7ad; }
     .contracts-pill.warn{ border-color:rgba(255,94,94,.35); background:rgba(255,94,94,.12); color:#ffd8d8; }
     .pending-list{ display:grid; gap:8px; margin-top:10px; }
     .pending-item{
@@ -61,7 +62,7 @@
   <div class="contracts-wrap">
     <section class="contracts-panel">
       <h2 class="contracts-title">Contratos da empresa</h2>
-      <p class="contracts-subtitle">Gerencie contratos ativos e conclua os cadastros pendentes com criacao rapida.</p>
+      <p class="contracts-subtitle">Gerencie vinculos, criacao de contrato e documentos do contrato em um unico fluxo.</p>
 
       {% if request.GET.status == "updated" %}
         <div class="contracts-alert">Contrato atualizado com sucesso.</div>
@@ -190,52 +191,72 @@
     {% endif %}
 
     <section class="contracts-panel">
-      <h3 style="margin:0;">Lista de contratos</h3>
+      <h3 style="margin:0;">Gestao de profissionais e contratos</h3>
       <div class="contracts-table-wrap">
         <table class="contracts-table">
           <thead>
             <tr>
               <th>Profissional</th>
-              <th>Valor/h</th>
               <th>Status</th>
-              <th>Inicio</th>
+              <th>Contratos</th>
+              <th>Ultimo contrato</th>
               <th>PDF</th>
               <th>Acoes</th>
             </tr>
           </thead>
           <tbody>
-            {% for row in contracts %}
-              {% with c=row.contract %}
+            {% for row in professionals %}
+              {% with employee=row.employee c=row.latest_contract %}
                 <tr>
                   <td>
-                    {% if c.employee and c.employee.user %}
-                      {{ c.employee.full_name|default:c.employee.user.username }}
-                      <span class="muted">({{ c.employee.user.email|default:c.employee.user.username }})</span>
+                    {% if employee and employee.user %}
+                      {{ employee.full_name|default:employee.user.username }}
+                      <span class="muted">({{ employee.user.email|default:employee.user.username }})</span>
                     {% else %}
-                      <span class="muted">Contrato invalido</span>
+                      <span class="muted">Profissional invalido</span>
                     {% endif %}
                   </td>
-                  <td>R$ {{ c.hourly_rate }}</td>
                   <td>
-                    {% if row.is_operational %}
-                      <span class="contracts-pill success">Ativo operacional</span>
-                    {% elif c.is_active %}
-                      <span class="contracts-pill">Ativo sem vigencia</span>
+                    {% if row.status_tone == "success" %}
+                      <span class="contracts-pill success">{{ row.status_label }}</span>
+                    {% elif row.status_tone == "pending" %}
+                      <span class="contracts-pill pending">{{ row.status_label }}</span>
+                    {% elif row.status_tone == "warn" %}
+                      <span class="contracts-pill warn">{{ row.status_label }}</span>
                     {% else %}
-                      <span class="contracts-pill warn">Inativo</span>
+                      <span class="contracts-pill">{{ row.status_label }}</span>
+                    {% endif %}
+                    <div class="muted">{{ row.status_hint }}</div>
+                  </td>
+                  <td>
+                    <strong>{{ row.total_contracts }}</strong>
+                    <span class="muted">({{ row.active_contracts }} operacional)</span>
+                  </td>
+                  <td>
+                    {% if c %}
+                      R$ {{ c.hourly_rate }} | {{ c.start_date|date:"d/m/Y" }}<br>
+                      {% if row.latest_contract_operational %}
+                        <span class="contracts-pill success">Ativo operacional</span>
+                      {% elif c.is_active %}
+                        <span class="contracts-pill">Ativo sem vigencia</span>
+                      {% else %}
+                        <span class="contracts-pill warn">Inativo</span>
+                      {% endif %}
+                    {% else %}
+                      <span class="contracts-pill pending">Aguardando contrato</span>
                     {% endif %}
                   </td>
-                  <td>{{ c.start_date|date:"d/m/Y" }}</td>
                   <td>
-                    {% if c.contract_file %}
+                    {% if c and c.contract_file %}
                       <a class="btn" href="{{ c.contract_file.url }}" target="_blank" rel="noopener">Download PDF</a>
                     {% else %}
                       <span class="muted">Sem arquivo</span>
                     {% endif %}
                   </td>
                   <td>
-                    {% if c.employee and c.employee.user %}
-                      <a class="btn primary" href="{% url 'company_contracts' %}?edit={{ c.id }}">Editar</a>
+                    {% if employee and employee.user %}
+                      <a class="btn" href="{% url 'company_meis' %}?q={{ employee.user.email|default:employee.user.username|urlencode }}">Ver situacao</a>
+                      <a class="btn primary" href="{{ row.action_url }}">{{ row.action_label }}</a>
                     {% else %}
                       <span class="muted">Indisponivel</span>
                     {% endif %}
@@ -245,7 +266,7 @@
             {% empty %}
               <tr>
                 <td colspan="6" class="muted">
-                  Sem contratos cadastrados. Se ja houver profissionais cadastrados, crie o primeiro contrato para liberar a operacao.
+                  Nenhum profissional cadastrado para esta empresa.
                 </td>
               </tr>
             {% endfor %}

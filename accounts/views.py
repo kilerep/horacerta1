@@ -701,26 +701,53 @@ def company_contracts(request):
         .order_by("full_name")[:400]
     ) if company else []
     contracts_by_employee = _contracts_by_employee(company, employees)
+    professional_rows = []
     pending_without_contracts = []
     for employee in employees:
         employee_contracts = contracts_by_employee.get(employee.id, [])
         lifecycle = employee_lifecycle_summary(employee, employee_contracts)
-        if lifecycle["key"] in (PROFESSIONAL_STATE_CADASTRADO, PROFESSIONAL_STATE_AGUARDANDO):
+        latest_contract = employee_contracts[0] if employee_contracts else None
+        has_contract = latest_contract is not None
+        latest_contract_operational = contract_is_operational(latest_contract) if latest_contract else False
+        active_contracts = sum(1 for contract in employee_contracts if contract_is_operational(contract))
+        needs_contract = not has_contract
+
+        if needs_contract:
+            status_label = "Aguardando contrato"
+            status_tone = "pending"
+            status_hint = "Profissional cadastrado sem contrato. Crie um contrato para liberar a operacao."
+            action_url = f"{reverse('company_contracts')}?create_for={employee.id}"
+            action_label = "Criar contrato"
             pending_without_contracts.append(
                 {
                     "employee": employee,
-                    "state": lifecycle,
-                    "create_url": f"{reverse('company_contracts')}?create_for={employee.id}",
+                    "state": {
+                        "label": status_label,
+                        "hint": status_hint,
+                        "tone": status_tone,
+                    },
+                    "create_url": action_url,
                 }
             )
+        else:
+            status_label = lifecycle["label"]
+            status_tone = lifecycle["tone"]
+            status_hint = lifecycle["hint"]
+            action_url = f"{reverse('company_contracts')}?edit={latest_contract.id}"
+            action_label = "Editar contrato"
 
-    contracts = list(contracts_qs.order_by("-is_active", "-start_date", "employee__user__username")[:400])
-    contract_rows = []
-    for contract in contracts:
-        contract_rows.append(
+        professional_rows.append(
             {
-                "contract": contract,
-                "is_operational": contract_is_operational(contract),
+                "employee": employee,
+                "status_label": status_label,
+                "status_tone": status_tone,
+                "status_hint": status_hint,
+                "latest_contract": latest_contract,
+                "latest_contract_operational": latest_contract_operational,
+                "active_contracts": active_contracts,
+                "total_contracts": len(employee_contracts),
+                "action_url": action_url,
+                "action_label": action_label,
             }
         )
 
@@ -729,7 +756,7 @@ def company_contracts(request):
         "accounts/company_contracts.html",
         {
             "company": company,
-            "contracts": contract_rows,
+            "professionals": professional_rows,
             "create_form": create_form,
             "edit_form": edit_form,
             "edit_contract": edit_contract,
@@ -999,7 +1026,7 @@ def company_docs(request):
     denied = _redirect_if_not_empresa(request)
     if denied:
         return denied
-    return render(request, "accounts/company_docs.html")
+    return redirect("company_contracts")
 
 
 @login_required

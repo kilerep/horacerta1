@@ -3,91 +3,347 @@
 {% block page_title %}Perfil da Empresa{% endblock %}
 
 {% block content %}
-  <style>
-    .panel{
-      border:1px solid var(--border);
-      border-radius: var(--radius);
-      background:
-        linear-gradient(140deg, rgba(79,124,255,.10), transparent 42%),
-        linear-gradient(180deg, rgba(250,204,21,.06), rgba(255,255,255,.03));
-      padding:14px;
+<style>
+  .company-profile{
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    background:
+      radial-gradient(900px 420px at 6% -20%, rgba(47,124,255,.24), transparent 62%),
+      linear-gradient(180deg, rgba(10,18,42,.88), rgba(8,14,34,.88));
+    box-shadow:0 24px 56px rgba(0,0,0,.36);
+    overflow:hidden;
+  }
+  .company-profile__hero{
+    padding:20px 22px 16px;
+    border-bottom:1px solid rgba(255,255,255,.08);
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+  .company-profile__kicker{
+    display:inline-flex;
+    align-items:center;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.7px;
+    text-transform:uppercase;
+    color:rgba(255,255,255,.84);
+    background:rgba(47,124,255,.18);
+    border:1px solid rgba(47,124,255,.34);
+    border-radius:999px;
+    padding:4px 10px;
+    margin-bottom:8px;
+  }
+  .company-profile__title{
+    margin:0;
+    font-size:22px;
+    font-weight:800;
+    line-height:1.2;
+  }
+  .company-profile__subtitle{
+    margin:8px 0 0;
+    color:var(--muted);
+    max-width:620px;
+    font-size:13px;
+    line-height:1.45;
+  }
+  .company-profile__form{
+    padding:18px 22px 22px;
+    display:grid;
+    gap:14px;
+  }
+  .profile-section{
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:14px;
+    background:linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.015));
+    padding:14px;
+    display:grid;
+    gap:10px;
+  }
+  .profile-section__header{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .profile-section__title{
+    margin:0;
+    font-size:15px;
+    font-weight:700;
+  }
+  .profile-section__hint{
+    margin:4px 0 0;
+    color:var(--muted);
+    font-size:12px;
+  }
+  .profile-grid{
+    display:grid;
+    gap:10px;
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+  }
+  .profile-field{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    min-width:0;
+  }
+  .profile-field--full{
+    grid-column:1 / -1;
+  }
+  .profile-field label{
+    color:rgba(255,255,255,.76);
+    font-size:12px;
+    font-weight:600;
+  }
+  .profile-field input,
+  .profile-field textarea{
+    width:100%;
+    padding:10px 12px;
+    border-radius:11px;
+    border:1px solid rgba(255,255,255,.13);
+    background:rgba(255,255,255,.04);
+    color:var(--text);
+    outline:none;
+    transition:border-color .14s ease, box-shadow .14s ease, background .14s ease;
+  }
+  .profile-field textarea{
+    resize:vertical;
+    min-height:96px;
+  }
+  .profile-field input:focus,
+  .profile-field textarea:focus{
+    border-color:rgba(47,124,255,.56);
+    background:rgba(255,255,255,.055);
+    box-shadow:0 0 0 3px rgba(47,124,255,.18);
+  }
+  .logo-uploader{
+    display:grid;
+    gap:10px;
+    grid-template-columns:auto 1fr;
+    align-items:center;
+  }
+  .logo-uploader__preview{
+    width:88px;
+    height:88px;
+    border-radius:16px;
+    border:1px solid rgba(255,255,255,.16);
+    background:linear-gradient(145deg, rgba(47,124,255,.24), rgba(255,255,255,.08));
+    display:grid;
+    place-items:center;
+    overflow:hidden;
+    font-size:22px;
+    font-weight:800;
+    color:#e8f0ff;
+  }
+  .logo-uploader__preview img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+  }
+  .logo-uploader__controls{
+    display:grid;
+    gap:8px;
+  }
+  .logo-uploader input[type="file"]{
+    display:none;
+  }
+  .logo-uploader__pick{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:max-content;
+    padding:9px 12px;
+    border-radius:11px;
+    border:1px solid rgba(47,124,255,.45);
+    background:rgba(47,124,255,.18);
+    color:#eef4ff;
+    font-size:12px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .logo-uploader__meta{
+    color:var(--muted);
+    font-size:12px;
+  }
+  .profile-error{
+    color:#ffd3d3;
+    font-size:12px;
+    margin-top:2px;
+  }
+  .profile-actions{
+    display:flex;
+    justify-content:flex-end;
+    padding-top:4px;
+  }
+  .profile-actions .btn.primary{
+    min-width:172px;
+    min-height:42px;
+    border-color:rgba(47,124,255,.54);
+    background:linear-gradient(135deg, rgba(47,124,255,.36), rgba(47,124,255,.2));
+    box-shadow:0 12px 26px rgba(19,74,181,.34);
+  }
+  .profile-actions .btn.primary:hover{
+    background:linear-gradient(135deg, rgba(47,124,255,.44), rgba(47,124,255,.24));
+  }
+  @media (max-width: 900px){
+    .company-profile__hero,
+    .company-profile__form{
+      padding-left:14px;
+      padding-right:14px;
     }
-    .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
-    .field{ display:flex; flex-direction:column; gap:6px; min-width:220px; flex:1; }
-    label{ color:var(--muted); font-size:13px; }
-    input, textarea{
+    .profile-grid{
+      grid-template-columns:1fr;
+    }
+    .logo-uploader{
+      grid-template-columns:1fr;
+      justify-items:start;
+    }
+    .profile-actions{
+      justify-content:stretch;
+    }
+    .profile-actions .btn.primary{
       width:100%;
-      padding:10px 12px;
-      border-radius:12px;
-      border:1px solid var(--border);
-      background:rgba(255,255,255,.06);
-      color:var(--text);
-      outline:none;
     }
-    .error{ color:#ffd3d3; font-size:12px; margin-top:4px; }
-    .preview{
-      width:70px;height:70px;border-radius:14px;object-fit:cover;border:1px solid var(--border);
-      background:rgba(255,255,255,.05);
-    }
-  </style>
+  }
+</style>
 
-  <section class="panel">
-    <h2 style="margin:0;">Perfil da Empresa</h2>
-    <form method="post" enctype="multipart/form-data" style="margin-top:10px;">
-      {% csrf_token %}
+<section class="company-profile">
+  <header class="company-profile__hero">
+    <div>
+      <span class="company-profile__kicker">Conta institucional</span>
+      <h2 class="company-profile__title">Identidade e dados institucionais</h2>
+      <p class="company-profile__subtitle">
+        Mantenha os dados oficiais da sua empresa atualizados para documentos, comunicacao e apresentacao da marca no HoraCerta.
+      </p>
+    </div>
+  </header>
 
-      <div class="row">
-        <div class="field">
-          <label>{{ form.name.label }}</label>
+  <form method="post" enctype="multipart/form-data" class="company-profile__form">
+    {% csrf_token %}
+
+    <section class="profile-section">
+      <div class="profile-section__header">
+        <div>
+          <h3 class="profile-section__title">Identidade da empresa</h3>
+          <p class="profile-section__hint">Nome de exibicao e logo institucional da conta.</p>
+        </div>
+      </div>
+
+      <div class="profile-grid">
+        <div class="profile-field">
+          <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
           {{ form.name }}
-          {% if form.name.errors %}<div class="error">{{ form.name.errors }}</div>{% endif %}
+          {% if form.name.errors %}<div class="profile-error">{{ form.name.errors }}</div>{% endif %}
         </div>
-        <div class="field">
-          <label>{{ form.cnpj.label }}</label>
+
+        <div class="profile-field">
+          <label for="{{ form.logo.id_for_label }}">{{ form.logo.label }}</label>
+          <div class="logo-uploader">
+            <div class="logo-uploader__preview" id="logoPreviewWrap">
+              {% if company.logo %}
+                <img id="logoPreviewImage" src="{{ company.logo.url }}" alt="Logo atual da empresa">
+              {% else %}
+                <span id="logoPreviewFallback">{{ company.name|default:"HC"|slice:":2"|upper }}</span>
+                <img id="logoPreviewImage" src="" alt="Preview da nova logo" style="display:none;">
+              {% endif %}
+            </div>
+            <div class="logo-uploader__controls">
+              {{ form.logo }}
+              <label class="logo-uploader__pick" for="{{ form.logo.id_for_label }}">Selecionar logo</label>
+              <div class="logo-uploader__meta" id="logoFileName">
+                {% if company.logo %}Logo atual carregada.{% else %}Nenhum arquivo selecionado.{% endif %}
+              </div>
+            </div>
+          </div>
+          {% if form.logo.errors %}<div class="profile-error">{{ form.logo.errors }}</div>{% endif %}
+        </div>
+      </div>
+    </section>
+
+    <section class="profile-section">
+      <div class="profile-section__header">
+        <div>
+          <h3 class="profile-section__title">Dados institucionais</h3>
+          <p class="profile-section__hint">Informacoes juridicas e canais oficiais da empresa.</p>
+        </div>
+      </div>
+
+      <div class="profile-grid">
+        <div class="profile-field">
+          <label for="{{ form.cnpj.id_for_label }}">{{ form.cnpj.label }}</label>
           {{ form.cnpj }}
-          {% if form.cnpj.errors %}<div class="error">{{ form.cnpj.errors }}</div>{% endif %}
+          {% if form.cnpj.errors %}<div class="profile-error">{{ form.cnpj.errors }}</div>{% endif %}
         </div>
-      </div>
-
-      <div class="row" style="margin-top:10px;">
-        <div class="field">
-          <label>{{ form.email.label }}</label>
+        <div class="profile-field">
+          <label for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
           {{ form.email }}
-          {% if form.email.errors %}<div class="error">{{ form.email.errors }}</div>{% endif %}
+          {% if form.email.errors %}<div class="profile-error">{{ form.email.errors }}</div>{% endif %}
         </div>
-        <div class="field">
-          <label>{{ form.phone.label }}</label>
+        <div class="profile-field">
+          <label for="{{ form.phone.id_for_label }}">{{ form.phone.label }}</label>
           {{ form.phone }}
-          {% if form.phone.errors %}<div class="error">{{ form.phone.errors }}</div>{% endif %}
+          {% if form.phone.errors %}<div class="profile-error">{{ form.phone.errors }}</div>{% endif %}
+        </div>
+      </div>
+    </section>
+
+    <section class="profile-section">
+      <div class="profile-section__header">
+        <div>
+          <h3 class="profile-section__title">Endereco</h3>
+          <p class="profile-section__hint">Endereco principal da operacao administrativa.</p>
         </div>
       </div>
 
-      <div class="row" style="margin-top:10px;">
-        <div class="field">
-          <label>{{ form.address.label }}</label>
+      <div class="profile-grid">
+        <div class="profile-field profile-field--full">
+          <label for="{{ form.address.id_for_label }}">{{ form.address.label }}</label>
           {{ form.address }}
-          {% if form.address.errors %}<div class="error">{{ form.address.errors }}</div>{% endif %}
+          {% if form.address.errors %}<div class="profile-error">{{ form.address.errors }}</div>{% endif %}
         </div>
       </div>
+    </section>
 
-      <div class="row" style="margin-top:10px;">
-        <div class="field" style="max-width:320px;">
-          <label>{{ form.logo.label }}</label>
-          {{ form.logo }}
-          {% if form.logo.errors %}<div class="error">{{ form.logo.errors }}</div>{% endif %}
-        </div>
-        {% if company.logo %}
-          <img class="preview" src="{{ company.logo.url }}" alt="Logo da empresa">
-        {% endif %}
-      </div>
+    {% if form.non_field_errors %}
+      <div class="profile-error">{{ form.non_field_errors }}</div>
+    {% endif %}
 
-      {% if form.non_field_errors %}
-        <div class="error" style="margin-top:10px;">{{ form.non_field_errors }}</div>
-      {% endif %}
+    <div class="profile-actions">
+      <button class="btn primary" type="submit">Salvar perfil</button>
+    </div>
+  </form>
+</section>
 
-      <div style="margin-top:10px;">
-        <button class="btn primary" type="submit">Salvar perfil</button>
-      </div>
-    </form>
-  </section>
+<script>
+  (function () {
+    var fileInput = document.getElementById("{{ form.logo.id_for_label }}");
+    var fileName = document.getElementById("logoFileName");
+    var previewImage = document.getElementById("logoPreviewImage");
+    var previewFallback = document.getElementById("logoPreviewFallback");
+
+    if (!fileInput || !fileName || !previewImage) return;
+
+    fileInput.addEventListener("change", function () {
+      var file = fileInput.files && fileInput.files[0];
+      if (!file) {
+        fileName.textContent = "Nenhum arquivo selecionado.";
+        return;
+      }
+
+      fileName.textContent = "Arquivo selecionado: " + file.name;
+      if (!file.type || file.type.indexOf("image/") !== 0) return;
+
+      var reader = new FileReader();
+      reader.onload = function (event) {
+        previewImage.src = event.target.result;
+        previewImage.style.display = "block";
+        if (previewFallback) previewFallback.style.display = "none";
+      };
+      reader.readAsDataURL(file);
+    });
+  })();
+</script>
 {% endblock %}
