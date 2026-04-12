@@ -72,6 +72,9 @@
       {% if invalid_edit_contract %}
         <div class="contracts-error">Contrato invalido para edicao.</div>
       {% endif %}
+      {% if invalid_create_target %}
+        <div class="contracts-error">Profissional invalido para criacao de contrato.</div>
+      {% endif %}
 
       {% if pending_without_contracts %}
         <div class="contracts-warning">
@@ -255,7 +258,7 @@
                   </td>
                   <td>
                     {% if employee and employee.user %}
-                      <a class="btn" href="{% url 'company_meis' %}?q={{ employee.user.email|default:employee.user.username|urlencode }}">Ver situacao</a>
+                      <a class="btn" href="{{ row.profile_url }}">Ver perfil</a>
                       <a class="btn primary" href="{{ row.action_url }}">{{ row.action_label }}</a>
                     {% else %}
                       <span class="muted">Indisponivel</span>

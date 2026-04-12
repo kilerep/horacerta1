@@ -1,0 +1,168 @@
+{% extends "accounts/base.html" %}
+{% block title %}Perfil do profissional{% endblock %}
+{% block page_title %}Perfil do profissional{% endblock %}
+
+{% block content %}
+<style>
+  .mei-profile-wrap{ display:grid; gap:14px; }
+  .mei-profile-card{
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:16px;
+    background:
+      radial-gradient(900px 340px at 6% -20%, rgba(47,124,255,.24), transparent 62%),
+      linear-gradient(180deg, rgba(11,20,48,.74), rgba(10,16,38,.7));
+  }
+  .mei-profile-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+  .mei-profile-title{ margin:0; font-size:22px; }
+  .mei-profile-subtitle{ margin:8px 0 0; color:var(--muted); }
+  .mei-pill{
+    display:inline-flex;
+    align-items:center;
+    border:1px solid var(--border);
+    border-radius:999px;
+    padding:5px 10px;
+    font-size:12px;
+    font-weight:700;
+    background:rgba(255,255,255,.05);
+  }
+  .mei-pill.success{ border-color:rgba(45,211,145,.35); background:rgba(45,211,145,.12); color:#ccffea; }
+  .mei-pill.pending{ border-color:rgba(255,176,32,.42); background:rgba(255,176,32,.14); color:#ffe7ad; }
+  .mei-pill.warn{ border-color:rgba(255,94,94,.35); background:rgba(255,94,94,.12); color:#ffd8d8; }
+  .mei-grid{
+    margin-top:12px;
+    display:grid;
+    gap:10px;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  .mei-box{
+    border:1px solid rgba(255,255,255,.1);
+    border-radius:12px;
+    padding:12px;
+    background:rgba(255,255,255,.03);
+  }
+  .mei-box strong{ display:block; margin-bottom:4px; }
+  .mei-box span{ color:var(--muted); font-size:13px; line-height:1.45; }
+  .mei-actions{ margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; }
+  .mei-table-wrap{
+    border:1px solid var(--border);
+    border-radius:14px;
+    overflow-x:auto;
+  }
+  .mei-table{ width:100%; border-collapse:collapse; min-width:760px; }
+  .mei-table th,.mei-table td{
+    text-align:left;
+    padding:10px;
+    border-bottom:1px solid rgba(255,255,255,.07);
+    vertical-align:top;
+  }
+  .mei-table th{ color:var(--muted); font-size:13px; }
+  .mei-table tr:last-child td{ border-bottom:none; }
+  .muted{ color:var(--muted); }
+  @media (max-width: 900px){
+    .mei-grid{ grid-template-columns:1fr; }
+    .mei-table{ min-width:0; }
+  }
+</style>
+
+<div class="mei-profile-wrap">
+  <section class="mei-profile-card">
+    <div class="mei-profile-head">
+      <div>
+        <h2 class="mei-profile-title">{{ employee.full_name }}</h2>
+        <p class="mei-profile-subtitle">{{ employee.user.email|default:employee.user.username }}</p>
+      </div>
+      <div>
+        <span class="mei-pill {% if state.tone == 'success' %}success{% elif state.tone == 'pending' %}pending{% elif state.tone == 'warn' %}warn{% endif %}">
+          {{ state.label }}
+        </span>
+      </div>
+    </div>
+
+    <div class="mei-grid">
+      <article class="mei-box">
+        <strong>Situacao operacional</strong>
+        <span>{{ state.hint }}</span>
+      </article>
+      <article class="mei-box">
+        <strong>Contratos</strong>
+        <span>{{ contracts|length }} total | {{ active_contracts }} operacional</span>
+      </article>
+      <article class="mei-box">
+        <strong>Ultimo contrato</strong>
+        <span>
+          {% if latest_contract %}
+            R$ {{ latest_contract.hourly_rate }} | inicio {{ latest_contract.start_date|date:"d/m/Y" }}
+          {% else %}
+            Nenhum contrato criado ainda.
+          {% endif %}
+        </span>
+      </article>
+      <article class="mei-box">
+        <strong>Cadastro</strong>
+        <span>Criado em {{ employee.created_at|date:"d/m/Y H:i" }}</span>
+      </article>
+    </div>
+
+    <div class="mei-actions">
+      <a class="btn" href="{{ meis_url }}">Voltar para MEIs</a>
+      <a class="btn" href="{{ history_url }}">Ver historico</a>
+      {% if edit_contract_url %}
+        <a class="btn primary" href="{{ edit_contract_url }}">Editar contrato</a>
+      {% else %}
+        <a class="btn primary" href="{{ create_contract_url }}">Criar contrato</a>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="mei-profile-card">
+    <h3 style="margin:0 0 10px;">Historico de contratos</h3>
+    <div class="mei-table-wrap">
+      <table class="mei-table">
+        <thead>
+          <tr>
+            <th>Inicio</th>
+            <th>Fim</th>
+            <th>Valor/h</th>
+            <th>Status</th>
+            <th>Documento</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for contract in contracts %}
+            <tr>
+              <td>{{ contract.start_date|date:"d/m/Y" }}</td>
+              <td>{{ contract.end_date|date:"d/m/Y"|default:"-" }}</td>
+              <td>R$ {{ contract.hourly_rate }}</td>
+              <td>
+                {% if contract.is_active %}
+                  <span class="mei-pill">Ativo</span>
+                {% else %}
+                  <span class="mei-pill warn">Inativo</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if contract.contract_file %}
+                  <a class="btn" href="{{ contract.contract_file.url }}" target="_blank" rel="noopener">Baixar PDF</a>
+                {% else %}
+                  <span class="muted">Sem arquivo</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="5" class="muted">Nenhum contrato criado para este profissional.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}

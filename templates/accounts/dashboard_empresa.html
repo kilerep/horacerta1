@@ -112,7 +112,10 @@
                       <div class="muted" style="margin-top:4px;font-size:12px;">{{ row.state.hint }}</div>
                     </td>
                     <td>{{ row.total_contracts }} total / {{ row.active_contracts }} operacional</td>
-                    <td><a class="btn" href="{% url 'company_contracts' %}?create_for={{ row.employee.id }}">Ver situacao</a></td>
+                    <td>
+                      <a class="btn" href="{{ row.profile_url }}">Ver perfil</a>
+                      <a class="btn primary" href="{{ row.action_url }}">{{ row.action_label }}</a>
+                    </td>
                   </tr>
                 {% empty %}
                   <tr><td colspan="4" class="muted">Nenhum profissional encontrado para este filtro.</td></tr>

@@ -45,6 +45,7 @@ urlpatterns = [
     path("dashboard/profile/", views.company_profile, name="company_profile"),
     path("empresa/", views.dashboard_empresa, name="dashboard_empresa"),
     path("empresa/meis/", views.company_meis, name="company_meis"),
+    path("empresa/meis/<uuid:employee_id>/", views.company_mei_profile, name="company_mei_profile"),
     path("empresa/contratos/", views.company_contracts, name="company_contracts"),
     path("empresa/relatorios/", views.company_reports, name="company_reports"),
     path("dashboard/history/", views.company_history, name="company_history"),

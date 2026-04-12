@@ -145,8 +145,13 @@
                   <span class="company-meis__muted">({{ row.active_contracts }} operacional)</span>
                 </td>
                 <td data-label="Acoes" class="company-meis__actions-cell">
-                  <a class="btn primary" href="{{ row.action_url }}">{{ row.action_label }}</a>
-                  <a class="btn" href="{% url 'company_contracts' %}?create_for={{ row.employee.id }}">Ver situacao</a>
+                  <a class="btn" href="{{ row.profile_url }}">Ver perfil</a>
+                  <a class="btn" href="{{ row.situation_url }}">Ver situacao</a>
+                  {% if row.edit_contract_url %}
+                    <a class="btn primary" href="{{ row.edit_contract_url }}">Editar contrato</a>
+                  {% else %}
+                    <a class="btn primary" href="{{ row.create_contract_url }}">Criar contrato</a>
+                  {% endif %}
                 </td>
               </tr>
             {% empty %}

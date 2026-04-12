@@ -501,15 +501,26 @@ def dashboard_empresa(request):
     }
     employees_list = list(employees_qs.order_by("full_name")[:300])
     contracts_by_employee = _contracts_by_employee(company, employees_list)
-    employee_rows = [
-        {
-            "employee": employee,
-            "active_contracts": sum(1 for c in contracts_by_employee.get(employee.id, []) if contract_is_operational(c)),
-            "total_contracts": len(contracts_by_employee.get(employee.id, [])),
-            "state": employee_lifecycle_summary(employee, contracts_by_employee.get(employee.id, [])),
-        }
-        for employee in employees_list
-    ]
+    employee_rows = []
+    for employee in employees_list:
+        employee_contracts = contracts_by_employee.get(employee.id, [])
+        latest_contract = employee_contracts[0] if employee_contracts else None
+        action_url = (
+            f"{reverse('company_contracts')}?create_for={employee.id}"
+            if not latest_contract
+            else f"{reverse('company_contracts')}?edit={latest_contract.id}"
+        )
+        employee_rows.append(
+            {
+                "employee": employee,
+                "active_contracts": sum(1 for c in employee_contracts if contract_is_operational(c)),
+                "total_contracts": len(employee_contracts),
+                "state": employee_lifecycle_summary(employee, employee_contracts),
+                "profile_url": reverse("company_mei_profile", args=[employee.id]),
+                "action_url": action_url,
+                "action_label": "Criar contrato" if not latest_contract else "Editar contrato",
+            }
+        )
 
     contract_rows = []
     for contract in contracts_qs.order_by("-start_date", "-created_at", "employee__user__username")[:300]:
@@ -588,6 +599,9 @@ def company_meis(request):
         lifecycle = employee_lifecycle_summary(employee, employee_contracts)
         latest_contract = employee_contracts[0] if employee_contracts else None
         operational_count = sum(1 for contract in employee_contracts if contract_is_operational(contract))
+        create_contract_url = f"{reverse('company_contracts')}?create_for={employee.id}"
+        edit_contract_url = f"{reverse('company_contracts')}?edit={latest_contract.id}" if latest_contract else None
+        situation_url = edit_contract_url or create_contract_url
         employee_rows.append(
             {
                 "employee": employee,
@@ -595,11 +609,11 @@ def company_meis(request):
                 "total_contracts": len(employee_contracts),
                 "active_contracts": operational_count,
                 "latest_contract": latest_contract,
-                "action_url": (
-                    f"{reverse('company_contracts')}?create_for={employee.id}"
-                    if not latest_contract
-                    else f"{reverse('company_contracts')}?edit={latest_contract.id}"
-                ),
+                "profile_url": reverse("company_mei_profile", args=[employee.id]),
+                "situation_url": situation_url,
+                "create_contract_url": create_contract_url,
+                "edit_contract_url": edit_contract_url,
+                "action_url": situation_url,
                 "action_label": "Criar contrato" if not latest_contract else "Editar contrato",
             }
         )
@@ -635,16 +649,18 @@ def company_contracts(request):
     edit_form = None
     create_form = None
     invalid_edit_contract = False
+    invalid_create_target = False
     edit_id = (request.GET.get("edit") or "").strip()
     create_for_id = (request.GET.get("create_for") or "").strip()
     create_for_employee = None
 
-    if create_for_id and company:
+    if create_for_id and company and not edit_id:
         create_for_employee = Employee.objects.filter(
             id=create_for_id,
             company=company,
             user__role=User.Role.FUNCIONARIO,
         ).select_related("user").first()
+        invalid_create_target = create_for_employee is None
 
     if edit_id and company:
         edit_contract = contracts_qs.filter(id=edit_id).first()
@@ -663,7 +679,7 @@ def company_contracts(request):
                     contract.company = company
                     contract.save()
                     return redirect(f"{reverse('company_contracts')}?status=created")
-        else:
+        elif action == "update":
             contract_id = (request.POST.get("contract_id") or "").strip()
             instance = contracts_qs.filter(id=contract_id).first() if contract_id and company else None
             if not instance:
@@ -681,6 +697,9 @@ def company_contracts(request):
                         contract.save()
                         return redirect(f"{reverse('company_contracts')}?status=updated")
                 edit_contract = instance
+        else:
+            create_form = CompanyContractForm(company=company, request=request)
+            create_form.add_error(None, "Acao de contrato invalida. Recarregue a pagina e tente novamente.")
 
     if request.method != "POST":
         if edit_contract:
@@ -746,6 +765,7 @@ def company_contracts(request):
                 "latest_contract_operational": latest_contract_operational,
                 "active_contracts": active_contracts,
                 "total_contracts": len(employee_contracts),
+                "profile_url": reverse("company_mei_profile", args=[employee.id]),
                 "action_url": action_url,
                 "action_label": action_label,
             }
@@ -762,7 +782,53 @@ def company_contracts(request):
             "edit_contract": edit_contract,
             "create_for_employee": create_for_employee,
             "invalid_edit_contract": invalid_edit_contract,
+            "invalid_create_target": invalid_create_target,
             "pending_without_contracts": pending_without_contracts[:12],
+        },
+    )
+
+
+@login_required
+def company_mei_profile(request, employee_id):
+    denied = _redirect_if_not_empresa(request)
+    if denied:
+        return denied
+
+    company = _company_for_user(request.user)
+    employee = get_object_or_404(
+        Employee.objects.select_related("user"),
+        id=employee_id,
+        company=company,
+        user__role=User.Role.FUNCIONARIO,
+    )
+    contracts = list(
+        Contract.objects.filter(
+            company=company,
+            employee=employee,
+            employee__isnull=False,
+            employee__user__isnull=False,
+        )
+        .select_related("employee", "employee__user", "company")
+        .order_by("-start_date", "-created_at")
+    )
+    lifecycle = employee_lifecycle_summary(employee, contracts)
+    latest_contract = contracts[0] if contracts else None
+    active_contracts = sum(1 for contract in contracts if contract_is_operational(contract))
+
+    return render(
+        request,
+        "accounts/company_mei_profile.html",
+        {
+            "company": company,
+            "employee": employee,
+            "state": lifecycle,
+            "contracts": contracts,
+            "latest_contract": latest_contract,
+            "active_contracts": active_contracts,
+            "create_contract_url": f"{reverse('company_contracts')}?create_for={employee.id}",
+            "edit_contract_url": f"{reverse('company_contracts')}?edit={latest_contract.id}" if latest_contract else None,
+            "history_url": f"{reverse('company_history')}?employee={employee.id}",
+            "meis_url": reverse("company_meis"),
         },
     )
 

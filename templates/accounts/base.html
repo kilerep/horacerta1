@@ -439,11 +439,11 @@
                   <div class="icon">D</div>
                   <div><strong>Dashboard</strong><div class="muted item-sub">visao geral</div></div>
                 </a>
-                <a class="item {% if current == 'company_meis' %}is-active{% endif %}" href="{% url 'company_meis' %}">
+                <a class="item {% if current == 'company_meis' or current == 'company_mei_profile' %}is-active{% endif %}" href="{% url 'company_meis' %}">
                   <div class="icon">M</div>
                   <div><strong>MEIs</strong><div class="muted item-sub">cadastro e status</div></div>
                 </a>
-                <a class="item {% if current == 'company_contracts' or current == 'company_docs' %}is-active{% endif %}" href="{% url 'company_contracts' %}">
+                <a class="item {% if current == 'company_contracts' %}is-active{% endif %}" href="{% url 'company_contracts' %}">
                   <div class="icon">C</div>
                   <div><strong>Contratos</strong><div class="muted item-sub">vinculos e documentos</div></div>
                 </a>
