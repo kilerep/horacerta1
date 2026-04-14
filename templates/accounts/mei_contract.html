@@ -1,6 +1,6 @@
 {% extends "accounts/base.html" %}
-{% block title %}Meus Contratos{% endblock %}
-{% block page_title %}Meus Contratos{% endblock %}
+{% block title %}Meus Vinculos{% endblock %}
+{% block page_title %}Meus Vinculos{% endblock %}
 
 {% block content %}
   <style>
@@ -34,10 +34,10 @@
   <div class="contract-wrap">
     {% if active_contracts %}
       <section class="panel">
-        <h2 style="margin:0;">Selecionar contrato atual</h2>
+        <h2 style="margin:0;">Selecionar vinculo atual</h2>
         <form method="get" class="row" style="margin-top:10px;">
           <div class="field">
-            <label>Contrato operacional</label>
+            <label>Vinculo operacional</label>
             <select name="contract" onchange="this.form.submit()">
               {% for c in active_contracts %}
                 <option value="{{ c.id }}" {% if active_contract and c.id == active_contract.id %}selected{% endif %}>
@@ -51,8 +51,8 @@
       </section>
 
       <section class="panel">
-        <h2 style="margin:0;">Contrato operacional ativo</h2>
-        <p class="muted" style="margin:8px 0 0;">Dados do contrato selecionado para rotina de registro.</p>
+        <h2 style="margin:0;">Vinculo operacional ativo</h2>
+        <p class="muted" style="margin:8px 0 0;">Dados do vinculo selecionado para rotina de registro.</p>
         <div class="grid">
           <div class="stat"><div class="k">Empresa</div><div class="v">{{ active_contract.company.name|default:"-" }}</div></div>
           <div class="stat"><div class="k">Valor por hora</div><div class="v">R$ {{ active_contract.hourly_rate }}</div></div>
@@ -60,19 +60,19 @@
           <div class="stat"><div class="k">Inicio / Fim</div><div class="v" style="font-size:16px;">{{ active_contract.start_date|date:"d/m/Y" }} {% if active_contract.end_date %}- {{ active_contract.end_date|date:"d/m/Y" }}{% else %}- em aberto{% endif %}</div></div>
         </div>
         <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;">
-          {% if active_contract.contract_file %}<a class="btn" href="{{ active_contract.contract_file.url }}" target="_blank" rel="noopener">Download PDF do contrato</a>{% endif %}
+          {% if active_contract.contract_file %}<a class="btn" href="{{ active_contract.contract_file.url }}" target="_blank" rel="noopener">Download PDF do vinculo</a>{% endif %}
           <a class="btn" href="{% url 'employee_dashboard' %}">Voltar ao painel</a>
         </div>
       </section>
     {% elif all_contracts %}
       <section class="panel">
-        <h2 style="margin:0;">Sem contrato operacional ativo</h2>
+        <h2 style="margin:0;">Sem vinculo operacional ativo</h2>
         <div class="warning inactive">
-          Seu cadastro possui contrato(s), mas nenhum esta ativo para operacao neste momento.
-          Verifique com a empresa se ha renovacao, reativacao ou novo contrato.
+          Seu cadastro possui vinculo(s), mas nenhum esta ativo para operacao neste momento.
+          Verifique com a empresa se ha renovacao, reativacao ou novo vinculo.
         </div>
         <div style="margin-top:10px;">
-          <strong>Ultimos contratos:</strong>
+          <strong>Ultimos vinculos:</strong>
           <ul>
             {% for c in inactive_contracts|slice:":5" %}
               <li>{{ c.company.name }} | inicio {{ c.start_date|date:"d/m/Y" }} {% if c.end_date %}| fim {{ c.end_date|date:"d/m/Y" }}{% endif %}</li>
@@ -82,10 +82,10 @@
       </section>
     {% else %}
       <section class="panel">
-        <h2 style="margin:0;">Nenhum contrato criado ainda</h2>
+        <h2 style="margin:0;">Nenhum vinculo criado ainda</h2>
         <div class="warning pending">
-          Seu cadastro foi criado, mas a empresa ainda nao cadastrou o primeiro contrato.
-          Assim que o contrato for criado e estiver vigente, o registro de horarios sera liberado.
+          Seu cadastro foi criado, mas a empresa ainda nao cadastrou o primeiro vinculo.
+          Assim que o vinculo for criado e estiver vigente, o registro de horarios sera liberado.
         </div>
       </section>
     {% endif %}

@@ -9,22 +9,22 @@ PROFESSIONAL_STATE_INATIVO = "INATIVO"
 PROFESSIONAL_STATE_META = {
     PROFESSIONAL_STATE_CADASTRADO: {
         "label": "Cadastrado",
-        "hint": "Conta criada e aguardando criacao do primeiro contrato.",
+        "hint": "Conta criada e aguardando criacao do primeiro vinculo.",
         "tone": "neutral",
     },
     PROFESSIONAL_STATE_AGUARDANDO: {
-        "label": "Aguardando contrato",
-        "hint": "Cadastro concluido, aguardando vigencia de contrato ativo.",
+        "label": "Aguardando vinculo",
+        "hint": "Cadastro concluido, aguardando vigencia de vinculo ativo.",
         "tone": "pending",
     },
     PROFESSIONAL_STATE_ATIVO: {
         "label": "Ativo",
-        "hint": "Contrato ativo e operacional para registrar horarios.",
+        "hint": "Vinculo ativo e operacional para registrar horarios.",
         "tone": "success",
     },
     PROFESSIONAL_STATE_INATIVO: {
         "label": "Inativo",
-        "hint": "Sem contrato operacional ativo no momento.",
+        "hint": "Sem vinculo operacional ativo no momento.",
         "tone": "warn",
     },
 }

@@ -453,11 +453,11 @@ def dashboard_empresa(request):
                         "state": summary,
                         "latest_contract": latest_contract,
                         "action_url": (
-                            f"{reverse('company_contracts')}?create_for={employee.id}"
+                            f"{reverse('company_meis')}?link_for={employee.id}#vinculo-existente"
                             if not latest_contract
                             else f"{reverse('company_contracts')}?edit={latest_contract.id}"
                         ),
-                        "action_label": "Criar contrato" if not latest_contract else "Editar contrato",
+                        "action_label": "Revisar no cadastro MEI" if not latest_contract else "Editar vinculo",
                     }
                 )
 
@@ -506,7 +506,7 @@ def dashboard_empresa(request):
         employee_contracts = contracts_by_employee.get(employee.id, [])
         latest_contract = employee_contracts[0] if employee_contracts else None
         action_url = (
-            f"{reverse('company_contracts')}?create_for={employee.id}"
+            f"{reverse('company_meis')}?link_for={employee.id}#vinculo-existente"
             if not latest_contract
             else f"{reverse('company_contracts')}?edit={latest_contract.id}"
         )
@@ -518,7 +518,7 @@ def dashboard_empresa(request):
                 "state": employee_lifecycle_summary(employee, employee_contracts),
                 "profile_url": reverse("company_mei_profile", args=[employee.id]),
                 "action_url": action_url,
-                "action_label": "Criar contrato" if not latest_contract else "Editar contrato",
+                "action_label": "Revisar no cadastro MEI" if not latest_contract else "Editar vinculo",
             }
         )
 
@@ -534,7 +534,7 @@ def dashboard_empresa(request):
 
     quick_links = [
         {"label": "Gerenciar profissionais", "url": reverse("company_meis"), "hint": "Cadastro e status dos MEIs"},
-        {"label": "Ver contratos", "url": reverse("company_contracts"), "hint": "Vinculos e valores/hora"},
+        {"label": "Ver vinculos", "url": reverse("company_contracts"), "hint": "Lista, status e edicao"},
         {"label": "Abrir historico", "url": reverse("company_history"), "hint": "Conferencia por periodo"},
         {"label": "Relatorios", "url": reverse("company_reports"), "hint": "Resumo e exportacao"},
     ]
@@ -571,15 +571,51 @@ def company_meis(request):
     company = _company_for_user(request.user)
     form = EmployeeSearchForm(request.GET or None)
     create_mei_form = CompanyMEICreateForm()
+    link_for_id = (request.GET.get("link_for") or "").strip()
+    link_for_employee = None
+    if company and link_for_id:
+        link_for_employee = Employee.objects.filter(
+            id=link_for_id,
+            company=company,
+            user__role=User.Role.FUNCIONARIO,
+        ).first()
+
+    link_initial = {}
+    if link_for_employee:
+        link_initial["employee"] = link_for_employee
+    create_link_form = CompanyContractForm(company=company, request=request, prefix="link", initial=link_initial)
 
     if request.method == "POST":
-        create_mei_form = CompanyMEICreateForm(request.POST, request.FILES)
-        if not company:
-            create_mei_form.add_error(None, "Empresa nao encontrada para criar MEI.")
-        elif create_mei_form.is_valid():
-            _employee, contract = create_mei_form.create_mei_and_optional_contract(company)
-            status = "created_with_contract" if contract else "created_mei"
-            return redirect(f"{reverse('company_meis')}?status={status}")
+        action = (request.POST.get("action") or "create_mei").strip().lower()
+        if action == "create_link":
+            create_link_form = CompanyContractForm(
+                request.POST,
+                request.FILES,
+                company=company,
+                request=request,
+                prefix="link",
+            )
+            if not company:
+                create_link_form.add_error(None, "Empresa nao encontrada para criar vinculo.")
+            elif create_link_form.is_valid():
+                employee = create_link_form.cleaned_data.get("employee")
+                if not employee or not Employee.objects.filter(id=employee.id, company=company).exists():
+                    create_link_form.add_error("employee", "MEI invalido para esta empresa.")
+                else:
+                    contract = create_link_form.save(commit=False)
+                    contract.company = company
+                    contract.save()
+                    return redirect(f"{reverse('company_meis')}?status=link_created&highlight_employee={employee.id}")
+            create_mei_form = CompanyMEICreateForm()
+        else:
+            create_mei_form = CompanyMEICreateForm(request.POST, request.FILES)
+            if not company:
+                create_mei_form.add_error(None, "Empresa nao encontrada para criar MEI.")
+            elif create_mei_form.is_valid():
+                _employee, contract = create_mei_form.create_mei_and_optional_contract(company)
+                status = "created_with_contract" if contract else "created_mei"
+                return redirect(f"{reverse('company_meis')}?status={status}")
+            create_link_form = CompanyContractForm(company=company, request=request, prefix="link", initial=link_initial)
 
     if company:
         qs = Employee.objects.filter(company=company).select_related("user")
@@ -599,9 +635,12 @@ def company_meis(request):
         lifecycle = employee_lifecycle_summary(employee, employee_contracts)
         latest_contract = employee_contracts[0] if employee_contracts else None
         operational_count = sum(1 for contract in employee_contracts if contract_is_operational(contract))
-        create_contract_url = f"{reverse('company_contracts')}?create_for={employee.id}"
-        edit_contract_url = f"{reverse('company_contracts')}?edit={latest_contract.id}" if latest_contract else None
-        situation_url = edit_contract_url or create_contract_url
+        manage_contracts_url = (
+            f"{reverse('company_contracts')}?edit={latest_contract.id}"
+            if latest_contract
+            else reverse("company_contracts")
+        )
+        setup_first_link_url = f"{reverse('company_meis')}?link_for={employee.id}#vinculo-existente"
         employee_rows.append(
             {
                 "employee": employee,
@@ -610,11 +649,11 @@ def company_meis(request):
                 "active_contracts": operational_count,
                 "latest_contract": latest_contract,
                 "profile_url": reverse("company_mei_profile", args=[employee.id]),
-                "situation_url": situation_url,
-                "create_contract_url": create_contract_url,
-                "edit_contract_url": edit_contract_url,
-                "action_url": situation_url,
-                "action_label": "Criar contrato" if not latest_contract else "Editar contrato",
+                "situation_url": reverse("company_mei_profile", args=[employee.id]),
+                "manage_contracts_url": manage_contracts_url,
+                "setup_first_link_url": setup_first_link_url,
+                "action_url": setup_first_link_url if not latest_contract else manage_contracts_url,
+                "action_label": "Configurar primeiro vinculo" if not latest_contract else "Gerenciar vinculos",
             }
         )
 
@@ -623,6 +662,10 @@ def company_meis(request):
         "employees": employee_rows,
         "employee_search_form": form,
         "create_mei_form": create_mei_form,
+        "create_link_form": create_link_form,
+        "link_for_employee": link_for_employee,
+        "highlight_employee_id": (request.GET.get("highlight_employee") or "").strip(),
+        "show_flow_notice": (request.GET.get("flow") or "").strip() == "principal",
         "pending_reports_count": _pending_reports_count_for_company(company),
     }
     return render(request, "accounts/company_meis.html", context)
@@ -647,20 +690,12 @@ def company_contracts(request):
 
     edit_contract = None
     edit_form = None
-    create_form = None
     invalid_edit_contract = False
-    invalid_create_target = False
     edit_id = (request.GET.get("edit") or "").strip()
     create_for_id = (request.GET.get("create_for") or "").strip()
-    create_for_employee = None
 
-    if create_for_id and company and not edit_id:
-        create_for_employee = Employee.objects.filter(
-            id=create_for_id,
-            company=company,
-            user__role=User.Role.FUNCIONARIO,
-        ).select_related("user").first()
-        invalid_create_target = create_for_employee is None
+    if create_for_id and not edit_id:
+        return redirect(f"{reverse('company_meis')}?flow=principal")
 
     if edit_id and company:
         edit_contract = contracts_qs.filter(id=edit_id).first()
@@ -669,17 +704,8 @@ def company_contracts(request):
     if request.method == "POST":
         action = (request.POST.get("action") or "").strip().lower()
         if action == "create":
-            create_form = CompanyContractForm(request.POST, request.FILES, company=company, request=request)
-            if create_form.is_valid():
-                employee = create_form.cleaned_data.get("employee")
-                if not employee or not Employee.objects.filter(id=employee.id, company=company).exists():
-                    create_form.add_error("employee", "MEI invalido para esta empresa.")
-                else:
-                    contract = create_form.save(commit=False)
-                    contract.company = company
-                    contract.save()
-                    return redirect(f"{reverse('company_contracts')}?status=created")
-        elif action == "update":
+            return redirect(f"{reverse('company_meis')}?flow=principal")
+        if action == "update":
             contract_id = (request.POST.get("contract_id") or "").strip()
             instance = contracts_qs.filter(id=contract_id).first() if contract_id and company else None
             if not instance:
@@ -698,21 +724,10 @@ def company_contracts(request):
                         return redirect(f"{reverse('company_contracts')}?status=updated")
                 edit_contract = instance
         else:
-            create_form = CompanyContractForm(company=company, request=request)
-            create_form.add_error(None, "Acao de contrato invalida. Recarregue a pagina e tente novamente.")
+            return redirect(f"{reverse('company_contracts')}?flow=only_edit")
 
-    if request.method != "POST":
-        if edit_contract:
-            edit_form = CompanyContractForm(instance=edit_contract, company=company, request=request)
-        create_form_initial = {}
-        if create_for_employee:
-            create_form_initial["employee"] = create_for_employee
-        create_form = CompanyContractForm(company=company, request=request, initial=create_form_initial)
-    elif create_form is None:
-        create_form_initial = {}
-        if create_for_employee:
-            create_form_initial["employee"] = create_for_employee
-        create_form = CompanyContractForm(company=company, request=request, initial=create_form_initial)
+    if request.method != "POST" and edit_contract:
+        edit_form = CompanyContractForm(instance=edit_contract, company=company, request=request)
 
     employees = list(
         Employee.objects.filter(company=company, user__role=User.Role.FUNCIONARIO)
@@ -732,11 +747,11 @@ def company_contracts(request):
         needs_contract = not has_contract
 
         if needs_contract:
-            status_label = "Aguardando contrato"
+            status_label = "Aguardando vinculo"
             status_tone = "pending"
-            status_hint = "Profissional cadastrado sem contrato. Crie um contrato para liberar a operacao."
-            action_url = f"{reverse('company_contracts')}?create_for={employee.id}"
-            action_label = "Criar contrato"
+            status_hint = "Profissional cadastrado sem vinculo operacional. Use a tela de MEIs como fluxo principal."
+            action_url = f"{reverse('company_meis')}?link_for={employee.id}#vinculo-existente"
+            action_label = "Ir para MEIs"
             pending_without_contracts.append(
                 {
                     "employee": employee,
@@ -745,7 +760,7 @@ def company_contracts(request):
                         "hint": status_hint,
                         "tone": status_tone,
                     },
-                    "create_url": action_url,
+                    "action_url": action_url,
                 }
             )
         else:
@@ -753,7 +768,7 @@ def company_contracts(request):
             status_tone = lifecycle["tone"]
             status_hint = lifecycle["hint"]
             action_url = f"{reverse('company_contracts')}?edit={latest_contract.id}"
-            action_label = "Editar contrato"
+            action_label = "Editar vinculo"
 
         professional_rows.append(
             {
@@ -777,13 +792,12 @@ def company_contracts(request):
         {
             "company": company,
             "professionals": professional_rows,
-            "create_form": create_form,
             "edit_form": edit_form,
             "edit_contract": edit_contract,
-            "create_for_employee": create_for_employee,
             "invalid_edit_contract": invalid_edit_contract,
-            "invalid_create_target": invalid_create_target,
             "pending_without_contracts": pending_without_contracts[:12],
+            "show_creation_redirect_notice": (request.GET.get("flow") or "").strip() == "principal",
+            "show_only_edit_notice": (request.GET.get("flow") or "").strip() == "only_edit",
         },
     )
 
@@ -825,7 +839,7 @@ def company_mei_profile(request, employee_id):
             "contracts": contracts,
             "latest_contract": latest_contract,
             "active_contracts": active_contracts,
-            "create_contract_url": f"{reverse('company_contracts')}?create_for={employee.id}",
+            "create_contract_url": f"{reverse('company_meis')}?link_for={employee.id}#vinculo-existente",
             "edit_contract_url": f"{reverse('company_contracts')}?edit={latest_contract.id}" if latest_contract else None,
             "history_url": f"{reverse('company_history')}?employee={employee.id}",
             "meis_url": reverse("company_meis"),

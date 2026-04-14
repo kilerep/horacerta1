@@ -1,4 +1,4 @@
-﻿{% extends "accounts/base.html" %}
+{% extends "accounts/base.html" %}
 {% load static tz timeclock_formats %}
 {% block title %}HoraCerta - Painel do Profissional{% endblock %}
 {% block page_title %}Painel do profissional{% endblock %}
@@ -51,12 +51,12 @@
         <h2 class="hc-section-title">Cadastro confirmado, aguardando liberacao operacional</h2>
         <p class="hc-muted" style="margin:0 0 8px;">
           Seu cadastro no HoraCerta esta ativo{% if employee_company_name %} para <strong>{{ employee_company_name }}</strong>{% endif %},
-          mas ainda nao existe contrato operacional vigente para registrar horarios.
+          mas ainda nao existe vinculo operacional vigente para registrar horarios.
         </p>
         {% if state_context %}
           <p class="hc-muted" style="margin:0;"><strong>Estado atual:</strong> {{ state_context.label }} - {{ state_context.hint }}</p>
         {% endif %}
-        <p class="hc-muted" style="margin:8px 0 0;">Peça para sua empresa criar ou ativar o contrato no painel de gestao.</p>
+        <p class="hc-muted" style="margin:8px 0 0;">Peca para sua empresa criar ou ativar o vinculo no painel de gestao.</p>
       </section>
     {% else %}
       <section class="hc-panel hc-main-card">
@@ -75,7 +75,7 @@
           </article>
           <article class="hc-mini-card">
             <span class="hc-mini-label">Vinculo ativo</span>
-            <strong class="hc-mini-value">Contrato {{ selected_contract.id|stringformat:"s"|slice:":8"|upper }}</strong>
+            <strong class="hc-mini-value">Vinculo {{ selected_contract.id|stringformat:"s"|slice:":8"|upper }}</strong>
           </article>
           <article class="hc-mini-card">
             <span class="hc-mini-label">Valor por hora</span>
@@ -169,7 +169,7 @@
             <div id="hcManualErrors" class="hc-error-box hc-manual-errors" hidden></div>
 
             <div class="hc-field">
-              <label for="hcManualContract">Contrato</label>
+              <label for="hcManualContract">Vinculo</label>
               <select id="hcManualContract" name="contract" required>
                 {% for c in contracts %}
                   <option value="{{ c.id }}" {% if selected_contract and c.id == selected_contract.id %}selected{% endif %}>

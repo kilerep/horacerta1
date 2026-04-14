@@ -67,23 +67,23 @@
     <section class="panel">
       <h2 style="margin:0 0 10px;">Resumo do MEI</h2>
       {% if contracts_count == 0 %}
-        <p class="muted" style="margin:0;">Voce ainda nao possui contratos ativos.</p>
+        <p class="muted" style="margin:0;">Voce ainda nao possui vinculos ativos.</p>
       {% else %}
         <form method="get" class="row">
           {% if contracts_count > 1 %}
             <div class="field">
-              <label>Selecionar contrato</label>
+              <label>Selecionar vinculo</label>
               <select name="contract" onchange="this.form.submit()">
                 {% for c in contracts %}
                   <option value="{{ c.id }}" {% if selected_contract and c.id == selected_contract.id %}selected{% endif %}>
-                    {{ c.company.name }} - Contrato {{ c.id|stringformat:"s"|slice:":8" }}
+                    {{ c.company.name }} - Vinculo {{ c.id|stringformat:"s"|slice:":8" }}
                   </option>
                 {% endfor %}
               </select>
             </div>
           {% else %}
             <div class="field">
-              <label>Contrato ativo</label>
+              <label>Vinculo ativo</label>
               <div><strong>{{ selected_contract.company.name }}</strong> - R$ {{ selected_contract.hourly_rate }}/h</div>
             </div>
           {% endif %}
@@ -137,7 +137,7 @@
           {% for punch_time in recent_today_punches %}
             <span class="chip">{{ punch_time }}</span>
           {% empty %}
-            <span class="muted">Sem horários hoje neste contrato.</span>
+            <span class="muted">Sem horarios hoje neste vinculo.</span>
           {% endfor %}
         </div>
       </section>

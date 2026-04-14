@@ -166,7 +166,7 @@
     <h2>Central de ajuda do HoraCerta</h2>
     <p>
       Guia rapido para uso do MVP atual. O foco do sistema e dar controle operacional para a empresa
-      cadastrar profissionais, liberar contratos e acompanhar jornadas com historico e relatorios.
+      cadastrar profissionais, liberar vinculos e acompanhar jornadas com historico e relatorios.
     </p>
   </section>
 
@@ -175,7 +175,7 @@
       <h3>1. O que e o HoraCerta</h3>
       <p>
         O HoraCerta e uma plataforma de gestao de jornada para operacoes com profissionais MEI.
-        Foi pensado para empresas que precisam organizar cadastro, contratos, registros de horario
+        Foi pensado para empresas que precisam organizar cadastro, vinculos, registros de horario
         e acompanhamento de inconsistencias com rastreabilidade.
       </p>
     </article>
@@ -184,7 +184,7 @@
       <h3>Primeiro principio do MVP</h3>
       <p>
         A empresa e o cliente principal da operacao. O profissional registra horario somente
-        quando existe contrato operacional vigente.
+        quando existe vinculo operacional vigente.
       </p>
     </article>
 
@@ -196,12 +196,12 @@
           <p>O cadastro e feito na area de MEIs com os dados basicos do profissional.</p>
         </div>
         <div class="help-step">
-          <strong><span class="help-chip">2</span>A empresa cria ou libera o contrato</strong>
-          <p>Na area de Contratos, a empresa define valor/hora, vigencia e documento do contrato.</p>
+          <strong><span class="help-chip">2</span>A empresa cadastra o MEI com vinculo inicial (opcional)</strong>
+          <p>Na area de MEIs, a empresa pode definir valor/hora, vigencia, documento e observacoes no mesmo fluxo.</p>
         </div>
         <div class="help-step">
           <strong><span class="help-chip">3</span>O profissional registra horarios</strong>
-          <p>Com contrato operacional ativo, o profissional passa a registrar jornada no painel.</p>
+          <p>Com vinculo operacional ativo, o profissional passa a registrar jornada no painel.</p>
         </div>
         <div class="help-step">
           <strong><span class="help-chip">4</span>A empresa acompanha a operacao</strong>
@@ -215,15 +215,15 @@
       <div class="area-list">
         <div class="area-item">
           <strong>Dashboard</strong>
-          <span>Visao geral da operacao com indicadores de profissionais, contratos e registros.</span>
+          <span>Visao geral da operacao com indicadores de profissionais, vinculos e registros.</span>
         </div>
         <div class="area-item">
           <strong>MEIs</strong>
           <span>Cadastro e gestao da base de profissionais vinculados a empresa.</span>
         </div>
         <div class="area-item">
-          <strong>Contratos</strong>
-          <span>Gestao do vinculo operacional: criar, editar e acompanhar status de contrato e documento.</span>
+          <strong>Vinculos</strong>
+          <span>Gestao de vinculos existentes: listar, acompanhar status e editar dados operacionais e documentos.</span>
         </div>
         <div class="area-item">
           <strong>Relatorios</strong>
@@ -253,23 +253,23 @@
       <div class="faq-list">
         <div class="faq-item">
           <strong>Por que o profissional nao consegue registrar horario?</strong>
-          <p>Sem contrato operacional vigente, o registro de jornada fica bloqueado.</p>
+          <p>Sem vinculo operacional vigente, o registro de jornada fica bloqueado.</p>
         </div>
         <div class="faq-item">
-          <strong>O que significa "aguardando contrato"?</strong>
-          <p>Profissional cadastrado, mas sem contrato criado/liberado para operar.</p>
+          <strong>O que significa "aguardando vinculo"?</strong>
+          <p>Profissional cadastrado, mas sem vinculo criado/liberado para operar.</p>
         </div>
         <div class="faq-item">
-          <strong>O que significa "nenhum contrato criado ainda"?</strong>
-          <p>A empresa concluiu o cadastro do profissional, mas ainda nao criou o primeiro contrato.</p>
+          <strong>O que significa "nenhum vinculo criado ainda"?</strong>
+          <p>A empresa concluiu o cadastro do profissional, mas ainda nao criou o primeiro vinculo.</p>
         </div>
         <div class="faq-item">
-          <strong>Onde a empresa cria o contrato?</strong>
-          <p>Na area Contratos, usando a acao de criar contrato para o profissional.</p>
+          <strong>Onde a empresa cria o vinculo?</strong>
+          <p>No cadastro de MEIs. A tela de Vinculos e focada em listagem, acompanhamento e edicao.</p>
         </div>
         <div class="faq-item">
           <strong>Profissional cadastrado, mas nao ativo. Por que?</strong>
-          <p>Cadastro sem vigencia contratual ativa nao habilita registro de horario.</p>
+          <p>Cadastro sem vigencia operacional ativa nao habilita registro de horario.</p>
         </div>
         <div class="faq-item">
           <strong>Onde consultar horarios registrados?</strong>
@@ -287,13 +287,13 @@
       <ol class="first-steps">
         <li>Atualize o Perfil da empresa com dados institucionais e logo.</li>
         <li>Cadastre os profissionais na area de MEIs.</li>
-        <li>Crie os contratos de cada profissional na area de Contratos.</li>
+        <li>No cadastro de MEIs, preencha os campos opcionais para criar o primeiro vinculo no mesmo fluxo.</li>
         <li>Valide se os profissionais ja aparecem como ativos para operacao.</li>
         <li>Acompanhe Dashboard, Historico e Relatorios para controle continuo.</li>
       </ol>
       <div class="help-actions">
         <a class="btn" href="{% url 'company_meis' %}">Ir para MEIs</a>
-        <a class="btn primary" href="{% url 'company_contracts' %}">Ir para Contratos</a>
+        <a class="btn primary" href="{% url 'company_contracts' %}">Ir para Vinculos</a>
       </div>
     </article>
   </section>

@@ -13,7 +13,7 @@
       <div>
         <h2 class="company-meis__title">Cadastro de profissional/MEI</h2>
         <p class="company-meis__subtitle">
-          Cadastre o profissional e libere a operacao por etapas: cadastro, contrato e rotina ativa.
+          Cadastre o profissional e libere a operacao por etapas: cadastro, vinculo e rotina ativa.
         </p>
       </div>
       <div class="company-meis__hero-badge">Fluxo MVP: empresa cadastra, profissional registra, empresa acompanha</div>
@@ -21,14 +21,22 @@
 
     {% if request.GET.status == "created_mei" %}
       <div class="company-meis__alert">
-        Profissional cadastrado com sucesso. Proximo passo: criar contrato para liberar operacao completa.
+        Profissional cadastrado com sucesso. Se necessario, use o bloco abaixo para configurar o primeiro vinculo.
       </div>
     {% elif request.GET.status == "created_with_contract" %}
-      <div class="company-meis__alert">Profissional e contrato inicial criados com sucesso.</div>
+      <div class="company-meis__alert">Profissional e vinculo inicial criados com sucesso.</div>
+    {% elif request.GET.status == "link_created" %}
+      <div class="company-meis__alert">Primeiro vinculo configurado com sucesso para o profissional selecionado.</div>
+    {% endif %}
+    {% if show_flow_notice %}
+      <div class="company-meis__alert">
+        O fluxo principal foi simplificado: cadastre o MEI e, se quiser, ja configure o primeiro vinculo neste mesmo formulario.
+      </div>
     {% endif %}
 
     <form method="post" enctype="multipart/form-data" class="company-meis__create-form">
       {% csrf_token %}
+      <input type="hidden" name="action" value="create_mei">
       <section class="company-meis__section">
         <header class="company-meis__section-head">
           <h3>Dados do profissional</h3>
@@ -69,7 +77,7 @@
 
       <section class="company-meis__section company-meis__section--optional">
         <header class="company-meis__section-head">
-          <h3>Primeiro contrato <span class="company-meis__badge">Opcional</span></h3>
+          <h3>Primeiro vinculo <span class="company-meis__badge">Opcional</span></h3>
           <p>Se preencher agora, o profissional ja entra como ativo operacional.</p>
         </header>
         <div class="company-meis__grid">
@@ -110,6 +118,55 @@
       </div>
     </form>
 
+    <form id="vinculo-existente" method="post" enctype="multipart/form-data" class="company-meis__create-form" style="margin-top:12px;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="create_link">
+      <section class="company-meis__section company-meis__section--optional">
+        <header class="company-meis__section-head">
+          <h3>Configurar primeiro vinculo para MEI ja cadastrado</h3>
+          <p>Use este bloco quando o profissional ja existe na base e ainda esta sem vinculo operacional.</p>
+        </header>
+        <div class="company-meis__grid">
+          <div class="company-meis__field">
+            <label for="{{ create_link_form.employee.id_for_label }}">{{ create_link_form.employee.label }}</label>
+            {{ create_link_form.employee }}
+            {% if create_link_form.employee.errors %}<div class="company-meis__error">{{ create_link_form.employee.errors }}</div>{% endif %}
+          </div>
+          <div class="company-meis__field">
+            <label for="{{ create_link_form.hourly_rate.id_for_label }}">{{ create_link_form.hourly_rate.label }}</label>
+            {{ create_link_form.hourly_rate }}
+            {% if create_link_form.hourly_rate.errors %}<div class="company-meis__error">{{ create_link_form.hourly_rate.errors }}</div>{% endif %}
+          </div>
+          <div class="company-meis__field">
+            <label for="{{ create_link_form.start_date.id_for_label }}">{{ create_link_form.start_date.label }}</label>
+            {{ create_link_form.start_date }}
+            {% if create_link_form.start_date.errors %}<div class="company-meis__error">{{ create_link_form.start_date.errors }}</div>{% endif %}
+          </div>
+          <div class="company-meis__field">
+            <label for="{{ create_link_form.end_date.id_for_label }}">{{ create_link_form.end_date.label }}</label>
+            {{ create_link_form.end_date }}
+            {% if create_link_form.end_date.errors %}<div class="company-meis__error">{{ create_link_form.end_date.errors }}</div>{% endif %}
+          </div>
+          <div class="company-meis__field">
+            <label for="{{ create_link_form.contract_file.id_for_label }}">{{ create_link_form.contract_file.label }}</label>
+            {{ create_link_form.contract_file }}
+            {% if create_link_form.contract_file.errors %}<div class="company-meis__error">{{ create_link_form.contract_file.errors }}</div>{% endif %}
+          </div>
+          <div class="company-meis__field company-meis__field--full">
+            <label for="{{ create_link_form.notes.id_for_label }}">{{ create_link_form.notes.label }}</label>
+            {{ create_link_form.notes }}
+            {% if create_link_form.notes.errors %}<div class="company-meis__error">{{ create_link_form.notes.errors }}</div>{% endif %}
+          </div>
+        </div>
+        {% if create_link_form.non_field_errors %}
+          <div class="company-meis__error company-meis__error--wide">{{ create_link_form.non_field_errors }}</div>
+        {% endif %}
+      </section>
+      <div class="company-meis__actions">
+        <button class="btn primary company-meis__submit" type="submit">Salvar primeiro vinculo</button>
+      </div>
+    </form>
+
     <section class="company-meis__list-block">
       <header class="company-meis__list-header">
         <h2 class="company-meis__title">Profissionais cadastrados</h2>
@@ -125,13 +182,13 @@
             <tr>
               <th>Profissional</th>
               <th>Estado no sistema</th>
-              <th>Contratos</th>
+              <th>Vinculos</th>
               <th>Acoes</th>
             </tr>
           </thead>
           <tbody>
             {% for row in employees %}
-              <tr>
+              <tr class="{% if highlight_employee_id and highlight_employee_id == row.employee.id|stringformat:'s' %}company-meis__row--highlight{% endif %}">
                 <td data-label="Profissional">
                   <strong>{{ row.employee.full_name }}</strong><br>
                   <span class="company-meis__muted">{{ row.employee.user.email|default:row.employee.user.username }}</span>
@@ -140,23 +197,25 @@
                   <span class="company-meis__pill company-meis__pill--{{ row.state.tone }}">{{ row.state.label }}</span>
                   <div class="company-meis__state-hint">{{ row.state.hint }}</div>
                 </td>
-                <td data-label="Contratos">
+                <td data-label="Vinculos">
                   <span class="company-meis__number">{{ row.total_contracts }}</span>
                   <span class="company-meis__muted">({{ row.active_contracts }} operacional)</span>
                 </td>
                 <td data-label="Acoes" class="company-meis__actions-cell">
                   <a class="btn" href="{{ row.profile_url }}">Ver perfil</a>
                   <a class="btn" href="{{ row.situation_url }}">Ver situacao</a>
-                  {% if row.edit_contract_url %}
-                    <a class="btn primary" href="{{ row.edit_contract_url }}">Editar contrato</a>
+                  {% if row.total_contracts == 0 %}
+                    <a class="btn primary" href="{{ row.setup_first_link_url }}">Configurar primeiro vinculo</a>
                   {% else %}
-                    <a class="btn primary" href="{{ row.create_contract_url }}">Criar contrato</a>
+                    <a class="btn primary" href="{{ row.manage_contracts_url }}">Gerenciar vinculos</a>
                   {% endif %}
                 </td>
               </tr>
             {% empty %}
               <tr>
-                <td colspan="4" class="company-meis__muted">Nenhum profissional encontrado.</td>
+                <td colspan="4">
+                  <div class="empty-state">Nenhum profissional encontrado para este filtro.</div>
+                </td>
               </tr>
             {% endfor %}
           </tbody>

@@ -1,6 +1,6 @@
 {% extends "accounts/base.html" %}
-{% block title %}Contratos{% endblock %}
-{% block page_title %}Contratos{% endblock %}
+{% block title %}Vinculos{% endblock %}
+{% block page_title %}Vinculos{% endblock %}
 
 {% block content %}
   <style>
@@ -12,6 +12,7 @@
         linear-gradient(140deg, rgba(79,124,255,.08), transparent 46%),
         linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
       padding:16px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
     }
     .contracts-title{ margin:0; }
     .contracts-subtitle{ margin:8px 0 0; color:var(--muted); }
@@ -53,6 +54,18 @@
       border:1px solid rgba(255,255,255,.12); border-radius:12px; padding:10px; background:rgba(255,255,255,.02);
     }
     .muted{ color:var(--muted); }
+    .contracts-edit-head{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .contracts-edit-subtitle{
+      margin:6px 0 0;
+      font-size:13px;
+      color:var(--muted);
+    }
     @media (max-width: 920px){
       .contracts-form-grid{ grid-template-columns:1fr; }
       .contracts-field--span2{ grid-column:auto; }
@@ -61,24 +74,30 @@
 
   <div class="contracts-wrap">
     <section class="contracts-panel">
-      <h2 class="contracts-title">Contratos da empresa</h2>
-      <p class="contracts-subtitle">Gerencie vinculos, criacao de contrato e documentos do contrato em um unico fluxo.</p>
+      <h2 class="contracts-title">Vinculos da empresa</h2>
+      <p class="contracts-subtitle">Acompanhe status, historico e edite vinculos existentes com clareza operacional.</p>
 
       {% if request.GET.status == "updated" %}
-        <div class="contracts-alert">Contrato atualizado com sucesso.</div>
-      {% elif request.GET.status == "created" %}
-        <div class="contracts-alert">Contrato criado com sucesso.</div>
+        <div class="contracts-alert">Vinculo atualizado com sucesso.</div>
+      {% endif %}
+      {% if show_creation_redirect_notice %}
+        <div class="contracts-warning">
+          A criacao principal de MEI e vinculo inicial foi centralizada na tela de MEIs.
+          Use <strong>MEIs</strong> para cadastrar novos profissionais ja com vinculo inicial.
+        </div>
+      {% endif %}
+      {% if show_only_edit_notice %}
+        <div class="contracts-warning">
+          Esta tela foi otimizada para listar, acompanhar e editar vinculos existentes.
+        </div>
       {% endif %}
       {% if invalid_edit_contract %}
-        <div class="contracts-error">Nao foi possivel localizar o contrato solicitado para edicao.</div>
-      {% endif %}
-      {% if invalid_create_target %}
-        <div class="contracts-error">Profissional invalido para criacao de contrato.</div>
+        <div class="contracts-error">Nao foi possivel localizar o vinculo solicitado para edicao.</div>
       {% endif %}
 
       {% if pending_without_contracts %}
         <div class="contracts-warning">
-          Existem profissionais cadastrados aguardando criacao ou vigencia de contrato.
+          Existem profissionais sem vinculo operacional. O fluxo principal para novos cadastros fica em MEIs.
         </div>
         <div class="pending-list">
           {% for row in pending_without_contracts %}
@@ -87,66 +106,20 @@
                 <strong>{{ row.employee.full_name }}</strong><br>
                 <span class="muted">{{ row.state.label }} | {{ row.employee.user.email|default:row.employee.user.username }}</span>
               </div>
-              <a class="btn primary" href="{{ row.create_url }}">Criar contrato</a>
+              <a class="btn primary" href="{{ row.action_url }}">Ir para MEIs</a>
             </article>
           {% endfor %}
         </div>
       {% endif %}
     </section>
 
-    <section class="contracts-panel">
-      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;">
-        <h3 style="margin:0;">Criar contrato</h3>
-        {% if create_for_employee %}
-          <span class="muted">Pre-selecionado: <strong>{{ create_for_employee.full_name }}</strong></span>
-        {% endif %}
-      </div>
-
-      <form method="post" enctype="multipart/form-data" style="margin-top:10px;">
-        {% csrf_token %}
-        <input type="hidden" name="action" value="create">
-
-        <div class="contracts-form-grid">
-          <div class="contracts-field">
-            <label>{{ create_form.employee.label }}</label>
-            {{ create_form.employee }}
-            {% if create_form.employee.errors %}<div class="contracts-error">{{ create_form.employee.errors }}</div>{% endif %}
-          </div>
-          <div class="contracts-field">
-            <label>{{ create_form.hourly_rate.label }}</label>
-            {{ create_form.hourly_rate }}
-            {% if create_form.hourly_rate.errors %}<div class="contracts-error">{{ create_form.hourly_rate.errors }}</div>{% endif %}
-          </div>
-          <div class="contracts-field">
-            <label>{{ create_form.start_date.label }}</label>
-            {{ create_form.start_date }}
-            {% if create_form.start_date.errors %}<div class="contracts-error">{{ create_form.start_date.errors }}</div>{% endif %}
-          </div>
-          <div class="contracts-field">
-            <label>{{ create_form.end_date.label }}</label>
-            {{ create_form.end_date }}
-            {% if create_form.end_date.errors %}<div class="contracts-error">{{ create_form.end_date.errors }}</div>{% endif %}
-          </div>
-          <div class="contracts-field contracts-field--span2">
-            <label>{{ create_form.contract_file.label }}</label>
-            {{ create_form.contract_file }}
-            {% if create_form.contract_file.errors %}<div class="contracts-error">{{ create_form.contract_file.errors }}</div>{% endif %}
-          </div>
-          <div class="contracts-field contracts-field--span2">
-            <label>{{ create_form.notes.label }}</label>
-            {{ create_form.notes }}
-            {% if create_form.notes.errors %}<div class="contracts-error">{{ create_form.notes.errors }}</div>{% endif %}
-          </div>
-        </div>
-        {% if create_form.non_field_errors %}<div class="contracts-error">{{ create_form.non_field_errors }}</div>{% endif %}
-        <div style="margin-top:10px;"><button class="btn primary" type="submit">Criar contrato</button></div>
-      </form>
-    </section>
-
     {% if edit_contract and edit_form %}
       <section class="contracts-panel">
-        <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;">
-          <h3 style="margin:0;">Editar contrato</h3>
+        <div class="contracts-edit-head">
+          <div>
+            <h3 style="margin:0;">Editar vinculo</h3>
+            <p class="contracts-edit-subtitle">Atualize valor/hora, vigencia, documento e observacoes do vinculo ativo.</p>
+          </div>
           <a class="btn" href="{% url 'company_contracts' %}">Fechar edicao</a>
         </div>
 
@@ -194,15 +167,15 @@
     {% endif %}
 
     <section class="contracts-panel">
-      <h3 style="margin:0;">Gestao de profissionais e contratos</h3>
+      <h3 style="margin:0;">Gestao de profissionais e vinculos</h3>
       <div class="contracts-table-wrap">
         <table class="contracts-table">
           <thead>
             <tr>
               <th>Profissional</th>
               <th>Status</th>
-              <th>Contratos</th>
-              <th>Ultimo contrato</th>
+              <th>Vinculos</th>
+              <th>Ultimo vinculo</th>
               <th>PDF</th>
               <th>Acoes</th>
             </tr>
@@ -246,12 +219,12 @@
                         <span class="contracts-pill warn">Inativo</span>
                       {% endif %}
                     {% else %}
-                      <span class="contracts-pill pending">Aguardando contrato</span>
+                      <span class="contracts-pill pending">Aguardando vinculo</span>
                     {% endif %}
                   </td>
                   <td>
                     {% if c and c.contract_file %}
-                      <a class="btn" href="{{ c.contract_file.url }}" target="_blank" rel="noopener">Download PDF</a>
+                      <a class="btn" href="{{ c.contract_file.url }}" target="_blank" rel="noopener">Baixar PDF</a>
                     {% else %}
                       <span class="muted">Sem arquivo</span>
                     {% endif %}
@@ -268,8 +241,10 @@
               {% endwith %}
             {% empty %}
               <tr>
-                <td colspan="6" class="muted">
-                  Nenhum profissional cadastrado para esta empresa.
+                <td colspan="6">
+                  <div class="empty-state">
+                    Nenhum profissional cadastrado para esta empresa.
+                  </div>
                 </td>
               </tr>
             {% endfor %}

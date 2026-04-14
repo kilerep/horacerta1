@@ -287,6 +287,100 @@
     }
     .muted{ color: var(--muted); }
 
+    /* Premium UI (escopo: area interna da empresa) */
+    .role-company .content label{
+      display:block;
+      font-size:12px;
+      font-weight:700;
+      letter-spacing:.2px;
+      color:rgba(255,255,255,.78);
+      margin-bottom:6px;
+    }
+    .role-company .content input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="range"]),
+    .role-company .content select,
+    .role-company .content textarea{
+      width:100%;
+      min-height:42px;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.14);
+      background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+      color:var(--text);
+      outline:none;
+      transition:border-color .16s ease, box-shadow .16s ease, background .16s ease;
+    }
+    .role-company .content textarea{
+      min-height:94px;
+      resize:vertical;
+      line-height:1.45;
+    }
+    .role-company .content input::placeholder,
+    .role-company .content textarea::placeholder{
+      color:rgba(255,255,255,.46);
+    }
+    .role-company .content input:focus,
+    .role-company .content select:focus,
+    .role-company .content textarea:focus{
+      border-color:rgba(47,124,255,.62);
+      box-shadow:0 0 0 3px rgba(47,124,255,.20);
+      background:linear-gradient(180deg, rgba(255,255,255,.1), rgba(255,255,255,.05));
+    }
+    .role-company .content select{
+      -webkit-appearance:none;
+      appearance:none;
+      padding-right:38px;
+      background-image:
+        linear-gradient(45deg, transparent 50%, rgba(255,255,255,.72) 50%),
+        linear-gradient(135deg, rgba(255,255,255,.72) 50%, transparent 50%);
+      background-position: calc(100% - 18px) calc(50% - 1px), calc(100% - 12px) calc(50% - 1px);
+      background-size: 6px 6px, 6px 6px;
+      background-repeat:no-repeat;
+    }
+    .role-company .content input[type="date"]{
+      color-scheme: dark;
+    }
+    .role-company .content input[type="file"]{
+      padding:6px;
+      min-height:44px;
+      border-style:dashed;
+      background:rgba(255,255,255,.03);
+    }
+    .role-company .content input[type="file"]::file-selector-button{
+      margin-right:10px;
+      border:1px solid rgba(255,255,255,.18);
+      border-radius:10px;
+      padding:8px 12px;
+      background:rgba(47,124,255,.20);
+      color:var(--text);
+      cursor:pointer;
+      font-weight:700;
+    }
+    .role-company .content input[type="checkbox"],
+    .role-company .content input[type="radio"]{
+      accent-color:#2f7cff;
+      transform:translateY(1px);
+    }
+    .role-company .content .field-error,
+    .role-company .content .company-meis__error,
+    .role-company .content .contracts-error{
+      margin-top:6px;
+      font-size:12px;
+      line-height:1.4;
+      color:#ffd7d7;
+      border:1px solid rgba(255,77,90,.24);
+      background:rgba(255,77,90,.08);
+      border-radius:10px;
+      padding:6px 8px;
+    }
+    .role-company .content .empty-state{
+      border:1px dashed rgba(255,255,255,.2);
+      border-radius:14px;
+      padding:16px;
+      text-align:center;
+      color:var(--muted);
+      background:rgba(255,255,255,.02);
+    }
+
     .menu-toggle{
       display:none;
       align-items:center;
@@ -415,7 +509,7 @@
 </head>
 
 <!-- Mudanca aqui -->
-<body class="{% block body_class %}{% endblock %}">
+<body class="{% if request.user.is_authenticated and request.user.role == 'EMPRESA' %}role-company {% endif %}{% block body_class %}{% endblock %}">
   {% if request.user.is_authenticated %}
     <div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true"></div>
   {% endif %}
@@ -445,7 +539,7 @@
                 </a>
                 <a class="item {% if current == 'company_contracts' %}is-active{% endif %}" href="{% url 'company_contracts' %}">
                   <div class="icon">C</div>
-                  <div><strong>Contratos</strong><div class="muted item-sub">vinculos e documentos</div></div>
+                  <div><strong>Vinculos</strong><div class="muted item-sub">operacao e documentos</div></div>
                 </a>
                 <a class="item {% if current == 'company_reports' %}is-active{% endif %}" href="{% url 'company_reports' %}">
                   <div class="icon">R</div>
@@ -495,7 +589,7 @@
             </a>
             <a class="item" href="{% url 'mei_contract' %}">
               <div class="icon">C</div>
-              <div><strong>Meus contratos</strong><div class="muted" style="font-size:12px">valor/h e status</div></div>
+              <div><strong>Meus vinculos</strong><div class="muted" style="font-size:12px">valor/h e status</div></div>
             </a>
             <a class="item" href="{% url 'mei_profile' %}">
               <div class="icon">P</div>

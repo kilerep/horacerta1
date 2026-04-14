@@ -277,7 +277,7 @@
       }
 
       var clientErrors = [];
-      if (!selectedContract) clientErrors.push("Selecione um contrato.");
+      if (!selectedContract) clientErrors.push("Selecione um vinculo.");
       if (!selectedDate) clientErrors.push("Informe a data do lancamento.");
       if (!times.length) clientErrors.push("Informe pelo menos 1 horario.");
       if (!noteText) clientErrors.push("A justificativa e obrigatoria.");

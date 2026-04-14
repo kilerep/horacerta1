@@ -204,7 +204,7 @@ def create_manual_punches(request):
 
     errors = []
     if not contract_id:
-        errors.append("Selecione um contrato.")
+        errors.append("Selecione um vinculo.")
     if not manual_date_raw:
         errors.append("Informe a data do lancamento.")
     if not note:
@@ -250,7 +250,7 @@ def create_manual_punches(request):
 
     contract = _active_contracts_for_employee_user(request.user).filter(id=contract_id).first()
     if not contract:
-        return JsonResponse({"ok": False, "errors": ["Contrato invalido ou inativo."]}, status=400)
+        return JsonResponse({"ok": False, "errors": ["Vinculo invalido ou inativo."]}, status=400)
 
     tz = timezone.get_current_timezone()
     day_start = timezone.make_aware(datetime.combine(launch_date, time.min), tz)
@@ -270,7 +270,7 @@ def create_manual_punches(request):
             {
                 "ok": False,
                 "errors": [
-                    "Ja existe horário para este contrato/data nos horarios: %s." % ", ".join(duplicated_existing)
+                    "Ja existe horario para este vinculo/data nos horarios: %s." % ", ".join(duplicated_existing)
                 ],
             },
             status=400,

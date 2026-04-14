@@ -124,17 +124,17 @@ class CompanyMEICreateForm(forms.Form):
         min_value=0,
     )
     contract_start_date = forms.DateField(
-        label="Inicio do contrato (opcional)",
+        label="Inicio do vinculo (opcional)",
         required=False,
         widget=forms.DateInput(attrs={"type": "date"}),
     )
     contract_end_date = forms.DateField(
-        label="Fim do contrato (opcional)",
+        label="Fim do vinculo (opcional)",
         required=False,
         widget=forms.DateInput(attrs={"type": "date"}),
     )
     contract_file = forms.FileField(
-        label="PDF do contrato (opcional)",
+        label="PDF do vinculo (opcional)",
         required=False,
     )
     contract_notes = forms.CharField(
@@ -168,7 +168,7 @@ class CompanyMEICreateForm(forms.Form):
         hourly_rate = data.get("contract_hourly_rate")
 
         if contract_requested and hourly_rate is None:
-            self.add_error("contract_hourly_rate", "Informe o valor/hora para criar o contrato inicial.")
+            self.add_error("contract_hourly_rate", "Informe o valor/hora para criar o vinculo inicial.")
 
         if contract_requested and start_date and end_date and end_date < start_date:
             self.add_error("contract_end_date", "A data final nao pode ser anterior a data inicial.")
@@ -258,7 +258,7 @@ class CompanyContractForm(forms.ModelForm):
         widgets = {
             "start_date": forms.DateInput(attrs={"type": "date"}),
             "end_date": forms.DateInput(attrs={"type": "date"}),
-            "notes": forms.Textarea(attrs={"rows": 3, "placeholder": "Observacoes do contrato (opcional)"}),
+            "notes": forms.Textarea(attrs={"rows": 3, "placeholder": "Observacoes do vinculo (opcional)"}),
         }
 
     def __init__(self, *args, company=None, request=None, **kwargs):

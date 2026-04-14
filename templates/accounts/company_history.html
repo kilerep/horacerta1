@@ -11,7 +11,8 @@
       background:
         linear-gradient(140deg, rgba(79,124,255,.10), transparent 42%),
         linear-gradient(180deg, rgba(250,204,21,.06), rgba(255,255,255,.03));
-      padding:14px;
+      padding:16px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
     }
     .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
     .field{ display:flex; flex-direction:column; gap:6px; min-width:220px; flex:1; }
@@ -29,13 +30,11 @@
       border-color: rgba(79,124,255,.55);
       box-shadow: 0 0 0 3px rgba(79,124,255,.16);
     }
+    .table-wrap{ margin-top:10px; border:1px solid var(--border); border-radius:14px; overflow:auto; }
     .table{
       width:100%;
       border-collapse: collapse;
-      border:1px solid var(--border);
-      border-radius:14px;
-      overflow:hidden;
-      margin-top:10px;
+      min-width:680px;
     }
     .table th, .table td{
       text-align:left;
@@ -45,6 +44,7 @@
     }
     .table th{ color:var(--muted); font-weight:700; }
     .table tr:last-child td{ border-bottom:none; }
+    .table tbody tr:hover td{ background:rgba(255,255,255,.03); }
     .meta{ color:var(--muted); font-size:13px; margin-top:10px; display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; }
     .pager{ display:flex; gap:8px; }
   </style>
@@ -81,30 +81,32 @@
 
     <section class="panel">
       <h2 style="margin:0;">Horarios</h2>
-      <table class="table">
-        <thead>
-          <tr>
-            <th>MEI</th>
-            <th>Data</th>
-            <th>Hora</th>
-            <th>Observacao</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for p in punches %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
             <tr>
-              <td>{{ p.contract.employee.full_name|default:p.contract.employee.user.email|default:p.contract.employee.user.username }}</td>
-              <td>{{ p.timestamp|date:"d/m/Y" }}</td>
-              <td>{{ p.timestamp|date:"H:i" }}</td>
-              <td>{% if p.note %}{{ p.note }}{% else %}<span class="muted">-</span>{% endif %}</td>
+              <th>MEI</th>
+              <th>Data</th>
+              <th>Hora</th>
+              <th>Observacao</th>
             </tr>
-          {% empty %}
-            <tr>
-              <td colspan="4" class="muted">Sem horarios para os filtros selecionados.</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {% for p in punches %}
+              <tr>
+                <td>{{ p.contract.employee.full_name|default:p.contract.employee.user.email|default:p.contract.employee.user.username }}</td>
+                <td>{{ p.timestamp|date:"d/m/Y" }}</td>
+                <td>{{ p.timestamp|date:"H:i" }}</td>
+                <td>{% if p.note %}{{ p.note }}{% else %}<span class="muted">-</span>{% endif %}</td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="4"><div class="empty-state">Sem horarios para os filtros selecionados.</div></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
 
       <div class="meta">
         <div>Mostrando {{ showing_count }} de {{ total_count }}</div>

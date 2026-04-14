@@ -123,7 +123,7 @@
     <h2 style="margin:0 0 8px;">Historico por dia</h2>
     <form method="get" class="row">
       <div class="field">
-        <label>Contrato</label>
+        <label>Vinculo</label>
         <select name="contract" onchange="this.form.submit()">
           {% for c in contracts %}
             <option value="{{ c.id }}" {% if selected_contract and c.id == selected_contract.id %}selected{% endif %}>

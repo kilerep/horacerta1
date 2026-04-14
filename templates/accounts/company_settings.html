@@ -12,11 +12,18 @@
   .settings-item{
     border:1px solid var(--border);
     border-radius:14px;
-    background:rgba(255,255,255,.03);
-    padding:14px;
+    background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+    padding:16px;
     display:flex;
     flex-direction:column;
     gap:8px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
+    transition: transform .12s ease, border-color .12s ease, background .12s ease;
+  }
+  .settings-item:hover{
+    transform: translateY(-1px);
+    border-color:rgba(255,255,255,.18);
+    background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
   }
   .settings-item h3{
     margin:0;
@@ -41,9 +48,9 @@
     </article>
 
     <article class="settings-item">
-      <h3>Contratos e documentos</h3>
-      <p>O arquivo de contrato e gerido dentro da area de Contratos, no proprio vinculo.</p>
-      <div><a class="btn" href="{% url 'company_contracts' %}">Ir para contratos</a></div>
+      <h3>Vinculos e documentos</h3>
+      <p>O arquivo do vinculo e gerido dentro da area de Vinculos, no proprio cadastro operacional.</p>
+      <div><a class="btn" href="{% url 'company_contracts' %}">Ir para vinculos</a></div>
     </article>
 
     <article class="settings-item">

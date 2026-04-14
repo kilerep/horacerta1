@@ -1,16 +1,39 @@
 {% extends "accounts/base.html" %}
-{% block title %}Documentos de contrato{% endblock %}
-{% block page_title %}Documentos de contrato{% endblock %}
+{% block title %}Documentos{% endblock %}
+{% block page_title %}Documentos{% endblock %}
 
 {% block content %}
-<section class="card">
-  <h2 style="margin-top:0;">Documentos de contrato</h2>
-  <p class="muted">
-    Esta rota permanece apenas por compatibilidade tecnica. No MVP atual, a gestao de documentos
-    e feita diretamente na area de Contratos.
-  </p>
-  <div style="margin-top:10px;">
-    <a class="btn primary" href="{% url 'company_contracts' %}">Ir para Contratos</a>
-  </div>
-</section>
+<style>
+  .docs-wrap{ display:grid; gap:14px; }
+  .docs-card{
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:16px;
+    background:
+      radial-gradient(circle at 12% -8%, rgba(79,124,255,.2), transparent 45%),
+      linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
+  }
+  .docs-title{ margin:0; font-size:20px; }
+  .docs-subtitle{ margin:8px 0 0; color:var(--muted); max-width:780px; }
+  .docs-list{ margin:12px 0 0; padding-left:18px; display:grid; gap:6px; color:var(--muted); }
+</style>
+
+<div class="docs-wrap">
+  <section class="docs-card">
+    <h2 class="docs-title">Documentos e anexos de vinculos</h2>
+    <p class="docs-subtitle">
+      Para manter consistencia operacional, os documentos sao gerenciados diretamente dentro de cada vinculo.
+      Nesta versao, esta tela funciona como ponto de orientacao e acesso rapido.
+    </p>
+    <ul class="docs-list">
+      <li>Use a tela de Vinculos para anexar e atualizar PDFs.</li>
+      <li>Edite dados operacionais e documentos no mesmo fluxo.</li>
+      <li>Mantenha o historico organizado por profissional.</li>
+    </ul>
+    <div style="margin-top:12px;">
+      <a class="btn primary" href="{% url 'company_contracts' %}">Abrir area de Vinculos</a>
+    </div>
+  </section>
+</div>
 {% endblock %}

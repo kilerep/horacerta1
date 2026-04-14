@@ -8,10 +8,11 @@
     .company-panel {
       border:1px solid var(--border);
       border-radius: var(--radius);
-      padding:14px;
+      padding:16px;
       background:
         radial-gradient(circle at 20% 0%, rgba(79,124,255,.16), transparent 42%),
         linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
     }
     .company-title{ margin:0; font-size:20px; font-weight:800; }
     .company-subtitle{ margin:6px 0 0; color:var(--muted); font-size:13px; }
@@ -21,6 +22,12 @@
       border-radius:14px;
       padding:12px;
       background:rgba(255,255,255,.03);
+      transition: transform .12s ease, border-color .12s ease, background .12s ease;
+    }
+    .kpi:hover{
+      transform: translateY(-1px);
+      border-color:rgba(255,255,255,.2);
+      background:rgba(255,255,255,.05);
     }
     .kpi .label{ color:var(--muted); font-size:12px; }
     .kpi .value{ margin-top:4px; font-size:28px; line-height:1; font-weight:900; }
@@ -41,6 +48,7 @@
     .table th,.table td{ text-align:left; padding:10px; border-bottom:1px solid rgba(255,255,255,.07); font-size:14px; vertical-align:top; }
     .table th{ color:var(--muted); font-weight:700; }
     .table tr:last-child td{ border-bottom:none; }
+    .table tbody tr:hover td{ background:rgba(255,255,255,.03); }
     .pill{
       display:inline-flex; align-items:center; border:1px solid var(--border); border-radius:999px;
       padding:4px 10px; font-size:12px; font-weight:700; background:rgba(255,255,255,.05);
@@ -77,14 +85,14 @@
       <section class="company-panel">
         <h2 class="company-title">Visao operacional da empresa</h2>
         <p class="company-subtitle">
-          Separacao clara entre cadastro de profissionais e operacao com contrato ativo.
+          Acompanhe cadastro, vinculacao e registros com uma visao executiva simples e profissional.
         </p>
       </section>
 
       <section class="kpis">
         <article class="kpi"><div class="label">Profissionais cadastrados</div><div class="value">{{ total_registered_professionals }}</div><div class="hint">Base total da empresa</div></article>
-        <article class="kpi"><div class="label">Profissionais ativos</div><div class="value">{{ total_active_professionals }}</div><div class="hint">Com contrato operacional</div></article>
-        <article class="kpi"><div class="label">Pendentes de contrato</div><div class="value">{{ total_pending_contract }}</div><div class="hint">Cadastro concluido sem operacao</div></article>
+        <article class="kpi"><div class="label">Profissionais ativos</div><div class="value">{{ total_active_professionals }}</div><div class="hint">Com vinculo operacional</div></article>
+        <article class="kpi"><div class="label">Pendentes de vinculo</div><div class="value">{{ total_pending_contract }}</div><div class="hint">Cadastro concluido sem operacao</div></article>
         <article class="kpi"><div class="label">Profissionais inativos</div><div class="value">{{ total_inactive_professionals }}</div><div class="hint">Sem vigencia operacional</div></article>
         <article class="kpi"><div class="label">Registros no periodo</div><div class="value">{{ total_punches_period }}</div><div class="hint">{{ period_result.date_from|default:"-" }} ate {{ period_result.date_to|default:"-" }}</div></article>
         <article class="kpi"><div class="label">Dias com inconsistencias</div><div class="value">{{ inconsistency_days_period }}</div><div class="hint">Dias incompletos no periodo</div></article>
@@ -102,7 +110,7 @@
 
           <div class="table-wrap">
             <table class="table">
-              <thead><tr><th>Profissional</th><th>Estado</th><th>Contratos</th><th>Acao</th></tr></thead>
+              <thead><tr><th>Profissional</th><th>Estado</th><th>Vinculos</th><th>Acao</th></tr></thead>
               <tbody>
                 {% for row in employees %}
                   <tr>
@@ -118,7 +126,7 @@
                     </td>
                   </tr>
                 {% empty %}
-                  <tr><td colspan="4" class="muted">Nenhum profissional encontrado para este filtro.</td></tr>
+                  <tr><td colspan="4"><div class="empty-state">Nenhum profissional encontrado para este filtro.</div></td></tr>
                 {% endfor %}
               </tbody>
             </table>
@@ -126,7 +134,7 @@
 
           <div class="table-wrap">
             <table class="table">
-              <thead><tr><th>Registro recente</th><th>Profissional</th><th>Empresa</th><th>Contrato</th></tr></thead>
+              <thead><tr><th>Registro recente</th><th>Profissional</th><th>Empresa</th><th>Vinculo</th></tr></thead>
               <tbody>
                 {% for row in punches_period %}
                   <tr>
@@ -136,7 +144,7 @@
                     <td>R$ {{ row.punch.contract.hourly_rate }}/h</td>
                   </tr>
                 {% empty %}
-                  <tr><td colspan="4" class="muted">Sem registros no periodo selecionado.</td></tr>
+                  <tr><td colspan="4"><div class="empty-state">Sem registros no periodo selecionado.</div></td></tr>
                 {% endfor %}
               </tbody>
             </table>
@@ -144,7 +152,7 @@
         </section>
 
         <section class="company-panel">
-          <h3 style="margin:0;">Profissionais pendentes de contrato</h3>
+          <h3 style="margin:0;">Profissionais pendentes de vinculo</h3>
           {% if pending_professionals %}
             <div class="pending-list">
               {% for row in pending_professionals %}
@@ -158,7 +166,7 @@
               {% endfor %}
             </div>
           {% else %}
-            <p class="muted" style="margin-top:10px;">Nao ha pendencias de contrato neste momento.</p>
+            <p class="muted" style="margin-top:10px;">Nao ha pendencias de vinculo neste momento.</p>
           {% endif %}
 
           <h3 style="margin:16px 0 0;">Atalhos de gestao</h3>
@@ -171,7 +179,7 @@
             {% endfor %}
           </div>
 
-          <h3 style="margin:16px 0 0;">Contratos operacionais</h3>
+          <h3 style="margin:16px 0 0;">Vinculos operacionais</h3>
           <div class="table-wrap">
             <table class="table" style="min-width:0;">
               <thead><tr><th>Profissional</th><th>Valor/h</th><th>Status</th></tr></thead>
@@ -189,7 +197,7 @@
                     </td>
                   </tr>
                 {% empty %}
-                  <tr><td colspan="3" class="muted">Sem contratos operacionais ativos.</td></tr>
+                  <tr><td colspan="3"><div class="empty-state">Sem vinculos operacionais ativos.</div></td></tr>
                 {% endfor %}
               </tbody>
             </table>
