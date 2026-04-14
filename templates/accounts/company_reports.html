@@ -11,7 +11,8 @@
       background:
         linear-gradient(140deg, rgba(79,124,255,.10), transparent 42%),
         linear-gradient(180deg, rgba(250,204,21,.06), rgba(255,255,255,.03));
-      padding:14px;
+      padding:16px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
     }
     .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
     .field{ display:flex; flex-direction:column; gap:6px; min-width:220px; flex:1; }
@@ -31,6 +32,12 @@
       border-radius:12px;
       background: rgba(255,255,255,.04);
       padding:12px;
+      transition: transform .12s ease, border-color .12s ease, background .12s ease;
+    }
+    .stat:hover{
+      transform: translateY(-1px);
+      border-color:rgba(255,255,255,.2);
+      background: rgba(255,255,255,.06);
     }
     .k{ color:var(--muted); font-size:12px; }
     .v{ font-size:24px; font-weight:800; margin-top:2px; }
@@ -98,7 +105,7 @@
 
   <div class="wrap-grid">
     <section class="panel">
-      <h2 style="margin:0;">Filtros do relatorio</h2>
+      <h2 style="margin:0;">Filtros e exportacoes</h2>
       <form method="get" class="row" style="margin-top:10px;">
         <div class="field">
           <label>MEI</label>
@@ -119,21 +126,21 @@
           <label>Ate</label>
           <input type="date" name="date_to" value="{{ date_to }}">
         </div>
-        <button class="btn primary" type="submit">Aplicar</button>
+        <button class="btn primary" type="submit">Atualizar relatorio</button>
       </form>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
-        <a class="btn" href="?employee={{ selected_employee }}&date_from={{ date_from }}&date_to={{ date_to }}&export=xlsx">Exportar Excel (.xlsx)</a>
-        <a class="btn" href="?employee={{ selected_employee }}&date_from={{ date_from }}&date_to={{ date_to }}&export=pdf">Exportar PDF</a>
+        <a class="btn" href="?employee={{ selected_employee }}&date_from={{ date_from }}&date_to={{ date_to }}&export=xlsx">Exportar Excel profissional (.xlsx)</a>
+        <a class="btn" href="?employee={{ selected_employee }}&date_from={{ date_from }}&date_to={{ date_to }}&export=pdf">Exportar PDF executivo</a>
       </div>
     </section>
 
     <section class="card-grid">
       <div class="stat">
-        <div class="k">Total horas</div>
+        <div class="k">Horas consolidadas</div>
         <div class="v">{{ total_hours }}</div>
       </div>
       <div class="stat">
-        <div class="k">Total de horarios</div>
+        <div class="k">Lancamentos registrados</div>
         <div class="v">{{ total_punches }}</div>
       </div>
       <div class="stat">
@@ -143,8 +150,8 @@
     </section>
 
     <section class="panel">
-      <h2 style="margin:0;">Relatorio diario</h2>
-      <p class="muted" style="margin:8px 0 0;">Data, vinculo, status, total do dia e observacao quando existir.</p>
+      <h2 style="margin:0;">Relatorio diario de operacao</h2>
+      <p class="muted" style="margin:8px 0 0;">Acompanhe data, vinculo, status, total do dia e observacoes relevantes para conferencia.</p>
 
       <div class="table-wrap">
         <table class="table">
@@ -171,7 +178,7 @@
                 <td class="notes-cell">{% if row.has_note %}{{ row.note }}{% else %}<span class="muted">-</span>{% endif %}</td>
               </tr>
             {% empty %}
-              <tr><td colspan="7" class="muted">Sem registros para os filtros.</td></tr>
+              <tr><td colspan="7"><div class="empty-state">Sem registros para os filtros atuais. Ajuste o periodo ou selecione outro MEI.</div></td></tr>
             {% endfor %}
           </tbody>
         </table>
@@ -190,14 +197,14 @@
             {% endif %}
           </article>
         {% empty %}
-          <div class="muted">Sem registros para os filtros.</div>
+          <div class="empty-state">Sem registros para os filtros atuais.</div>
         {% endfor %}
       </div>
-      <p class="muted" style="margin-top:8px;">Mostrando no maximo 500 linhas diarias.</p>
+      <p class="muted" style="margin-top:8px;">Mostrando no maximo 500 linhas diarias para manter performance e leitura.</p>
     </section>
 
     <section class="panel">
-      <h2 style="margin:0;">Solicitar relatorio de atividades</h2>
+      <h2 style="margin:0;">Solicitar detalhamento de atividades</h2>
       <form method="post" class="row" style="margin-top:10px;">
         {% csrf_token %}
         <input type="hidden" name="action" value="request_activity_report">
@@ -220,14 +227,14 @@
         </div>
         <div class="field">
           <label>Mensagem (opcional)</label>
-          <textarea name="message" rows="2" placeholder="Ex: detalhar atividades do periodo."></textarea>
+          <textarea name="message" rows="2" placeholder="Ex: detalhar atividades executadas no periodo solicitado."></textarea>
         </div>
-        <button class="btn primary" type="submit">Solicitar relatorio do MEI</button>
+        <button class="btn primary" type="submit">Solicitar detalhamento ao MEI</button>
       </form>
     </section>
 
     <section class="panel">
-      <h2 style="margin:0;">Respostas recebidas</h2>
+      <h2 style="margin:0;">Retornos recebidos</h2>
       <table class="table">
         <thead>
           <tr>
@@ -248,7 +255,7 @@
               <td>{% if r.response_text %}{{ r.response_text }}{% else %}<span class="muted">-</span>{% endif %}</td>
             </tr>
           {% empty %}
-            <tr><td colspan="5" class="muted">Sem solicitacoes ainda.</td></tr>
+            <tr><td colspan="5"><div class="empty-state">Sem solicitacoes registradas. Use o bloco acima para iniciar uma solicitacao.</div></td></tr>
           {% endfor %}
         </tbody>
       </table>

@@ -75,29 +75,35 @@
   <div class="contracts-wrap">
     <section class="contracts-panel">
       <h2 class="contracts-title">Vinculos da empresa</h2>
-      <p class="contracts-subtitle">Acompanhe status, historico e edite vinculos existentes com clareza operacional.</p>
+      <p class="contracts-subtitle">Gestao central de vinculos: acompanhe status, documentos e ajustes operacionais com rastreabilidade.</p>
 
       {% if request.GET.status == "updated" %}
         <div class="contracts-alert">Vinculo atualizado com sucesso.</div>
       {% endif %}
       {% if show_creation_redirect_notice %}
         <div class="contracts-warning">
-          A criacao principal de MEI e vinculo inicial foi centralizada na tela de MEIs.
-          Use <strong>MEIs</strong> para cadastrar novos profissionais ja com vinculo inicial.
+          A criacao principal foi centralizada na tela de MEIs para manter um fluxo unico e sem retrabalho.
+          Use <strong>MEIs</strong> para cadastrar profissionais e configurar o vinculo inicial.
         </div>
       {% endif %}
       {% if show_only_edit_notice %}
         <div class="contracts-warning">
-          Esta tela foi otimizada para listar, acompanhar e editar vinculos existentes.
+          Esta tela e exclusiva para listagem, acompanhamento e edicao de vinculos existentes.
         </div>
       {% endif %}
       {% if invalid_edit_contract %}
         <div class="contracts-error">Nao foi possivel localizar o vinculo solicitado para edicao.</div>
       {% endif %}
+      {% if inconsistent_contracts_count %}
+        <div class="contracts-warning">
+          Encontramos {{ inconsistent_contracts_count }} registro(s) legado(s) com inconsistencias de cadastro.
+          Esses itens foram isolados para preservar a seguranca operacional desta tela.
+        </div>
+      {% endif %}
 
       {% if pending_without_contracts %}
         <div class="contracts-warning">
-          Existem profissionais sem vinculo operacional. O fluxo principal para novos cadastros fica em MEIs.
+          Existem MEIs sem vinculo operacional ativo. Finalize a configuracao para liberar registro de horas.
         </div>
         <div class="pending-list">
           {% for row in pending_without_contracts %}
@@ -118,7 +124,7 @@
         <div class="contracts-edit-head">
           <div>
             <h3 style="margin:0;">Editar vinculo</h3>
-            <p class="contracts-edit-subtitle">Atualize valor/hora, vigencia, documento e observacoes do vinculo ativo.</p>
+            <p class="contracts-edit-subtitle">Atualize condicoes operacionais do vinculo com controle e historico.</p>
           </div>
           <a class="btn" href="{% url 'company_contracts' %}">Fechar edicao</a>
         </div>
@@ -161,36 +167,33 @@
             </div>
           </div>
           {% if edit_form.non_field_errors %}<div class="contracts-error">{{ edit_form.non_field_errors }}</div>{% endif %}
-          <div style="margin-top:10px;"><button class="btn primary" type="submit">Salvar alteracoes</button></div>
+          <div style="margin-top:10px;"><button class="btn primary" type="submit">Salvar atualizacao do vinculo</button></div>
         </form>
       </section>
     {% endif %}
 
     <section class="contracts-panel">
-      <h3 style="margin:0;">Gestao de profissionais e vinculos</h3>
+      <h3 style="margin:0;">Lista operacional de vinculos</h3>
       <div class="contracts-table-wrap">
         <table class="contracts-table">
           <thead>
             <tr>
               <th>Profissional</th>
               <th>Status</th>
-              <th>Vinculos</th>
-              <th>Ultimo vinculo</th>
+              <th>Valor/hora</th>
+              <th>Inicio</th>
+              <th>Fim</th>
               <th>PDF</th>
               <th>Acoes</th>
             </tr>
           </thead>
           <tbody>
-            {% for row in professionals %}
-              {% with employee=row.employee c=row.latest_contract %}
+            {% for row in contracts %}
+              {% with employee=row.employee c=row.contract %}
                 <tr>
                   <td>
-                    {% if employee and employee.user %}
-                      {{ employee.full_name|default:employee.user.username }}
-                      <span class="muted">({{ employee.user.email|default:employee.user.username }})</span>
-                    {% else %}
-                      <span class="muted">Profissional invalido</span>
-                    {% endif %}
+                    {{ employee.full_name|default:employee.user.username }}
+                    <span class="muted">({{ employee.user.email|default:employee.user.username }})</span>
                   </td>
                   <td>
                     {% if row.status_tone == "success" %}
@@ -202,48 +205,42 @@
                     {% else %}
                       <span class="contracts-pill">{{ row.status_label }}</span>
                     {% endif %}
-                    <div class="muted">{{ row.status_hint }}</div>
                   </td>
                   <td>
-                    <strong>{{ row.total_contracts }}</strong>
-                    <span class="muted">({{ row.active_contracts }} operacional)</span>
+                    <strong>R$ {{ c.hourly_rate }}</strong>
                   </td>
                   <td>
-                    {% if c %}
-                      R$ {{ c.hourly_rate }} | {{ c.start_date|date:"d/m/Y" }}<br>
-                      {% if row.latest_contract_operational %}
-                        <span class="contracts-pill success">Ativo operacional</span>
-                      {% elif c.is_active %}
-                        <span class="contracts-pill">Ativo sem vigencia</span>
-                      {% else %}
-                        <span class="contracts-pill warn">Inativo</span>
-                      {% endif %}
+                    {% if c.start_date %}
+                      {{ c.start_date|date:"d/m/Y" }}
                     {% else %}
-                      <span class="contracts-pill pending">Aguardando vinculo</span>
+                      <span class="muted">-</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if c.end_date %}
+                      {{ c.end_date|date:"d/m/Y" }}
+                    {% else %}
+                      <span class="muted">Em aberto</span>
                     {% endif %}
                   </td>
                   <td>
                     {% if c and c.contract_file %}
-                      <a class="btn" href="{{ c.contract_file.url }}" target="_blank" rel="noopener">Baixar PDF</a>
+                      <a class="btn" href="{{ c.contract_file.url }}" target="_blank" rel="noopener">Visualizar PDF</a>
                     {% else %}
                       <span class="muted">Sem arquivo</span>
                     {% endif %}
                   </td>
                   <td>
-                    {% if employee and employee.user %}
-                      <a class="btn" href="{{ row.profile_url }}">Ver perfil</a>
-                      <a class="btn primary" href="{{ row.action_url }}">{{ row.action_label }}</a>
-                    {% else %}
-                      <span class="muted">Indisponivel</span>
-                    {% endif %}
+                    <a class="btn" href="{{ row.profile_url }}">Ver profissional</a>
+                    <a class="btn primary" href="{{ row.edit_url }}">Editar</a>
                   </td>
                 </tr>
               {% endwith %}
             {% empty %}
               <tr>
-                <td colspan="6">
+                <td colspan="7">
                   <div class="empty-state">
-                    Nenhum profissional cadastrado para esta empresa.
+                    Nenhum vinculo encontrado. <a href="{% url 'company_meis' %}">Cadastre um MEI</a> para iniciar a operacao.
                   </div>
                 </td>
               </tr>

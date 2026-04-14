@@ -11,12 +11,12 @@
   <div class="company-meis card">
     <header class="company-meis__hero">
       <div>
-        <h2 class="company-meis__title">Cadastro de profissional/MEI</h2>
+        <h2 class="company-meis__title">Cadastro operacional de MEIs</h2>
         <p class="company-meis__subtitle">
-          Cadastre o profissional e libere a operacao por etapas: cadastro, vinculo e rotina ativa.
+          Centralize cadastro, vinculacao inicial e acompanhamento da base em um fluxo unico e profissional.
         </p>
       </div>
-      <div class="company-meis__hero-badge">Fluxo MVP: empresa cadastra, profissional registra, empresa acompanha</div>
+      <div class="company-meis__hero-badge">Fluxo principal: empresa cadastra, MEI registra, empresa acompanha</div>
     </header>
 
     {% if request.GET.status == "created_mei" %}
@@ -40,7 +40,7 @@
       <section class="company-meis__section">
         <header class="company-meis__section-head">
           <h3>Dados do profissional</h3>
-          <p>Informacoes de identificacao que a empresa precisa para localizar e organizar a rotina.</p>
+          <p>Informacoes essenciais para identificar o MEI e organizar a operacao com clareza.</p>
         </header>
         <div class="company-meis__grid company-meis__grid--two">
           <div class="company-meis__field">
@@ -54,7 +54,7 @@
       <section class="company-meis__section">
         <header class="company-meis__section-head">
           <h3>Dados de acesso</h3>
-          <p>Credenciais para o profissional acessar a conta vinculada a sua empresa.</p>
+          <p>Credenciais para o MEI acessar o sistema e registrar horarios na conta vinculada.</p>
         </header>
         <div class="company-meis__grid">
           <div class="company-meis__field">
@@ -78,7 +78,7 @@
       <section class="company-meis__section company-meis__section--optional">
         <header class="company-meis__section-head">
           <h3>Primeiro vinculo <span class="company-meis__badge">Opcional</span></h3>
-          <p>Se preencher agora, o profissional ja entra como ativo operacional.</p>
+          <p>Ao preencher agora, o MEI ja entra pronto para operacao sem etapas extras.</p>
         </header>
         <div class="company-meis__grid">
           <div class="company-meis__field">
@@ -124,7 +124,7 @@
       <section class="company-meis__section company-meis__section--optional">
         <header class="company-meis__section-head">
           <h3>Configurar primeiro vinculo para MEI ja cadastrado</h3>
-          <p>Use este bloco quando o profissional ja existe na base e ainda esta sem vinculo operacional.</p>
+          <p>Use este bloco para liberar rapidamente um MEI ja cadastrado que ainda esta sem operacao ativa.</p>
         </header>
         <div class="company-meis__grid">
           <div class="company-meis__field">
@@ -169,10 +169,10 @@
 
     <section class="company-meis__list-block">
       <header class="company-meis__list-header">
-        <h2 class="company-meis__title">Profissionais cadastrados</h2>
+        <h2 class="company-meis__title">Base de MEIs cadastrados</h2>
         <form method="get" class="company-meis__search">
           <div class="company-meis__search-field">{{ employee_search_form.q }}</div>
-          <button class="btn primary" type="submit">Buscar</button>
+          <button class="btn primary" type="submit">Buscar na base</button>
         </form>
       </header>
 
@@ -181,7 +181,7 @@
           <thead>
             <tr>
               <th>Profissional</th>
-              <th>Estado no sistema</th>
+              <th>Estado operacional</th>
               <th>Vinculos</th>
               <th>Acoes</th>
             </tr>
@@ -193,7 +193,7 @@
                   <strong>{{ row.employee.full_name }}</strong><br>
                   <span class="company-meis__muted">{{ row.employee.user.email|default:row.employee.user.username }}</span>
                 </td>
-                <td data-label="Estado">
+                <td data-label="Estado operacional">
                   <span class="company-meis__pill company-meis__pill--{{ row.state.tone }}">{{ row.state.label }}</span>
                   <div class="company-meis__state-hint">{{ row.state.hint }}</div>
                 </td>
@@ -203,7 +203,7 @@
                 </td>
                 <td data-label="Acoes" class="company-meis__actions-cell">
                   <a class="btn" href="{{ row.profile_url }}">Ver perfil</a>
-                  <a class="btn" href="{{ row.situation_url }}">Ver situacao</a>
+                  <a class="btn" href="{{ row.situation_url }}">Ver detalhes</a>
                   {% if row.total_contracts == 0 %}
                     <a class="btn primary" href="{{ row.setup_first_link_url }}">Configurar primeiro vinculo</a>
                   {% else %}
@@ -214,7 +214,7 @@
             {% empty %}
               <tr>
                 <td colspan="4">
-                  <div class="empty-state">Nenhum profissional encontrado para este filtro.</div>
+                  <div class="empty-state">Nenhum MEI encontrado para este filtro. Ajuste a busca ou cadastre um novo profissional.</div>
                 </td>
               </tr>
             {% endfor %}

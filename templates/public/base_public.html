@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}HoraCerta{% endblock %}</title>
+  <meta name="description" content="{% block meta_description %}HoraCerta: plataforma de gestao de horas entre empresa e MEI.{% endblock %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#060d1d;
+      --bg2:#0b1630;
+      --panel:rgba(10,20,40,.8);
+      --line:rgba(255,255,255,.12);
+      --text:#edf4ff;
+      --muted:#9ab0ca;
+      --blue:#2f6bff;
+      --cyan:#2ea2ef;
+      --max:1180px;
+      --shadow:0 22px 60px rgba(0,0,0,.42);
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;font-family:"Manrope","Segoe UI",sans-serif;background:
+      radial-gradient(900px 380px at 8% -6%, rgba(46,162,239,.2), transparent 55%),
+      radial-gradient(950px 420px at 96% 0%, rgba(47,107,255,.2), transparent 56%),
+      linear-gradient(180deg,var(--bg),var(--bg2));color:var(--text)}
+    a{text-decoration:none;color:inherit}
+    .container{width:min(var(--max),92vw);margin:0 auto}
+    .header-wrap{position:sticky;top:0;z-index:40;padding:12px 0;background:linear-gradient(180deg, rgba(6,13,29,.92), rgba(6,13,29,.65) 70%, transparent)}
+    .header{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--line);border-radius:16px;padding:10px 12px;background:rgba(7,15,32,.76);backdrop-filter:blur(8px)}
+    .brand{display:inline-flex;align-items:center;gap:10px}
+    .mark{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-weight:800;background:linear-gradient(135deg,rgba(47,107,255,.45),rgba(46,162,239,.22));border:1px solid rgba(255,255,255,.2)}
+    .brand .name{font-weight:800;letter-spacing:-.02em}
+    .brand .sub{font-size:12px;color:var(--muted)}
+    .nav{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .link{padding:9px 12px;border-radius:10px;color:var(--muted);font-size:14px;border:1px solid transparent}
+    .link:hover{color:var(--text);border-color:var(--line);background:rgba(255,255,255,.03)}
+    .btn{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:0 14px;border-radius:11px;border:1px solid var(--line);font-weight:700;background:rgba(255,255,255,.03)}
+    .btn:hover{border-color:rgba(255,255,255,.24)}
+    .btn.primary{background:linear-gradient(130deg,var(--blue),var(--cyan));border:none;box-shadow:0 10px 30px rgba(47,107,255,.42)}
+    .main{padding:26px 0 34px}
+    .footer{border-top:1px solid rgba(255,255,255,.08);padding:20px 0 30px;margin-top:32px}
+    .footer-row{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;color:var(--muted);font-size:14px}
+    @media (max-width:920px){
+      .nav{justify-content:flex-end}
+      .link.hide-sm{display:none}
+    }
+    @media (max-width:680px){
+      .header{flex-direction:column;align-items:stretch}
+      .nav{justify-content:flex-start}
+      .btn,.link{width:100%;justify-content:center}
+    }
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <header class="header-wrap">
+    <div class="container">
+      <div class="header">
+        <a class="brand" href="{% url 'landing' %}" aria-label="HoraCerta">
+          <span class="mark">HC</span>
+          <span>
+            <div class="name">HoraCerta</div>
+            <div class="sub">Gestao de horas entre empresa e MEI</div>
+          </span>
+        </a>
+        <nav class="nav" aria-label="Navegacao publica">
+          <a class="link hide-sm" href="{% url 'landing' %}#como-funciona">Como funciona</a>
+          <a class="link hide-sm" href="{% url 'landing' %}#beneficios">Beneficios</a>
+          <a class="link hide-sm" href="{% url 'landing' %}#faq">FAQ</a>
+          <a class="link" href="{% url 'help' %}">Ajuda</a>
+          <a class="btn" href="{% url 'login' %}">Entrar no sistema</a>
+          <a class="btn primary" href="{% url 'signup' %}">Criar conta da empresa</a>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-row">
+      <span>© {% now "Y" %} HoraCerta. Plataforma de gestao de horas para empresa e MEI.</span>
+      <span><a href="{% url 'terms' %}">Termos</a> | <a href="{% url 'privacy' %}">Privacidade</a> | <a href="{% url 'help' %}">Ajuda</a></span>
+    </div>
+  </footer>
+</body>
+</html>

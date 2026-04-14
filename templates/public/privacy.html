@@ -1,0 +1,27 @@
+{% extends "public/base_public.html" %}
+{% block title %}Privacidade | HoraCerta{% endblock %}
+{% block content %}
+<style>
+  .wrap{display:grid;gap:12px}
+  .hero,.card{border:1px solid var(--line);border-radius:16px;padding:16px;background:rgba(10,20,40,.72)}
+  .hero h1{margin:0;font-size:2rem;letter-spacing:-.03em}
+  .hero p,.card p,.card li{color:var(--muted)}
+  .grid{display:grid;gap:10px}
+  .card h2{margin:0;font-size:1.05rem}
+  .list{margin:8px 0 0;padding-left:18px;display:grid;gap:6px}
+</style>
+<div class="container wrap">
+  <section class="hero">
+    <h1>Politica de Privacidade</h1>
+    <p>Transparencia sobre coleta, uso e protecao de dados no HoraCerta.</p>
+  </section>
+  <section class="grid">
+    <article class="card"><h2>1. Dados coletados</h2><ul class="list"><li>Dados de cadastro da empresa e dos profissionais.</li><li>Dados operacionais de registro de horarios e observacoes.</li></ul></article>
+    <article class="card"><h2>2. Finalidade</h2><p>Os dados sao tratados para viabilizar o funcionamento da plataforma e o acompanhamento operacional entre empresa e MEI.</p></article>
+    <article class="card"><h2>3. Compartilhamento</h2><p>O compartilhamento ocorre apenas quando necessario para operacao tecnica, obrigacao legal ou solicitacao do titular.</p></article>
+    <article class="card"><h2>4. Seguranca</h2><p>Adotamos medidas tecnicas e organizacionais para reduzir riscos de acesso nao autorizado.</p></article>
+    <article class="card"><h2>5. Direitos do titular</h2><ul class="list"><li>Acesso, correcao e atualizacao de dados.</li><li>Solicitacao de informacoes sobre tratamento.</li><li>Demais direitos previstos em lei.</li></ul></article>
+    <article class="card"><h2>6. Contato</h2><p>Para demandas de privacidade, utilize os canais oficiais informados pela empresa responsavel pela conta.</p></article>
+  </section>
+</div>
+{% endblock %}

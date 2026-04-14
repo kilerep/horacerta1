@@ -1,0 +1,27 @@
+{% extends "public/base_public.html" %}
+{% block title %}Termos de Uso | HoraCerta{% endblock %}
+{% block content %}
+<style>
+  .wrap{display:grid;gap:12px}
+  .hero,.card{border:1px solid var(--line);border-radius:16px;padding:16px;background:rgba(10,20,40,.72)}
+  .hero h1{margin:0;font-size:2rem;letter-spacing:-.03em}
+  .hero p,.card p,.card li{color:var(--muted)}
+  .grid{display:grid;gap:10px}
+  .card h2{margin:0;font-size:1.05rem}
+  .list{margin:8px 0 0;padding-left:18px;display:grid;gap:6px}
+</style>
+<div class="container wrap">
+  <section class="hero">
+    <h1>Termos de Uso</h1>
+    <p>Condicoes gerais de uso da plataforma HoraCerta para organizacao de jornada entre empresa e MEI.</p>
+  </section>
+  <section class="grid">
+    <article class="card"><h2>1. Objeto</h2><p>O HoraCerta oferece recursos para cadastro, registro de horarios, acompanhamento e historico operacional.</p></article>
+    <article class="card"><h2>2. Cadastro e acesso</h2><ul class="list"><li>A empresa e responsavel pelo cadastro de profissionais.</li><li>Credenciais sao pessoais e intransferiveis.</li><li>O usuario deve manter senha sob sigilo.</li></ul></article>
+    <article class="card"><h2>3. Uso adequado</h2><ul class="list"><li>Uso profissional e licito da plataforma.</li><li>Proibido uso fraudulento ou que comprometa integridade dos dados.</li></ul></article>
+    <article class="card"><h2>4. Disponibilidade e evolucao</h2><p>A plataforma pode receber manutencoes e melhorias sem prejuizo da operacao regular.</p></article>
+    <article class="card"><h2>5. Dados e privacidade</h2><p>O tratamento de dados segue a politica de <a href="{% url 'privacy' %}">Privacidade</a> e finalidades operacionais da plataforma.</p></article>
+    <article class="card"><h2>6. Atualizacoes</h2><p>Estes termos podem ser atualizados para refletir evolucao do produto e requisitos legais.</p></article>
+  </section>
+</div>
+{% endblock %}

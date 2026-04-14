@@ -678,15 +678,12 @@ def company_contracts(request):
         return denied
 
     company = _company_for_user(request.user)
-    contracts_qs = (
-        Contract.objects.filter(
-            company=company,
-            employee__isnull=False,
-            employee__user__isnull=False,
-        ).select_related("employee", "employee__user")
+    contracts_qs_all = (
+        Contract.objects.filter(company=company).select_related("employee", "employee__user", "company")
         if company
         else Contract.objects.none()
     )
+    contracts_qs = contracts_qs_all.filter(employee__isnull=False, employee__user__isnull=False)
 
     edit_contract = None
     edit_form = None
@@ -735,15 +732,11 @@ def company_contracts(request):
         .order_by("full_name")[:400]
     ) if company else []
     contracts_by_employee = _contracts_by_employee(company, employees)
-    professional_rows = []
     pending_without_contracts = []
     for employee in employees:
         employee_contracts = contracts_by_employee.get(employee.id, [])
-        lifecycle = employee_lifecycle_summary(employee, employee_contracts)
         latest_contract = employee_contracts[0] if employee_contracts else None
         has_contract = latest_contract is not None
-        latest_contract_operational = contract_is_operational(latest_contract) if latest_contract else False
-        active_contracts = sum(1 for contract in employee_contracts if contract_is_operational(contract))
         needs_contract = not has_contract
 
         if needs_contract:
@@ -751,7 +744,6 @@ def company_contracts(request):
             status_tone = "pending"
             status_hint = "Profissional cadastrado sem vinculo operacional. Use a tela de MEIs como fluxo principal."
             action_url = f"{reverse('company_meis')}?link_for={employee.id}#vinculo-existente"
-            action_label = "Ir para MEIs"
             pending_without_contracts.append(
                 {
                     "employee": employee,
@@ -763,39 +755,61 @@ def company_contracts(request):
                     "action_url": action_url,
                 }
             )
-        else:
-            status_label = lifecycle["label"]
-            status_tone = lifecycle["tone"]
-            status_hint = lifecycle["hint"]
-            action_url = f"{reverse('company_contracts')}?edit={latest_contract.id}"
-            action_label = "Editar vinculo"
 
-        professional_rows.append(
+    contract_rows = []
+    for contract in contracts_qs.order_by("-start_date", "-created_at"):
+        employee = getattr(contract, "employee", None)
+        employee_user = getattr(employee, "user", None) if employee else None
+        if not employee or not employee_user:
+            continue
+        if company and employee.company_id != company.id:
+            continue
+
+        is_operational = contract_is_operational(contract)
+        if is_operational:
+            status_label = "Ativo operacional"
+            status_tone = "success"
+        elif not contract.is_active:
+            status_label = "Inativo"
+            status_tone = "warn"
+        elif contract.start_date and contract.start_date > timezone.localdate():
+            status_label = "Aguardando inicio"
+            status_tone = "pending"
+        elif contract.end_date and contract.end_date < timezone.localdate():
+            status_label = "Encerrado"
+            status_tone = "warn"
+        else:
+            status_label = "Ativo sem vigencia operacional"
+            status_tone = "pending"
+
+        contract_rows.append(
             {
+                "contract": contract,
                 "employee": employee,
                 "status_label": status_label,
                 "status_tone": status_tone,
-                "status_hint": status_hint,
-                "latest_contract": latest_contract,
-                "latest_contract_operational": latest_contract_operational,
-                "active_contracts": active_contracts,
-                "total_contracts": len(employee_contracts),
+                "is_operational": is_operational,
                 "profile_url": reverse("company_mei_profile", args=[employee.id]),
-                "action_url": action_url,
-                "action_label": action_label,
+                "edit_url": f"{reverse('company_contracts')}?edit={contract.id}",
             }
         )
+
+    inconsistent_filters = contracts_qs_all.filter(employee__isnull=True) | contracts_qs_all.filter(employee__user__isnull=True)
+    if company:
+        inconsistent_filters = inconsistent_filters | contracts_qs_all.exclude(employee__company_id=company.id)
+    inconsistent_contracts_count = inconsistent_filters.distinct().count()
 
     return render(
         request,
         "accounts/company_contracts.html",
         {
             "company": company,
-            "professionals": professional_rows,
+            "contracts": contract_rows,
             "edit_form": edit_form,
             "edit_contract": edit_contract,
             "invalid_edit_contract": invalid_edit_contract,
             "pending_without_contracts": pending_without_contracts[:12],
+            "inconsistent_contracts_count": inconsistent_contracts_count,
             "show_creation_redirect_notice": (request.GET.get("flow") or "").strip() == "principal",
             "show_only_edit_notice": (request.GET.get("flow") or "").strip() == "only_edit",
         },
@@ -1354,9 +1368,17 @@ def mei_reports(request):
 
 
 def terms_view(request):
-    return render(request, "accounts/terms.html")
+    return render(request, "public/terms.html")
 
 
 def help_view(request):
-    return render(request, "accounts/help.html")
+    return render(request, "public/help.html")
+
+
+def privacy_view(request):
+    return render(request, "public/privacy.html")
+
+
+def landing_view(request):
+    return render(request, "public/landing.html")
 

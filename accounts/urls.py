@@ -63,4 +63,5 @@ urlpatterns = [
 
     path("help/", views.help_view, name="help"),
     path("terms/", views.terms_view, name="terms"),
+    path("privacy/", views.privacy_view, name="privacy"),
 ]

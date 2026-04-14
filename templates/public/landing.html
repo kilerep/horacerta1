@@ -1,0 +1,147 @@
+{% extends "public/base_public.html" %}
+{% block title %}HoraCerta | Plataforma de Gestao de Horas{% endblock %}
+{% block meta_description %}HoraCerta: plataforma de gestao de horas entre empresa e MEI com registro, acompanhamento e historico organizado.{% endblock %}
+
+{% block extra_head %}
+<style>
+  .hero{display:grid;grid-template-columns:1.1fr .9fr;gap:22px;align-items:center}
+  .kicker{display:inline-flex;padding:6px 10px;border-radius:999px;border:1px solid rgba(116,198,255,.35);background:rgba(116,198,255,.1);font-size:12px;font-weight:700}
+  .hero h1{margin:12px 0 0;font-size:clamp(2.2rem,5vw,4.2rem);line-height:.98;letter-spacing:-.04em}
+  .hero p{margin:14px 0 0;color:var(--muted);max-width:640px}
+  .hero-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+  .hero-points{display:grid;gap:8px;margin-top:18px}
+  .hero-point{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:rgba(255,255,255,.03)}
+  .preview{border:1px solid var(--line);border-radius:20px;background:var(--panel);box-shadow:var(--shadow);overflow:hidden}
+  .preview-top{padding:12px;border-bottom:1px solid rgba(255,255,255,.08);color:var(--muted);font-size:13px;display:flex;justify-content:space-between}
+  .preview-body{padding:14px;display:grid;gap:10px}
+  .row{border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px;background:rgba(255,255,255,.03)}
+  .row .k{font-size:12px;color:var(--muted)} .row .v{font-size:20px;font-weight:800;margin-top:2px}
+  .section{padding-top:64px}
+  .section h2{margin:0;font-size:clamp(1.7rem,4vw,2.8rem);letter-spacing:-.03em}
+  .intro{margin:10px 0 0;color:var(--muted);max-width:760px}
+  .grid-3,.grid-2{display:grid;gap:12px;margin-top:18px}
+  .grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .card{border:1px solid var(--line);border-radius:16px;padding:16px;background:rgba(10,20,40,.72)}
+  .card h3{margin:0;font-size:1.05rem}
+  .card p,.card li{margin:8px 0 0;color:var(--muted)}
+  .steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:18px}
+  .step-index{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-size:12px;font-weight:800;background:rgba(47,107,255,.24);border:1px solid rgba(47,107,255,.45)}
+  .mock-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
+  .mock{border:1px solid var(--line);border-radius:14px;padding:12px;background:rgba(255,255,255,.03)}
+  .faq{display:grid;gap:10px;margin-top:18px}
+  .faq-item{border:1px solid var(--line);border-radius:14px;padding:12px;background:rgba(255,255,255,.02)}
+  .faq-item strong{display:block}
+  .cta{margin-top:24px;border:1px solid var(--line);border-radius:20px;padding:26px;text-align:center;background:
+    radial-gradient(circle at 0 0, rgba(47,107,255,.24), transparent 34%),
+    radial-gradient(circle at 100% 100%, rgba(46,162,239,.18), transparent 34%),
+    rgba(10,20,40,.85)}
+  .cta p{color:var(--muted);max-width:760px;margin:10px auto 0}
+  .cta .hero-actions{justify-content:center}
+  @media (max-width:980px){
+    .hero,.mock-grid{grid-template-columns:1fr}
+    .grid-3,.grid-2,.steps{grid-template-columns:1fr}
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="container hero">
+  <div>
+    <span class="kicker">Plataforma SaaS para operacao real</span>
+    <h1>Gestao de horas entre empresa e MEI com clareza e controle.</h1>
+    <p>No HoraCerta, a empresa cadastra o MEI, o MEI registra horarios e a empresa acompanha tudo em tempo real com historico organizado.</p>
+    <div class="hero-actions">
+      <a class="btn primary" href="{% url 'signup' %}">Comecar com minha empresa</a>
+      <a class="btn" href="{% url 'login' %}">Entrar no sistema</a>
+    </div>
+    <div class="hero-points">
+      <div class="hero-point">Cadastro centralizado de profissionais MEI.</div>
+      <div class="hero-point">Registro de horarios simples para o MEI.</div>
+      <div class="hero-point">Acompanhamento continuo para RH, operacao e financeiro.</div>
+    </div>
+  </div>
+  <div class="preview" aria-label="Resumo da plataforma">
+    <div class="preview-top"><span>Painel da empresa</span><span>Atualizacao em tempo real</span></div>
+    <div class="preview-body">
+      <div class="row"><div class="k">Profissionais ativos</div><div class="v">32</div></div>
+      <div class="row"><div class="k">Registros da semana</div><div class="v">486</div></div>
+      <div class="row"><div class="k">Dias com pendencias</div><div class="v">9</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="container section" id="como-funciona">
+  <h2>Como funciona</h2>
+  <p class="intro">Um fluxo simples e objetivo para reduzir retrabalho e melhorar previsibilidade operacional.</p>
+  <div class="steps">
+    <article class="card"><div class="step-index">01</div><h3>Empresa cadastra</h3><p>A empresa cria o cadastro do MEI e define o contexto operacional.</p></article>
+    <article class="card"><div class="step-index">02</div><h3>MEI registra</h3><p>O profissional registra horarios com rapidez, inclusive no celular.</p></article>
+    <article class="card"><div class="step-index">03</div><h3>Empresa acompanha</h3><p>Dashboard, historico e relatorios mostram tudo de forma organizada.</p></article>
+  </div>
+</section>
+
+<section class="container section" id="beneficios">
+  <h2>Beneficios para a operacao</h2>
+  <p class="intro">Mais confianca no fechamento, mais visibilidade para lideranca e menos ruído no dia a dia.</p>
+  <div class="grid-3">
+    <article class="card"><h3>Organizacao</h3><p>Centralize o registro de horas em um fluxo unico e padronizado.</p></article>
+    <article class="card"><h3>Rastreabilidade</h3><p>Consulte historico por periodo e profissional com clareza.</p></article>
+    <article class="card"><h3>Praticidade</h3><p>Tome decisoes mais rapidas com indicadores e visao consolidada.</p></article>
+  </div>
+</section>
+
+<section class="container section" id="produto">
+  <h2>Visao do produto</h2>
+  <p class="intro">Tela de cadastro, acompanhamento operacional e rotina de registro funcionando em conjunto.</p>
+  <div class="mock-grid">
+    <article class="mock"><strong>Cadastro de MEIs</strong><p class="intro">Cadastro principal com dados do profissional e vinculo inicial opcional.</p></article>
+    <article class="mock"><strong>Gestao de vinculos</strong><p class="intro">Lista completa para acompanhar status, valores e documentos.</p></article>
+    <article class="mock"><strong>Dashboard da empresa</strong><p class="intro">Resumo operacional com indicadores e pendencias.</p></article>
+    <article class="mock"><strong>Historico e relatorios</strong><p class="intro">Consulta por periodo para conferencia e fechamento.</p></article>
+  </div>
+</section>
+
+<section class="container section" id="para-quem">
+  <h2>Para quem e o HoraCerta</h2>
+  <div class="grid-2">
+    <article class="card">
+      <h3>Empresas com MEIs na rotina</h3>
+      <ul>
+        <li>RH e operacao que precisam organizar jornada.</li>
+        <li>Financeiro que precisa de base confiavel para conferencia.</li>
+        <li>Gestores que precisam de visibilidade continua.</li>
+      </ul>
+    </article>
+    <article class="card">
+      <h3>MEIs que registram horas</h3>
+      <ul>
+        <li>Registro objetivo no fluxo definido pela empresa.</li>
+        <li>Menos troca de mensagens e planilhas paralelas.</li>
+        <li>Historico claro para o dia a dia.</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
+<section class="container section" id="faq">
+  <h2>Perguntas frequentes</h2>
+  <div class="faq">
+    <article class="faq-item"><strong>O HoraCerta e para controle interno da empresa?</strong><span class="intro">Sim. A empresa opera o cadastro e acompanha os registros dos MEIs em um unico ambiente.</span></article>
+    <article class="faq-item"><strong>O MEI consegue registrar pelo celular?</strong><span class="intro">Sim. O fluxo foi pensado para uso rapido, com interface responsiva.</span></article>
+    <article class="faq-item"><strong>Consigo acompanhar historico e pendencias?</strong><span class="intro">Sim. Dashboard, historico e relatorios oferecem visao operacional continua.</span></article>
+    <article class="faq-item"><strong>Onde acesso o sistema depois de contratar?</strong><span class="intro">Pelo login em <a href="{% url 'login' %}">Entrar no sistema</a>.</span></article>
+  </div>
+</section>
+
+<section class="container section">
+  <div class="cta">
+    <h2>Estruture sua gestao de horas com mais confianca</h2>
+    <p>Implemente um fluxo profissional entre empresa e MEI, com registro, acompanhamento e historico em uma plataforma unica.</p>
+    <div class="hero-actions">
+      <a class="btn primary" href="{% url 'signup' %}">Criar conta da empresa</a>
+      <a class="btn" href="{% url 'login' %}">Entrar no sistema</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

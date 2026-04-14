@@ -1,0 +1,48 @@
+{% extends "public/base_public.html" %}
+{% block title %}Ajuda | HoraCerta{% endblock %}
+{% block content %}
+<style>
+  .wrap{display:grid;gap:14px}
+  .hero,.card{border:1px solid var(--line);border-radius:16px;padding:16px;background:rgba(10,20,40,.72)}
+  .hero h1{margin:0;font-size:2rem;letter-spacing:-.03em}
+  .hero p{margin:10px 0 0;color:var(--muted);max-width:860px}
+  .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .card h2{margin:0;font-size:1.1rem}
+  .card p,.card li{color:var(--muted)}
+  .steps{margin:10px 0 0;padding-left:18px;display:grid;gap:6px}
+  @media (max-width:920px){.grid{grid-template-columns:1fr}}
+</style>
+<div class="container wrap">
+  <section class="hero">
+    <h1>Central de Ajuda</h1>
+    <p>Guia rapido para entender o produto: a empresa cadastra o MEI, o MEI registra horarios e a empresa acompanha operacao e historico.</p>
+  </section>
+  <section class="grid">
+    <article class="card">
+      <h2>Como comecar</h2>
+      <ol class="steps">
+        <li>Criar conta da empresa.</li>
+        <li>Cadastrar profissionais MEI.</li>
+        <li>Definir vinculo inicial e rotina de registro.</li>
+        <li>Acompanhar dashboard, historico e relatorios.</li>
+      </ol>
+    </article>
+    <article class="card">
+      <h2>Dicas de operacao</h2>
+      <ul class="steps">
+        <li>Mantenha cadastro e vinculos sempre atualizados.</li>
+        <li>Use filtros de periodo para conferencia recorrente.</li>
+        <li>Trate pendencias no dashboard diariamente.</li>
+      </ul>
+    </article>
+    <article class="card">
+      <h2>Acesso ao sistema</h2>
+      <p>Para entrar no ambiente interno, use a tela de <a href="{% url 'login' %}">login</a>. A area interna e separada desta camada publica.</p>
+    </article>
+    <article class="card">
+      <h2>Documentos institucionais</h2>
+      <p>Consulte <a href="{% url 'terms' %}">Termos</a> e <a href="{% url 'privacy' %}">Privacidade</a> para uso e tratamento de dados da plataforma.</p>
+    </article>
+  </section>
+</div>
+{% endblock %}

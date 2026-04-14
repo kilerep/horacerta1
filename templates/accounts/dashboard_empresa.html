@@ -17,6 +17,7 @@
     .company-title{ margin:0; font-size:20px; font-weight:800; }
     .company-subtitle{ margin:6px 0 0; color:var(--muted); font-size:13px; }
     .kpis{ display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:10px; }
+    .exec-kpis{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
     .kpi{
       border:1px solid rgba(255,255,255,.12);
       border-radius:14px;
@@ -28,6 +29,11 @@
       transform: translateY(-1px);
       border-color:rgba(255,255,255,.2);
       background:rgba(255,255,255,.05);
+    }
+    .kpi.exec{
+      border-color:rgba(47,124,255,.28);
+      background:linear-gradient(180deg, rgba(47,124,255,.16), rgba(255,255,255,.03));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
     }
     .kpi .label{ color:var(--muted); font-size:12px; }
     .kpi .value{ margin-top:4px; font-size:28px; line-height:1; font-weight:900; }
@@ -69,8 +75,8 @@
     }
     .quick-link strong{ display:block; font-size:14px; }
     .quick-link span{ color:var(--muted); font-size:12px; }
-    @media (max-width:1150px){ .kpis{ grid-template-columns:repeat(3,minmax(0,1fr)); } .layout{ grid-template-columns:1fr; } }
-    @media (max-width:760px){ .kpis{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
+    @media (max-width:1150px){ .kpis{ grid-template-columns:repeat(3,minmax(0,1fr)); } .exec-kpis{ grid-template-columns:repeat(2,minmax(0,1fr)); } .layout{ grid-template-columns:1fr; } }
+    @media (max-width:760px){ .kpis{ grid-template-columns:repeat(2,minmax(0,1fr)); } .exec-kpis{ grid-template-columns:1fr; } }
   </style>
 
   {% if not company %}
@@ -85,27 +91,34 @@
       <section class="company-panel">
         <h2 class="company-title">Visao operacional da empresa</h2>
         <p class="company-subtitle">
-          Acompanhe cadastro, vinculacao e registros com uma visao executiva simples e profissional.
+          Acompanhe MEIs, jornada e pendencias em uma visao executiva clara para decisao rapida.
         </p>
+      </section>
+
+      <section class="exec-kpis">
+        <article class="kpi exec"><div class="label">MEIs ativos</div><div class="value">{{ total_active_professionals }}</div><div class="hint">Com vinculo operacional vigente</div></article>
+        <article class="kpi exec"><div class="label">MEIs sem vinculo</div><div class="value">{{ total_pending_contract }}</div><div class="hint">Precisam de configuracao operacional</div></article>
+        <article class="kpi exec"><div class="label">Horas no periodo</div><div class="value">{{ total_hours_period }}</div><div class="hint">{{ period_result.date_from|default:"-" }} ate {{ period_result.date_to|default:"-" }}</div></article>
+        <article class="kpi exec"><div class="label">Dias com pendencia</div><div class="value">{{ inconsistency_days_period }}</div><div class="hint">Dias com registros incompletos</div></article>
       </section>
 
       <section class="kpis">
         <article class="kpi"><div class="label">Profissionais cadastrados</div><div class="value">{{ total_registered_professionals }}</div><div class="hint">Base total da empresa</div></article>
-        <article class="kpi"><div class="label">Profissionais ativos</div><div class="value">{{ total_active_professionals }}</div><div class="hint">Com vinculo operacional</div></article>
-        <article class="kpi"><div class="label">Pendentes de vinculo</div><div class="value">{{ total_pending_contract }}</div><div class="hint">Cadastro concluido sem operacao</div></article>
+        <article class="kpi"><div class="label">Vinculos operacionais</div><div class="value">{{ total_active_contracts }}</div><div class="hint">Base ativa para registro</div></article>
         <article class="kpi"><div class="label">Profissionais inativos</div><div class="value">{{ total_inactive_professionals }}</div><div class="hint">Sem vigencia operacional</div></article>
         <article class="kpi"><div class="label">Registros no periodo</div><div class="value">{{ total_punches_period }}</div><div class="hint">{{ period_result.date_from|default:"-" }} ate {{ period_result.date_to|default:"-" }}</div></article>
-        <article class="kpi"><div class="label">Dias com inconsistencias</div><div class="value">{{ inconsistency_days_period }}</div><div class="hint">Dias incompletos no periodo</div></article>
+        <article class="kpi"><div class="label">Pendencias abertas</div><div class="value">{{ pending_professionals|length }}</div><div class="hint">Profissionais exigindo acao</div></article>
+        <article class="kpi"><div class="label">Qualidade operacional</div><div class="value">{% if inconsistency_days_period > 0 %}Revisar{% else %}OK{% endif %}</div><div class="hint">Saude dos registros no periodo</div></article>
       </section>
 
       <div class="layout">
         <section class="company-panel">
-          <h3 style="margin:0;">Profissionais</h3>
+          <h3 style="margin:0;">Gestao de profissionais</h3>
           <form method="get" class="form-row">
             <div class="field"><label>{{ employee_search_form.q.label }}</label>{{ employee_search_form.q }}</div>
             <div class="field"><label>{{ period_form.date_from.label }}</label>{{ period_form.date_from }}</div>
             <div class="field"><label>{{ period_form.date_to.label }}</label>{{ period_form.date_to }}</div>
-            <button class="btn primary" type="submit">Atualizar visao</button>
+            <button class="btn primary" type="submit">Atualizar painel</button>
           </form>
 
           <div class="table-wrap">
@@ -126,7 +139,7 @@
                     </td>
                   </tr>
                 {% empty %}
-                  <tr><td colspan="4"><div class="empty-state">Nenhum profissional encontrado para este filtro.</div></td></tr>
+                  <tr><td colspan="4"><div class="empty-state">Nenhum profissional encontrado para este filtro. <a href="{% url 'company_meis' %}">Cadastrar MEI</a>.</div></td></tr>
                 {% endfor %}
               </tbody>
             </table>
@@ -144,7 +157,7 @@
                     <td>R$ {{ row.punch.contract.hourly_rate }}/h</td>
                   </tr>
                 {% empty %}
-                  <tr><td colspan="4"><div class="empty-state">Sem registros no periodo selecionado.</div></td></tr>
+                  <tr><td colspan="4"><div class="empty-state">Sem registros no periodo selecionado. Ajuste o periodo ou acompanhe novos lancamentos em tempo real.</div></td></tr>
                 {% endfor %}
               </tbody>
             </table>
@@ -152,7 +165,7 @@
         </section>
 
         <section class="company-panel">
-          <h3 style="margin:0;">Profissionais pendentes de vinculo</h3>
+          <h3 style="margin:0;">Pendencias prioritarias</h3>
           {% if pending_professionals %}
             <div class="pending-list">
               {% for row in pending_professionals %}
@@ -166,10 +179,10 @@
               {% endfor %}
             </div>
           {% else %}
-            <p class="muted" style="margin-top:10px;">Nao ha pendencias de vinculo neste momento.</p>
+            <p class="muted" style="margin-top:10px;">Nenhuma pendencia critica no momento. Operacao em dia.</p>
           {% endif %}
 
-          <h3 style="margin:16px 0 0;">Atalhos de gestao</h3>
+          <h3 style="margin:16px 0 0;">Atalhos de operacao</h3>
           <div class="quick-links">
             {% for link in quick_links %}
               <a class="quick-link" href="{{ link.url }}">
@@ -179,7 +192,7 @@
             {% endfor %}
           </div>
 
-          <h3 style="margin:16px 0 0;">Vinculos operacionais</h3>
+          <h3 style="margin:16px 0 0;">Resumo de vinculos ativos</h3>
           <div class="table-wrap">
             <table class="table" style="min-width:0;">
               <thead><tr><th>Profissional</th><th>Valor/h</th><th>Status</th></tr></thead>
@@ -197,7 +210,7 @@
                     </td>
                   </tr>
                 {% empty %}
-                  <tr><td colspan="3"><div class="empty-state">Sem vinculos operacionais ativos.</div></td></tr>
+                  <tr><td colspan="3"><div class="empty-state">Sem vinculos operacionais ativos. <a href="{% url 'company_meis' %}#vinculo-existente">Configurar vinculo</a>.</div></td></tr>
                 {% endfor %}
               </tbody>
             </table>
