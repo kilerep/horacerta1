@@ -11,47 +11,98 @@
       background:
         linear-gradient(140deg, rgba(79,124,255,.10), transparent 42%),
         linear-gradient(180deg, rgba(250,204,21,.06), rgba(255,255,255,.03));
-      padding:16px;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
+      padding:18px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.03), 0 12px 28px rgba(3,7,20,.28);
     }
+    .panel-head{ display:flex; justify-content:space-between; gap:12px; align-items:flex-start; flex-wrap:wrap; }
+    .panel-title{ margin:0; }
+    .panel-subtitle{ margin:7px 0 0; color:var(--muted); font-size:13px; max-width:760px; }
     .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
     .field{ display:flex; flex-direction:column; gap:6px; min-width:220px; flex:1; }
-    label{ color:var(--muted); font-size:13px; }
+    label{ color:var(--muted); font-size:13px; font-weight:700; }
     input, select{
       width:100%;
+      min-height:44px;
       padding:10px 12px;
       border-radius:12px;
       border:1px solid var(--border);
       background:rgba(255,255,255,.06);
       color:var(--text);
       outline:none;
+      transition:border-color .18s ease, box-shadow .18s ease, background .18s ease;
     }
+    select{
+      appearance:none;
+      background-image:
+        linear-gradient(45deg, transparent 50%, rgba(255,255,255,.72) 50%),
+        linear-gradient(135deg, rgba(255,255,255,.72) 50%, transparent 50%);
+      background-position:
+        calc(100% - 18px) calc(50% - 2px),
+        calc(100% - 12px) calc(50% - 2px);
+      background-size:6px 6px, 6px 6px;
+      background-repeat:no-repeat;
+      padding-right:34px;
+    }
+    input[type="date"]{ color-scheme:dark; }
     input:focus, select:focus{
       border-color: rgba(79,124,255,.55);
       box-shadow: 0 0 0 3px rgba(79,124,255,.16);
+      background:rgba(255,255,255,.08);
     }
-    .table-wrap{ margin-top:10px; border:1px solid var(--border); border-radius:14px; overflow:auto; }
+    .filter-actions{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    .table-title{ margin:0; }
+    .table-subtitle{ margin:7px 0 0; color:var(--muted); font-size:13px; }
+    .table-wrap{ margin-top:12px; border:1px solid var(--border); border-radius:14px; overflow:auto; }
     .table{
       width:100%;
       border-collapse: collapse;
-      min-width:680px;
+      min-width:700px;
     }
     .table th, .table td{
       text-align:left;
-      padding:10px;
+      padding:12px 10px;
       border-bottom:1px solid rgba(255,255,255,.07);
       font-size:14px;
+      vertical-align:top;
     }
     .table th{ color:var(--muted); font-weight:700; }
     .table tr:last-child td{ border-bottom:none; }
     .table tbody tr:hover td{ background:rgba(255,255,255,.03); }
-    .meta{ color:var(--muted); font-size:13px; margin-top:10px; display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+    .meta{ color:var(--muted); font-size:13px; margin-top:12px; display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; }
     .pager{ display:flex; gap:8px; }
+    .history-empty{
+      display:grid;
+      justify-items:start;
+      gap:10px;
+      border:1px dashed rgba(255,255,255,.18);
+      border-radius:14px;
+      padding:14px;
+      background:rgba(255,255,255,.03);
+    }
+    .history-empty strong{ font-size:15px; }
+    .history-empty p{ margin:0; color:var(--muted); font-size:13px; }
+    @media (max-width:920px){
+      .filter-actions .btn,
+      .pager .btn{
+        width:100%;
+        justify-content:center;
+      }
+    }
   </style>
 
   <div class="history-wrap">
     <section class="panel">
-      <h2 style="margin:0 0 8px;">Filtros de historico</h2>
+      <header class="panel-head">
+        <div>
+          <h2 class="panel-title">Filtros de historico</h2>
+          <p class="panel-subtitle">Selecione MEI e periodo para analisar registros com contexto operacional e decisao rapida.</p>
+        </div>
+      </header>
       <form method="get" class="row">
         <div class="field">
           <label>MEI</label>
@@ -75,12 +126,16 @@
           {{ period_form.date_to }}
         </div>
 
-        <button class="btn primary" type="submit">Atualizar historico</button>
+        <div class="filter-actions">
+          <button class="btn primary" type="submit">Atualizar historico</button>
+          <a class="btn" href="{% url 'company_history_legacy' %}">Limpar filtros</a>
+        </div>
       </form>
     </section>
 
     <section class="panel">
-      <h2 style="margin:0;">Lancamentos de horario</h2>
+      <h2 class="table-title">Lancamentos de horario</h2>
+      <p class="table-subtitle">Timeline de marcacoes para conferencia de presenca, consistencia e acompanhamento da operacao.</p>
       <div class="table-wrap">
         <table class="table">
           <thead>
@@ -101,7 +156,13 @@
               </tr>
             {% empty %}
               <tr>
-                <td colspan="4"><div class="empty-state">Sem lancamentos para os filtros selecionados. Ajuste o periodo ou acompanhe novos registros no dashboard.</div></td>
+                <td colspan="4">
+                  <div class="history-empty">
+                    <strong>Nenhum lancamento encontrado.</strong>
+                    <p>Amplie o periodo ou selecione outro MEI para localizar registros da operacao.</p>
+                    <a class="btn primary" href="{% url 'dashboard_empresa' %}">Ir para dashboard da empresa</a>
+                  </div>
+                </td>
               </tr>
             {% endfor %}
           </tbody>

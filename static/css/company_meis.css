@@ -3,6 +3,11 @@
   gap: 18px;
 }
 
+.company-meis .btn {
+  min-height: 42px;
+  font-weight: 700;
+}
+
 .company-meis__hero {
   display: flex;
   align-items: flex-start;
@@ -50,13 +55,13 @@
 
 .company-meis__create-form {
   display: grid;
-  gap: 12px;
+  gap: 14px;
 }
 
 .company-meis__section {
   border: 1px solid var(--border);
   border-radius: 18px;
-  padding: 17px;
+  padding: 18px;
   background:
     linear-gradient(160deg, rgba(79, 124, 255, 0.07), transparent 48%),
     rgba(255, 255, 255, 0.02);
@@ -129,15 +134,18 @@
 .company-meis__field select,
 .company-meis__field textarea {
   width: 100%;
-  padding: 10px 12px;
+  min-height: 44px;
+  padding: 11px 12px;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.04));
   color: var(--text);
   outline: none;
+  transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
 }
 
 .company-meis__field input[type="file"] {
+  min-height: 44px;
   padding: 6px;
   border-style: dashed;
   background: rgba(255, 255, 255, 0.03);
@@ -154,11 +162,41 @@
   font-weight: 700;
 }
 
+.company-meis__field select {
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(255, 255, 255, 0.72) 50%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.72) 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) calc(50% - 2px),
+    calc(100% - 12px) calc(50% - 2px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  padding-right: 34px;
+}
+
+.company-meis__field input[type="date"] {
+  color-scheme: dark;
+}
+
+.company-meis__field textarea {
+  min-height: 96px;
+  line-height: 1.45;
+  resize: vertical;
+}
+
 .company-meis__field input:focus,
 .company-meis__field select:focus,
 .company-meis__field textarea:focus {
   border-color: rgba(79, 124, 255, 0.62);
   box-shadow: 0 0 0 3px rgba(79, 124, 255, 0.18);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.05));
+}
+
+.company-meis__hint {
+  color: rgba(207, 216, 238, 0.76);
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 .company-meis__error {
@@ -180,6 +218,7 @@
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .company-meis__submit {
@@ -193,7 +232,7 @@
   border-radius: 18px;
   padding: 16px;
   background: rgba(6, 10, 24, 0.45);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 12px 28px rgba(2, 5, 16, 0.28);
 }
 
 .company-meis__list-header {
@@ -202,6 +241,12 @@
   align-items: flex-end;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+.company-meis__list-subtitle {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
 }
 
 .company-meis__search {
@@ -214,6 +259,10 @@
 .company-meis__search-field {
   min-width: 260px;
   flex: 1;
+}
+
+.company-meis__search-field input {
+  min-height: 44px;
 }
 
 .company-meis__table-wrap {
@@ -233,7 +282,7 @@
 .company-meis__table th,
 .company-meis__table td {
   text-align: left;
-  padding: 12px;
+  padding: 13px 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   vertical-align: top;
 }
@@ -246,6 +295,10 @@
 
 .company-meis__table tr:last-child td {
   border-bottom: none;
+}
+
+.company-meis__table tbody tr:hover td {
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .company-meis__row--highlight td {
@@ -297,10 +350,31 @@
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .company-meis__muted {
   color: var(--muted);
+}
+
+.company-meis__empty {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  border-radius: 14px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.company-meis__empty strong {
+  font-size: 15px;
+}
+
+.company-meis__empty p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
 }
 
 @media (max-width: 940px) {
@@ -354,5 +428,15 @@
     color: rgba(255, 255, 255, 0.6);
     letter-spacing: 0.2px;
     text-transform: uppercase;
+  }
+
+  .company-meis__actions {
+    justify-content: stretch;
+  }
+
+  .company-meis__actions .btn,
+  .company-meis__actions-cell .btn {
+    width: 100%;
+    justify-content: center;
   }
 }

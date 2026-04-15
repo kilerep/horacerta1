@@ -88,10 +88,10 @@ class LoginForm(AuthenticationForm):
 
 class EmployeeSearchForm(forms.Form):
     q = forms.CharField(
-        label="Buscar funcionario",
+        label="Buscar MEI",
         required=False,
         max_length=120,
-        widget=forms.TextInput(attrs={"placeholder": "Nome ou email"}),
+        widget=forms.TextInput(attrs={"placeholder": "Buscar MEI por nome ou email"}),
     )
 
 
@@ -112,16 +112,27 @@ class CompanyMEICreateForm(forms.Form):
     full_name = forms.CharField(
         label="Nome completo",
         max_length=120,
+        widget=forms.TextInput(attrs={"placeholder": "Nome completo do MEI"}),
     )
-    mei_email = forms.EmailField(label="Email do MEI")
-    password1 = forms.CharField(label="Senha", widget=forms.PasswordInput)
-    password2 = forms.CharField(label="Confirmar senha", widget=forms.PasswordInput)
+    mei_email = forms.EmailField(
+        label="Email do MEI",
+        widget=forms.EmailInput(attrs={"placeholder": "mei@empresa.com"}),
+    )
+    password1 = forms.CharField(
+        label="Senha",
+        widget=forms.PasswordInput(attrs={"placeholder": "Defina uma senha segura", "autocomplete": "new-password"}),
+    )
+    password2 = forms.CharField(
+        label="Confirmar senha",
+        widget=forms.PasswordInput(attrs={"placeholder": "Repita a senha", "autocomplete": "new-password"}),
+    )
     contract_hourly_rate = forms.DecimalField(
         label="Valor/hora inicial (opcional)",
         required=False,
         max_digits=10,
         decimal_places=2,
         min_value=0,
+        widget=forms.NumberInput(attrs={"step": "0.01", "placeholder": "Ex.: 95.00"}),
     )
     contract_start_date = forms.DateField(
         label="Inicio do vinculo (opcional)",
@@ -136,11 +147,12 @@ class CompanyMEICreateForm(forms.Form):
     contract_file = forms.FileField(
         label="PDF do vinculo (opcional)",
         required=False,
+        widget=forms.ClearableFileInput(attrs={"accept": ".pdf,application/pdf"}),
     )
     contract_notes = forms.CharField(
         label="Observacoes (opcional)",
         required=False,
-        widget=forms.Textarea(attrs={"rows": 3}),
+        widget=forms.Textarea(attrs={"rows": 3, "placeholder": "Informacoes complementares para a operacao"}),
     )
 
     def _contract_requested(self, data):
@@ -256,9 +268,18 @@ class CompanyContractForm(forms.ModelForm):
             "notes",
         ]
         widgets = {
+            "hourly_rate": forms.NumberInput(attrs={"step": "0.01", "placeholder": "Ex.: 95.00"}),
             "start_date": forms.DateInput(attrs={"type": "date"}),
             "end_date": forms.DateInput(attrs={"type": "date"}),
             "notes": forms.Textarea(attrs={"rows": 3, "placeholder": "Observacoes do vinculo (opcional)"}),
+            "contract_file": forms.ClearableFileInput(attrs={"accept": ".pdf,application/pdf"}),
+        }
+        labels = {
+            "hourly_rate": "Valor/hora do vinculo",
+            "start_date": "Inicio da vigencia",
+            "end_date": "Fim da vigencia (opcional)",
+            "contract_file": "PDF do vinculo (opcional)",
+            "notes": "Observacoes internas (opcional)",
         }
 
     def __init__(self, *args, company=None, request=None, **kwargs):
@@ -285,6 +306,8 @@ class CompanyContractForm(forms.ModelForm):
             employee_queryset = employee_queryset.select_related("user").order_by("full_name")
 
         self.fields["employee"].queryset = employee_queryset
+        self.fields["employee"].empty_label = "Selecione um MEI"
+        self.fields["employee"].widget.attrs.update({"title": "Selecione o MEI do vinculo"})
 
         if self.instance and self.instance.pk and self.instance.employee_id:
             initial_employee = self.fields["employee"].queryset.filter(id=self.instance.employee_id).first()

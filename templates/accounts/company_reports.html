@@ -11,28 +11,56 @@
       background:
         linear-gradient(140deg, rgba(79,124,255,.10), transparent 42%),
         linear-gradient(180deg, rgba(250,204,21,.06), rgba(255,255,255,.03));
-      padding:16px;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
+      padding:18px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.03), 0 12px 30px rgba(3,7,20,.28);
     }
+    .panel-head{ display:flex; justify-content:space-between; gap:12px; align-items:flex-start; flex-wrap:wrap; }
+    .panel-title{ margin:0; }
+    .panel-subtitle{ margin:7px 0 0; color:var(--muted); font-size:13px; max-width:760px; }
     .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
     .field{ display:flex; flex-direction:column; gap:6px; min-width:220px; flex:1; }
-    label{ color:var(--muted); font-size:13px; }
+    label{ color:var(--muted); font-size:13px; font-weight:700; }
     input, select, textarea{
       width:100%;
+      min-height:44px;
       padding:10px 12px;
       border-radius:12px;
       border:1px solid var(--border);
       background:rgba(255,255,255,.06);
       color:var(--text);
       outline:none;
+      transition:border-color .18s ease, box-shadow .18s ease, background .18s ease;
     }
-    .card-grid{ display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; }
+    select{
+      appearance:none;
+      background-image:
+        linear-gradient(45deg, transparent 50%, rgba(255,255,255,.72) 50%),
+        linear-gradient(135deg, rgba(255,255,255,.72) 50%, transparent 50%);
+      background-position:
+        calc(100% - 18px) calc(50% - 2px),
+        calc(100% - 12px) calc(50% - 2px);
+      background-size:6px 6px, 6px 6px;
+      background-repeat:no-repeat;
+      padding-right:34px;
+    }
+    input[type="date"]{ color-scheme:dark; }
+    textarea{ min-height:84px; resize:vertical; line-height:1.45; }
+    input:focus, select:focus, textarea:focus{
+      border-color: rgba(79,124,255,.55);
+      box-shadow: 0 0 0 3px rgba(79,124,255,.16);
+      background:rgba(255,255,255,.08);
+    }
+    .filter-actions{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+    .export-actions{ display:flex;gap:10px;flex-wrap:wrap;margin-top:10px; }
+    .card-grid{ display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:10px; }
     .stat{
       border:1px solid var(--border);
-      border-radius:12px;
-      background: rgba(255,255,255,.04);
-      padding:12px;
+      border-radius:14px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      padding:13px 12px;
       transition: transform .12s ease, border-color .12s ease, background .12s ease;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
     }
     .stat:hover{
       transform: translateY(-1px);
@@ -41,6 +69,9 @@
     }
     .k{ color:var(--muted); font-size:12px; }
     .v{ font-size:24px; font-weight:800; margin-top:2px; }
+    .stat-hint{ margin-top:4px; color:var(--muted); font-size:12px; }
+    .table-title{ margin:0; }
+    .table-subtitle{ margin:8px 0 0; color:var(--muted); font-size:13px; }
     .table{
       width:100%;
       border-collapse: collapse;
@@ -51,12 +82,14 @@
     }
     .table th, .table td{
       text-align:left;
-      padding:10px;
+      padding:12px 10px;
       border-bottom:1px solid rgba(255,255,255,.07);
       font-size:14px;
+      vertical-align:top;
     }
     .table th{ color:var(--muted); font-weight:700; }
     .table tr:last-child td{ border-bottom:none; }
+    .table tbody tr:hover td{ background:rgba(255,255,255,.03); }
     .table .notes-cell{
       white-space:normal;
       word-break:break-word;
@@ -79,7 +112,7 @@
     .mobile-cards{ display:none; gap:10px; margin-top:10px; }
     .report-card{
       border:1px solid var(--border);
-      border-radius:12px;
+      border-radius:14px;
       background:rgba(255,255,255,.03);
       padding:12px;
       display:grid;
@@ -96,16 +129,34 @@
       line-height:1.45;
     }
     .muted{ color:var(--muted); }
+    .reports-empty{
+      display:grid;
+      justify-items:start;
+      gap:10px;
+      border:1px dashed rgba(255,255,255,.18);
+      border-radius:14px;
+      padding:14px;
+      background:rgba(255,255,255,.03);
+    }
+    .reports-empty strong{ font-size:15px; }
+    .reports-empty p{ margin:0; color:var(--muted); font-size:13px; }
     @media (max-width: 980px){
       .card-grid{ grid-template-columns: 1fr; }
       .table-wrap{ display:none; }
       .mobile-cards{ display:grid; }
+      .filter-actions .btn,
+      .export-actions .btn{ width:100%; justify-content:center; }
     }
   </style>
 
   <div class="wrap-grid">
     <section class="panel">
-      <h2 style="margin:0;">Filtros e exportacoes</h2>
+      <header class="panel-head">
+        <div>
+          <h2 class="panel-title">Filtros e exportacoes</h2>
+          <p class="panel-subtitle">Configure o periodo e gere relatorios com formato pronto para acompanhamento executivo.</p>
+        </div>
+      </header>
       <form method="get" class="row" style="margin-top:10px;">
         <div class="field">
           <label>MEI</label>
@@ -126,9 +177,12 @@
           <label>Ate</label>
           <input type="date" name="date_to" value="{{ date_to }}">
         </div>
-        <button class="btn primary" type="submit">Atualizar relatorio</button>
+        <div class="filter-actions">
+          <button class="btn primary" type="submit">Atualizar relatorio</button>
+          <a class="btn" href="{% url 'company_reports' %}">Limpar filtros</a>
+        </div>
       </form>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
+      <div class="export-actions">
         <a class="btn" href="?employee={{ selected_employee }}&date_from={{ date_from }}&date_to={{ date_to }}&export=xlsx">Exportar Excel profissional (.xlsx)</a>
         <a class="btn" href="?employee={{ selected_employee }}&date_from={{ date_from }}&date_to={{ date_to }}&export=pdf">Exportar PDF executivo</a>
       </div>
@@ -138,20 +192,23 @@
       <div class="stat">
         <div class="k">Horas consolidadas</div>
         <div class="v">{{ total_hours }}</div>
+        <div class="stat-hint">Soma total no periodo selecionado</div>
       </div>
       <div class="stat">
         <div class="k">Lancamentos registrados</div>
         <div class="v">{{ total_punches }}</div>
+        <div class="stat-hint">Total de marcacoes consideradas</div>
       </div>
       <div class="stat">
         <div class="k">Pagamento estimado</div>
         <div class="v">R$ {{ estimated_payment }}</div>
+        <div class="stat-hint">Referencia financeira para fechamento</div>
       </div>
     </section>
 
     <section class="panel">
-      <h2 style="margin:0;">Relatorio diario de operacao</h2>
-      <p class="muted" style="margin:8px 0 0;">Acompanhe data, vinculo, status, total do dia e observacoes relevantes para conferencia.</p>
+      <h2 class="table-title">Relatorio diario de operacao</h2>
+      <p class="table-subtitle">Acompanhe data, vinculo, status, total do dia e observacoes relevantes para conferencia operacional.</p>
 
       <div class="table-wrap">
         <table class="table">
@@ -178,7 +235,15 @@
                 <td class="notes-cell">{% if row.has_note %}{{ row.note }}{% else %}<span class="muted">-</span>{% endif %}</td>
               </tr>
             {% empty %}
-              <tr><td colspan="7"><div class="empty-state">Sem registros para os filtros atuais. Ajuste o periodo ou selecione outro MEI.</div></td></tr>
+              <tr>
+                <td colspan="7">
+                  <div class="reports-empty">
+                    <strong>Nenhum registro diario encontrado.</strong>
+                    <p>Ajuste o periodo ou selecione outro MEI para gerar um relatorio detalhado.</p>
+                    <a class="btn primary" href="{% url 'company_reports' %}">Revisar filtros</a>
+                  </div>
+                </td>
+              </tr>
             {% endfor %}
           </tbody>
         </table>
@@ -197,14 +262,19 @@
             {% endif %}
           </article>
         {% empty %}
-          <div class="empty-state">Sem registros para os filtros atuais.</div>
+          <div class="reports-empty">
+            <strong>Nenhum registro para exibir.</strong>
+            <p>Ajuste os filtros para visualizar o resumo diario no formato mobile.</p>
+            <a class="btn primary" href="{% url 'company_reports' %}">Revisar filtros</a>
+          </div>
         {% endfor %}
       </div>
       <p class="muted" style="margin-top:8px;">Mostrando no maximo 500 linhas diarias para manter performance e leitura.</p>
     </section>
 
-    <section class="panel">
-      <h2 style="margin:0;">Solicitar detalhamento de atividades</h2>
+    <section id="request-report" class="panel">
+      <h2 class="table-title">Solicitar detalhamento de atividades</h2>
+      <p class="table-subtitle">Peça ao MEI um retorno descritivo para complementar auditoria e conferencia do periodo.</p>
       <form method="post" class="row" style="margin-top:10px;">
         {% csrf_token %}
         <input type="hidden" name="action" value="request_activity_report">
@@ -234,7 +304,8 @@
     </section>
 
     <section class="panel">
-      <h2 style="margin:0;">Retornos recebidos</h2>
+      <h2 class="table-title">Retornos recebidos</h2>
+      <p class="table-subtitle">Historico das solicitacoes e respostas para rastreabilidade da operacao.</p>
       <table class="table">
         <thead>
           <tr>
@@ -255,7 +326,15 @@
               <td>{% if r.response_text %}{{ r.response_text }}{% else %}<span class="muted">-</span>{% endif %}</td>
             </tr>
           {% empty %}
-            <tr><td colspan="5"><div class="empty-state">Sem solicitacoes registradas. Use o bloco acima para iniciar uma solicitacao.</div></td></tr>
+            <tr>
+              <td colspan="5">
+                <div class="reports-empty">
+                  <strong>Nenhuma solicitacao registrada.</strong>
+                  <p>Use o bloco acima para iniciar o primeiro pedido de detalhamento ao MEI.</p>
+                  <a class="btn primary" href="#request-report">Solicitar detalhamento</a>
+                </div>
+              </td>
+            </tr>
           {% endfor %}
         </tbody>
       </table>

@@ -11,8 +11,8 @@
       background:
         linear-gradient(140deg, rgba(79,124,255,.08), transparent 46%),
         linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
-      padding:16px;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
+      padding:18px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.03), 0 12px 30px rgba(3,7,20,.28);
     }
     .contracts-title{ margin:0; }
     .contracts-subtitle{ margin:8px 0 0; color:var(--muted); }
@@ -30,17 +30,42 @@
     .contracts-field--span2{ grid-column:span 2; }
     .contracts-field label{ color:var(--muted); font-size:13px; }
     .contracts-field input,.contracts-field select,.contracts-field textarea{
-      width:100%; padding:10px 12px; border-radius:12px; border:1px solid var(--border);
+      width:100%; min-height:44px; padding:10px 12px; border-radius:12px; border:1px solid var(--border);
       background:rgba(255,255,255,.06); color:var(--text); outline:none;
+      transition:border-color .18s ease, box-shadow .18s ease, background .18s ease;
     }
+    .contracts-field select{
+      appearance:none;
+      background-image:
+        linear-gradient(45deg, transparent 50%, rgba(255,255,255,.72) 50%),
+        linear-gradient(135deg, rgba(255,255,255,.72) 50%, transparent 50%);
+      background-position:
+        calc(100% - 18px) calc(50% - 2px),
+        calc(100% - 12px) calc(50% - 2px);
+      background-size:6px 6px, 6px 6px;
+      background-repeat:no-repeat;
+      padding-right:34px;
+    }
+    .contracts-field input[type="date"]{ color-scheme:dark; }
+    .contracts-field textarea{ min-height:96px; line-height:1.45; resize:vertical; }
+    .contracts-field input[type="file"]{
+      min-height:44px; padding:6px; border-style:dashed; background:rgba(255,255,255,.03);
+    }
+    .contracts-field input[type="file"]::file-selector-button{
+      border:1px solid rgba(255,255,255,.18); border-radius:10px; padding:8px 12px;
+      margin-right:10px; background:rgba(47,124,255,.22); color:rgba(255,255,255,.94);
+      cursor:pointer; font-weight:700;
+    }
+    .contracts-hint{ color:rgba(207,216,238,.76); font-size:12px; line-height:1.35; }
     .contracts-field input:focus,.contracts-field select:focus,.contracts-field textarea:focus{
-      border-color:rgba(79,124,255,.55); box-shadow:0 0 0 3px rgba(79,124,255,.16);
+      border-color:rgba(79,124,255,.55); box-shadow:0 0 0 3px rgba(79,124,255,.16); background:rgba(255,255,255,.08);
     }
     .contracts-table-wrap{ width:100%; overflow-x:auto; margin-top:12px; border:1px solid var(--border); border-radius:14px; }
     .contracts-table{ width:100%; border-collapse:collapse; min-width:860px; }
-    .contracts-table th,.contracts-table td{ text-align:left; padding:10px; border-bottom:1px solid rgba(255,255,255,.07); font-size:14px; vertical-align:top; }
+    .contracts-table th,.contracts-table td{ text-align:left; padding:12px 10px; border-bottom:1px solid rgba(255,255,255,.07); font-size:14px; vertical-align:top; }
     .contracts-table th{ color:var(--muted); font-weight:700; }
     .contracts-table tr:last-child td{ border-bottom:none; }
+    .contracts-table tbody tr:hover td{ background:rgba(255,255,255,.03); }
     .contracts-pill{
       display:inline-block; border:1px solid var(--border); border-radius:999px; padding:3px 10px;
       font-size:12px; font-weight:700; background:rgba(255,255,255,.05);
@@ -66,16 +91,27 @@
       font-size:13px;
       color:var(--muted);
     }
+    .contracts-table-title{ margin:0; }
+    .contracts-table-subtitle{ margin:7px 0 0; color:var(--muted); font-size:13px; }
+    .contracts-td-main{ display:grid; gap:3px; }
+    .contracts-actions{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+    .contracts-empty{
+      display:grid; justify-items:start; gap:10px; border:1px dashed rgba(255,255,255,.18);
+      border-radius:14px; padding:14px; background:rgba(255,255,255,.03);
+    }
+    .contracts-empty strong{ font-size:15px; }
+    .contracts-empty p{ margin:0; color:var(--muted); font-size:13px; }
     @media (max-width: 920px){
       .contracts-form-grid{ grid-template-columns:1fr; }
       .contracts-field--span2{ grid-column:auto; }
+      .contracts-actions .btn{ width:100%; justify-content:center; }
     }
   </style>
 
   <div class="contracts-wrap">
     <section class="contracts-panel">
-      <h2 class="contracts-title">Vinculos da empresa</h2>
-      <p class="contracts-subtitle">Gestao central de vinculos: acompanhe status, documentos e ajustes operacionais com rastreabilidade.</p>
+      <h2 class="contracts-title">Gestao de vinculos da empresa</h2>
+      <p class="contracts-subtitle">Acompanhe situacao, documentos e ajustes operacionais com uma visao clara da base ativa.</p>
 
       {% if request.GET.status == "updated" %}
         <div class="contracts-alert">Vinculo atualizado com sucesso.</div>
@@ -143,6 +179,7 @@
             <div class="contracts-field">
               <label>{{ edit_form.hourly_rate.label }}</label>
               {{ edit_form.hourly_rate }}
+              <div class="contracts-hint">Atualize o valor/hora vigente do vinculo.</div>
               {% if edit_form.hourly_rate.errors %}<div class="contracts-error">{{ edit_form.hourly_rate.errors }}</div>{% endif %}
             </div>
             <div class="contracts-field">
@@ -158,11 +195,13 @@
             <div class="contracts-field contracts-field--span2">
               <label>{{ edit_form.contract_file.label }}</label>
               {{ edit_form.contract_file }}
+              <div class="contracts-hint">Anexe um novo PDF apenas quando houver atualizacao.</div>
               {% if edit_form.contract_file.errors %}<div class="contracts-error">{{ edit_form.contract_file.errors }}</div>{% endif %}
             </div>
             <div class="contracts-field contracts-field--span2">
               <label>{{ edit_form.notes.label }}</label>
               {{ edit_form.notes }}
+              <div class="contracts-hint">Registre observacoes operacionais para historico interno.</div>
               {% if edit_form.notes.errors %}<div class="contracts-error">{{ edit_form.notes.errors }}</div>{% endif %}
             </div>
           </div>
@@ -173,7 +212,8 @@
     {% endif %}
 
     <section class="contracts-panel">
-      <h3 style="margin:0;">Lista operacional de vinculos</h3>
+      <h3 class="contracts-table-title">Lista operacional de vinculos</h3>
+      <p class="contracts-table-subtitle">Painel para consulta e edicao de vinculos ja existentes.</p>
       <div class="contracts-table-wrap">
         <table class="contracts-table">
           <thead>
@@ -192,8 +232,10 @@
               {% with employee=row.employee c=row.contract %}
                 <tr>
                   <td>
-                    {{ employee.full_name|default:employee.user.username }}
-                    <span class="muted">({{ employee.user.email|default:employee.user.username }})</span>
+                    <div class="contracts-td-main">
+                      <strong>{{ employee.full_name|default:employee.user.username }}</strong>
+                      <span class="muted">{{ employee.user.email|default:employee.user.username }}</span>
+                    </div>
                   </td>
                   <td>
                     {% if row.status_tone == "success" %}
@@ -231,16 +273,20 @@
                     {% endif %}
                   </td>
                   <td>
-                    <a class="btn" href="{{ row.profile_url }}">Ver profissional</a>
-                    <a class="btn primary" href="{{ row.edit_url }}">Editar</a>
+                    <div class="contracts-actions">
+                      <a class="btn" href="{{ row.profile_url }}">Ver profissional</a>
+                      <a class="btn primary" href="{{ row.edit_url }}">Editar vinculo</a>
+                    </div>
                   </td>
                 </tr>
               {% endwith %}
             {% empty %}
               <tr>
                 <td colspan="7">
-                  <div class="empty-state">
-                    Nenhum vinculo encontrado. <a href="{% url 'company_meis' %}">Cadastre um MEI</a> para iniciar a operacao.
+                  <div class="contracts-empty">
+                    <strong>Nenhum vinculo encontrado.</strong>
+                    <p>Cadastre um MEI na tela principal para iniciar a operacao e configurar o primeiro vinculo.</p>
+                    <a class="btn primary" href="{% url 'company_meis' %}">Ir para MEIs</a>
                   </div>
                 </td>
               </tr>

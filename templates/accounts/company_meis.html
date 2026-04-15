@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block content %}
-  <div class="company-meis card">
+  <div id="topo-cadastro-mei" class="company-meis card">
     <header class="company-meis__hero">
       <div>
         <h2 class="company-meis__title">Cadastro operacional de MEIs</h2>
@@ -39,8 +39,8 @@
       <input type="hidden" name="action" value="create_mei">
       <section class="company-meis__section">
         <header class="company-meis__section-head">
-          <h3>Dados do profissional</h3>
-          <p>Informacoes essenciais para identificar o MEI e organizar a operacao com clareza.</p>
+          <h3>Dados do MEI</h3>
+          <p>Informacoes principais para identificar o profissional na operacao da empresa.</p>
         </header>
         <div class="company-meis__grid company-meis__grid--two">
           <div class="company-meis__field">
@@ -78,12 +78,13 @@
       <section class="company-meis__section company-meis__section--optional">
         <header class="company-meis__section-head">
           <h3>Primeiro vinculo <span class="company-meis__badge">Opcional</span></h3>
-          <p>Ao preencher agora, o MEI ja entra pronto para operacao sem etapas extras.</p>
+          <p>Configure o primeiro vinculo no mesmo fluxo para liberar o registro de horas sem etapas extras.</p>
         </header>
         <div class="company-meis__grid">
           <div class="company-meis__field">
             <label for="{{ create_mei_form.contract_hourly_rate.id_for_label }}">{{ create_mei_form.contract_hourly_rate.label }}</label>
             {{ create_mei_form.contract_hourly_rate }}
+            <div class="company-meis__hint">Defina o valor inicial por hora para este profissional.</div>
             {% if create_mei_form.contract_hourly_rate.errors %}<div class="company-meis__error">{{ create_mei_form.contract_hourly_rate.errors }}</div>{% endif %}
           </div>
           <div class="company-meis__field">
@@ -99,11 +100,13 @@
           <div class="company-meis__field">
             <label for="{{ create_mei_form.contract_file.id_for_label }}">{{ create_mei_form.contract_file.label }}</label>
             {{ create_mei_form.contract_file }}
+            <div class="company-meis__hint">Anexe um PDF do acordo operacional, se aplicavel.</div>
             {% if create_mei_form.contract_file.errors %}<div class="company-meis__error">{{ create_mei_form.contract_file.errors }}</div>{% endif %}
           </div>
           <div class="company-meis__field company-meis__field--full">
             <label for="{{ create_mei_form.contract_notes.id_for_label }}">{{ create_mei_form.contract_notes.label }}</label>
             {{ create_mei_form.contract_notes }}
+            <div class="company-meis__hint">Registre observacoes para consulta futura da equipe.</div>
             {% if create_mei_form.contract_notes.errors %}<div class="company-meis__error">{{ create_mei_form.contract_notes.errors }}</div>{% endif %}
           </div>
         </div>
@@ -124,17 +127,19 @@
       <section class="company-meis__section company-meis__section--optional">
         <header class="company-meis__section-head">
           <h3>Configurar primeiro vinculo para MEI ja cadastrado</h3>
-          <p>Use este bloco para liberar rapidamente um MEI ja cadastrado que ainda esta sem operacao ativa.</p>
+          <p>Use este bloco para liberar rapidamente um MEI que ja esta na base e ainda nao tem vinculo ativo.</p>
         </header>
         <div class="company-meis__grid">
           <div class="company-meis__field">
             <label for="{{ create_link_form.employee.id_for_label }}">{{ create_link_form.employee.label }}</label>
             {{ create_link_form.employee }}
+            <div class="company-meis__hint">Selecione um MEI sem vinculo ativo para liberar a operacao.</div>
             {% if create_link_form.employee.errors %}<div class="company-meis__error">{{ create_link_form.employee.errors }}</div>{% endif %}
           </div>
           <div class="company-meis__field">
             <label for="{{ create_link_form.hourly_rate.id_for_label }}">{{ create_link_form.hourly_rate.label }}</label>
             {{ create_link_form.hourly_rate }}
+            <div class="company-meis__hint">Defina o valor/hora que sera aplicado neste vinculo.</div>
             {% if create_link_form.hourly_rate.errors %}<div class="company-meis__error">{{ create_link_form.hourly_rate.errors }}</div>{% endif %}
           </div>
           <div class="company-meis__field">
@@ -150,11 +155,13 @@
           <div class="company-meis__field">
             <label for="{{ create_link_form.contract_file.id_for_label }}">{{ create_link_form.contract_file.label }}</label>
             {{ create_link_form.contract_file }}
+            <div class="company-meis__hint">Anexe um PDF apenas quando houver documento de suporte.</div>
             {% if create_link_form.contract_file.errors %}<div class="company-meis__error">{{ create_link_form.contract_file.errors }}</div>{% endif %}
           </div>
           <div class="company-meis__field company-meis__field--full">
             <label for="{{ create_link_form.notes.id_for_label }}">{{ create_link_form.notes.label }}</label>
             {{ create_link_form.notes }}
+            <div class="company-meis__hint">Use este campo para registrar contexto operacional interno.</div>
             {% if create_link_form.notes.errors %}<div class="company-meis__error">{{ create_link_form.notes.errors }}</div>{% endif %}
           </div>
         </div>
@@ -169,10 +176,13 @@
 
     <section class="company-meis__list-block">
       <header class="company-meis__list-header">
-        <h2 class="company-meis__title">Base de MEIs cadastrados</h2>
+        <div>
+          <h2 class="company-meis__title">Base de MEIs cadastrados</h2>
+          <p class="company-meis__list-subtitle">Acompanhe situacao operacional, status de vinculos e proximas acoes.</p>
+        </div>
         <form method="get" class="company-meis__search">
           <div class="company-meis__search-field">{{ employee_search_form.q }}</div>
-          <button class="btn primary" type="submit">Buscar na base</button>
+          <button class="btn primary" type="submit">Atualizar lista</button>
         </form>
       </header>
 
@@ -199,13 +209,13 @@
                 </td>
                 <td data-label="Vinculos">
                   <span class="company-meis__number">{{ row.total_contracts }}</span>
-                  <span class="company-meis__muted">({{ row.active_contracts }} operacional)</span>
+                  <span class="company-meis__muted">({{ row.active_contracts }} ativo{% if row.active_contracts != 1 %}s{% endif %})</span>
                 </td>
                 <td data-label="Acoes" class="company-meis__actions-cell">
                   <a class="btn" href="{{ row.profile_url }}">Ver perfil</a>
-                  <a class="btn" href="{{ row.situation_url }}">Ver detalhes</a>
+                  <a class="btn" href="{{ row.situation_url }}">Ver situacao</a>
                   {% if row.total_contracts == 0 %}
-                    <a class="btn primary" href="{{ row.setup_first_link_url }}">Configurar primeiro vinculo</a>
+                    <a class="btn primary" href="{{ row.setup_first_link_url }}">Configurar vinculo inicial</a>
                   {% else %}
                     <a class="btn primary" href="{{ row.manage_contracts_url }}">Gerenciar vinculos</a>
                   {% endif %}
@@ -214,7 +224,11 @@
             {% empty %}
               <tr>
                 <td colspan="4">
-                  <div class="empty-state">Nenhum MEI encontrado para este filtro. Ajuste a busca ou cadastre um novo profissional.</div>
+                  <div class="company-meis__empty">
+                    <strong>Nenhum MEI encontrado.</strong>
+                    <p>Revise os filtros aplicados ou cadastre um novo profissional para iniciar a operacao.</p>
+                    <a class="btn primary" href="#topo-cadastro-mei">Cadastrar MEI agora</a>
+                  </div>
                 </td>
               </tr>
             {% endfor %}
