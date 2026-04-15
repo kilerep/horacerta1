@@ -249,6 +249,24 @@
   font-size: 13px;
 }
 
+.company-meis__list-meta {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.company-meis__meta-pill {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.04);
+}
+
 .company-meis__search {
   display: flex;
   gap: 10px;
@@ -276,7 +294,7 @@
 .company-meis__table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 880px;
+  min-width: 760px;
 }
 
 .company-meis__table th,
@@ -392,7 +410,7 @@
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 980px) {
   .company-meis__table {
     min-width: 0;
   }

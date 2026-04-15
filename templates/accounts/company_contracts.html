@@ -16,6 +16,11 @@
     }
     .contracts-title{ margin:0; }
     .contracts-subtitle{ margin:8px 0 0; color:var(--muted); }
+    .contracts-meta{ margin-top:10px; display:flex; gap:8px; flex-wrap:wrap; }
+    .contracts-meta-pill{
+      display:inline-flex; align-items:center; border:1px solid rgba(255,255,255,.14); border-radius:999px;
+      padding:4px 10px; font-size:12px; color:var(--muted); background:rgba(255,255,255,.04);
+    }
     .contracts-alert{
       margin-top:10px; padding:10px 12px; border-radius:12px; font-size:13px;
       border:1px solid rgba(46,204,113,.35); background:rgba(46,204,113,.14); color:#d7ffe9;
@@ -28,7 +33,7 @@
     .contracts-form-grid{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-top:12px; }
     .contracts-field{ display:flex; flex-direction:column; gap:6px; min-width:210px; }
     .contracts-field--span2{ grid-column:span 2; }
-    .contracts-field label{ color:var(--muted); font-size:13px; }
+    .contracts-field label{ color:var(--muted); font-size:13px; font-weight:700; }
     .contracts-field input,.contracts-field select,.contracts-field textarea{
       width:100%; min-height:44px; padding:10px 12px; border-radius:12px; border:1px solid var(--border);
       background:rgba(255,255,255,.06); color:var(--text); outline:none;
@@ -61,7 +66,7 @@
       border-color:rgba(79,124,255,.55); box-shadow:0 0 0 3px rgba(79,124,255,.16); background:rgba(255,255,255,.08);
     }
     .contracts-table-wrap{ width:100%; overflow-x:auto; margin-top:12px; border:1px solid var(--border); border-radius:14px; }
-    .contracts-table{ width:100%; border-collapse:collapse; min-width:860px; }
+    .contracts-table{ width:100%; border-collapse:collapse; min-width:760px; }
     .contracts-table th,.contracts-table td{ text-align:left; padding:12px 10px; border-bottom:1px solid rgba(255,255,255,.07); font-size:14px; vertical-align:top; }
     .contracts-table th{ color:var(--muted); font-weight:700; }
     .contracts-table tr:last-child td{ border-bottom:none; }
@@ -101,9 +106,27 @@
     }
     .contracts-empty strong{ font-size:15px; }
     .contracts-empty p{ margin:0; color:var(--muted); font-size:13px; }
-    @media (max-width: 920px){
+    @media (max-width: 980px){
       .contracts-form-grid{ grid-template-columns:1fr; }
       .contracts-field--span2{ grid-column:auto; }
+      .contracts-actions .btn{ width:100%; justify-content:center; }
+      .contracts-table{ min-width:0; }
+      .contracts-table thead{ display:none; }
+      .contracts-table tbody{ display:grid; gap:10px; }
+      .contracts-table tr{
+        display:grid; gap:10px; border:1px solid var(--border); border-radius:12px; padding:12px;
+        background:rgba(255,255,255,.03);
+      }
+      .contracts-table td{
+        border-bottom:none; padding:0; display:grid; gap:4px;
+      }
+      .contracts-table td::before{
+        content: attr(data-label);
+        font-size:11px;
+        color: rgba(255,255,255,.6);
+        letter-spacing:.2px;
+        text-transform:uppercase;
+      }
       .contracts-actions .btn{ width:100%; justify-content:center; }
     }
   </style>
@@ -112,6 +135,10 @@
     <section class="contracts-panel">
       <h2 class="contracts-title">Gestao de vinculos da empresa</h2>
       <p class="contracts-subtitle">Acompanhe situacao, documentos e ajustes operacionais com uma visao clara da base ativa.</p>
+      <div class="contracts-meta">
+        <span class="contracts-meta-pill">Vinculos listados: {{ contracts|length }}</span>
+        <span class="contracts-meta-pill">Tela focada em acompanhamento e edicao</span>
+      </div>
 
       {% if request.GET.status == "updated" %}
         <div class="contracts-alert">Vinculo atualizado com sucesso.</div>
@@ -221,8 +248,8 @@
               <th>Profissional</th>
               <th>Status</th>
               <th>Valor/hora</th>
-              <th>Inicio</th>
-              <th>Fim</th>
+              <th>Inicio da vigencia</th>
+              <th>Fim da vigencia</th>
               <th>PDF</th>
               <th>Acoes</th>
             </tr>
@@ -231,13 +258,13 @@
             {% for row in contracts %}
               {% with employee=row.employee c=row.contract %}
                 <tr>
-                  <td>
+                  <td data-label="Profissional">
                     <div class="contracts-td-main">
                       <strong>{{ employee.full_name|default:employee.user.username }}</strong>
                       <span class="muted">{{ employee.user.email|default:employee.user.username }}</span>
                     </div>
                   </td>
-                  <td>
+                  <td data-label="Status">
                     {% if row.status_tone == "success" %}
                       <span class="contracts-pill success">{{ row.status_label }}</span>
                     {% elif row.status_tone == "pending" %}
@@ -248,33 +275,33 @@
                       <span class="contracts-pill">{{ row.status_label }}</span>
                     {% endif %}
                   </td>
-                  <td>
+                  <td data-label="Valor/hora">
                     <strong>R$ {{ c.hourly_rate }}</strong>
                   </td>
-                  <td>
+                  <td data-label="Inicio da vigencia">
                     {% if c.start_date %}
                       {{ c.start_date|date:"d/m/Y" }}
                     {% else %}
                       <span class="muted">-</span>
                     {% endif %}
                   </td>
-                  <td>
+                  <td data-label="Fim da vigencia">
                     {% if c.end_date %}
                       {{ c.end_date|date:"d/m/Y" }}
                     {% else %}
                       <span class="muted">Em aberto</span>
                     {% endif %}
                   </td>
-                  <td>
+                  <td data-label="PDF">
                     {% if c and c.contract_file %}
                       <a class="btn" href="{{ c.contract_file.url }}" target="_blank" rel="noopener">Visualizar PDF</a>
                     {% else %}
                       <span class="muted">Sem arquivo</span>
                     {% endif %}
                   </td>
-                  <td>
+                  <td data-label="Acoes">
                     <div class="contracts-actions">
-                      <a class="btn" href="{{ row.profile_url }}">Ver profissional</a>
+                      <a class="btn" href="{{ row.profile_url }}">Abrir profissional</a>
                       <a class="btn primary" href="{{ row.edit_url }}">Editar vinculo</a>
                     </div>
                   </td>
