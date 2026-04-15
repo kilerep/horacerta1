@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" href="{% static 'pwa/apple-touch-icon-180.png' %}">
   <link rel="icon" type="image/png" sizes="32x32" href="{% static 'pwa/favicon-32.png' %}">
   <title>{% block title %}HoraCerta{% endblock %}</title>
-  <meta name="description" content="{% block meta_description %}HoraCerta: plataforma de gestao de horas entre empresa e MEI.{% endblock %}">
+  <meta name="description" content="{% block meta_description %}HoraCerta: SaaS de gestao de horas entre empresa e MEI com cadastro, registro e acompanhamento em tempo real.{% endblock %}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -72,7 +72,7 @@
           <span class="mark">HC</span>
           <span>
             <div class="name">HoraCerta</div>
-            <div class="sub">Gestao de horas entre empresa e MEI</div>
+            <div class="sub">SaaS operacional para empresa e MEI</div>
           </span>
         </a>
         <nav class="nav" aria-label="Navegacao publica">
@@ -93,7 +93,7 @@
 
   <footer class="footer">
     <div class="container footer-row">
-      <span>© {% now "Y" %} HoraCerta. Plataforma de gestao de horas para empresa e MEI.</span>
+      <span>© {% now "Y" %} HoraCerta. SaaS de gestao de horas para empresa e MEI.</span>
       <span><a href="{% url 'terms' %}">Termos</a> | <a href="{% url 'privacy' %}">Privacidade</a> | <a href="{% url 'help' %}">Ajuda</a></span>
     </div>
   </footer>
