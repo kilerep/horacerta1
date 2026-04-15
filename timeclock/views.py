@@ -207,8 +207,6 @@ def create_manual_punches(request):
         errors.append("Selecione um vinculo.")
     if not manual_date_raw:
         errors.append("Informe a data do lancamento.")
-    if not note:
-        errors.append("A justificativa e obrigatoria.")
 
     launch_date = None
     if manual_date_raw:

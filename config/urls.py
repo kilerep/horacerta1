@@ -8,6 +8,8 @@ from accounts import views as account_views
 urlpatterns = [
     # Landing page (publica)
     path("", account_views.landing_view, name="landing"),
+    path("manifest.webmanifest", account_views.pwa_manifest, name="pwa_manifest"),
+    path("sw.js", account_views.pwa_service_worker, name="pwa_service_worker"),
 
     # Admin
     path("admin/", admin.site.urls),

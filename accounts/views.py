@@ -5,15 +5,19 @@ from urllib.parse import urlencode, urlparse
 from xml.sax.saxutils import escape
 import zipfile
 from collections import defaultdict
+import json
 
+from django.conf import settings
 from django.contrib.auth import get_user_model, login, logout
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.templatetags.static import static
 from django.urls import reverse
 from django.utils import timezone
+from django.views.decorators.http import require_GET
 
 from companies.models import Company, Employee
 from timeclock.models import ActivityReportRequest, Contract, Punch
@@ -1381,4 +1385,58 @@ def privacy_view(request):
 
 def landing_view(request):
     return render(request, "public/landing.html")
+
+
+@require_GET
+def pwa_manifest(request):
+    manifest = {
+        "id": "/",
+        "name": "HoraCerta - Gestao de Horas",
+        "short_name": "HoraCerta",
+        "description": "Plataforma de gestao de horas entre empresa e MEI.",
+        "start_url": "/",
+        "scope": "/",
+        "display": "standalone",
+        "orientation": "portrait-primary",
+        "theme_color": "#0b1220",
+        "background_color": "#0b1220",
+        "categories": ["business", "productivity"],
+        "lang": "pt-BR",
+        "icons": [
+            {
+                "src": static("pwa/icon-192.png"),
+                "sizes": "192x192",
+                "type": "image/png",
+                "purpose": "any",
+            },
+            {
+                "src": static("pwa/icon-512.png"),
+                "sizes": "512x512",
+                "type": "image/png",
+                "purpose": "any",
+            },
+            {
+                "src": static("pwa/icon-maskable-512.png"),
+                "sizes": "512x512",
+                "type": "image/png",
+                "purpose": "maskable",
+            },
+        ],
+    }
+    response = HttpResponse(
+        json.dumps(manifest, ensure_ascii=False),
+        content_type="application/manifest+json; charset=utf-8",
+    )
+    response["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    return response
+
+
+@require_GET
+def pwa_service_worker(request):
+    sw_path = settings.BASE_DIR / "static" / "js" / "sw.js"
+    source = sw_path.read_text(encoding="utf-8")
+    response = HttpResponse(source, content_type="application/javascript; charset=utf-8")
+    response["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response["Service-Worker-Allowed"] = "/"
+    return response
 

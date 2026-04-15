@@ -1,20 +1,33 @@
 {
-  "name": "HoraCerta",
+  "id": "/",
+  "name": "HoraCerta - Gestao de Horas",
   "short_name": "HoraCerta",
+  "description": "Plataforma de gestao de horas entre empresa e MEI.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#0b1220",
   "theme_color": "#0b1220",
+  "lang": "pt-BR",
   "icons": [
     {
-      "src": "/static/icon-192.png",
+      "src": "/static/pwa/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "/static/icon-512.png",
+      "src": "/static/pwa/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/pwa/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

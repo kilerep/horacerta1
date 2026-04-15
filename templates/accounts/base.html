@@ -2,8 +2,14 @@
 <!doctype html>
 <html lang="pt-br">
 <head>
-  <link rel="manifest" href="{% static 'manifest.json' %}">
+  <link rel="manifest" href="{% url 'pwa_manifest' %}">
+  <meta name="application-name" content="HoraCerta">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="HoraCerta">
   <meta name="theme-color" content="#0b1220">
+  <link rel="apple-touch-icon" href="{% static 'pwa/apple-touch-icon-180.png' %}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'pwa/favicon-32.png' %}">
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{% block title %}HoraCerta{% endblock %}</title>
@@ -672,12 +678,7 @@
   {% if request.user.is_authenticated %}
     <script src="{% static 'js/mobile_drawer.js' %}"></script>
   {% endif %}
+  <script src="{% static 'js/pwa-register.js' %}"></script>
 </body>
 </html>
-<script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/static/js/sw.js')
-    .then(() => console.log('SW registrado'));
-}
-</script>
 
