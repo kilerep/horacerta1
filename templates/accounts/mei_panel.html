@@ -9,8 +9,8 @@
       border:1px solid var(--border);
       border-radius:var(--radius);
       background:
-        linear-gradient(140deg, rgba(79,124,255,.10), transparent 42%),
-        linear-gradient(180deg, rgba(250,204,21,.06), rgba(255,255,255,.03));
+        radial-gradient(circle at 12% 0, rgba(79,124,255,.24), transparent 44%),
+        linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
       padding:14px;
     }
     .row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
@@ -30,8 +30,8 @@
     .cards{display:grid;grid-template-columns:repeat(2, minmax(180px,1fr));gap:10px}
     .stat{
       border:1px solid var(--border);
-      border-radius:12px;
-      background:rgba(255,255,255,.04);
+      border-radius:14px;
+      background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
       padding:12px;
     }
     .status{
@@ -65,25 +65,25 @@
 
   <div class="mei-panel">
     <section class="panel">
-      <h2 style="margin:0 0 10px;">Resumo do MEI</h2>
+      <h2 style="margin:0 0 10px;">Resumo do profissional</h2>
       {% if contracts_count == 0 %}
         <p class="muted" style="margin:0;">Voce ainda nao possui vinculos ativos.</p>
       {% else %}
         <form method="get" class="row">
           {% if contracts_count > 1 %}
             <div class="field">
-              <label>Selecionar vinculo</label>
+              <label>Selecionar empresa e contrato</label>
               <select name="contract" onchange="this.form.submit()">
                 {% for c in contracts %}
                   <option value="{{ c.id }}" {% if selected_contract and c.id == selected_contract.id %}selected{% endif %}>
-                    {{ c.company.name }} - Vinculo {{ c.id|stringformat:"s"|slice:":8" }}
+                    {{ c.company.name }} - R$ {{ c.hourly_rate }}/h
                   </option>
                 {% endfor %}
               </select>
             </div>
           {% else %}
             <div class="field">
-              <label>Vinculo ativo</label>
+              <label>Empresa e contrato ativo</label>
               <div><strong>{{ selected_contract.company.name }}</strong> - R$ {{ selected_contract.hourly_rate }}/h</div>
             </div>
           {% endif %}
@@ -100,6 +100,21 @@
         <article class="stat">
           <div class="k">Periodo atual</div>
           <div class="v" style="font-size:24px">{{ current_period_label }}</div>
+        </article>
+        <article class="stat">
+          <div class="k">Status do vinculo</div>
+          <div class="v" style="font-size:24px">Ativo</div>
+        </article>
+        <article class="stat">
+          <div class="k">Vigencia</div>
+          <div class="v" style="font-size:18px;">
+            {{ selected_contract.start_date|date:"d/m/Y" }}
+            {% if selected_contract.end_date %}
+              - {{ selected_contract.end_date|date:"d/m/Y" }}
+            {% else %}
+              - em aberto
+            {% endif %}
+          </div>
         </article>
         <article class="stat">
           <div class="k">Horas no mes</div>
@@ -121,18 +136,18 @@
 
       {% if incomplete_days > 0 %}
         <section class="status warn">
-          Voce possui <strong>{{ incomplete_days }}</strong> dia(s) com horários incompletos.
+          Voce possui <strong>{{ incomplete_days }}</strong> dia(s) com horarios incompletos.
           <a class="btn" href="{% url 'mei_history' %}?contract={{ selected_contract.id }}" style="margin-left:8px;">Ver historico</a>
         </section>
       {% else %}
         <section class="status ok">
-          Todos os horários estão consistentes.
+          Todos os horarios estao consistentes.
           <a class="btn" href="{% url 'mei_history' %}?contract={{ selected_contract.id }}" style="margin-left:8px;">Ver historico</a>
         </section>
       {% endif %}
 
       <section class="panel mini-history">
-        <h3 style="margin:0 0 10px;">Últimos horários de hoje</h3>
+        <h3 style="margin:0 0 10px;">Ultimos horarios de hoje</h3>
         <div class="chips">
           {% for punch_time in recent_today_punches %}
             <span class="chip">{{ punch_time }}</span>

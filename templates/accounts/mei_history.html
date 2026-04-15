@@ -1,6 +1,6 @@
 {% extends "accounts/base.html" %}
-{% block title %}Histórico de horários{% endblock %}
-{% block page_title %}Histórico de horários{% endblock %}
+{% block title %}Historico de horarios{% endblock %}
+{% block page_title %}Historico de horarios{% endblock %}
 
 {% block content %}
   <style>
@@ -9,8 +9,8 @@
       border-radius:var(--radius);
       padding:14px;
       background:
-        linear-gradient(140deg, rgba(79,124,255,.10), transparent 42%),
-        linear-gradient(180deg, rgba(250,204,21,.06), rgba(255,255,255,.03));
+        radial-gradient(circle at 14% 0, rgba(79,124,255,.24), transparent 44%),
+        linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
     }
     .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
     .field{display:flex;flex-direction:column;gap:6px;min-width:180px;flex:1}
@@ -123,7 +123,7 @@
     <h2 style="margin:0 0 8px;">Historico por dia</h2>
     <form method="get" class="row">
       <div class="field">
-        <label>Vinculo</label>
+        <label>Empresa e contrato</label>
         <select name="contract" onchange="this.form.submit()">
           {% for c in contracts %}
             <option value="{{ c.id }}" {% if selected_contract and c.id == selected_contract.id %}selected{% endif %}>
@@ -153,7 +153,7 @@
                 <tr>
                   <th>Data</th>
                   {% for n in history_punch_columns %}
-                    <th>Horário {{ n }}</th>
+                    <th>Horario {{ n }}</th>
                   {% endfor %}
                   <th>Observacoes</th>
                   <th>Total do dia</th>

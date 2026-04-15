@@ -74,12 +74,23 @@
             <strong class="hc-mini-value">{{ selected_contract.company.name }}</strong>
           </article>
           <article class="hc-mini-card">
-            <span class="hc-mini-label">Vinculo ativo</span>
-            <strong class="hc-mini-value">Vinculo {{ selected_contract.id|stringformat:"s"|slice:":8"|upper }}</strong>
+            <span class="hc-mini-label">Status do vinculo</span>
+            <strong class="hc-mini-value hc-mini-value--status">Ativo</strong>
           </article>
           <article class="hc-mini-card">
             <span class="hc-mini-label">Valor por hora</span>
             <strong class="hc-mini-value">R$ {{ selected_contract.hourly_rate }}</strong>
+          </article>
+          <article class="hc-mini-card">
+            <span class="hc-mini-label">Periodo do vinculo</span>
+            <strong class="hc-mini-value">
+              {{ selected_contract.start_date|date:"d/m/Y" }}
+              {% if selected_contract.end_date %}
+                ate {{ selected_contract.end_date|date:"d/m/Y" }}
+              {% else %}
+                ate em aberto
+              {% endif %}
+            </strong>
           </article>
         </div>
 
@@ -88,11 +99,11 @@
 
         <div class="hc-action-stack">
           <form method="get" class="hc-field">
-            <label>Selecionar vinculo ativo</label>
+            <label>Selecionar empresa e contrato</label>
             <select name="contract" onchange="this.form.submit()">
               {% for c in contracts %}
                 <option value="{{ c.id }}" {% if selected_contract and c.id == selected_contract.id %}selected{% endif %}>
-                  {{ c.company.name }} | R$ {{ c.hourly_rate }}/h
+                  {{ c.company.name }} | R$ {{ c.hourly_rate }}/h | desde {{ c.start_date|date:"d/m/Y" }}
                 </option>
               {% endfor %}
             </select>
@@ -116,7 +127,7 @@
       </section>
 
       <section class="hc-panel">
-        <h3 class="hc-section-title">Status do dia e historico recente</h3>
+        <h3 class="hc-section-title">Hoje e historico recente</h3>
         <div class="hc-chip-list" id="hcTodayChips">
           {% for p in punches_today %}
             <span class="hc-chip">{{ p.timestamp|localtime|hhmm }}</span>
@@ -141,7 +152,7 @@
       </section>
 
       <section class="hc-panel">
-        <h3 class="hc-section-title">Alertas de inconsistencias</h3>
+        <h3 class="hc-section-title">Pontos para revisar</h3>
         {% if recent_inconsistencies %}
           <div class="hc-alert-list">
             {% for day in recent_inconsistencies %}
@@ -169,7 +180,7 @@
             <div id="hcManualErrors" class="hc-error-box hc-manual-errors" hidden></div>
 
             <div class="hc-field">
-              <label for="hcManualContract">Vinculo</label>
+              <label for="hcManualContract">Empresa e contrato</label>
               <select id="hcManualContract" name="contract" required>
                 {% for c in contracts %}
                   <option value="{{ c.id }}" {% if selected_contract and c.id == selected_contract.id %}selected{% endif %}>

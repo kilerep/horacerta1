@@ -9,12 +9,12 @@
       border:1px solid var(--border);
       border-radius: var(--radius);
       background:
-        linear-gradient(140deg, rgba(79,124,255,.10), transparent 42%),
-        linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+        radial-gradient(circle at 14% 0, rgba(79,124,255,.24), transparent 44%),
+        linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
       padding:14px;
     }
     .grid{ display:grid; grid-template-columns:repeat(4,minmax(170px,1fr)); gap:10px; margin-top:10px; }
-    .stat{ border:1px solid var(--border); border-radius:12px; background:rgba(255,255,255,.04); padding:12px; }
+    .stat{ border:1px solid var(--border); border-radius:14px; background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)); padding:12px; }
     .k{ color:var(--muted); font-size:12px; }
     .v{ font-size:20px; font-weight:800; margin-top:2px; }
     .warning{ border-radius:12px; padding:12px; margin-top:8px; }
@@ -34,10 +34,10 @@
   <div class="contract-wrap">
     {% if active_contracts %}
       <section class="panel">
-        <h2 style="margin:0;">Selecionar vinculo atual</h2>
+        <h2 style="margin:0;">Selecionar contrato ativo</h2>
         <form method="get" class="row" style="margin-top:10px;">
           <div class="field">
-            <label>Vinculo operacional</label>
+            <label>Empresa e contrato</label>
             <select name="contract" onchange="this.form.submit()">
               {% for c in active_contracts %}
                 <option value="{{ c.id }}" {% if active_contract and c.id == active_contract.id %}selected{% endif %}>
@@ -51,8 +51,8 @@
       </section>
 
       <section class="panel">
-        <h2 style="margin:0;">Vinculo operacional ativo</h2>
-        <p class="muted" style="margin:8px 0 0;">Dados do vinculo selecionado para rotina de registro.</p>
+        <h2 style="margin:0;">Detalhes do contrato ativo</h2>
+        <p class="muted" style="margin:8px 0 0;">Informacoes do contrato selecionado para sua rotina de registro.</p>
         <div class="grid">
           <div class="stat"><div class="k">Empresa</div><div class="v">{{ active_contract.company.name|default:"-" }}</div></div>
           <div class="stat"><div class="k">Valor por hora</div><div class="v">R$ {{ active_contract.hourly_rate }}</div></div>
@@ -60,19 +60,19 @@
           <div class="stat"><div class="k">Inicio / Fim</div><div class="v" style="font-size:16px;">{{ active_contract.start_date|date:"d/m/Y" }} {% if active_contract.end_date %}- {{ active_contract.end_date|date:"d/m/Y" }}{% else %}- em aberto{% endif %}</div></div>
         </div>
         <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;">
-          {% if active_contract.contract_file %}<a class="btn" href="{{ active_contract.contract_file.url }}" target="_blank" rel="noopener">Download PDF do vinculo</a>{% endif %}
+          {% if active_contract.contract_file %}<a class="btn" href="{{ active_contract.contract_file.url }}" target="_blank" rel="noopener">Baixar PDF do contrato</a>{% endif %}
           <a class="btn" href="{% url 'employee_dashboard' %}">Voltar ao painel</a>
         </div>
       </section>
     {% elif all_contracts %}
       <section class="panel">
-        <h2 style="margin:0;">Sem vinculo operacional ativo</h2>
+        <h2 style="margin:0;">Sem contrato ativo no momento</h2>
         <div class="warning inactive">
-          Seu cadastro possui vinculo(s), mas nenhum esta ativo para operacao neste momento.
-          Verifique com a empresa se ha renovacao, reativacao ou novo vinculo.
+          Seu cadastro possui contrato(s), mas nenhum esta ativo para operacao neste momento.
+          Verifique com a empresa se ha renovacao, reativacao ou novo contrato.
         </div>
         <div style="margin-top:10px;">
-          <strong>Ultimos vinculos:</strong>
+          <strong>Ultimos contratos:</strong>
           <ul>
             {% for c in inactive_contracts|slice:":5" %}
               <li>{{ c.company.name }} | inicio {{ c.start_date|date:"d/m/Y" }} {% if c.end_date %}| fim {{ c.end_date|date:"d/m/Y" }}{% endif %}</li>
@@ -82,10 +82,10 @@
       </section>
     {% else %}
       <section class="panel">
-        <h2 style="margin:0;">Nenhum vinculo criado ainda</h2>
+        <h2 style="margin:0;">Nenhum contrato criado ainda</h2>
         <div class="warning pending">
-          Seu cadastro foi criado, mas a empresa ainda nao cadastrou o primeiro vinculo.
-          Assim que o vinculo for criado e estiver vigente, o registro de horarios sera liberado.
+          Seu cadastro foi criado, mas a empresa ainda nao cadastrou o primeiro contrato.
+          Assim que o contrato for criado e estiver vigente, o registro de horarios sera liberado.
         </div>
       </section>
     {% endif %}

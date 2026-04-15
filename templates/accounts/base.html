@@ -183,6 +183,28 @@
       font-size: 12px;
       margin-left: 6px;
     }
+    .role-mei .sidebar{
+      background: linear-gradient(180deg, rgba(8,14,31,.92), rgba(8,12,24,.92));
+    }
+    .role-mei .menu{
+      gap:4px;
+    }
+    .role-mei .item{
+      padding:9px 10px;
+      border-radius:11px;
+    }
+    .role-mei .item .icon{
+      width:28px;
+      height:28px;
+      border-radius:9px;
+      font-size:11px;
+    }
+    .role-mei .item strong{
+      font-size:13px;
+    }
+    .role-mei .item .item-sub{
+      font-size:11px;
+    }
 
     .main{
       flex:1;
@@ -515,7 +537,7 @@
 </head>
 
 <!-- Mudanca aqui -->
-<body class="{% if request.user.is_authenticated and request.user.role == 'EMPRESA' %}role-company {% endif %}{% block body_class %}{% endblock %}">
+<body class="{% if request.user.is_authenticated and request.user.role == 'EMPRESA' %}role-company {% elif request.user.is_authenticated %}role-mei {% endif %}{% block body_class %}{% endblock %}">
   {% if request.user.is_authenticated %}
     <div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true"></div>
   {% endif %}
@@ -577,34 +599,42 @@
               </div>
             {% endwith %}
           {% else %}
-            <a class="item" href="{% url 'mei_panel' %}">
-              <div class="icon">P</div>
-              <div><strong>Meu Painel</strong><div class="muted" style="font-size:12px">resumo</div></div>
-            </a>
-            <a class="item" href="{% url 'employee_dashboard' %}">
-              <div class="icon">B</div>
-              <div><strong>Registrar horario</strong><div class="muted" style="font-size:12px">/me/</div></div>
-            </a>
-            <a class="item" href="{% url 'mei_history' %}">
-              <div class="icon">H</div>
-              <div><strong>Historico de horarios</strong><div class="muted" style="font-size:12px">por periodo</div></div>
-            </a>
-            <a class="item" href="{% url 'mei_export' %}">
-              <div class="icon">E</div>
-              <div><strong>Exportar CSV</strong><div class="muted" style="font-size:12px">gerar arquivo</div></div>
-            </a>
-            <a class="item" href="{% url 'mei_contract' %}">
-              <div class="icon">C</div>
-              <div><strong>Meus vinculos</strong><div class="muted" style="font-size:12px">valor/h e status</div></div>
-            </a>
-            <a class="item" href="{% url 'mei_profile' %}">
-              <div class="icon">P</div>
-              <div><strong>Meu perfil</strong><div class="muted" style="font-size:12px">dados pessoais</div></div>
-            </a>
-            <a class="item muted" href="{% url 'mei_reports' %}">
-              <div class="icon">R</div>
-              <div><strong>Relatorios</strong><div class="muted" style="font-size:12px">resumo pessoal</div></div>
-            </a>
+            {% with current=request.resolver_match.url_name %}
+              <div class="menu-group">
+                <div class="menu-label">Operacao</div>
+                <a class="item {% if current == 'employee_dashboard' %}is-active{% endif %}" href="{% url 'employee_dashboard' %}">
+                  <div class="icon">R</div>
+                  <div><strong>Registrar horario</strong><div class="muted item-sub">acao principal</div></div>
+                </a>
+                <a class="item {% if current == 'mei_panel' %}is-active{% endif %}" href="{% url 'mei_panel' %}">
+                  <div class="icon">P</div>
+                  <div><strong>Meu resumo</strong><div class="muted item-sub">visao geral</div></div>
+                </a>
+                <a class="item {% if current == 'mei_contract' %}is-active{% endif %}" href="{% url 'mei_contract' %}">
+                  <div class="icon">C</div>
+                  <div><strong>Meus vinculos</strong><div class="muted item-sub">empresa, valor e status</div></div>
+                </a>
+                <a class="item {% if current == 'mei_history' %}is-active{% endif %}" href="{% url 'mei_history' %}">
+                  <div class="icon">H</div>
+                  <div><strong>Historico</strong><div class="muted item-sub">por periodo</div></div>
+                </a>
+              </div>
+              <div class="menu-group">
+                <div class="menu-label">Conta</div>
+                <a class="item {% if current == 'mei_profile' %}is-active{% endif %}" href="{% url 'mei_profile' %}">
+                  <div class="icon">P</div>
+                  <div><strong>Meu perfil</strong><div class="muted item-sub">dados pessoais</div></div>
+                </a>
+                <a class="item {% if current == 'mei_export' %}is-active{% endif %}" href="{% url 'mei_export' %}">
+                  <div class="icon">E</div>
+                  <div><strong>Exportar CSV</strong><div class="muted item-sub">arquivo de apoio</div></div>
+                </a>
+                <a class="item muted {% if current == 'mei_reports' %}is-active{% endif %}" href="{% url 'mei_reports' %}">
+                  <div class="icon">R</div>
+                  <div><strong>Relatorios</strong><div class="muted item-sub">resumo pessoal</div></div>
+                </a>
+              </div>
+            {% endwith %}
           {% endif %}
 
           <a class="item" href="{% url 'help' %}">

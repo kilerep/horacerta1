@@ -8,8 +8,8 @@
       border:1px solid var(--border);
       border-radius: var(--radius);
       background:
-        linear-gradient(140deg, rgba(79,124,255,.10), transparent 42%),
-        linear-gradient(180deg, rgba(250,204,21,.06), rgba(255,255,255,.03));
+        radial-gradient(circle at 12% 0, rgba(79,124,255,.24), transparent 44%),
+        linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
       padding:14px;
     }
     .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
@@ -32,7 +32,8 @@
   </style>
 
   <section class="panel">
-    <h2 style="margin:0;">Meu Perfil</h2>
+    <h2 style="margin:0;">Meu perfil</h2>
+    <p class="muted" style="margin:8px 0 0;">Mantenha seus dados atualizados para facilitar a operacao com a empresa.</p>
     <form method="post" enctype="multipart/form-data" style="margin-top:10px;">
       {% csrf_token %}
 
