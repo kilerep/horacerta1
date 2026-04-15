@@ -4,24 +4,31 @@
 
 {% block content %}
   <style>
-    .company-dashboard { display:grid; gap:14px; margin-top:14px; }
+    .company-dashboard { display:grid; gap:18px; margin-top:14px; }
     .company-panel {
       border:1px solid var(--border);
       border-radius: var(--radius);
-      padding:16px;
+      padding:18px;
       background:
         radial-gradient(circle at 20% 0%, rgba(79,124,255,.16), transparent 42%),
         linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.03), 0 12px 30px rgba(3,7,20,.24);
     }
+    .company-hero{ display:flex; justify-content:space-between; gap:12px; align-items:flex-start; flex-wrap:wrap; }
     .company-title{ margin:0; font-size:20px; font-weight:800; }
     .company-subtitle{ margin:6px 0 0; color:var(--muted); font-size:13px; }
-    .kpis{ display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:10px; }
+    .support-strip{ margin-top:12px; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+    .support-item{
+      border:1px solid rgba(255,255,255,.1); border-radius:12px; padding:10px;
+      background:rgba(255,255,255,.02);
+    }
+    .support-item .k{ color:var(--muted); font-size:12px; }
+    .support-item .v{ margin-top:3px; font-size:18px; font-weight:800; line-height:1.1; }
     .exec-kpis{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
     .kpi{
       border:1px solid rgba(255,255,255,.12);
       border-radius:14px;
-      padding:12px;
+      padding:14px 12px;
       background:rgba(255,255,255,.03);
       transition: transform .12s ease, border-color .12s ease, background .12s ease;
     }
@@ -32,26 +39,42 @@
     }
     .kpi.exec{
       border-color:rgba(47,124,255,.28);
-      background:linear-gradient(180deg, rgba(47,124,255,.16), rgba(255,255,255,.03));
+      background:linear-gradient(180deg, rgba(47,124,255,.2), rgba(255,255,255,.03));
       box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
     }
     .kpi .label{ color:var(--muted); font-size:12px; }
-    .kpi .value{ margin-top:4px; font-size:28px; line-height:1; font-weight:900; }
+    .kpi .value{ margin-top:5px; font-size:30px; line-height:1; font-weight:900; letter-spacing:.2px; }
     .kpi .hint{ margin-top:5px; font-size:12px; color:var(--muted); }
-    .layout{ display:grid; grid-template-columns:1.35fr .9fr; gap:14px; }
+    .layout{ display:grid; grid-template-columns:minmax(0,1.6fr) minmax(310px,1fr); gap:16px; align-items:start; }
+    .section-head{ display:flex; justify-content:space-between; gap:10px; align-items:flex-start; flex-wrap:wrap; }
+    .section-head h3{ margin:0; }
+    .section-subtitle{ margin:6px 0 0; color:var(--muted); font-size:13px; }
     .form-row{ margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; align-items:end; }
     .field{ display:flex; flex-direction:column; gap:6px; min-width:200px; flex:1; }
-    .field label{ color:var(--muted); font-size:13px; }
+    .field label{ color:var(--muted); font-size:13px; font-weight:700; }
     .field input,.field select{
-      width:100%; padding:10px 12px; border-radius:12px; border:1px solid var(--border);
+      width:100%; min-height:44px; padding:10px 12px; border-radius:12px; border:1px solid var(--border);
       background:rgba(255,255,255,.06); color:var(--text); outline:none;
     }
+    .field select{
+      appearance:none;
+      background-image:
+        linear-gradient(45deg, transparent 50%, rgba(255,255,255,.72) 50%),
+        linear-gradient(135deg, rgba(255,255,255,.72) 50%, transparent 50%);
+      background-position:
+        calc(100% - 18px) calc(50% - 2px),
+        calc(100% - 12px) calc(50% - 2px);
+      background-size:6px 6px, 6px 6px;
+      background-repeat:no-repeat;
+      padding-right:34px;
+    }
+    .field input[type="date"]{ color-scheme:dark; }
     .field input:focus,.field select:focus{
       border-color:rgba(79,124,255,.55); box-shadow:0 0 0 3px rgba(79,124,255,.16);
     }
     .table-wrap{ margin-top:10px; width:100%; overflow:auto; border:1px solid var(--border); border-radius:14px; }
     .table{ width:100%; border-collapse:collapse; min-width:640px; }
-    .table th,.table td{ text-align:left; padding:10px; border-bottom:1px solid rgba(255,255,255,.07); font-size:14px; vertical-align:top; }
+    .table th,.table td{ text-align:left; padding:12px 10px; border-bottom:1px solid rgba(255,255,255,.07); font-size:14px; vertical-align:top; }
     .table th{ color:var(--muted); font-weight:700; }
     .table tr:last-child td{ border-bottom:none; }
     .table tbody tr:hover td{ background:rgba(255,255,255,.03); }
@@ -63,6 +86,14 @@
     .pill.pending{ border-color:rgba(255,176,32,.4); background:rgba(255,176,32,.12); color:#ffe7ad; }
     .pill.warn{ border-color:rgba(255,94,94,.35); background:rgba(255,94,94,.12); color:#ffd8d8; }
     .muted{ color:var(--muted); }
+    .sidebar-stack{ display:grid; gap:12px; min-width:0; }
+    .sidebar-block{
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:14px;
+      padding:12px;
+      background:rgba(255,255,255,.02);
+      min-width:0;
+    }
     .pending-list{ display:grid; gap:8px; margin-top:10px; }
     .pending-item{
       display:flex; justify-content:space-between; gap:8px; align-items:center; flex-wrap:wrap;
@@ -75,8 +106,15 @@
     }
     .quick-link strong{ display:block; font-size:14px; }
     .quick-link span{ color:var(--muted); font-size:12px; }
-    @media (max-width:1150px){ .kpis{ grid-template-columns:repeat(3,minmax(0,1fr)); } .exec-kpis{ grid-template-columns:repeat(2,minmax(0,1fr)); } .layout{ grid-template-columns:1fr; } }
-    @media (max-width:760px){ .kpis{ grid-template-columns:repeat(2,minmax(0,1fr)); } .exec-kpis{ grid-template-columns:1fr; } }
+    .data-subsection{ margin-top:14px; }
+    .empty-panel{
+      display:grid; justify-items:start; gap:10px; border:1px dashed rgba(255,255,255,.18);
+      border-radius:14px; padding:14px; background:rgba(255,255,255,.03);
+    }
+    .empty-panel strong{ font-size:15px; }
+    .empty-panel p{ margin:0; color:var(--muted); font-size:13px; }
+    @media (max-width:1150px){ .exec-kpis{ grid-template-columns:repeat(2,minmax(0,1fr)); } .layout{ grid-template-columns:1fr; } .support-strip{ grid-template-columns:1fr; } }
+    @media (max-width:760px){ .exec-kpis{ grid-template-columns:1fr; } }
   </style>
 
   {% if not company %}
@@ -89,31 +127,35 @@
   {% else %}
     <div class="company-dashboard">
       <section class="company-panel">
-        <h2 class="company-title">Visao operacional da empresa</h2>
-        <p class="company-subtitle">
-          Acompanhe MEIs, jornada e pendencias em uma visao executiva clara para decisao rapida.
-        </p>
-      </section>
-
-      <section class="exec-kpis">
-        <article class="kpi exec"><div class="label">MEIs ativos</div><div class="value">{{ total_active_professionals }}</div><div class="hint">Com vinculo operacional vigente</div></article>
-        <article class="kpi exec"><div class="label">MEIs sem vinculo</div><div class="value">{{ total_pending_contract }}</div><div class="hint">Precisam de configuracao operacional</div></article>
-        <article class="kpi exec"><div class="label">Horas no periodo</div><div class="value">{{ total_hours_period }}</div><div class="hint">{{ period_result.date_from|default:"-" }} ate {{ period_result.date_to|default:"-" }}</div></article>
-        <article class="kpi exec"><div class="label">Dias com pendencia</div><div class="value">{{ inconsistency_days_period }}</div><div class="hint">Dias com registros incompletos</div></article>
-      </section>
-
-      <section class="kpis">
-        <article class="kpi"><div class="label">Profissionais cadastrados</div><div class="value">{{ total_registered_professionals }}</div><div class="hint">Base total da empresa</div></article>
-        <article class="kpi"><div class="label">Vinculos operacionais</div><div class="value">{{ total_active_contracts }}</div><div class="hint">Base ativa para registro</div></article>
-        <article class="kpi"><div class="label">Profissionais inativos</div><div class="value">{{ total_inactive_professionals }}</div><div class="hint">Sem vigencia operacional</div></article>
-        <article class="kpi"><div class="label">Registros no periodo</div><div class="value">{{ total_punches_period }}</div><div class="hint">{{ period_result.date_from|default:"-" }} ate {{ period_result.date_to|default:"-" }}</div></article>
-        <article class="kpi"><div class="label">Pendencias abertas</div><div class="value">{{ pending_professionals|length }}</div><div class="hint">Profissionais exigindo acao</div></article>
-        <article class="kpi"><div class="label">Qualidade operacional</div><div class="value">{% if inconsistency_days_period > 0 %}Revisar{% else %}OK{% endif %}</div><div class="hint">Saude dos registros no periodo</div></article>
+        <div class="company-hero">
+          <div>
+            <h2 class="company-title">Visao executiva da operacao</h2>
+            <p class="company-subtitle">
+              Panorama rapido para acompanhar base ativa, jornada e pontos que exigem acao.
+            </p>
+          </div>
+        </div>
+        <section class="exec-kpis" style="margin-top:12px;">
+          <article class="kpi exec"><div class="label">MEIs ativos</div><div class="value">{{ total_active_professionals }}</div><div class="hint">Com vinculo operacional vigente</div></article>
+          <article class="kpi exec"><div class="label">MEIs sem vinculo</div><div class="value">{{ total_pending_contract }}</div><div class="hint">Precisam de configuracao</div></article>
+          <article class="kpi exec"><div class="label">Horas no periodo</div><div class="value">{{ total_hours_period }}</div><div class="hint">{{ period_result.date_from|default:"-" }} ate {{ period_result.date_to|default:"-" }}</div></article>
+          <article class="kpi exec"><div class="label">Dias com pendencia</div><div class="value">{{ inconsistency_days_period }}</div><div class="hint">Dias com registros incompletos</div></article>
+        </section>
+        <section class="support-strip">
+          <article class="support-item"><div class="k">MEIs cadastrados</div><div class="v">{{ total_registered_professionals }}</div></article>
+          <article class="support-item"><div class="k">Vinculos operacionais</div><div class="v">{{ total_active_contracts }}</div></article>
+          <article class="support-item"><div class="k">Registros no periodo</div><div class="v">{{ total_punches_period }}</div></article>
+        </section>
       </section>
 
       <div class="layout">
         <section class="company-panel">
-          <h3 style="margin:0;">Gestao de profissionais</h3>
+          <div class="section-head">
+            <div>
+              <h3>Gestao de profissionais</h3>
+              <p class="section-subtitle">Filtre a base e execute as proximas acoes operacionais.</p>
+            </div>
+          </div>
           <form method="get" class="form-row">
             <div class="field"><label>{{ employee_search_form.q.label }}</label>{{ employee_search_form.q }}</div>
             <div class="field"><label>{{ period_form.date_from.label }}</label>{{ period_form.date_from }}</div>
@@ -139,13 +181,22 @@
                     </td>
                   </tr>
                 {% empty %}
-                  <tr><td colspan="4"><div class="empty-state">Nenhum profissional encontrado para este filtro. <a href="{% url 'company_meis' %}">Cadastrar MEI</a>.</div></td></tr>
+                  <tr><td colspan="4"><div class="empty-panel"><strong>Nenhum profissional encontrado.</strong><p>Ajuste os filtros ou inicie um novo cadastro de MEI para continuar a operacao.</p><a class="btn primary" href="{% url 'company_meis' %}">Cadastrar MEI</a></div></td></tr>
                 {% endfor %}
               </tbody>
             </table>
           </div>
 
-          <div class="table-wrap">
+          <div class="data-subsection">
+            <div class="section-head">
+              <div>
+                <h3>Movimentacao recente</h3>
+                <p class="section-subtitle">Ultimos registros para conferencia rapida da jornada.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="table-wrap" style="margin-top:10px;">
             <table class="table">
               <thead><tr><th>Registro recente</th><th>Profissional</th><th>Empresa</th><th>Vinculo</th></tr></thead>
               <tbody>
@@ -157,7 +208,7 @@
                     <td>R$ {{ row.punch.contract.hourly_rate }}/h</td>
                   </tr>
                 {% empty %}
-                  <tr><td colspan="4"><div class="empty-state">Sem registros no periodo selecionado. Ajuste o periodo ou acompanhe novos lancamentos em tempo real.</div></td></tr>
+                  <tr><td colspan="4"><div class="empty-panel"><strong>Sem movimentacao no periodo.</strong><p>Ajuste as datas para ampliar a consulta ou acompanhe novos lancamentos em tempo real.</p></div></td></tr>
                 {% endfor %}
               </tbody>
             </table>
@@ -165,58 +216,76 @@
         </section>
 
         <section class="company-panel">
-          <h3 style="margin:0;">Pendencias prioritarias</h3>
-          {% if pending_professionals %}
-            <div class="pending-list">
-              {% for row in pending_professionals %}
-                <article class="pending-item">
-                  <div>
-                    <strong>{{ row.employee.full_name }}</strong><br>
-                    <span class="muted">{{ row.state.label }} | {{ row.employee.user.email|default:row.employee.user.username }}</span>
-                  </div>
-                  <a class="btn primary" href="{{ row.action_url }}">{{ row.action_label }}</a>
-                </article>
-              {% endfor %}
+          <div class="sidebar-stack">
+            <div class="sidebar-block">
+              <h3 style="margin:0;">Pendencias prioritarias</h3>
+              <p class="section-subtitle">Itens que exigem acao imediata da equipe.</p>
+              {% if pending_professionals %}
+                <div class="pending-list">
+                  {% for row in pending_professionals %}
+                    <article class="pending-item">
+                      <div>
+                        <strong>{{ row.employee.full_name }}</strong><br>
+                        <span class="muted">{{ row.state.label }} | {{ row.employee.user.email|default:row.employee.user.username }}</span>
+                      </div>
+                      <a class="btn primary" href="{{ row.action_url }}">{{ row.action_label }}</a>
+                    </article>
+                  {% endfor %}
+                </div>
+              {% else %}
+                <div class="empty-panel" style="margin-top:10px;">
+                  <strong>Nenhuma pendencia critica.</strong>
+                  <p>A operacao esta em dia neste momento.</p>
+                </div>
+              {% endif %}
             </div>
-          {% else %}
-            <p class="muted" style="margin-top:10px;">Nenhuma pendencia critica no momento. Operacao em dia.</p>
-          {% endif %}
 
-          <h3 style="margin:16px 0 0;">Atalhos de operacao</h3>
-          <div class="quick-links">
-            {% for link in quick_links %}
-              <a class="quick-link" href="{{ link.url }}">
-                <strong>{{ link.label }}</strong>
-                <span>{{ link.hint }}</span>
-              </a>
-            {% endfor %}
-          </div>
-
-          <h3 style="margin:16px 0 0;">Resumo de vinculos ativos</h3>
-          <div class="table-wrap">
-            <table class="table" style="min-width:0;">
-              <thead><tr><th>Profissional</th><th>Valor/h</th><th>Status</th></tr></thead>
-              <tbody>
-                {% for row in contracts %}
-                  <tr>
-                    <td>{{ row.mei_name }}</td>
-                    <td>R$ {{ row.contract.hourly_rate }}</td>
-                    <td>
-                      {% if row.is_operational %}
-                        <span class="pill success">Ativo</span>
-                      {% else %}
-                        <span class="pill warn">Inativo</span>
-                      {% endif %}
-                    </td>
-                  </tr>
-                {% empty %}
-                  <tr><td colspan="3"><div class="empty-state">Sem vinculos operacionais ativos. <a href="{% url 'company_meis' %}#vinculo-existente">Configurar vinculo</a>.</div></td></tr>
+            <div class="sidebar-block">
+              <h3 style="margin:0;">Atalhos de operacao</h3>
+              <p class="section-subtitle">Acesso rapido para tarefas recorrentes.</p>
+              <div class="quick-links">
+                {% for link in quick_links %}
+                  <a class="quick-link" href="{{ link.url }}">
+                    <strong>{{ link.label }}</strong>
+                    <span>{{ link.hint }}</span>
+                  </a>
                 {% endfor %}
-              </tbody>
-            </table>
+              </div>
+            </div>
           </div>
         </section>
       </div>
+
+      <section class="company-panel">
+        <div class="section-head">
+          <div>
+            <h3>Resumo de vinculos ativos</h3>
+            <p class="section-subtitle">Visao objetiva de valores/hora e status da base operacional.</p>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Profissional</th><th>Valor/h</th><th>Status</th></tr></thead>
+            <tbody>
+              {% for row in contracts %}
+                <tr>
+                  <td>{{ row.mei_name }}</td>
+                  <td>R$ {{ row.contract.hourly_rate }}</td>
+                  <td>
+                    {% if row.is_operational %}
+                      <span class="pill success">Ativo</span>
+                    {% else %}
+                      <span class="pill warn">Inativo</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="3"><div class="empty-panel"><strong>Sem vinculos ativos.</strong><p>Configure o primeiro vinculo para iniciar os registros operacionais.</p><a class="btn primary" href="{% url 'company_meis' %}#vinculo-existente">Configurar vinculo</a></div></td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
   {% endif %}
 {% endblock %}
