@@ -1391,7 +1391,24 @@ def privacy_view(request):
 
 
 def landing_view(request):
-    return render(request, "public/landing.html")
+    app_base_url = (settings.APP_BASE_URL or "").rstrip("/")
+    if app_base_url:
+        canonical_url = f"{app_base_url}/"
+    else:
+        canonical_url = request.build_absolute_uri("/")
+
+    og_image_path = static("img/public/prints/painel-profissional-mobile.png.jpg")
+    if app_base_url:
+        og_image_url = f"{app_base_url}{og_image_path}"
+    else:
+        og_image_url = request.build_absolute_uri(og_image_path)
+
+    context = {
+        "canonical_url": canonical_url,
+        "og_url": canonical_url,
+        "og_image_url": og_image_url,
+    }
+    return render(request, "public/landing.html", context)
 
 
 @require_GET

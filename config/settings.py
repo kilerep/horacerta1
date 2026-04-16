@@ -55,8 +55,14 @@ SECRET_KEY = os.getenv(
 )
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = _env_bool("DEBUG", True)
+DEBUG = _env_bool("DEBUG", False)
 APP_BASE_URL = os.getenv("APP_BASE_URL", "").strip()
+ALLOW_DEBUG_IN_REMOTE = _env_bool("ALLOW_DEBUG_IN_REMOTE", False)
+
+app_base_host = (urlparse(APP_BASE_URL).hostname or "").strip() if APP_BASE_URL else ""
+is_remote_host = bool(app_base_host and app_base_host not in {"localhost", "127.0.0.1"})
+if DEBUG and is_remote_host and not ALLOW_DEBUG_IN_REMOTE:
+    DEBUG = False
 
 DEFAULT_ALLOWED_HOSTS = [
     "horacertagestao.com.br",
@@ -73,7 +79,6 @@ render_external_hostname = os.getenv("RENDER_EXTERNAL_HOSTNAME", "").strip()
 if render_external_hostname and render_external_hostname not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append(render_external_hostname)
 if APP_BASE_URL:
-    app_base_host = (urlparse(APP_BASE_URL).hostname or "").strip()
     if app_base_host and app_base_host not in ALLOWED_HOSTS:
         ALLOWED_HOSTS.append(app_base_host)
 
