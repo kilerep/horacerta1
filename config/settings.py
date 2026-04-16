@@ -21,6 +21,11 @@ try:
 except ImportError:  # pragma: no cover - safety fallback for local dev before pip install
     dj_database_url = None
 
+try:
+    import whitenoise  # noqa: F401
+except ImportError:  # pragma: no cover - optional dependency in some environments
+    whitenoise = None
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -82,7 +87,7 @@ if APP_BASE_URL:
     if app_base_host and app_base_host not in ALLOWED_HOSTS:
         ALLOWED_HOSTS.append(app_base_host)
 
-USE_WHITENOISE = _env_bool("USE_WHITENOISE", False)
+USE_WHITENOISE = _env_bool("USE_WHITENOISE", not DEBUG) and whitenoise is not None
 
 
 # Application definition
@@ -275,6 +280,8 @@ if not DEBUG:
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 
 
 
