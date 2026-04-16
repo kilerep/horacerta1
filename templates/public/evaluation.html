@@ -1,0 +1,63 @@
+{% extends "public/base_public.html" %}
+{% load static %}
+{% block title %}Avaliação da Empresa | HoraCerta{% endblock %}
+{% block meta_description %}Etapa pública de avaliação do HoraCerta para empresas: entenda para quem faz sentido, quando adotar e qual é o próximo passo para começar.{% endblock %}
+
+{% block extra_head %}
+<link rel="canonical" href="{{ canonical_url }}">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<link rel="stylesheet" href="{% static 'css/public_evaluation.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="container eval-wrap">
+  <section class="eval-hero">
+    <span class="eval-kicker">Jornada de avaliação</span>
+    <h1>Avaliação da empresa no HoraCerta</h1>
+    <p>Esta etapa organiza a decisão comercial com clareza: para quem o HoraCerta é indicado, quando faz sentido adotar e como seguir para cadastro ou entrada na plataforma.</p>
+    <div class="eval-actions">
+      <a class="btn primary" href="{% url 'signup' %}?from=avaliacao-publica">Cadastrar empresa e iniciar avaliação</a>
+      <a class="btn" href="{% url 'login' %}?from=avaliacao-publica">Já tenho acesso</a>
+    </div>
+  </section>
+
+  <section class="eval-grid">
+    <article class="eval-card">
+      <h3>Para quem é</h3>
+      <ul class="eval-list">
+        <li>Empresas com operação ativa de profissionais MEI.</li>
+        <li>RH que precisa padronizar cadastro e governança de jornada.</li>
+        <li>Operação e financeiro que precisam de histórico consistente.</li>
+      </ul>
+    </article>
+    <article class="eval-card">
+      <h3>Quando faz sentido</h3>
+      <ul class="eval-list">
+        <li>Quando planilha e mensagens já não sustentam a rotina.</li>
+        <li>Quando fechamento mensal gera retrabalho entre áreas.</li>
+        <li>Quando a gestão precisa de previsibilidade diária.</li>
+      </ul>
+    </article>
+    <article class="eval-card">
+      <h3>Próximo passo</h3>
+      <div class="eval-step">
+        <strong>1. Cadastro da empresa</strong>
+        <p>Crie a conta da empresa para iniciar o ambiente de operação.</p>
+        <strong>2. Estruturação inicial</strong>
+        <p>Cadastre profissionais MEI e organize a base de jornada.</p>
+        <strong>3. Acompanhamento</strong>
+        <p>Acompanhe registros e histórico com a equipe interna.</p>
+      </div>
+    </article>
+  </section>
+
+  <section class="eval-card">
+    <h2>Compromisso de comunicação</h2>
+    <p>O HoraCerta não usa métricas falsas, urgência artificial ou depoimentos inventados. A proposta comercial desta página é alinhada ao produto real em operação.</p>
+    <div class="eval-actions eval-next">
+      <a class="btn primary" href="{% url 'signup' %}?from=avaliacao-publica">Quero iniciar a avaliação agora</a>
+      <a class="btn" href="{% url 'public_evaluation_next_step' %}">Ver resumo do próximo passo</a>
+    </div>
+  </section>
+</section>
+{% endblock %}

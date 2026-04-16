@@ -1,0 +1,45 @@
+{% extends "public/base_public.html" %}
+{% load static %}
+{% block title %}Próximo Passo da Avaliação | HoraCerta{% endblock %}
+{% block meta_description %}Resumo simples da jornada pública do HoraCerta: descoberta, avaliação e entrada na plataforma para operação entre empresa e MEI.{% endblock %}
+
+{% block extra_head %}
+<link rel="canonical" href="{{ canonical_url }}">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<link rel="stylesheet" href="{% static 'css/public_evaluation.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="container eval-wrap">
+  <section class="eval-hero">
+    <span class="eval-kicker">Próximo passo</span>
+    <h1>Jornada pública do HoraCerta</h1>
+    <p>Você chegou à etapa final de pré-venda. Abaixo está o fluxo objetivo para seguir sem dúvida.</p>
+  </section>
+
+  <section class="eval-grid">
+    <article class="eval-card">
+      <h3>1. Descoberta</h3>
+      <p>A empresa entende proposta, escopo e aderência na home pública.</p>
+    </article>
+    <article class="eval-card">
+      <h3>2. Avaliação</h3>
+      <p>A empresa confirma cenário, momento e impacto operacional.</p>
+    </article>
+    <article class="eval-card">
+      <h3>3. Entrada</h3>
+      <p>A empresa cria conta ou acessa a plataforma para continuar a operação.</p>
+    </article>
+  </section>
+
+  <section class="eval-card">
+    <h2>Escolha seu próximo passo</h2>
+    <div class="eval-actions">
+      <a class="btn primary" href="{% url 'signup' %}?from=avaliacao-publica">Criar conta da empresa</a>
+      <a class="btn" href="{% url 'login' %}?from=avaliacao-publica">Entrar no sistema</a>
+      <a class="btn" href="{% url 'landing' %}">Voltar para a home</a>
+    </div>
+    <div class="eval-note">Fluxo comercial público: claro, honesto e alinhado ao estágio real do produto.</div>
+  </section>
+</section>
+{% endblock %}

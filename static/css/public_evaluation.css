@@ -1,0 +1,21 @@
+.eval-wrap{display:grid;gap:14px}
+.eval-hero,.eval-card{border:1px solid var(--line);border-radius:16px;padding:16px;background:rgba(10,20,40,.72)}
+.eval-hero{background:
+  radial-gradient(700px 320px at 5% -20%, rgba(47,107,255,.22), transparent 60%),
+  rgba(10,20,40,.72)}
+.eval-kicker{display:inline-flex;padding:5px 10px;border-radius:999px;border:1px solid rgba(46,162,239,.42);background:rgba(46,162,239,.12);font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase}
+.eval-hero h1{margin:10px 0 0;font-size:clamp(1.8rem,4.2vw,2.6rem);letter-spacing:-.03em}
+.eval-hero p{margin:10px 0 0;color:var(--muted);max-width:840px}
+.eval-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.eval-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.eval-card h2,.eval-card h3{margin:0 0 8px}
+.eval-card p{margin:0;color:var(--muted);line-height:1.5}
+.eval-list{margin:0;padding-left:18px;display:grid;gap:6px}
+.eval-list li{color:var(--muted);line-height:1.45}
+.eval-step{display:grid;gap:8px}
+.eval-step strong{font-size:14px}
+.eval-note{border:1px dashed rgba(255,255,255,.24);border-radius:12px;padding:10px;background:rgba(255,255,255,.02);color:var(--muted);font-size:13px}
+.eval-next{margin-top:4px}
+@media (max-width:980px){
+  .eval-grid{grid-template-columns:1fr}
+}

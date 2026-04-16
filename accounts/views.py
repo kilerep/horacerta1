@@ -1390,25 +1390,35 @@ def privacy_view(request):
     return render(request, "public/privacy.html")
 
 
-def landing_view(request):
+def _public_base_url(request):
     app_base_url = (settings.APP_BASE_URL or "").rstrip("/")
-    if app_base_url:
-        canonical_url = f"{app_base_url}/"
-    else:
-        canonical_url = request.build_absolute_uri("/")
+    return app_base_url or f"{request.scheme}://{request.get_host()}"
 
-    og_image_path = static("img/public/prints/painel-profissional-mobile.png.jpg")
-    if app_base_url:
-        og_image_url = f"{app_base_url}{og_image_path}"
-    else:
-        og_image_url = request.build_absolute_uri(og_image_path)
 
-    context = {
+def _public_page_context(request, path="/"):
+    base_url = _public_base_url(request)
+    canonical_url = f"{base_url}{path}"
+    og_image_url = f"{base_url}{static('img/public/prints/painel-profissional-mobile.png.jpg')}"
+    return {
         "canonical_url": canonical_url,
         "og_url": canonical_url,
         "og_image_url": og_image_url,
     }
+
+
+def landing_view(request):
+    context = _public_page_context(request, "/")
     return render(request, "public/landing.html", context)
+
+
+def evaluation_view(request):
+    context = _public_page_context(request, "/avaliacao/")
+    return render(request, "public/evaluation.html", context)
+
+
+def evaluation_next_step_view(request):
+    context = _public_page_context(request, "/avaliacao/proximo-passo/")
+    return render(request, "public/evaluation_next_step.html", context)
 
 
 @require_GET
