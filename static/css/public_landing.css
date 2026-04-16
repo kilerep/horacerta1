@@ -2,7 +2,11 @@
 .kicker{display:inline-flex;padding:6px 10px;border-radius:999px;border:1px solid rgba(116,198,255,.35);background:rgba(116,198,255,.1);font-size:12px;font-weight:700}
 .hero h1{margin:12px 0 0;font-size:clamp(2.2rem,5vw,4.2rem);line-height:.98;letter-spacing:-.04em}
 .hero p{margin:14px 0 0;color:var(--muted);max-width:640px;font-size:1.02rem}
+.hero-roles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:14px;max-width:760px}
+.hero-role{display:flex;align-items:center;min-height:36px;padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.03);font-size:12px;color:#dce8ff}
 .hero-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+.hero-assist{margin:10px 0 0;font-size:13px;color:var(--muted)}
+.hero-assist a{color:#b8d7ff;text-decoration:underline;text-underline-offset:.18em}
 .hero-points{display:grid;gap:8px;margin-top:18px;max-width:640px}
 .hero-point{border:1px solid var(--line);border-radius:12px;padding:11px 12px;background:rgba(255,255,255,.03)}
 .hero-visual{position:relative;border:1px solid var(--line);border-radius:24px;padding:18px;background:
@@ -54,6 +58,9 @@
 .steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:18px}
 .step-index{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-size:12px;font-weight:800;background:rgba(47,107,255,.24);border:1px solid rgba(47,107,255,.45)}
 .faq{display:grid;gap:10px;margin-top:18px}
+.faq-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:18px}
+.faq-block{border:1px solid var(--line);border-radius:16px;padding:14px;background:rgba(10,20,40,.72)}
+.faq-block h3{margin:0 0 4px;font-size:1rem}
 .faq-item{border:1px solid var(--line);border-radius:14px;padding:12px;background:rgba(255,255,255,.02)}
 .faq-item strong{display:block}
 .cta{margin-top:26px;border:1px solid var(--line);border-radius:20px;padding:28px;text-align:center;background:radial-gradient(circle at 0 0, rgba(47,107,255,.24), transparent 34%),radial-gradient(circle at 100% 100%, rgba(46,162,239,.18), transparent 34%),rgba(10,20,40,.85)}
@@ -61,7 +68,8 @@
 .cta .hero-actions{justify-content:center}
 @media (max-width:980px){
   .hero,.proof-grid{grid-template-columns:1fr}
-  .grid-3,.grid-2,.steps,.trust-grid{grid-template-columns:1fr}
+  .grid-3,.grid-2,.steps,.trust-grid,.faq-grid{grid-template-columns:1fr}
+  .hero-roles{grid-template-columns:1fr}
   .phone-stack{grid-template-columns:1fr 1fr;min-height:0}
   .phone-card.primary,.phone-card.secondary,.phone-card.tertiary{grid-row:auto;transform:none;margin-top:0;opacity:1}
 }

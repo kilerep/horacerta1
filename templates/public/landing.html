@@ -55,16 +55,22 @@
 <section class="container hero">
   <div>
     <span class="kicker">SaaS operacional de gestão de horas entre empresa e MEI</span>
-    <h1>Gestão de horas com padrão profissional para empresas que operam com MEI.</h1>
-    <p>No HoraCerta, a empresa cadastra o MEI, o profissional registra horários e a operação acompanha tudo em tempo real com histórico organizado. Menos controle paralelo, mais segurança operacional.</p>
-    <div class="hero-actions">
-      <a class="btn primary" href="{% url 'signup' %}">Começar avaliação da empresa</a>
-      <a class="btn" href="{% url 'login' %}">Acessar plataforma</a>
+    <h1>Gestão de horas com padrão B2B para empresas que operam com MEI.</h1>
+    <p>O HoraCerta transforma uma rotina dispersa em operação clara: a empresa cadastra o MEI, o profissional registra horários e a gestão acompanha em tempo real com histórico organizado.</p>
+    <div class="hero-roles">
+      <span class="hero-role">RH: cadastro e governança da base</span>
+      <span class="hero-role">Operação: acompanhamento diário da jornada</span>
+      <span class="hero-role">Financeiro: conferência com histórico confiável</span>
     </div>
+    <div class="hero-actions">
+      <a class="btn primary" href="{% url 'signup' %}">Iniciar avaliação da empresa</a>
+      <a class="btn" href="#como-funciona">Ver como funciona</a>
+    </div>
+    <p class="hero-assist">Já tem acesso? <a href="{% url 'login' %}">Entrar na plataforma</a></p>
     <div class="hero-points">
       <div class="hero-point">Produto em operação: as telas ao lado são capturas reais do mobile do MEI.</div>
       <div class="hero-point">Fluxo claro e direto: empresa cadastra, MEI registra e empresa acompanha.</div>
-      <div class="hero-point">Base confiável para RH, operação e financeiro decidirem com mais segurança.</div>
+      <div class="hero-point">Sem métricas inventadas: proposta comercial baseada no que o produto já entrega.</div>
     </div>
   </div>
   <div class="hero-visual" aria-label="Capturas reais do produto HoraCerta">
@@ -157,33 +163,42 @@
 
 <section class="container section" id="beneficios">
   <h2>Benefícios para a operação</h2>
-  <p class="intro">Mais controle operacional para RH, operação e financeiro trabalharem com a mesma referência.</p>
+  <p class="intro">Mais clareza de responsabilidade para cada área, com uma base única de trabalho.</p>
   <div class="grid-3">
-    <article class="card"><h3>Para RH</h3><p>Cadastro e acompanhamento de MEIs em um fluxo claro, com menos ruído entre áreas.</p></article>
-    <article class="card"><h3>Para operação</h3><p>Leitura diária de jornada em tempo real para agir rápido quando houver pendência.</p></article>
-    <article class="card"><h3>Para financeiro</h3><p>Histórico organizado para conferência e fechamento com mais consistência operacional.</p></article>
+    <article class="card">
+      <h3>Para RH</h3>
+      <p>Estruture cadastro e rotina de profissionais MEI com visão centralizada e menos retrabalho interno.</p>
+    </article>
+    <article class="card">
+      <h3>Para operação</h3>
+      <p>Acompanhe jornada em tempo real e identifique rapidamente o que está em dia e o que exige ação.</p>
+    </article>
+    <article class="card">
+      <h3>Para financeiro</h3>
+      <p>Ganhe previsibilidade no fechamento com histórico organizado e conferência mais consistente.</p>
+    </article>
   </div>
 </section>
 
 <section class="container section" id="confianca">
   <h2>Por que confiar no HoraCerta</h2>
-  <p class="intro">A proposta comercial foi desenhada para refletir o produto como ele é: operacional, claro e verificável.</p>
+  <p class="intro">A camada comercial foi construída para reduzir risco percebido na decisão: linguagem objetiva, produto real e proposta verificável.</p>
   <div class="trust-grid">
     <article class="trust-card">
-      <h3>Produto mostrado com transparência</h3>
-      <p>A landing usa capturas reais da plataforma para representar o uso diário de forma fiel.</p>
+      <h3>Demonstração com produto real</h3>
+      <p>A landing usa capturas reais da plataforma para representar o uso diário sem simulações artificiais.</p>
     </article>
     <article class="trust-card">
-      <h3>Fluxo operacional verificável</h3>
-      <p>O valor do produto está no fluxo objetivo: empresa cadastra, MEI registra e empresa acompanha.</p>
+      <h3>Fluxo operacional claro</h3>
+      <p>Empresa cadastra, MEI registra e empresa acompanha: uma proposta simples de entender e de operar.</p>
     </article>
     <article class="trust-card">
-      <h3>Sem promessas artificiais</h3>
+      <h3>Sem marketing inflado</h3>
       <p>Sem contadores fake, sem depoimentos inventados e sem promessas além do estágio real do produto.</p>
     </article>
     <article class="trust-card">
-      <h3>Postura de software sério</h3>
-      <p>Comunicação profissional, linguagem objetiva e foco em confiança para apoiar decisão de compra.</p>
+      <h3>Postura de software B2B</h3>
+      <p>Comunicação profissional, foco em rotina operacional e clareza para apoiar uma decisão de compra responsável.</p>
     </article>
   </div>
 </section>
@@ -212,34 +227,51 @@
 
 <section class="container section" id="quando-faz-sentido">
   <h2>Quando o HoraCerta faz sentido</h2>
-  <p class="intro">Ideal para empresas que já operam com MEI e querem mais previsibilidade sem complicar a rotina.</p>
+  <p class="intro">Ideal para empresas que já operam com MEI e querem amadurecer controle sem aumentar complexidade.</p>
   <div class="grid-3">
-    <article class="card"><h3>Base de MEIs ativa</h3><p>Quando a empresa já precisa organizar cadastro e rotina de profissionais em um único fluxo.</p></article>
-    <article class="card"><h3>Fechamento recorrente</h3><p>Quando RH e financeiro precisam de histórico confiável para conferência com menos retrabalho.</p></article>
-    <article class="card"><h3>Acompanhamento diário</h3><p>Quando a operação precisa enxergar rapidamente o que foi registrado e o que exige atenção.</p></article>
+    <article class="card"><h3>Base MEI em crescimento</h3><p>Quando planilha e mensagens já não sustentam a rotina com padrão de gestão.</p></article>
+    <article class="card"><h3>Fechamento mensal sensível</h3><p>Quando divergências entre áreas geram retrabalho e atrasam conferência financeira.</p></article>
+    <article class="card"><h3>Exigência de previsibilidade</h3><p>Quando a operação precisa visibilidade diária para evitar surpresas no fim do período.</p></article>
   </div>
 </section>
 
 <section class="container section" id="faq">
-  <h2>Perguntas frequentes</h2>
-  <div class="faq">
-    <article class="faq-item"><strong>O HoraCerta serve para qual etapa da operação?</strong><span class="intro">Para organizar cadastro de MEIs, registro de horários e acompanhamento em tempo real pela empresa.</span></article>
-    <article class="faq-item"><strong>O MEI consegue registrar pelo celular no dia a dia?</strong><span class="intro">Sim. O fluxo mobile do profissional foi pensado para uso rápido e recorrente.</span></article>
-    <article class="faq-item"><strong>RH, operação e financeiro conseguem trabalhar com a mesma base?</strong><span class="intro">Sim. O histórico fica centralizado para reduzir divergência de informação entre áreas.</span></article>
-    <article class="faq-item"><strong>O HoraCerta substitui sistema jurídico/contratual?</strong><span class="intro">Não. O foco é gestão de horas entre empresa e MEI, com visão operacional.</span></article>
-    <article class="faq-item"><strong>As imagens da landing são do produto real?</strong><span class="intro">Sim. A vitrine visual usa capturas reais do HoraCerta em operação.</span></article>
-    <article class="faq-item"><strong>Existe marketing inflado na página?</strong><span class="intro">Não. Não usamos métricas falsas, depoimentos fake ou promessas inventadas.</span></article>
-    <article class="faq-item"><strong>Como a empresa começa a avaliar a plataforma?</strong><span class="intro">Pelo botão <a href="{% url 'signup' %}">Começar avaliação da empresa</a> e, depois, pelo acesso em <a href="{% url 'login' %}">Acessar plataforma</a>.</span></article>
+  <h2>Perguntas frequentes de decisão</h2>
+  <p class="intro">Respostas diretas para as dúvidas mais comuns de quem avalia o HoraCerta para a operação da empresa.</p>
+  <div class="faq-grid">
+    <article class="faq-block">
+      <h3>Escopo do produto</h3>
+      <div class="faq">
+        <article class="faq-item"><strong>O HoraCerta resolve qual parte da rotina?</strong><span class="intro">Cadastro de MEIs, registro de horários e acompanhamento operacional em tempo real.</span></article>
+        <article class="faq-item"><strong>O HoraCerta substitui sistema jurídico/contratual?</strong><span class="intro">Não. O foco é gestão de horas entre empresa e MEI, com visão operacional.</span></article>
+        <article class="faq-item"><strong>As imagens da landing são reais?</strong><span class="intro">Sim. A vitrine visual usa capturas reais do HoraCerta em operação.</span></article>
+      </div>
+    </article>
+    <article class="faq-block">
+      <h3>Uso no dia a dia</h3>
+      <div class="faq">
+        <article class="faq-item"><strong>O MEI consegue registrar pelo celular com rapidez?</strong><span class="intro">Sim. O fluxo mobile do profissional foi desenhado para uso recorrente e simples.</span></article>
+        <article class="faq-item"><strong>RH, operação e financeiro trabalham com a mesma base?</strong><span class="intro">Sim. O histórico centralizado reduz divergência de informação entre áreas.</span></article>
+        <article class="faq-item"><strong>Existe marketing inflado na página?</strong><span class="intro">Não. Não usamos métricas falsas, prova social fake ou promessas inventadas.</span></article>
+      </div>
+    </article>
+    <article class="faq-block">
+      <h3>Contratação e avaliação</h3>
+      <div class="faq">
+        <article class="faq-item"><strong>Como começar a avaliar a plataforma?</strong><span class="intro">Pelo botão <a href="{% url 'signup' %}">Iniciar avaliação da empresa</a>.</span></article>
+        <article class="faq-item"><strong>Já tenho conta. Como acesso?</strong><span class="intro">Use <a href="{% url 'login' %}">Entrar na plataforma</a> com seu login atual.</span></article>
+      </div>
+    </article>
   </div>
 </section>
 
 <section class="container section">
   <div class="cta">
-    <h2>Estruture sua operação com um software sério, claro e pronto para rotina real</h2>
-    <p>Se sua empresa opera com MEI e precisa de mais previsibilidade, o HoraCerta organiza cadastro, registro e acompanhamento em um fluxo único e confiável.</p>
+    <h2>Eleve o controle da sua operação com um software B2B claro e confiável</h2>
+    <p>Se sua empresa opera com MEI e precisa de mais previsibilidade, o HoraCerta organiza cadastro, registro e acompanhamento em um fluxo único, profissional e verificável.</p>
     <div class="hero-actions">
-      <a class="btn primary" href="{% url 'signup' %}">Começar avaliação da empresa</a>
-      <a class="btn" href="{% url 'login' %}">Acessar plataforma</a>
+      <a class="btn primary" href="{% url 'signup' %}">Iniciar avaliação da empresa</a>
+      <a class="btn" href="#quando-faz-sentido">Ver se faz sentido para meu cenário</a>
     </div>
   </div>
 </section>
