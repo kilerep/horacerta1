@@ -28,13 +28,13 @@
   </style>
 
   <section class="panel">
-    <h2 style="margin:0;">Exportar horários</h2>
+    <h2 style="margin:0;">Exportar horarios</h2>
     <p class="muted" style="margin:8px 0 0;">
       Gere arquivos limpos para compartilhamento (inclusive WhatsApp).
     </p>
 
     {% if contracts %}
-      <form method="get" class="row" style="margin-top:12px;">
+      <form method="get" class="row" style="margin-top:12px;" data-submit-once="true">
         <div class="field">
           <label>Vinculo</label>
           <select name="contract" required>
@@ -51,12 +51,13 @@
           <label>Ate</label>
           <input type="date" name="end">
         </div>
-        <button class="btn" type="submit" formaction="{% url 'export_csv' %}">CSV</button>
-        <button class="btn primary" type="submit" formaction="{% url 'export_xlsx' %}">Excel (.xlsx)</button>
-        <button class="btn" type="submit" formaction="{% url 'export_pdf' %}">PDF</button>
+        <button class="btn" type="submit" formaction="{% url 'export_csv' %}" data-loading-text="Gerando CSV...">CSV</button>
+        <button class="btn primary" type="submit" formaction="{% url 'export_xlsx' %}" data-loading-text="Gerando Excel...">Excel (.xlsx)</button>
+        <button class="btn" type="submit" formaction="{% url 'export_pdf' %}" data-loading-text="Gerando PDF...">PDF</button>
       </form>
     {% else %}
       <p class="muted" style="margin-top:10px;">Sem vinculos ativos para exportar.</p>
     {% endif %}
   </section>
 {% endblock %}
+

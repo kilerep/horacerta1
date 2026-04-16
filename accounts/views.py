@@ -1052,7 +1052,14 @@ def company_reports(request):
             date_to=req_date_to,
             message=message,
         )
-        return redirect("company_reports")
+        query_parts = ["event=request_sent"]
+        if selected_employee:
+            query_parts.append(f"employee={selected_employee}")
+        if date_from_raw:
+            query_parts.append(f"date_from={date_from_raw}")
+        if date_to_raw:
+            query_parts.append(f"date_to={date_to_raw}")
+        return redirect(f"{reverse('company_reports')}?{'&'.join(query_parts)}")
 
     if export_kind == "xlsx":
         headers = ["MEI", "Data", "Hora", "Valor/h", "Observacao"]
@@ -1124,7 +1131,7 @@ def company_docs(request):
     denied = _redirect_if_not_empresa(request)
     if denied:
         return denied
-    return redirect("company_contracts")
+    return render(request, "accounts/company_docs.html")
 
 
 @login_required

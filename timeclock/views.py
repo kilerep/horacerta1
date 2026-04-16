@@ -100,9 +100,9 @@ def employee_dashboard(request):
             report_request.responded_at = timezone.now()
             report_request.save(update_fields=["response_text", "is_answered", "responded_at"])
 
-        redirect_url = request.path
+        redirect_url = f"{request.path}?event=report_sent"
         if selected_contract:
-            redirect_url = f"{redirect_url}?contract={selected_contract.id}"
+            redirect_url = f"{redirect_url}&contract={selected_contract.id}"
         return redirect(redirect_url)
 
     if not contracts.exists():
@@ -130,7 +130,7 @@ def employee_dashboard(request):
             timestamp=timezone.now(),
             note=note,
         )
-        return redirect(f"{request.path}?contract={selected_contract.id}")
+        return redirect(f"{request.path}?event=punch_saved&contract={selected_contract.id}")
 
     date_from_raw = request.GET.get("date_from") or request.GET.get("start")
     date_to_raw = request.GET.get("date_to") or request.GET.get("end")

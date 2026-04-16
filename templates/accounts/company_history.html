@@ -103,7 +103,7 @@
           <p class="panel-subtitle">Selecione MEI e periodo para consultar lancamentos com contexto operacional.</p>
         </div>
       </header>
-      <form method="get" class="row">
+      <form method="get" class="row" data-submit-once="true">
         <div class="field">
           <label>MEI</label>
           <select name="employee">
@@ -127,7 +127,7 @@
         </div>
 
         <div class="filter-actions">
-          <button class="btn primary" type="submit">Atualizar consulta</button>
+          <button class="btn primary" type="submit" data-loading-text="Atualizando consulta...">Atualizar consulta</button>
           <a class="btn" href="{% url 'company_history_legacy' %}">Limpar filtros</a>
         </div>
       </form>

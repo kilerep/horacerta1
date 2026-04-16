@@ -10,6 +10,20 @@
 
 {% block content %}
   <div class="hc-page">
+    {% if request.GET.event == "punch_saved" %}
+      <section class="hc-feedback hc-feedback--ok" role="status" aria-live="polite">
+        Horario registrado com sucesso.
+      </section>
+    {% elif request.GET.event == "manual_saved" %}
+      <section class="hc-feedback hc-feedback--ok" role="status" aria-live="polite">
+        Registro manual salvo com sucesso{% if request.GET.created %} ({{ request.GET.created }} horario{% if request.GET.created != "1" %}s{% endif %}){% endif %}.
+      </section>
+    {% elif request.GET.event == "report_sent" %}
+      <section class="hc-feedback hc-feedback--ok" role="status" aria-live="polite">
+        Retorno enviado com sucesso para a empresa.
+      </section>
+    {% endif %}
+
     {% if pending_report_requests %}
       <section class="hc-panel hc-panel--requests">
         <h3 class="hc-section-title">Solicitacoes de relatorio pendentes</h3>
@@ -25,7 +39,7 @@
               {% if req.message %}
                 <div class="hc-muted" style="margin-top:4px;">Mensagem: {{ req.message }}</div>
               {% endif %}
-              <form method="post" class="hc-request-form">
+              <form method="post" class="hc-request-form" data-submit-once="true">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="respond_activity_request">
                 <input type="hidden" name="request_id" value="{{ req.id }}">
@@ -37,7 +51,7 @@
                     <label>Sua resposta</label>
                     <textarea name="response_text" placeholder="Descreva as atividades do periodo"></textarea>
                   </div>
-                  <button class="btn primary" type="submit">Enviar resposta</button>
+                  <button class="btn primary" type="submit" data-loading-text="Enviando resposta...">Enviar resposta</button>
                 </div>
               </form>
             </article>

@@ -121,7 +121,7 @@
 
   <section class="panel">
     <h2 style="margin:0 0 8px;">Historico por dia</h2>
-    <form method="get" class="row">
+    <form method="get" class="row" data-submit-once="true">
       <div class="field">
         <label>Empresa e contrato</label>
         <select name="contract" onchange="this.form.submit()">
@@ -140,7 +140,7 @@
         <label>Ate</label>
         <input type="date" name="date_to" value="{{ date_to }}">
       </div>
-      <button class="btn primary" type="submit">Filtrar</button>
+      <button class="btn primary" type="submit" data-loading-text="Aplicando filtros...">Filtrar</button>
     </form>
 
     {% if history_month_groups %}

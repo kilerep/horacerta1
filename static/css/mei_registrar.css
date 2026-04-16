@@ -97,6 +97,26 @@ main,
   font-size:13px;
 }
 
+.hc-feedback{
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:12px;
+  padding:10px 12px;
+  font-size:13px;
+  font-weight:700;
+}
+
+.hc-feedback--ok{
+  border-color:rgba(45,211,145,.45);
+  background:rgba(45,211,145,.14);
+  color:#d9ffec;
+}
+
+.hc-feedback--warn{
+  border-color:rgba(255,176,32,.42);
+  background:rgba(255,176,32,.12);
+  color:#ffe7ad;
+}
+
 .hc-request-list{
   display:grid;
   gap:8px;

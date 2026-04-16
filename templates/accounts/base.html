@@ -314,6 +314,21 @@
       padding:18px;
     }
     .muted{ color: var(--muted); }
+    .hc-global-feedback{
+      margin:0 0 14px;
+      border-radius:12px;
+      border:1px solid rgba(45,211,145,.34);
+      background:rgba(45,211,145,.12);
+      color:#dbffef;
+      padding:10px 12px;
+      font-size:14px;
+      line-height:1.35;
+    }
+    .hc-global-feedback.warn{
+      border-color:rgba(255,176,32,.4);
+      background:rgba(255,176,32,.12);
+      color:#ffecc0;
+    }
 
     /* Premium UI (escopo: area interna da empresa) */
     .role-company .content label{
@@ -711,6 +726,7 @@
   {% block extra_js %}{% endblock %}
   {% if request.user.is_authenticated %}
     <script src="{% static 'js/mobile_drawer.js' %}"></script>
+    <script src="{% static 'js/form_feedback.js' %}"></script>
   {% endif %}
   <script src="{% static 'js/pwa-register.js' %}"></script>
 </body>

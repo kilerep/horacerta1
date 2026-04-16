@@ -275,8 +275,8 @@
       }
 
       var clientErrors = [];
-      if (!selectedContract) clientErrors.push("Selecione um vinculo.");
-      if (!selectedDate) clientErrors.push("Informe a data do lancamento.");
+      if (!selectedContract) clientErrors.push("Selecione empresa e contrato.");
+      if (!selectedDate) clientErrors.push("Informe a data do registro.");
       if (!times.length) clientErrors.push("Informe pelo menos 1 horario.");
 
       if (clientErrors.length) {
@@ -319,7 +319,12 @@
           }
 
           closeManualModal();
-          var nextUrl = window.location.pathname + "?contract=" + encodeURIComponent(selectedContract);
+          var nextUrl =
+            window.location.pathname +
+            "?contract=" +
+            encodeURIComponent(selectedContract) +
+            "&event=manual_saved&created=" +
+            encodeURIComponent(String(data.created_count || times.length));
           window.location.assign(nextUrl);
         })
         .catch(function () {

@@ -150,6 +150,12 @@
   </style>
 
   <div class="wrap-grid">
+    {% if request.GET.event == "request_sent" %}
+      <section class="hc-global-feedback" role="status" aria-live="polite">
+        Solicitacao enviada com sucesso. O MEI ja pode responder pelo painel dele.
+      </section>
+    {% endif %}
+
     <section class="panel">
       <header class="panel-head">
         <div>
@@ -157,7 +163,7 @@
           <p class="panel-subtitle">Configure o periodo e gere relatorios para analise e fechamento da operacao.</p>
         </div>
       </header>
-      <form method="get" class="row" style="margin-top:10px;">
+      <form method="get" class="row" style="margin-top:10px;" data-submit-once="true">
         <div class="field">
           <label>MEI</label>
           <select name="employee">
@@ -178,7 +184,7 @@
           <input type="date" name="date_to" value="{{ date_to }}">
         </div>
         <div class="filter-actions">
-          <button class="btn primary" type="submit">Atualizar relatorio</button>
+          <button class="btn primary" type="submit" data-loading-text="Atualizando relatorio...">Atualizar relatorio</button>
           <a class="btn" href="{% url 'company_reports' %}">Limpar filtros</a>
         </div>
       </form>
@@ -275,7 +281,7 @@
     <section id="request-report" class="panel">
       <h2 class="table-title">Solicitar detalhamento de atividades</h2>
       <p class="table-subtitle">Peça ao MEI um retorno descritivo para complementar auditoria e conferencia do periodo.</p>
-      <form method="post" class="row" style="margin-top:10px;">
+      <form method="post" class="row" style="margin-top:10px;" data-submit-once="true">
         {% csrf_token %}
         <input type="hidden" name="action" value="request_activity_report">
         <div class="field">
@@ -299,7 +305,7 @@
           <label>Mensagem (opcional)</label>
           <textarea name="message" rows="2" placeholder="Ex: detalhar atividades executadas no periodo solicitado."></textarea>
         </div>
-        <button class="btn primary" type="submit">Solicitar detalhamento ao MEI</button>
+        <button class="btn primary" type="submit" data-loading-text="Enviando solicitacao...">Solicitar detalhamento ao MEI</button>
       </form>
     </section>
 

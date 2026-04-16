@@ -156,11 +156,11 @@
               <p class="section-subtitle">Use os filtros para revisar a base e abrir a proxima acao certa de cada profissional.</p>
             </div>
           </div>
-          <form method="get" class="form-row">
+          <form method="get" class="form-row" data-submit-once="true">
             <div class="field"><label>{{ employee_search_form.q.label }}</label>{{ employee_search_form.q }}</div>
             <div class="field"><label>{{ period_form.date_from.label }}</label>{{ period_form.date_from }}</div>
             <div class="field"><label>{{ period_form.date_to.label }}</label>{{ period_form.date_to }}</div>
-            <button class="btn primary" type="submit">Atualizar painel</button>
+            <button class="btn primary" type="submit" data-loading-text="Atualizando painel...">Atualizar painel</button>
           </form>
 
           <div class="table-wrap">
