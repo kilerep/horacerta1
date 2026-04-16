@@ -131,7 +131,7 @@
           <div>
             <h2 class="company-title">Visao executiva da operacao</h2>
             <p class="company-subtitle">
-              Panorama rapido para acompanhar base ativa, jornada e pontos que exigem acao.
+              Painel executivo para acompanhar base ativa, jornada e prioridades da operacao.
             </p>
           </div>
         </div>
@@ -152,8 +152,8 @@
         <section class="company-panel">
           <div class="section-head">
             <div>
-              <h3>Gestao de profissionais</h3>
-              <p class="section-subtitle">Filtre a base e execute as proximas acoes operacionais.</p>
+              <h3>Base de profissionais (MEIs)</h3>
+              <p class="section-subtitle">Use os filtros para revisar a base e abrir a proxima acao certa de cada profissional.</p>
             </div>
           </div>
           <form method="get" class="form-row">
@@ -165,7 +165,7 @@
 
           <div class="table-wrap">
             <table class="table">
-              <thead><tr><th>Profissional</th><th>Estado</th><th>Vinculos</th><th>Acao</th></tr></thead>
+              <thead><tr><th>Profissional</th><th>Estado</th><th>Status operacional</th><th>Acao</th></tr></thead>
               <tbody>
                 {% for row in employees %}
                   <tr>
@@ -174,7 +174,7 @@
                       <span class="pill {% if row.state.tone == 'success' %}success{% elif row.state.tone == 'pending' %}pending{% elif row.state.tone == 'warn' %}warn{% endif %}">{{ row.state.label }}</span>
                       <div class="muted" style="margin-top:4px;font-size:12px;">{{ row.state.hint }}</div>
                     </td>
-                    <td>{{ row.total_contracts }} total / {{ row.active_contracts }} operacional</td>
+                    <td>{{ row.total_contracts }} vinculo(s) / {{ row.active_contracts }} ativo(s)</td>
                     <td>
                       <a class="btn" href="{{ row.profile_url }}">Ver perfil</a>
                       <a class="btn primary" href="{{ row.action_url }}">{{ row.action_label }}</a>
@@ -191,7 +191,7 @@
             <div class="section-head">
               <div>
                 <h3>Movimentacao recente</h3>
-                <p class="section-subtitle">Ultimos registros para conferencia rapida da jornada.</p>
+                <p class="section-subtitle">Ultimos registros para conferencia rapida e leitura executiva.</p>
               </div>
             </div>
           </div>
@@ -258,10 +258,10 @@
 
       <section class="company-panel">
         <div class="section-head">
-          <div>
-            <h3>Resumo de vinculos ativos</h3>
-            <p class="section-subtitle">Visao objetiva de valores/hora e status da base operacional.</p>
-          </div>
+              <div>
+                <h3>Resumo de vinculos ativos</h3>
+                <p class="section-subtitle">Visao objetiva de valor/hora e status dos vinculos da base.</p>
+              </div>
         </div>
         <div class="table-wrap">
           <table class="table">

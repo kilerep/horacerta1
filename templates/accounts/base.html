@@ -559,15 +559,19 @@
                 <div class="menu-label">Operacao</div>
                 <a class="item {% if current == 'dashboard_empresa' %}is-active{% endif %}" href="{% url 'dashboard_empresa' %}">
                   <div class="icon">D</div>
-                  <div><strong>Dashboard</strong><div class="muted item-sub">visao geral</div></div>
+                  <div><strong>Dashboard</strong><div class="muted item-sub">visao executiva</div></div>
                 </a>
                 <a class="item {% if current == 'company_meis' or current == 'company_mei_profile' %}is-active{% endif %}" href="{% url 'company_meis' %}">
                   <div class="icon">M</div>
-                  <div><strong>MEIs</strong><div class="muted item-sub">cadastro e status</div></div>
+                  <div><strong>MEIs</strong><div class="muted item-sub">cadastro e gestao de profissionais</div></div>
                 </a>
                 <a class="item {% if current == 'company_contracts' %}is-active{% endif %}" href="{% url 'company_contracts' %}">
                   <div class="icon">C</div>
-                  <div><strong>Vinculos</strong><div class="muted item-sub">operacao e documentos</div></div>
+                  <div><strong>Vinculos</strong><div class="muted item-sub">acompanhamento e edicao operacional</div></div>
+                </a>
+                <a class="item {% if current == 'company_docs' %}is-active{% endif %}" href="{% url 'company_docs' %}">
+                  <div class="icon">A</div>
+                  <div><strong>Documentos</strong><div class="muted item-sub">anexos e arquivos</div></div>
                 </a>
                 <a class="item {% if current == 'company_reports' %}is-active{% endif %}" href="{% url 'company_reports' %}">
                   <div class="icon">R</div>
@@ -578,12 +582,12 @@
                         <span class="badge">{{ pending_reports_count }}</span>
                       {% endif %}
                     </strong>
-                    <div class="muted item-sub">resumo e exportacao</div>
+                    <div class="muted item-sub">analise e exportacao</div>
                   </div>
                 </a>
                 <a class="item {% if current == 'company_history' or current == 'company_history_legacy' %}is-active{% endif %}" href="{% url 'company_history' %}">
                   <div class="icon">H</div>
-                  <div><strong>Historico</strong><div class="muted item-sub">lancamentos por periodo</div></div>
+                  <div><strong>Historico</strong><div class="muted item-sub">lancamentos e consulta por periodo</div></div>
                 </a>
               </div>
               <div class="menu-group">

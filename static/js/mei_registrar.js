@@ -22,7 +22,6 @@
   var manualErrors = document.getElementById("hcManualErrors");
   var manualContract = document.getElementById("hcManualContract");
   var manualDate = document.getElementById("hcManualDate");
-  var manualNote = document.getElementById("hcManualNote");
   var timesList = document.getElementById("hcTimesList");
   var addTimeBtn = document.getElementById("hcAddTimeBtn");
 
@@ -268,7 +267,6 @@
 
       var selectedContract = manualContract ? (manualContract.value || "").trim() : "";
       var selectedDate = manualDate ? (manualDate.value || "").trim() : "";
-      var noteText = manualNote ? (manualNote.value || "").trim() : "";
       var timeInputs = timesList ? timesList.querySelectorAll('input[name="times"]') : [];
       var times = [];
       for (var idx = 0; idx < timeInputs.length; idx += 1) {
@@ -291,7 +289,6 @@
       if (csrfInput) payload.append("csrfmiddlewaretoken", csrfInput.value);
       payload.append("contract", selectedContract);
       payload.append("manual_date", selectedDate);
-      payload.append("note", noteText);
       for (var j = 0; j < times.length; j += 1) {
         payload.append("times", times[j]);
       }
@@ -331,7 +328,7 @@
         .finally(function () {
           if (manualSaveBtn) {
             manualSaveBtn.disabled = false;
-            manualSaveBtn.textContent = "Salvar lancamento";
+            manualSaveBtn.textContent = "Salvar registro manual";
           }
         });
     });

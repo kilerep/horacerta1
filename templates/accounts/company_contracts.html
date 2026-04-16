@@ -133,11 +133,11 @@
 
   <div class="contracts-wrap">
     <section class="contracts-panel">
-      <h2 class="contracts-title">Gestao de vinculos da empresa</h2>
-      <p class="contracts-subtitle">Acompanhe situacao, documentos e ajustes operacionais com uma visao clara da base ativa.</p>
+      <h2 class="contracts-title">Vinculos operacionais</h2>
+      <p class="contracts-subtitle">Tela de acompanhamento e edicao dos vinculos ja criados para a base de profissionais.</p>
       <div class="contracts-meta">
         <span class="contracts-meta-pill">Vinculos listados: {{ contracts|length }}</span>
-        <span class="contracts-meta-pill">Tela focada em acompanhamento e edicao</span>
+        <span class="contracts-meta-pill">Fluxo: acompanhamento e edicao</span>
       </div>
 
       {% if request.GET.status == "updated" %}
@@ -145,7 +145,7 @@
       {% endif %}
       {% if show_creation_redirect_notice %}
         <div class="contracts-warning">
-          A criacao principal foi centralizada na tela de MEIs para manter um fluxo unico e sem retrabalho.
+          A criacao principal permanece na tela de MEIs para manter um fluxo unico e sem retrabalho.
           Use <strong>MEIs</strong> para cadastrar profissionais e configurar o vinculo inicial.
         </div>
       {% endif %}
@@ -187,7 +187,7 @@
         <div class="contracts-edit-head">
           <div>
             <h3 style="margin:0;">Editar vinculo</h3>
-            <p class="contracts-edit-subtitle">Atualize condicoes operacionais do vinculo com controle e historico.</p>
+            <p class="contracts-edit-subtitle">Atualize condicoes operacionais do vinculo com clareza e rastreabilidade.</p>
           </div>
           <a class="btn" href="{% url 'company_contracts' %}">Fechar edicao</a>
         </div>
@@ -239,8 +239,8 @@
     {% endif %}
 
     <section class="contracts-panel">
-      <h3 class="contracts-table-title">Lista operacional de vinculos</h3>
-      <p class="contracts-table-subtitle">Painel para consulta e edicao de vinculos ja existentes.</p>
+      <h3 class="contracts-table-title">Lista de vinculos ativos e inativos</h3>
+      <p class="contracts-table-subtitle">Consulta rapida da base operacional e acesso direto para edicao.</p>
       <div class="contracts-table-wrap">
         <table class="contracts-table">
           <thead>

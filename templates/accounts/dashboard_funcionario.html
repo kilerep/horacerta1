@@ -116,7 +116,7 @@
               <span class="hc-punch-btn__label">Registrar horario</span>
               <span class="hc-punch-btn__spinner" aria-hidden="true"></span>
             </button>
-            <button id="hcManualOpen" class="btn hc-manual-open-btn" type="button">Adicionar horario manual</button>
+            <button id="hcManualOpen" class="btn hc-manual-open-btn" type="button">Registrar horario manual</button>
             <button id="hcObsToggle" class="hc-obs-toggle" type="button" aria-expanded="false">Adicionar observacao</button>
             <div id="hcObsWrap" class="hc-obs-wrap" aria-hidden="true">
               <label for="hcObsField">Observacao (opcional)</label>
@@ -171,7 +171,7 @@
         <div id="hcManualOverlay" class="hc-overlay"></div>
         <section class="hc-modal-card" role="dialog" aria-modal="true" aria-labelledby="hcManualTitle">
           <header class="hc-modal-header">
-            <h3 id="hcManualTitle">Lancamento manual</h3>
+            <h3 id="hcManualTitle">Registro manual de horario</h3>
             <button id="hcManualCloseTop" type="button" class="hc-modal-close" aria-label="Fechar modal">x</button>
           </header>
 
@@ -206,14 +206,9 @@
               <button id="hcAddTimeBtn" type="button" class="btn hc-add-time-btn">Adicionar horario</button>
             </div>
 
-            <div class="hc-field">
-              <label for="hcManualNote">Observacao / Justificativa (opcional)</label>
-              <textarea id="hcManualNote" name="note" placeholder="Opcional: detalhe contexto do lancamento manual"></textarea>
-            </div>
-
             <footer class="hc-modal-actions">
               <button id="hcManualCancel" type="button" class="btn">Cancelar</button>
-              <button id="hcManualSave" type="submit" class="btn primary">Salvar lancamento</button>
+              <button id="hcManualSave" type="submit" class="btn primary">Salvar registro manual</button>
             </footer>
           </form>
         </section>

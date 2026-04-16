@@ -164,10 +164,10 @@
   <section class="help-hero">
     <span class="help-kicker">Suporte operacional</span>
     <h2>Central de ajuda do HoraCerta</h2>
-    <p>
-      Guia rapido para uso do MVP atual. O foco do sistema e dar controle operacional para a empresa
-      cadastrar profissionais, liberar vinculos e acompanhar jornadas com historico e relatorios.
-    </p>
+      <p>
+        Guia rapido para uso do MVP atual. O foco do sistema e dar controle operacional para a empresa
+        cadastrar profissionais, organizar vinculos e acompanhar jornadas com historico e relatorios.
+      </p>
   </section>
 
   <section class="help-grid">
@@ -215,15 +215,19 @@
       <div class="area-list">
         <div class="area-item">
           <strong>Dashboard</strong>
-          <span>Visao geral da operacao com indicadores de profissionais, vinculos e registros.</span>
+          <span>Visao executiva da operacao com indicadores de profissionais, vinculos e registros.</span>
         </div>
         <div class="area-item">
           <strong>MEIs</strong>
-          <span>Cadastro e gestao da base de profissionais vinculados a empresa.</span>
+          <span>Cadastro e gestao de profissionais da empresa.</span>
         </div>
         <div class="area-item">
           <strong>Vinculos</strong>
-          <span>Gestao de vinculos existentes: listar, acompanhar status e editar dados operacionais e documentos.</span>
+          <span>Acompanhamento e edicao de vinculos ja criados na base operacional.</span>
+        </div>
+        <div class="area-item">
+          <strong>Documentos</strong>
+          <span>Central de anexos e arquivos operacionais com acesso rapido para a equipe.</span>
         </div>
         <div class="area-item">
           <strong>Relatorios</strong>
@@ -265,7 +269,7 @@
         </div>
         <div class="faq-item">
           <strong>Onde a empresa cria o vinculo?</strong>
-          <p>No cadastro de MEIs. A tela de Vinculos e focada em listagem, acompanhamento e edicao.</p>
+          <p>Na area de MEIs. A tela de Vinculos e focada em acompanhamento e edicao.</p>
         </div>
         <div class="faq-item">
           <strong>Profissional cadastrado, mas nao ativo. Por que?</strong>
@@ -294,6 +298,7 @@
       <div class="help-actions">
         <a class="btn" href="{% url 'company_meis' %}">Ir para MEIs</a>
         <a class="btn primary" href="{% url 'company_contracts' %}">Ir para Vinculos</a>
+        <a class="btn" href="{% url 'company_docs' %}">Ir para Documentos</a>
       </div>
     </article>
   </section>
