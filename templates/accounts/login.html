@@ -5,46 +5,135 @@
 {% block content %}
   <style>
     .auth-wrap {
-      min-height: clamp(72vh, 78vh, 86vh);
+      min-height: clamp(72vh, 80vh, 88vh);
       display: grid;
-      place-items: center;
-      padding: 18px 12px 24px;
+      align-items: center;
+      padding: 16px 0 26px;
+    }
+
+    .auth-shell {
+      display: grid;
+      gap: 14px;
+    }
+
+    .auth-brand {
+      border-radius: 16px;
+      border: 1px solid var(--color-border);
+      background: var(--surface-raised);
+      padding: 14px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .auth-brand-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--border-brand);
+      background: var(--surface-brand-soft);
+      color: var(--menu-active-text);
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      letter-spacing: 0.02em;
+    }
+
+    .auth-brand h1 {
+      margin: 10px 0 0;
+      font-size: clamp(1.32rem, 4.8vw, 1.8rem);
+      line-height: 1.16;
+      letter-spacing: -0.02em;
+    }
+
+    .auth-brand p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      max-width: 620px;
+      font-size: 0.95rem;
+      line-height: 1.45;
+    }
+
+    .auth-layout {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: 1fr;
+    }
+
+    .trust-card {
+      border-radius: 16px;
+      border: 1px solid var(--color-border);
+      background:
+        radial-gradient(100% 120% at 0% 0%, color-mix(in oklab, var(--color-secondary) 14%, transparent), transparent 48%),
+        var(--surface-raised);
+      box-shadow: var(--shadow-sm);
+      padding: 18px;
+    }
+
+    .trust-title {
+      margin: 0;
+      font-size: 1.04rem;
+      letter-spacing: -0.01em;
+    }
+
+    .trust-sub {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.45;
+    }
+
+    .trust-list {
+      margin: 14px 0 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 8px;
+    }
+
+    .trust-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      color: var(--color-text-strong);
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+
+    .trust-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--color-primary);
+      margin-top: 6px;
+      flex: 0 0 auto;
     }
 
     .auth-card {
       width: 100%;
-      max-width: 540px;
       border-radius: 18px;
-      border: 1px solid rgba(255, 255, 255, 0.10);
-      background:
-        radial-gradient(110% 110% at 0% 0%, rgba(79, 124, 255, 0.26), rgba(79, 124, 255, 0) 46%),
-        radial-gradient(90% 90% at 100% 0%, rgba(34, 211, 238, 0.16), rgba(34, 211, 238, 0) 48%),
-        rgba(10, 17, 34, 0.58);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      box-shadow:
-        0 24px 50px rgba(2, 7, 23, 0.58),
-        inset 0 1px 0 rgba(255, 255, 255, 0.08);
-      padding: 22px;
+      border: 1px solid var(--color-border);
+      background: var(--surface-raised);
+      box-shadow: var(--shadow-md);
+      padding: 20px;
     }
 
     .auth-title {
       margin: 0;
-      font-size: clamp(1.62rem, 5.8vw, 2rem);
-      font-weight: 760;
+      font-size: clamp(1.35rem, 5vw, 1.82rem);
+      font-weight: 780;
       line-height: 1.12;
       letter-spacing: -0.02em;
     }
 
     .auth-sub {
-      margin: 10px 0 0;
-      color: rgba(221, 230, 245, 0.8);
-      font-size: 0.96rem;
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 0.92rem;
       line-height: 1.45;
     }
 
     .form-grid {
-      margin-top: 18px;
+      margin-top: 16px;
       display: grid;
       gap: 12px;
     }
@@ -52,9 +141,9 @@
     .field label {
       display: block;
       margin-bottom: 7px;
-      color: rgba(210, 223, 243, 0.86);
-      font-size: 0.83rem;
-      font-weight: 600;
+      color: var(--color-text-strong);
+      font-size: 0.82rem;
+      font-weight: 700;
       letter-spacing: 0.01em;
     }
 
@@ -63,23 +152,23 @@
       align-items: center;
       gap: 10px;
       border-radius: 12px;
-      border: 1px solid rgba(148, 163, 184, 0.32);
-      background: rgba(14, 24, 44, 0.6);
+      border: 1px solid var(--field-border);
+      background: var(--field-bg);
       padding: 0 12px;
       transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
     }
 
     .input-wrap:focus-within {
-      border-color: rgba(83, 140, 255, 0.9);
-      box-shadow: 0 0 0 4px rgba(56, 131, 255, 0.18);
-      background: rgba(16, 27, 49, 0.84);
+      border-color: var(--border-brand);
+      box-shadow: var(--focus-ring);
+      background: var(--field-bg);
     }
 
     .input-icon {
       flex: 0 0 auto;
       width: 18px;
       height: 18px;
-      color: rgba(179, 197, 226, 0.88);
+      color: var(--muted);
       opacity: 0.95;
     }
 
@@ -91,58 +180,65 @@
       color: var(--text);
       padding: 12px 0;
       min-height: 44px;
+      font-size: 0.95rem;
     }
 
     .input-wrap input::placeholder {
-      color: rgba(190, 207, 233, 0.52);
+      color: var(--field-placeholder);
     }
 
     .field-error {
       margin-top: 6px;
-      color: #ffd3d3;
       font-size: 0.82rem;
+      color: var(--danger-text);
+      border: 1px solid var(--danger-border);
+      background: var(--danger-bg);
+      border-radius: 10px;
+      padding: 6px 8px;
+      line-height: 1.4;
     }
 
     .error-box {
       margin-top: 12px;
-      border: 1px solid rgba(255, 90, 90, 0.45);
-      background: rgba(255, 90, 90, 0.12);
+      border: 1px solid var(--danger-border);
+      background: var(--danger-bg);
       border-radius: 12px;
       padding: 10px 12px;
-      color: #ffe0e0;
+      color: var(--danger-text);
+      font-size: 0.9rem;
+      line-height: 1.45;
     }
 
     .actions {
-      margin-top: 16px;
+      margin-top: 14px;
       display: grid;
       gap: 10px;
     }
 
     .btn.primary {
       width: 100%;
-      min-height: 46px;
+      min-height: 48px;
       border: 0;
       border-radius: 12px;
-      font-weight: 700;
+      font-weight: 800;
       letter-spacing: 0.01em;
-      color: #f7fbff;
-      background: linear-gradient(135deg, #2f6dff, #1896ff 55%, #45c4ff);
-      box-shadow: 0 10px 24px rgba(17, 79, 209, 0.38);
+      color: var(--text-inverse);
+      background: var(--surface-brand-strong);
+      box-shadow: var(--btn-primary-shadow);
       transition: transform 0.12s ease, box-shadow 0.16s ease, filter 0.2s ease;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
+      font-size: 0.95rem;
     }
 
     .btn.primary:hover {
-      filter: brightness(1.05);
-      box-shadow: 0 14px 28px rgba(17, 79, 209, 0.45);
+      filter: brightness(1.04);
     }
 
     .btn.primary:active {
-      transform: scale(0.98);
-      box-shadow: 0 6px 16px rgba(17, 79, 209, 0.34);
+      transform: translateY(1px);
     }
 
     .btn-icon {
@@ -154,31 +250,27 @@
     .auth-links {
       margin-top: 12px;
       display: grid;
-      gap: 12px;
+      gap: 10px;
     }
 
     .hint {
       margin: 0;
-      color: rgba(194, 210, 235, 0.78);
-      font-size: 0.9rem;
+      color: var(--muted);
+      font-size: 0.89rem;
       line-height: 1.45;
     }
 
     .hint a {
-      color: #6eb7ff;
+      color: var(--color-primary);
       text-decoration: none;
       text-underline-offset: 0.2em;
       transition: color 0.18s ease, text-decoration-color 0.18s ease, opacity 0.18s ease;
     }
 
     .hint a:hover {
-      color: #9bd0ff;
+      color: var(--color-primary-hover);
       text-decoration: underline;
-      text-decoration-color: rgba(155, 208, 255, 0.75);
-    }
-
-    .hint a:active {
-      opacity: 0.8;
+      text-decoration-color: color-mix(in oklab, var(--color-primary) 60%, transparent);
     }
 
     .hint-create {
@@ -186,70 +278,108 @@
       padding-top: 2px;
     }
 
-    @media (min-width: 620px) {
-      .auth-wrap {
-        padding: 24px;
+    @media (min-width: 940px) {
+      .auth-layout {
+        grid-template-columns: minmax(270px, 0.9fr) minmax(380px, 1.1fr);
       }
 
+      .trust-card,
       .auth-card {
-        padding: 26px;
+        min-height: 100%;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .auth-wrap {
+        min-height: auto;
+        padding-top: 12px;
+      }
+
+      .auth-brand,
+      .trust-card,
+      .auth-card {
+        padding: 16px;
+      }
+
+      .auth-title {
+        font-size: 1.4rem;
       }
     }
   </style>
 
   <div class="auth-wrap">
-    <div class="auth-card">
-      <h1 class="auth-title">Acessar conta</h1>
-      <p class="auth-sub">Entre com e-mail ou usuario para continuar.</p>
+    <div class="auth-shell">
+      <section class="auth-brand">
+        <span class="auth-brand-kicker">Acesso seguro</span>
+        <h1>Area de operacao HoraCerta</h1>
+        <p>Entre para acompanhar jornadas, vinculos e rotinas com visao profissional e controle confiavel.</p>
+      </section>
 
-      <form method="post" novalidate>
-        {% csrf_token %}
-        <div class="form-grid">
-          <div class="field">
-            <label>{{ form.username.label }}</label>
-            <div class="input-wrap">
-              <svg class="input-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M4 7.75A2.75 2.75 0 0 1 6.75 5h10.5A2.75 2.75 0 0 1 20 7.75v8.5A2.75 2.75 0 0 1 17.25 19H6.75A2.75 2.75 0 0 1 4 16.25v-8.5Zm1.5.07 5.91 4.23a1 1 0 0 0 1.18 0l5.91-4.23" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              {{ form.username }}
+      <div class="auth-layout">
+        <section class="trust-card" aria-label="Confianca e clareza">
+          <h2 class="trust-title">Confianca para sua rotina diaria</h2>
+          <p class="trust-sub">Plataforma pensada para empresa e profissional trabalharem com mais clareza operacional.</p>
+          <ul class="trust-list">
+            <li class="trust-item"><span class="trust-dot" aria-hidden="true"></span><span>Ambiente com foco em consistencia de dados e rastreabilidade.</span></li>
+            <li class="trust-item"><span class="trust-dot" aria-hidden="true"></span><span>Fluxo direto para reduzir retrabalho no fechamento das horas.</span></li>
+            <li class="trust-item"><span class="trust-dot" aria-hidden="true"></span><span>Interface otimizada para desktop e mobile sem perder legibilidade.</span></li>
+          </ul>
+        </section>
+
+        <section class="auth-card" aria-label="Formulario de login">
+          <h2 class="auth-title">Entrar na plataforma</h2>
+          <p class="auth-sub">Use e-mail ou usuario e continue do ponto onde parou.</p>
+
+          <form method="post" novalidate>
+            {% csrf_token %}
+            <div class="form-grid">
+              <div class="field">
+                <label for="{{ form.username.id_for_label }}">{{ form.username.label }}</label>
+                <div class="input-wrap">
+                  <svg class="input-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M4 7.75A2.75 2.75 0 0 1 6.75 5h10.5A2.75 2.75 0 0 1 20 7.75v8.5A2.75 2.75 0 0 1 17.25 19H6.75A2.75 2.75 0 0 1 4 16.25v-8.5Zm1.5.07 5.91 4.23a1 1 0 0 0 1.18 0l5.91-4.23" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  {{ form.username }}
+                </div>
+                {% if form.username.errors %}<div class="field-error" role="alert">{{ form.username.errors }}</div>{% endif %}
+              </div>
+
+              <div class="field">
+                <label for="{{ form.password.id_for_label }}">{{ form.password.label }}</label>
+                <div class="input-wrap">
+                  <svg class="input-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M7.5 10V8.5a4.5 4.5 0 0 1 9 0V10M6.75 10h10.5A1.75 1.75 0 0 1 19 11.75v6.5A1.75 1.75 0 0 1 17.25 20H6.75A1.75 1.75 0 0 1 5 18.25v-6.5A1.75 1.75 0 0 1 6.75 10Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  {{ form.password }}
+                </div>
+                {% if form.password.errors %}<div class="field-error" role="alert">{{ form.password.errors }}</div>{% endif %}
+              </div>
             </div>
-            {% if form.username.errors %}<div class="field-error">{{ form.username.errors }}</div>{% endif %}
-          </div>
 
-          <div class="field">
-            <label>{{ form.password.label }}</label>
-            <div class="input-wrap">
-              <svg class="input-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M7.5 10V8.5a4.5 4.5 0 0 1 9 0V10M6.75 10h10.5A1.75 1.75 0 0 1 19 11.75v6.5A1.75 1.75 0 0 1 17.25 20H6.75A1.75 1.75 0 0 1 5 18.25v-6.5A1.75 1.75 0 0 1 6.75 10Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              {{ form.password }}
+            {% if form.non_field_errors %}
+              <div class="error-box" role="alert">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="actions">
+              <button class="btn primary" type="submit">
+                Entrar com seguranca
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
             </div>
-            {% if form.password.errors %}<div class="field-error">{{ form.password.errors }}</div>{% endif %}
+          </form>
+
+          <div class="auth-links">
+            <p class="hint">
+              <a href="{% url 'password_reset' %}">Esqueci minha senha</a>
+            </p>
+
+            <p class="hint hint-create">
+              Nao tem conta? <a href="{% url 'signup' %}">Criar conta</a>
+            </p>
           </div>
-        </div>
-
-        {% if form.non_field_errors %}
-          <div class="error-box">{{ form.non_field_errors }}</div>
-        {% endif %}
-
-        <div class="actions">
-          <button class="btn primary" type="submit">
-            Acessar conta
-            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </button>
-        </div>
-      </form>
-
-      <div class="auth-links">
-        <p class="hint">
-          <a href="{% url 'password_reset' %}">Esqueci minha senha</a>
-        </p>
-
-        <p class="hint hint-create">
-          Nao tem conta? <a href="{% url 'signup' %}">Criar conta</a>
-        </p>
+        </section>
       </div>
     </div>
   </div>

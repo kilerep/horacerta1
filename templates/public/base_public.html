@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="manifest" href="{% url 'pwa_manifest' %}">
   <meta name="application-name" content="HoraCerta">
-  <meta name="theme-color" content="#0b1220">
+  <meta name="theme-color" content="#1d4ed8">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="HoraCerta">
@@ -17,40 +17,25 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/design_tokens.css' %}">
+  <link rel="stylesheet" href="{% static 'css/ui_system.css' %}">
   <style>
-    :root{
-      --bg:#060d1d;
-      --bg2:#0b1630;
-      --panel:rgba(10,20,40,.8);
-      --line:rgba(255,255,255,.12);
-      --text:#edf4ff;
-      --muted:#9ab0ca;
-      --blue:#2f6bff;
-      --cyan:#2ea2ef;
-      --max:1180px;
-      --shadow:0 22px 60px rgba(0,0,0,.42);
-    }
-    *{box-sizing:border-box}
     html,body{margin:0;padding:0;font-family:"Manrope","Segoe UI",sans-serif;background:
-      radial-gradient(900px 380px at 8% -6%, rgba(46,162,239,.2), transparent 55%),
-      radial-gradient(950px 420px at 96% 0%, rgba(47,107,255,.2), transparent 56%),
-      linear-gradient(180deg,var(--bg),var(--bg2));color:var(--text)}
-    a{text-decoration:none;color:inherit}
+      radial-gradient(900px 380px at 8% -6%, color-mix(in oklab, var(--color-secondary) 14%, transparent), transparent 55%),
+      radial-gradient(950px 420px at 96% 0%, color-mix(in oklab, var(--color-primary) 14%, transparent), transparent 56%),
+      var(--color-bg);color:var(--color-text-strong)}
     .container{width:min(var(--max),92vw);margin:0 auto}
-    .header-wrap{position:sticky;top:0;z-index:40;padding:12px 0;background:linear-gradient(180deg, rgba(6,13,29,.92), rgba(6,13,29,.65) 70%, transparent)}
-    .header{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--line);border-radius:16px;padding:10px 12px;background:rgba(7,15,32,.76);backdrop-filter:blur(8px)}
+    .header-wrap{position:sticky;top:0;z-index:40;padding:12px 0;background:linear-gradient(180deg, color-mix(in oklab, var(--color-bg) 96%, transparent), color-mix(in oklab, var(--color-bg) 70%, transparent) 70%, transparent)}
+    .header{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--line);border-radius:16px;padding:10px 12px;background:var(--surface-raised);box-shadow:var(--shadow-sm)}
     .brand{display:inline-flex;align-items:center;gap:10px}
-    .mark{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-weight:800;background:linear-gradient(135deg,rgba(47,107,255,.45),rgba(46,162,239,.22));border:1px solid rgba(255,255,255,.2)}
+    .mark{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-weight:800;color:var(--text-inverse);background:linear-gradient(135deg,var(--color-primary),var(--color-secondary));border:1px solid var(--border-brand)}
     .brand .name{font-weight:800;letter-spacing:-.02em}
     .brand .sub{font-size:12px;color:var(--muted)}
     .nav{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
     .link{padding:9px 12px;border-radius:10px;color:var(--muted);font-size:14px;border:1px solid transparent}
-    .link:hover{color:var(--text);border-color:var(--line);background:rgba(255,255,255,.03)}
-    .btn{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:0 14px;border-radius:11px;border:1px solid var(--line);font-weight:700;background:rgba(255,255,255,.03)}
-    .btn:hover{border-color:rgba(255,255,255,.24)}
-    .btn.primary{background:linear-gradient(130deg,var(--blue),var(--cyan));border:none;box-shadow:0 10px 30px rgba(47,107,255,.42)}
+    .link:hover{color:var(--text);border-color:var(--line);background:var(--menu-hover-bg)}
     .main{padding:26px 0 34px}
-    .footer{border-top:1px solid rgba(255,255,255,.08);padding:20px 0 30px;margin-top:32px}
+    .footer{border-top:1px solid var(--line);padding:20px 0 30px;margin-top:32px}
     .footer-row{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;color:var(--muted);font-size:14px}
     @media (max-width:920px){
       .nav{justify-content:flex-end}
@@ -64,7 +49,7 @@
   </style>
   {% block extra_head %}{% endblock %}
 </head>
-<body>
+<body data-theme="executive-blue" data-default-theme="executive-blue" data-theme-company="{{ header_company_theme|default:'' }}" data-theme-user="{{ header_user_theme|default:'' }}">
   <header class="header-wrap">
     <div class="container">
       <div class="header">
@@ -76,6 +61,14 @@
           </span>
         </a>
         <nav class="nav" aria-label="Navegacao publica">
+          <div class="theme-switch" aria-label="Tema visual">
+            <span class="theme-switch__label">Tema</span>
+            <select class="theme-switch__select" data-theme-control>
+              <option value="executive-blue">Azul Executivo Premium</option>
+              <option value="graphite-premium">Grafite Premium</option>
+              <option value="corporate-light-blue">Azul Claro Corporativo</option>
+            </select>
+          </div>
           <a class="link hide-sm" href="{% url 'landing' %}#como-funciona">Como funciona</a>
           <a class="link hide-sm" href="{% url 'landing' %}#beneficios">Beneficios</a>
           <a class="link hide-sm" href="{% url 'public_evaluation' %}">Avaliacao</a>
@@ -98,6 +91,7 @@
       <span><a href="{% url 'terms' %}">Termos</a> | <a href="{% url 'privacy' %}">Privacidade</a> | <a href="{% url 'help' %}">Ajuda</a></span>
     </div>
   </footer>
+  <script src="{% static 'js/theme_engine.js' %}"></script>
   <script src="{% static 'js/pwa-register.js' %}"></script>
 </body>
 </html>

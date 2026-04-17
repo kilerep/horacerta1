@@ -4,217 +4,432 @@
 
 {% block content %}
   <style>
-    .signup-wrap{
+    .signup-wrap {
       margin-top: 14px;
+      display: grid;
+      gap: 14px;
     }
-    .signup-card{
-      border:1px solid var(--border);
-      border-radius: var(--radius);
+
+    .signup-intro {
+      border: 1px solid var(--color-border);
+      border-radius: 16px;
+      background: var(--surface-raised);
+      box-shadow: var(--shadow-sm);
+      padding: 16px;
+    }
+
+    .signup-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--border-brand);
+      background: var(--surface-brand-soft);
+      color: var(--menu-active-text);
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      padding: 4px 10px;
+    }
+
+    .signup-title {
+      margin: 10px 0 0;
+      font-size: clamp(1.4rem, 4.8vw, 1.95rem);
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+    }
+
+    .signup-sub {
+      margin: 8px 0 0;
+      color: var(--muted);
+      max-width: 720px;
+      line-height: 1.45;
+    }
+
+    .signup-layout {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: 1fr;
+    }
+
+    .signup-benefits {
+      border: 1px solid var(--color-border);
+      border-radius: 16px;
       background:
-        linear-gradient(140deg, rgba(79,124,255,.10), transparent 42%),
-        linear-gradient(180deg, rgba(255,204,40,.06), rgba(255,255,255,.02));
+        radial-gradient(100% 120% at 0% 0%, color-mix(in oklab, var(--color-secondary) 14%, transparent), transparent 48%),
+        var(--surface-raised);
+      box-shadow: var(--shadow-sm);
+      padding: 16px;
+    }
+
+    .signup-benefits h2 {
+      margin: 0;
+      font-size: 1rem;
+      letter-spacing: -0.01em;
+    }
+
+    .signup-benefits p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.45;
+    }
+
+    .signup-benefits ul {
+      margin: 12px 0 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 8px;
+    }
+
+    .signup-benefits li {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      font-size: 0.9rem;
+      line-height: 1.42;
+      color: var(--color-text-strong);
+    }
+
+    .signup-benefits li::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--color-primary);
+      margin-top: 6px;
+      flex: 0 0 auto;
+    }
+
+    .signup-card {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      background: var(--surface-raised);
+      box-shadow: var(--shadow-md);
       padding: 18px;
     }
-    .signup-title{
-      margin:0;
-      font-size: 28px;
-      line-height: 1.15;
-    }
-    .signup-sub{
-      margin:8px 0 0;
-      color:var(--muted);
-    }
-    .mode-label{
-      display:block;
-      margin:18px 0 10px;
-      font-weight:700;
+
+    .form-title {
+      margin: 0;
+      font-size: clamp(1.24rem, 4vw, 1.55rem);
+      line-height: 1.2;
     }
 
-    .type-grid{
-      display:grid;
-      gap:10px;
+    .form-sub {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.45;
+    }
+
+    .mode-block {
+      margin-top: 16px;
+    }
+
+    .mode-label {
+      display: block;
+      margin: 0 0 8px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .type-grid {
+      display: grid;
+      gap: 10px;
       grid-template-columns: repeat(2, minmax(180px, 1fr));
     }
-    .type-option{
-      border:1px solid var(--border);
+
+    .type-option {
+      border: 1px solid var(--color-border);
       border-radius: 14px;
-      background: rgba(255,255,255,.04);
-      padding:12px 14px;
-      cursor:pointer;
-      display:flex;
-      gap:10px;
-      align-items:center;
-      transition: border-color .12s ease, background .12s ease;
-    }
-    .type-option:hover{
-      border-color: rgba(79,124,255,.45);
-      background: rgba(79,124,255,.10);
-    }
-    .type-option input{
-      width:auto;
-      margin:0;
-    }
-    .type-option.active{
-      border-color: rgba(79,124,255,.55);
-      box-shadow: 0 0 0 2px rgba(79,124,255,.16) inset;
-      background: rgba(79,124,255,.16);
+      background: var(--surface-raised);
+      padding: 12px 14px;
+      cursor: pointer;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      transition: border-color 0.14s ease, background 0.14s ease, box-shadow 0.14s ease;
     }
 
-    .section{
-      margin-top:16px;
-      border:1px solid var(--border);
+    .type-option:hover {
+      border-color: var(--border-brand);
+      background: var(--menu-hover-bg);
+    }
+
+    .type-option input {
+      width: auto;
+      margin: 2px 0 0;
+    }
+
+    .type-option-text {
+      display: grid;
+      gap: 4px;
+    }
+
+    .type-option-title {
+      font-size: 0.92rem;
+      font-weight: 700;
+      line-height: 1.25;
+    }
+
+    .type-option-note {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    .type-option.active {
+      border-color: var(--menu-active-border);
+      box-shadow: inset 0 0 0 1px var(--menu-active-border);
+      background: var(--menu-active-bg);
+    }
+
+    .section {
+      margin-top: 14px;
+      border: 1px solid var(--color-border);
       border-radius: 16px;
-      padding:14px;
-      background: rgba(255,255,255,.03);
+      padding: 14px;
+      background: var(--surface-subtle);
     }
-    .section h3{
-      margin:0 0 10px;
-      font-size: 17px;
+
+    .section-head {
+      margin-bottom: 10px;
     }
-    .row{
-      display:grid;
-      gap:12px;
+
+    .section h3 {
+      margin: 0;
+      font-size: 1rem;
+      letter-spacing: -0.01em;
+    }
+
+    .section p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.4;
+    }
+
+    .row {
+      display: grid;
+      gap: 12px;
       grid-template-columns: repeat(2, minmax(220px, 1fr));
     }
-    .field label{
-      display:block;
-      margin:0 0 6px;
-      color:var(--muted);
-      font-size:13px;
-    }
-    .field input{
-      width:100%;
-      padding:11px 12px;
-      border-radius: 12px;
-      border:1px solid var(--border);
-      background: rgba(255,255,255,.06);
-      color:var(--text);
-      outline:none;
-    }
-    .field input:focus{
-      border-color: rgba(79,124,255,.52);
-      box-shadow: 0 0 0 3px rgba(79,124,255,.16);
-    }
-    .error-box{
-      margin-top:12px;
-      border:1px solid rgba(255,90,90,.45);
-      background: rgba(255,90,90,.12);
-      border-radius: 12px;
-      padding:10px 12px;
-      color:#ffe0e0;
-    }
-    .field-error{
-      margin-top:6px;
-      color:#ffd3d3;
-      font-size:13px;
-    }
-    .actions{
-      margin-top:16px;
-      display:flex;
-      gap:10px;
-      align-items:center;
-      flex-wrap:wrap;
-    }
-    .hint{
-      color:var(--muted);
-      font-size:14px;
-    }
-    .accent{
-      color: var(--yellow);
-      font-weight:700;
-    }
-    [hidden]{ display:none !important; }
 
-    @media (max-width: 760px){
-      .type-grid{ grid-template-columns: 1fr; }
-      .row{ grid-template-columns: 1fr; }
-      .signup-title{ font-size: 24px; }
+    .field label {
+      display: block;
+      margin: 0 0 6px;
+      color: var(--color-text-strong);
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+    }
+
+    .field input {
+      width: 100%;
+      padding: 11px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--field-border);
+      background: var(--field-bg);
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.14s ease, box-shadow 0.14s ease;
+    }
+
+    .field input:focus {
+      border-color: var(--border-brand);
+      box-shadow: var(--focus-ring);
+    }
+
+    .error-box {
+      margin-top: 12px;
+      border: 1px solid var(--danger-border);
+      background: var(--danger-bg);
+      border-radius: 12px;
+      padding: 10px 12px;
+      color: var(--danger-text);
+      line-height: 1.45;
+    }
+
+    .field-error {
+      margin-top: 6px;
+      color: var(--danger-text);
+      border: 1px solid var(--danger-border);
+      background: var(--danger-bg);
+      border-radius: 10px;
+      padding: 6px 8px;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .actions {
+      margin-top: 16px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .actions .btn.primary {
+      min-height: 46px;
+      padding: 0 16px;
+      font-weight: 800;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    @media (min-width: 980px) {
+      .signup-layout {
+        grid-template-columns: minmax(260px, 0.9fr) minmax(440px, 1.1fr);
+      }
+    }
+
+    @media (max-width: 760px) {
+      .type-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .row {
+        grid-template-columns: 1fr;
+      }
+
+      .signup-card,
+      .signup-intro,
+      .signup-benefits {
+        padding: 14px;
+      }
     }
   </style>
 
   <div class="signup-wrap">
-    <div class="signup-card">
-      <h1 class="signup-title">Criar conta</h1>
+    <section class="signup-intro">
+      <span class="signup-kicker">Primeiro passo</span>
+      <h1 class="signup-title">Criar conta no HoraCerta</h1>
       <p class="signup-sub">
-        Escolha <span class="accent">MEI</span> ou <span class="accent">EMPRESA</span> para mostrar apenas os campos necessarios.
+        Configure seu acesso em poucos minutos para comecar a operacao com mais controle, clareza e confianca.
       </p>
+    </section>
 
-      <form method="post" novalidate>
-        {% csrf_token %}
+    <div class="signup-layout">
+      <aside class="signup-benefits">
+        <h2>Cadastro pensado para operacao real</h2>
+        <p>A estrutura de conta ja nasce alinhada ao fluxo do produto e facilita os proximos passos no sistema.</p>
+        <ul>
+          <li>Organizacao inicial da empresa e do responsavel da conta.</li>
+          <li>Fluxo simples, com validacao clara em cada campo.</li>
+          <li>Base pronta para evoluir para rotina completa no painel.</li>
+        </ul>
+      </aside>
 
-        <span class="mode-label">{{ form.account_type.label }}</span>
-        <div class="type-grid" id="typeGrid">
-          {% for radio in form.account_type %}
-            <label class="type-option" data-type="{{ radio.data.value }}">
-              {{ radio.tag }}
-              <span>{{ radio.choice_label }}</span>
-            </label>
-          {% endfor %}
-        </div>
-        {% if form.account_type.errors %}<div class="field-error">{{ form.account_type.errors }}</div>{% endif %}
+      <section class="signup-card">
+        <h2 class="form-title">Dados da nova conta</h2>
+        <p class="form-sub">Preencha as informacoes abaixo para concluir seu cadastro com seguranca.</p>
 
-        <section class="section" id="blockEmpresa">
-          <h3>Dados da empresa</h3>
-          <div class="row">
-            <div class="field">
-              <label>{{ form.company_name.label }}</label>
-              {{ form.company_name }}
-              {% if form.company_name.errors %}<div class="field-error">{{ form.company_name.errors }}</div>{% endif %}
+        <form method="post" novalidate>
+          {% csrf_token %}
+
+          <div class="mode-block">
+            <span class="mode-label">{{ form.account_type.label }}</span>
+            <div class="type-grid" id="typeGrid">
+              {% for radio in form.account_type %}
+                <label class="type-option" data-type="{{ radio.data.value }}">
+                  {{ radio.tag }}
+                  <span class="type-option-text">
+                    <span class="type-option-title">{{ radio.choice_label }}</span>
+                    {% if radio.data.value == "EMPRESA" %}
+                      <span class="type-option-note">Fluxo principal para abertura da conta corporativa.</span>
+                    {% else %}
+                      <span class="type-option-note">Cadastro MEI geralmente acontece pela empresa no painel.</span>
+                    {% endif %}
+                  </span>
+                </label>
+              {% endfor %}
             </div>
-            <div class="field">
-              <label>{{ form.company_email.label }}</label>
-              {{ form.company_email }}
-              {% if form.company_email.errors %}<div class="field-error">{{ form.company_email.errors }}</div>{% endif %}
-            </div>
-            <div class="field">
-              <label>{{ form.rh_email.label }}</label>
-              {{ form.rh_email }}
-              {% if form.rh_email.errors %}<div class="field-error">{{ form.rh_email.errors }}</div>{% endif %}
-            </div>
+            {% if form.account_type.errors %}<div class="field-error" role="alert">{{ form.account_type.errors }}</div>{% endif %}
           </div>
-        </section>
 
-        <section class="section" id="blockMei" hidden>
-          <h3>Dados do MEI</h3>
-          <div class="row">
-            <div class="field">
-              <label>{{ form.full_name.label }}</label>
-              {{ form.full_name }}
-              {% if form.full_name.errors %}<div class="field-error">{{ form.full_name.errors }}</div>{% endif %}
+          <section class="section" id="blockEmpresa">
+            <div class="section-head">
+              <h3>Dados da empresa</h3>
+              <p>Informacoes institucionais para identificar sua conta na plataforma.</p>
             </div>
-            <div class="field">
-              <label>{{ form.mei_email.label }}</label>
-              {{ form.mei_email }}
-              {% if form.mei_email.errors %}<div class="field-error">{{ form.mei_email.errors }}</div>{% endif %}
+            <div class="row">
+              <div class="field">
+                <label for="{{ form.company_name.id_for_label }}">{{ form.company_name.label }}</label>
+                {{ form.company_name }}
+                {% if form.company_name.errors %}<div class="field-error" role="alert">{{ form.company_name.errors }}</div>{% endif %}
+              </div>
+              <div class="field">
+                <label for="{{ form.company_email.id_for_label }}">{{ form.company_email.label }}</label>
+                {{ form.company_email }}
+                {% if form.company_email.errors %}<div class="field-error" role="alert">{{ form.company_email.errors }}</div>{% endif %}
+              </div>
+              <div class="field">
+                <label for="{{ form.rh_email.id_for_label }}">{{ form.rh_email.label }}</label>
+                {{ form.rh_email }}
+                {% if form.rh_email.errors %}<div class="field-error" role="alert">{{ form.rh_email.errors }}</div>{% endif %}
+              </div>
             </div>
+          </section>
+
+          <section class="section" id="blockMei" hidden>
+            <div class="section-head">
+              <h3>Dados do MEI</h3>
+              <p>Campos disponiveis para o fluxo alternativo de cadastro.</p>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label for="{{ form.full_name.id_for_label }}">{{ form.full_name.label }}</label>
+                {{ form.full_name }}
+                {% if form.full_name.errors %}<div class="field-error" role="alert">{{ form.full_name.errors }}</div>{% endif %}
+              </div>
+              <div class="field">
+                <label for="{{ form.mei_email.id_for_label }}">{{ form.mei_email.label }}</label>
+                {{ form.mei_email }}
+                {% if form.mei_email.errors %}<div class="field-error" role="alert">{{ form.mei_email.errors }}</div>{% endif %}
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="section-head">
+              <h3>Senha de acesso</h3>
+              <p>Defina uma senha forte e confirme para concluir o cadastro.</p>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label for="{{ form.password1.id_for_label }}">{{ form.password1.label }}</label>
+                {{ form.password1 }}
+                {% if form.password1.errors %}<div class="field-error" role="alert">{{ form.password1.errors }}</div>{% endif %}
+              </div>
+              <div class="field">
+                <label for="{{ form.password2.id_for_label }}">{{ form.password2.label }}</label>
+                {{ form.password2 }}
+                {% if form.password2.errors %}<div class="field-error" role="alert">{{ form.password2.errors }}</div>{% endif %}
+              </div>
+            </div>
+          </section>
+
+          {% if form.non_field_errors %}
+            <div class="error-box" role="alert">{{ form.non_field_errors }}</div>
+          {% endif %}
+
+          <div class="actions">
+            <button class="btn primary" type="submit">Criar conta da empresa</button>
+            <span class="hint">Ja tem conta? <a href="{% url 'login' %}">Entrar</a></span>
           </div>
-        </section>
-
-        <section class="section">
-          <h3>Senha</h3>
-          <div class="row">
-            <div class="field">
-              <label>{{ form.password1.label }}</label>
-              {{ form.password1 }}
-              {% if form.password1.errors %}<div class="field-error">{{ form.password1.errors }}</div>{% endif %}
-            </div>
-            <div class="field">
-              <label>{{ form.password2.label }}</label>
-              {{ form.password2 }}
-              {% if form.password2.errors %}<div class="field-error">{{ form.password2.errors }}</div>{% endif %}
-            </div>
-          </div>
-        </section>
-
-        {% if form.non_field_errors %}
-          <div class="error-box">{{ form.non_field_errors }}</div>
-        {% endif %}
-
-        <div class="actions">
-          <button class="btn primary" type="submit">Criar conta</button>
-          <span class="hint">Ja tem conta? <a href="{% url 'login' %}">Entrar</a></span>
-        </div>
-      </form>
+        </form>
+      </section>
     </div>
   </div>
 
