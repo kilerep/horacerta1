@@ -73,14 +73,14 @@
                         <span class="badge">{{ pending_reports_count }}</span>
                       {% endif %}
                       {% if not header_can_use_advanced_reports %}
-                        <span class="badge warn">Premium</span>
+                        <span class="premium-badge premium-badge--{{ header_reports_required_plan_tone }}">{{ header_reports_required_plan_label }}</span>
                       {% endif %}
                     </strong>
                     <div class="muted item-sub">
                       {% if header_can_use_advanced_reports %}
                         analise e exportacao
                       {% else %}
-                        recurso disponivel a partir do plano Pro
+                        recurso disponivel a partir de {{ header_reports_required_plan_name|default:"plano premium" }}
                       {% endif %}
                     </div>
                   </div>
@@ -91,14 +91,14 @@
                     <strong>
                       Centro de Pendencias
                       {% if not header_can_use_incident_center %}
-                        <span class="badge warn">Pro</span>
+                        <span class="premium-badge premium-badge--{{ header_incident_required_plan_tone }}">{{ header_incident_required_plan_label }}</span>
                       {% endif %}
                     </strong>
                     <div class="muted item-sub">
                       {% if header_can_use_incident_center %}
                         revisao de ocorrencias do periodo
                       {% else %}
-                        recurso disponivel a partir do plano Pro
+                        recurso disponivel a partir de {{ header_incident_required_plan_name|default:"plano premium" }}
                       {% endif %}
                     </div>
                   </div>

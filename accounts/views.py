@@ -1427,36 +1427,58 @@ def company_plan(request):
     subscription = company.current_subscription()
     status_badge = _subscription_status_badge(subscription, at_time=now)
 
-    plans = list(
-        Plan.objects.filter(is_active=True)
-        .prefetch_related("plan_features__feature")
-        .order_by("tier")
-    )
+    plans = list(Plan.objects.filter(is_active=True).prefetch_related("plan_features__feature").order_by("tier"))
     current_plan_id = subscription.plan_id if subscription else None
+    current_plan = subscription.plan if subscription else None
 
-    plan_cards = []
+    features = list(Feature.objects.filter(is_active=True).order_by("category", "name"))
+
+    enabled_codes_by_plan = {}
+    enabled_features_by_plan = {}
     for plan in plans:
         enabled_features = [
             plan_feature.feature
             for plan_feature in plan.plan_features.all()
             if plan_feature.is_enabled and plan_feature.feature.is_active
         ]
+        enabled_features_by_plan[plan.code] = enabled_features
+        enabled_codes_by_plan[plan.code] = {feature.code for feature in enabled_features}
+
+    plan_cards = []
+    for plan in plans:
+        plan_codes = enabled_codes_by_plan.get(plan.code, set())
+        exclusive_count = 0
+        for feature in features:
+            if feature.code not in plan_codes:
+                continue
+            lower_tier_has = any(
+                feature.code in enabled_codes_by_plan.get(lower_plan.code, set())
+                for lower_plan in plans
+                if lower_plan.tier < plan.tier
+            )
+            if not lower_tier_has:
+                exclusive_count += 1
         plan_cards.append(
             {
                 "plan": plan,
                 "is_current": plan.id == current_plan_id,
-                "feature_count": len(enabled_features),
-                "feature_preview": enabled_features[:5],
+                "feature_count": len(plan_codes),
+                "exclusive_count": exclusive_count,
+                "feature_preview": enabled_features_by_plan.get(plan.code, [])[:6],
             }
         )
 
-    current_plan_tier = subscription.plan.tier if subscription else 0
+    current_plan_tier = current_plan.tier if current_plan else 0
     suggested_upgrade = next((plan for plan in plans if plan.tier > current_plan_tier), None)
+
+    def _first_plan_for_feature(feature_code):
+        for plan in plans:
+            if feature_code in enabled_codes_by_plan.get(plan.code, set()):
+                return plan
+        return None
 
     available_features = []
     blocked_features = []
-    features = Feature.objects.filter(is_active=True).order_by("category", "name")
-
     for feature in features:
         access = get_company_feature_access(
             company=company,
@@ -1464,17 +1486,35 @@ def company_plan(request):
             user_role=None,
             at_time=now,
         )
-        feature_item = {
+        first_plan = _first_plan_for_feature(feature.code)
+        item = {
             "feature": feature,
             "allowed": access.allowed,
             "reason": access.reason,
             "reason_label": humanize_feature_reason(access.reason),
             "audience_label": feature.get_required_role_display(),
+            "available_from_plan": first_plan,
+            "available_from_label": first_plan.name if first_plan else "Nao disponivel",
         }
         if access.allowed:
-            available_features.append(feature_item)
+            available_features.append(item)
         else:
-            blocked_features.append(feature_item)
+            blocked_features.append(item)
+
+    comparison_rows = []
+    for feature in features:
+        comparison_rows.append(
+            {
+                "feature": feature,
+                "plan_availability": [
+                    {
+                        "plan": plan,
+                        "enabled": feature.code in enabled_codes_by_plan.get(plan.code, set()),
+                    }
+                    for plan in plans
+                ],
+            }
+        )
 
     date_format = "%d/%m/%Y"
 
@@ -1487,13 +1527,24 @@ def company_plan(request):
         "company": company,
         "subscription": subscription,
         "subscription_status_badge": status_badge,
+        "current_plan": current_plan,
         "plan_cards": plan_cards,
         "available_features": available_features,
         "blocked_features": blocked_features,
+        "comparison_rows": comparison_rows,
+        "comparison_plans": plans,
         "current_plan_name": subscription.plan.name if subscription else "Sem plano",
         "current_plan_code": subscription.plan.code if subscription else "",
+        "current_plan_description": subscription.plan.description if subscription else "Sem assinatura ativa no momento.",
+        "starts_at_label": _fmt_dt(subscription.starts_at) if subscription else "-",
         "period_start_label": _fmt_dt(subscription.current_period_start) if subscription else "-",
         "period_end_label": _fmt_dt(subscription.current_period_end) if subscription else "-",
+        "renewal_or_end_label": (
+            _fmt_dt(subscription.current_period_end or subscription.ends_at)
+            if subscription
+            else "-"
+        ),
+        "expires_at_label": _fmt_dt(subscription.ends_at) if subscription else "-",
         "trial_end_label": _fmt_dt(subscription.trial_ends_at) if subscription else "-",
         "suggested_upgrade": suggested_upgrade,
     }

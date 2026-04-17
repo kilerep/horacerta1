@@ -5,9 +5,10 @@ from functools import wraps
 from typing import Optional
 
 from django.shortcuts import render
+from django.urls import reverse
 from django.utils import timezone
 
-from .models import Company, CompanyFeatureOverride, CompanySubscription, Feature, PlanFeature
+from .models import Company, CompanyFeatureOverride, CompanySubscription, Feature, Plan, PlanFeature
 
 
 @dataclass(frozen=True)
@@ -175,6 +176,42 @@ def humanize_feature_reason(reason: str) -> str:
     return FEATURE_REASON_LABELS.get(reason, "Acesso indisponivel para o recurso solicitado.")
 
 
+def get_feature_minimum_plan(feature_code: str) -> Plan | None:
+    normalized_code = (feature_code or "").strip()
+    plan_feature = (
+        PlanFeature.objects.filter(
+            feature__code=normalized_code,
+            feature__is_active=True,
+            plan__is_active=True,
+            is_enabled=True,
+        )
+        .select_related("plan")
+        .order_by("plan__tier")
+        .first()
+    )
+    return plan_feature.plan if plan_feature else None
+
+
+def get_feature_required_plan_badge(feature_code: str) -> tuple[str, str, str]:
+    """
+    Returns a tuple: (label, tone, plan_name)
+    tone values: premium | pro | business
+    """
+    plan = get_feature_minimum_plan(feature_code)
+    if not plan:
+        return ("Premium", "premium", "")
+
+    plan_name = (plan.name or "").strip()
+    plan_code = (plan.code or "").strip().lower()
+    if "business" in plan_code:
+        tone = "business"
+    elif "pro" in plan_code:
+        tone = "pro"
+    else:
+        tone = "premium"
+    return (f"Plano {plan_name}" if plan_name else "Premium", tone, plan_name)
+
+
 def require_company_feature(feature_code: str, *, template_name: str = "accounts/feature_locked.html"):
     """
     Decorator to guard view access by company subscription feature.
@@ -189,14 +226,31 @@ def require_company_feature(feature_code: str, *, template_name: str = "accounts
                 request.feature_access = access
                 return view_func(request, *args, **kwargs)
 
+            feature = Feature.objects.filter(code=feature_code, is_active=True).first()
+            required_plan = get_feature_minimum_plan(feature_code)
+            required_plan_code = (required_plan.code if required_plan else "").strip()
+            required_plan_name = (required_plan.name if required_plan else "").strip()
+            required_plan_label, required_plan_tone, _required_plan_name = get_feature_required_plan_badge(feature_code)
+
+            try:
+                upgrade_url = reverse("company_plan")
+            except Exception:
+                upgrade_url = reverse("dashboard")
+
             return render(
                 request,
                 template_name,
                 {
                     "feature_code": feature_code,
+                    "feature_name": feature.name if feature else feature_code,
                     "feature_access": access,
                     "feature_blocked": True,
                     "feature_reason_label": humanize_feature_reason(access.reason),
+                    "feature_required_plan_code": required_plan_code,
+                    "feature_required_plan_name": required_plan_name,
+                    "feature_required_plan_label": required_plan_label,
+                    "feature_required_plan_tone": required_plan_tone,
+                    "feature_upgrade_url": upgrade_url,
                 },
                 status=403,
             )

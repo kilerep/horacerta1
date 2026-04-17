@@ -280,3 +280,69 @@ tbody tr:hover td {
   cursor: not-allowed;
   opacity: 0.85;
 }
+
+.premium-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--badge-border);
+  background: var(--badge-bg);
+  color: var(--badge-text);
+  padding: 3px 9px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.premium-badge--premium,
+.premium-badge--pro {
+  border-color: var(--warning-border);
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}
+
+.premium-badge--business {
+  border-color: var(--border-brand);
+  background: var(--surface-brand-soft);
+  color: var(--menu-active-text);
+}
+
+.premium-lock-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background:
+    radial-gradient(circle at 100% 0%, color-mix(in oklab, var(--color-primary) 10%, transparent), transparent 54%),
+    var(--surface-raised);
+  box-shadow: var(--shadow-xs);
+  padding: 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.premium-lock-card__title {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.premium-lock-card__desc {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.premium-lock-card__meta {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.premium-lock-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}

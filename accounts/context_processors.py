@@ -1,5 +1,5 @@
 from companies.models import Company
-from companies.feature_flags import get_user_feature_access
+from companies.feature_flags import get_feature_required_plan_badge, get_user_feature_access
 from timeclock.models import ActivityReportRequest
 
 
@@ -45,6 +45,7 @@ def header_profile_media(request):
     header_mode = "mei"
     pending_reports_count = 0
     header_feature_access = {}
+    header_feature_required_plan = {}
     header_current_plan_code = ""
     header_current_plan_name = ""
 
@@ -66,9 +67,21 @@ def header_profile_media(request):
             reports_access = get_user_feature_access(request.user, "advanced_reports")
             themes_access = get_user_feature_access(request.user, "custom_themes")
             incident_access = get_user_feature_access(request.user, "incident_center")
+            reports_required_label, reports_required_tone, reports_required_name = get_feature_required_plan_badge("advanced_reports")
+            incident_required_label, incident_required_tone, incident_required_name = get_feature_required_plan_badge("incident_center")
             header_feature_access["advanced_reports"] = reports_access.allowed
             header_feature_access["custom_themes"] = themes_access.allowed
             header_feature_access["incident_center"] = incident_access.allowed
+            header_feature_required_plan["advanced_reports"] = {
+                "label": reports_required_label,
+                "tone": reports_required_tone,
+                "name": reports_required_name,
+            }
+            header_feature_required_plan["incident_center"] = {
+                "label": incident_required_label,
+                "tone": incident_required_tone,
+                "name": incident_required_name,
+            }
             if reports_access.plan_code:
                 header_current_plan_code = reports_access.plan_code
                 header_current_plan_name = reports_access.plan_name or ""
@@ -93,9 +106,16 @@ def header_profile_media(request):
         "header_mode": header_mode,
         "pending_reports_count": pending_reports_count,
         "header_feature_access": header_feature_access,
+        "header_feature_required_plan": header_feature_required_plan,
         "header_can_use_custom_themes": header_feature_access.get("custom_themes", False),
         "header_can_use_advanced_reports": header_feature_access.get("advanced_reports", False),
         "header_can_use_incident_center": header_feature_access.get("incident_center", False),
+        "header_reports_required_plan_label": header_feature_required_plan.get("advanced_reports", {}).get("label", "Premium"),
+        "header_reports_required_plan_tone": header_feature_required_plan.get("advanced_reports", {}).get("tone", "premium"),
+        "header_reports_required_plan_name": header_feature_required_plan.get("advanced_reports", {}).get("name", ""),
+        "header_incident_required_plan_label": header_feature_required_plan.get("incident_center", {}).get("label", "Premium"),
+        "header_incident_required_plan_tone": header_feature_required_plan.get("incident_center", {}).get("tone", "premium"),
+        "header_incident_required_plan_name": header_feature_required_plan.get("incident_center", {}).get("name", ""),
         "header_current_plan_code": header_current_plan_code,
         "header_current_plan_name": header_current_plan_name,
     }

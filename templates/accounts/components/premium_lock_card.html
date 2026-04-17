@@ -1,0 +1,31 @@
+<article class="premium-lock-card">
+  <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
+    <h3 class="premium-lock-card__title">{{ premium_title }}</h3>
+    <span class="premium-badge premium-badge--{{ premium_tone|default:'premium' }}">
+      {{ premium_badge_label|default:"Premium" }}
+    </span>
+  </div>
+
+  {% if premium_description %}
+    <p class="premium-lock-card__desc">{{ premium_description }}</p>
+  {% endif %}
+
+  <div class="premium-lock-card__meta">
+    {% if premium_required_plan_name %}
+      <div>Plano necessario: <strong>{{ premium_required_plan_name }}</strong></div>
+    {% endif %}
+    {% if premium_current_plan_name %}
+      <div>Plano atual: <strong>{{ premium_current_plan_name }}</strong></div>
+    {% endif %}
+    {% if premium_reason %}
+      <div>{{ premium_reason }}</div>
+    {% endif %}
+  </div>
+
+  <div class="premium-lock-card__actions">
+    <a class="btn primary" href="{{ premium_upgrade_url|default:'#' }}">Ver planos e upgrade</a>
+    {% if premium_back_url %}
+      <a class="btn" href="{{ premium_back_url }}">Voltar</a>
+    {% endif %}
+  </div>
+</article>
