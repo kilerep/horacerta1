@@ -6,30 +6,9 @@
     return THEMES.indexOf(theme) !== -1;
   }
 
-  function canUseCustomThemes() {
-    var body = document.body;
-    if (!body) return true;
-    var flag = (body.getAttribute("data-can-custom-themes") || "1").trim();
-    return flag !== "0";
-  }
-
-  function getLockedTheme() {
-    var body = document.body;
-    if (!body) return "executive-blue";
-
-    var defaultTheme = (body.getAttribute("data-default-theme") || "").trim();
-    if (isValidTheme(defaultTheme)) return defaultTheme;
-
-    var inlineTheme = (body.getAttribute("data-theme") || "").trim();
-    if (isValidTheme(inlineTheme)) return inlineTheme;
-
-    return "executive-blue";
-  }
-
   function getInitialTheme() {
     var body = document.body;
     if (!body) return "executive-blue";
-    if (!canUseCustomThemes()) return getLockedTheme();
 
     var persisted = "";
     try {
@@ -57,7 +36,6 @@
 
   function applyTheme(theme) {
     if (!isValidTheme(theme)) return;
-    if (!canUseCustomThemes()) theme = getLockedTheme();
 
     document.documentElement.setAttribute("data-theme", theme);
     document.body.setAttribute("data-theme", theme);
@@ -82,15 +60,6 @@
 
   function bindControls() {
     var controls = document.querySelectorAll("[data-theme-control]");
-    if (!canUseCustomThemes()) {
-      var lockedTheme = getLockedTheme();
-      for (var i = 0; i < controls.length; i += 1) {
-        controls[i].value = lockedTheme;
-        controls[i].setAttribute("disabled", "disabled");
-      }
-      return;
-    }
-
     for (var i = 0; i < controls.length; i += 1) {
       controls[i].addEventListener("change", function (event) {
         applyTheme((event.target.value || "").trim());
