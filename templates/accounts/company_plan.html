@@ -1,0 +1,358 @@
+{% extends "accounts/base.html" %}
+{% block title %}Meu Plano{% endblock %}
+{% block page_title %}Meu Plano{% endblock %}
+
+{% block content %}
+  <style>
+    .plan-page {
+      display: grid;
+      gap: 14px;
+    }
+    .plan-hero {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      background:
+        radial-gradient(circle at 100% 0%, color-mix(in oklab, var(--color-primary) 14%, transparent), transparent 42%),
+        var(--surface-raised);
+      box-shadow: var(--shadow-sm);
+      padding: 18px;
+    }
+    .plan-hero__top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: flex-start;
+    }
+    .plan-title {
+      margin: 0;
+      font-size: clamp(1.3rem, 3.2vw, 1.8rem);
+      letter-spacing: -0.02em;
+    }
+    .plan-subtitle {
+      margin: 6px 0 0;
+      color: var(--color-text-muted);
+      line-height: 1.4;
+    }
+    .plan-meta {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .plan-meta__item {
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      background: var(--surface-subtle);
+      padding: 10px;
+    }
+    .plan-meta__k {
+      font-size: 12px;
+      color: var(--color-text-muted);
+    }
+    .plan-meta__v {
+      margin-top: 4px;
+      font-size: 14px;
+      font-weight: 800;
+    }
+    .plan-status-pill {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      border: 1px solid var(--badge-border);
+      background: var(--badge-bg);
+      color: var(--badge-text);
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .plan-status-pill.success {
+      border-color: var(--success-border);
+      background: var(--success-bg);
+      color: var(--success-text);
+    }
+    .plan-status-pill.pending {
+      border-color: var(--warning-border);
+      background: var(--warning-bg);
+      color: var(--warning-text);
+    }
+    .plan-status-pill.warn {
+      border-color: var(--danger-border);
+      background: var(--danger-bg);
+      color: var(--danger-text);
+    }
+    .plan-status-hint {
+      margin-top: 6px;
+      color: var(--color-text-muted);
+      font-size: 12px;
+    }
+    .plan-grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .plan-card {
+      border: 1px solid var(--color-border);
+      border-radius: 14px;
+      background: var(--surface-raised);
+      box-shadow: var(--shadow-xs);
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+    }
+    .plan-card.current {
+      border-color: var(--border-brand);
+      box-shadow: var(--shadow-sm);
+      background: color-mix(in oklab, var(--surface-brand-soft) 40%, var(--surface-raised));
+    }
+    .plan-card__name {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 900;
+    }
+    .plan-card__desc {
+      margin: 0;
+      color: var(--color-text-muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    .plan-badges {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .plan-mini-badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      border: 1px solid var(--badge-border);
+      background: var(--badge-bg);
+      color: var(--badge-text);
+      padding: 3px 9px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .plan-mini-badge.current {
+      border-color: var(--border-brand);
+      background: var(--surface-brand-soft);
+      color: var(--menu-active-text);
+    }
+    .feature-columns {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .feature-block {
+      border: 1px solid var(--color-border);
+      border-radius: 14px;
+      background: var(--surface-raised);
+      box-shadow: var(--shadow-xs);
+      padding: 14px;
+    }
+    .feature-block h3 {
+      margin: 0;
+      font-size: 16px;
+    }
+    .feature-block p {
+      margin: 6px 0 0;
+      color: var(--color-text-muted);
+      font-size: 13px;
+    }
+    .feature-list {
+      margin: 12px 0 0;
+      display: grid;
+      gap: 8px;
+    }
+    .feature-item {
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      background: var(--surface-subtle);
+      padding: 10px;
+      display: grid;
+      gap: 4px;
+    }
+    .feature-item.locked {
+      border-style: dashed;
+      border-color: var(--warning-border);
+      background: color-mix(in oklab, var(--warning-bg) 68%, var(--surface-subtle));
+    }
+    .feature-item__title {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .feature-item__desc {
+      font-size: 12px;
+      color: var(--color-text-muted);
+      line-height: 1.35;
+    }
+    .plan-cta {
+      border: 1px solid var(--color-border);
+      border-radius: 14px;
+      background: var(--surface-raised);
+      box-shadow: var(--shadow-xs);
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .plan-cta h3 {
+      margin: 0;
+      font-size: 16px;
+    }
+    .plan-cta p {
+      margin: 6px 0 0;
+      color: var(--color-text-muted);
+      font-size: 13px;
+    }
+    @media (max-width: 1100px) {
+      .plan-grid {
+        grid-template-columns: 1fr;
+      }
+      .feature-columns {
+        grid-template-columns: 1fr;
+      }
+      .plan-meta {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    @media (max-width: 680px) {
+      .plan-meta {
+        grid-template-columns: 1fr;
+      }
+      .plan-hero {
+        padding: 14px;
+      }
+    }
+  </style>
+
+  <section class="plan-page">
+    <article class="plan-hero">
+      <div class="plan-hero__top">
+        <div>
+          <h2 class="plan-title">Assinatura da empresa {{ company.name }}</h2>
+          <p class="plan-subtitle">
+            Visao central do plano atual, status da assinatura e disponibilidade de recursos SaaS.
+          </p>
+        </div>
+        <div>
+          <span class="plan-status-pill {{ subscription_status_badge.tone }}">{{ subscription_status_badge.label }}</span>
+          <div class="plan-status-hint">{{ subscription_status_badge.hint }}</div>
+        </div>
+      </div>
+
+      <div class="plan-meta">
+        <div class="plan-meta__item">
+          <div class="plan-meta__k">Plano atual</div>
+          <div class="plan-meta__v">{{ current_plan_name }}</div>
+        </div>
+        <div class="plan-meta__item">
+          <div class="plan-meta__k">Inicio do periodo</div>
+          <div class="plan-meta__v">{{ period_start_label }}</div>
+        </div>
+        <div class="plan-meta__item">
+          <div class="plan-meta__k">Fim do periodo</div>
+          <div class="plan-meta__v">{{ period_end_label }}</div>
+        </div>
+        <div class="plan-meta__item">
+          <div class="plan-meta__k">Fim de trial</div>
+          <div class="plan-meta__v">{{ trial_end_label }}</div>
+        </div>
+      </div>
+    </article>
+
+    <section class="plan-grid">
+      {% for card in plan_cards %}
+        <article class="plan-card {% if card.is_current %}current{% endif %}">
+          <div class="plan-badges">
+            <span class="plan-mini-badge">Tier {{ card.plan.tier }}</span>
+            {% if card.is_current %}
+              <span class="plan-mini-badge current">Plano atual</span>
+            {% endif %}
+          </div>
+          <h3 class="plan-card__name">{{ card.plan.name }}</h3>
+          <p class="plan-card__desc">{{ card.plan.description }}</p>
+          <div class="feature-list">
+            {% for feature in card.feature_preview %}
+              <div class="feature-item">
+                <div class="feature-item__title">{{ feature.name }}</div>
+                <div class="feature-item__desc">{{ feature.description|default:"Recurso disponivel neste plano." }}</div>
+              </div>
+            {% empty %}
+              <div class="feature-item">
+                <div class="feature-item__desc">Sem recursos configurados para este plano.</div>
+              </div>
+            {% endfor %}
+          </div>
+          <div class="feature-item__desc">{{ card.feature_count }} recurso(s) liberado(s) neste plano.</div>
+        </article>
+      {% endfor %}
+    </section>
+
+    <section class="feature-columns">
+      <article class="feature-block">
+        <h3>Recursos liberados</h3>
+        <p>Features disponiveis agora para sua empresa.</p>
+        <div class="feature-list">
+          {% for item in available_features %}
+            <div class="feature-item">
+              <div class="feature-item__title">
+                <span>{{ item.feature.name }}</span>
+                <span class="plan-mini-badge">Liberado</span>
+              </div>
+              <div class="feature-item__desc">{{ item.feature.description|default:"Recurso ativo no plano atual." }}</div>
+              <div class="feature-item__desc">{{ item.audience_label }}</div>
+            </div>
+          {% empty %}
+            <div class="feature-item">
+              <div class="feature-item__desc">Nenhum recurso liberado no momento.</div>
+            </div>
+          {% endfor %}
+        </div>
+      </article>
+
+      <article class="feature-block">
+        <h3>Recursos bloqueados</h3>
+        <p>Itens premium disponiveis em upgrade de plano.</p>
+        <div class="feature-list">
+          {% for item in blocked_features %}
+            <div class="feature-item locked">
+              <div class="feature-item__title">
+                <span>{{ item.feature.name }}</span>
+                <span class="plan-mini-badge">Bloqueado</span>
+              </div>
+              <div class="feature-item__desc">{{ item.feature.description|default:"Recurso indisponivel no plano atual." }}</div>
+              <div class="feature-item__desc">{{ item.reason_label }}</div>
+            </div>
+          {% empty %}
+            <div class="feature-item">
+              <div class="feature-item__desc">Nenhum bloqueio encontrado.</div>
+            </div>
+          {% endfor %}
+        </div>
+      </article>
+    </section>
+
+    <article class="plan-cta">
+      <div>
+        <h3>Upgrade de plano</h3>
+        {% if suggested_upgrade %}
+          <p>Proximo passo recomendado: <strong>{{ suggested_upgrade.name }}</strong>. Ativacao manual nesta fase do produto.</p>
+        {% else %}
+          <p>Seu plano atual ja e o mais avancado disponivel no momento.</p>
+        {% endif %}
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <a class="btn primary" href="{% url 'help' %}">Solicitar upgrade</a>
+        <a class="btn" href="{% url 'company_settings' %}">Voltar para configuracoes</a>
+      </div>
+    </article>
+  </section>
+{% endblock %}

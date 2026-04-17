@@ -1,0 +1,340 @@
+{% extends "accounts/base.html" %}
+{% block title %}Centro de Pendencias{% endblock %}
+{% block page_title %}Centro de Pendencias{% endblock %}
+
+{% block content %}
+  <style>
+    .incident-page {
+      display: grid;
+      gap: 14px;
+    }
+    .incident-hero {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      background:
+        radial-gradient(circle at 92% 0%, color-mix(in oklab, var(--color-primary) 14%, transparent), transparent 42%),
+        var(--surface-raised);
+      box-shadow: var(--shadow-sm);
+      padding: 18px;
+    }
+    .incident-title {
+      margin: 0;
+      font-size: clamp(1.3rem, 3.3vw, 1.8rem);
+      letter-spacing: -0.02em;
+    }
+    .incident-subtitle {
+      margin: 7px 0 0;
+      color: var(--color-text-muted);
+      line-height: 1.45;
+      max-width: 920px;
+    }
+    .incident-kpis {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .incident-kpi {
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      background: var(--surface-subtle);
+      padding: 10px;
+    }
+    .incident-kpi .k {
+      font-size: 12px;
+      color: var(--color-text-muted);
+    }
+    .incident-kpi .v {
+      margin-top: 4px;
+      font-size: 22px;
+      font-weight: 900;
+      line-height: 1.1;
+    }
+    .incident-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(330px, 1fr);
+      gap: 12px;
+      align-items: start;
+    }
+    .incident-card {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: var(--surface-raised);
+      box-shadow: var(--shadow-xs);
+      padding: 14px;
+    }
+    .incident-card h3 {
+      margin: 0;
+      font-size: 16px;
+    }
+    .incident-card p {
+      margin: 6px 0 0;
+      color: var(--color-text-muted);
+      font-size: 13px;
+    }
+    .incident-filters {
+      margin-top: 10px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      align-items: end;
+    }
+    .incident-field {
+      display: grid;
+      gap: 5px;
+    }
+    .incident-field label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--color-text-muted);
+    }
+    .incident-table-wrap {
+      margin-top: 12px;
+      width: 100%;
+      overflow-x: auto;
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      background: var(--surface-subtle);
+    }
+    .incident-table {
+      width: 100%;
+      min-width: 760px;
+      border-collapse: collapse;
+    }
+    .incident-table th,
+    .incident-table td {
+      padding: 11px 10px;
+      border-bottom: 1px solid var(--color-border);
+      text-align: left;
+      vertical-align: top;
+      font-size: 13px;
+    }
+    .incident-table th {
+      color: var(--color-text-muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .incident-table tr:last-child td {
+      border-bottom: none;
+    }
+    .risk-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--badge-border);
+      background: var(--badge-bg);
+      color: var(--badge-text);
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .risk-badge.success {
+      border-color: var(--success-border);
+      background: var(--success-bg);
+      color: var(--success-text);
+    }
+    .risk-badge.warn {
+      border-color: var(--warning-border);
+      background: var(--warning-bg);
+      color: var(--warning-text);
+    }
+    .risk-badge.danger {
+      border-color: var(--danger-border);
+      background: var(--danger-bg);
+      color: var(--danger-text);
+    }
+    .incident-list {
+      margin-top: 10px;
+      display: grid;
+      gap: 8px;
+    }
+    .incident-item {
+      border: 1px solid var(--color-border);
+      border-radius: 11px;
+      background: var(--surface-subtle);
+      padding: 10px;
+      display: grid;
+      gap: 5px;
+    }
+    .incident-item__top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .incident-item__meta {
+      color: var(--color-text-muted);
+      font-size: 12px;
+    }
+    .incident-empty {
+      margin-top: 10px;
+      border: 1px dashed var(--color-border);
+      border-radius: 12px;
+      background: var(--surface-subtle);
+      color: var(--color-text-muted);
+      font-size: 13px;
+      padding: 12px;
+    }
+    @media (max-width: 1100px) {
+      .incident-layout {
+        grid-template-columns: 1fr;
+      }
+      .incident-kpis {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .incident-filters {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    @media (max-width: 680px) {
+      .incident-kpis,
+      .incident-filters {
+        grid-template-columns: 1fr;
+      }
+      .incident-hero {
+        padding: 14px;
+      }
+    }
+  </style>
+
+  <section class="incident-page">
+    <article class="incident-hero">
+      <h2 class="incident-title">Painel Pro de pendencias e ocorrencias</h2>
+      <p class="incident-subtitle">
+        Visao operacional para RH monitorar dias incompletos, observacoes de ponto, pendencias por colaborador e itens que exigem revisao no periodo.
+      </p>
+      <div class="incident-kpis">
+        <div class="incident-kpi"><div class="k">Colaboradores monitorados</div><div class="v">{{ summary_total_people }}</div></div>
+        <div class="incident-kpi"><div class="k">Dias incompletos</div><div class="v">{{ summary_incomplete_days }}</div></div>
+        <div class="incident-kpi"><div class="k">Dias com observacoes</div><div class="v">{{ summary_days_with_notes }}</div></div>
+        <div class="incident-kpi"><div class="k">Solicitacoes pendentes</div><div class="v">{{ summary_pending_requests }}</div></div>
+      </div>
+    </article>
+
+    <div class="incident-layout">
+      <section class="incident-card">
+        <h3>Pendencias por funcionario</h3>
+        <p>Periodo {{ period_start }} ate {{ period_end }}. Use filtros para priorizar revisoes.</p>
+
+        <form method="get" class="incident-filters" data-submit-once="true">
+          <div class="incident-field">
+            <label>{{ employee_search_form.q.label }}</label>
+            {{ employee_search_form.q }}
+          </div>
+          <div class="incident-field">
+            <label>{{ period_form.date_from.label }}</label>
+            {{ period_form.date_from }}
+          </div>
+          <div class="incident-field">
+            <label>{{ period_form.date_to.label }}</label>
+            {{ period_form.date_to }}
+          </div>
+          <div class="incident-field">
+            <label>Status</label>
+            <select name="status">
+              <option value="all" {% if status_filter == 'all' %}selected{% endif %}>Todos</option>
+              <option value="critical" {% if status_filter == 'critical' %}selected{% endif %}>Critico</option>
+              <option value="review" {% if status_filter == 'review' %}selected{% endif %}>Em revisao</option>
+              <option value="ok" {% if status_filter == 'ok' %}selected{% endif %}>Estavel</option>
+            </select>
+          </div>
+          <div style="grid-column: 1 / -1; display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn primary" type="submit" data-loading-text="Aplicando filtros...">Aplicar filtros</button>
+            <a class="btn" href="{% url 'company_incident_center' %}">Limpar</a>
+          </div>
+        </form>
+
+        <div class="incident-table-wrap">
+          <table class="incident-table">
+            <thead>
+              <tr>
+                <th>Funcionario</th>
+                <th>Risco</th>
+                <th>Dias incompletos</th>
+                <th>Dias com observacao</th>
+                <th>Solicitacoes</th>
+                <th>Acoes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in employee_rows %}
+                <tr>
+                  <td>
+                    <strong>{{ row.employee.full_name }}</strong><br>
+                    <span class="incident-item__meta">{{ row.employee.user.email|default:row.employee.user.username }}</span>
+                  </td>
+                  <td><span class="risk-badge {{ row.risk_tone }}">{{ row.risk_label }}</span></td>
+                  <td>{{ row.incomplete_days }}</td>
+                  <td>{{ row.days_with_notes }}</td>
+                  <td>{{ row.pending_requests }}</td>
+                  <td style="display:flex; gap:6px; flex-wrap:wrap;">
+                    <a class="btn" href="{{ row.profile_url }}">Perfil</a>
+                    <a class="btn" href="{{ row.history_url }}">Historico</a>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="6">
+                    <div class="incident-empty">Nenhum colaborador encontrado para os filtros atuais.</div>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="incident-card">
+        <h3>Itens do periodo para revisao</h3>
+        <p>Dias com falta de par de ponto ou com observacoes de justificativa.</p>
+        {% if review_items %}
+          <div class="incident-list">
+            {% for item in review_items %}
+              <article class="incident-item">
+                <div class="incident-item__top">
+                  <strong>{{ item.employee.full_name }} - {{ item.date|date:"d/m/Y" }}</strong>
+                  <span class="risk-badge {% if item.is_incomplete %}danger{% else %}warn{% endif %}">
+                    {% if item.is_incomplete %}Incompleto{% else %}Com observacao{% endif %}
+                  </span>
+                </div>
+                <div class="incident-item__meta">
+                  Horas: {{ item.total_hours_hhmm }} | Batidas: {{ item.punch_times|join:", " }}
+                </div>
+                {% if item.notes_summary %}
+                  <div class="incident-item__meta">Obs: {{ item.notes_summary }}</div>
+                {% endif %}
+                <div><a class="btn" href="{{ item.history_url }}">Abrir dia no historico</a></div>
+              </article>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="incident-empty">Nenhum item pendente para revisao no periodo selecionado.</div>
+        {% endif %}
+
+        <h3 style="margin-top:16px;">Solicitacoes de resposta pendentes</h3>
+        <p>Pedidos de detalhamento ainda sem retorno do colaborador.</p>
+        {% if pending_requests %}
+          <div class="incident-list">
+            {% for req in pending_requests %}
+              <article class="incident-item">
+                <div class="incident-item__top">
+                  <strong>{{ req.employee.full_name }}</strong>
+                  <span class="risk-badge warn">Aguardando resposta</span>
+                </div>
+                <div class="incident-item__meta">
+                  Solicitado em {{ req.requested_at|date:"d/m/Y H:i" }}{% if req.date_from or req.date_to %} | Periodo {{ req.date_from|default:"-" }} ate {{ req.date_to|default:"-" }}{% endif %}
+                </div>
+                {% if req.message %}
+                  <div class="incident-item__meta">Mensagem: {{ req.message }}</div>
+                {% endif %}
+              </article>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="incident-empty">Nao ha solicitacoes pendentes no periodo.</div>
+        {% endif %}
+      </section>
+    </div>
+  </section>
+{% endblock %}

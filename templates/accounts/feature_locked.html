@@ -1,0 +1,119 @@
+{% extends "accounts/base.html" %}
+{% block title %}Recurso Premium{% endblock %}
+{% block page_title %}Recurso premium{% endblock %}
+
+{% block content %}
+  <style>
+    .locked-wrap {
+      display: grid;
+      gap: 14px;
+      max-width: 940px;
+      margin: 0 auto;
+    }
+    .locked-card {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      background: var(--surface-raised);
+      box-shadow: var(--shadow-sm);
+      padding: 18px;
+    }
+    .locked-kicker {
+      display: inline-flex;
+      align-items: center;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      border: 1px solid var(--warning-border);
+      color: var(--warning-text);
+      background: var(--warning-bg);
+      border-radius: 999px;
+      padding: 4px 10px;
+    }
+    .locked-title {
+      margin: 10px 0 0;
+      font-size: clamp(1.32rem, 3.8vw, 1.8rem);
+      letter-spacing: -.02em;
+      line-height: 1.2;
+    }
+    .locked-sub {
+      margin: 8px 0 0;
+      color: var(--muted);
+      line-height: 1.45;
+      max-width: 760px;
+    }
+    .locked-info {
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .locked-box {
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      background: var(--surface-subtle);
+      padding: 10px;
+    }
+    .locked-box .k {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .locked-box .v {
+      margin-top: 4px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .locked-actions {
+      margin-top: 14px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .locked-note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    @media (max-width: 860px) {
+      .locked-info {
+        grid-template-columns: 1fr;
+      }
+      .locked-card {
+        padding: 14px;
+      }
+    }
+  </style>
+
+  <section class="locked-wrap">
+    <article class="locked-card">
+      <span class="locked-kicker">Plano premium</span>
+      <h2 class="locked-title">Este recurso nao esta disponivel no seu plano atual</h2>
+      <p class="locked-sub">
+        O recurso <strong>{{ feature_code }}</strong> pode ser habilitado por plano.
+        Quando necessario, sua empresa pode fazer upgrade sem perder dados e sem impacto no fluxo atual.
+      </p>
+
+      <div class="locked-info">
+        <div class="locked-box">
+          <div class="k">Feature</div>
+          <div class="v">{{ feature_code }}</div>
+        </div>
+        <div class="locked-box">
+          <div class="k">Plano atual</div>
+          <div class="v">{{ feature_access.plan_name|default:"Sem plano ativo" }}</div>
+        </div>
+        <div class="locked-box">
+          <div class="k">Status</div>
+          <div class="v">{{ feature_reason_label }}</div>
+        </div>
+      </div>
+
+      <div class="locked-actions">
+        <a class="btn primary" href="{% url 'dashboard_empresa' %}">Voltar ao dashboard</a>
+        <a class="btn" href="{% url 'company_settings' %}">Ver configuracoes</a>
+      </div>
+      <p class="locked-note">Base pronta para fluxo de upgrade e cobranca futura.</p>
+    </article>
+  </section>
+{% endblock %}

@@ -19,7 +19,12 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_GET
 
-from companies.models import Company, Employee
+from companies.models import Company, CompanySubscription, Employee, Feature, Plan
+from companies.feature_flags import (
+    get_company_feature_access,
+    humanize_feature_reason,
+    require_company_feature,
+)
 from timeclock.models import ActivityReportRequest, Contract, Punch
 from timeclock.services import build_daily_summary, compute_day_total, filter_punches_by_period, format_hhmm
 from timeclock.state import (
@@ -156,6 +161,44 @@ def _redirect_if_not_empresa(request):
     if request.user.role != User.Role.EMPRESA:
         return redirect("dashboard")
     return None
+
+
+def _subscription_status_badge(subscription, at_time=None):
+    if not subscription:
+        return {
+            "label": "Sem assinatura ativa",
+            "tone": "warn",
+            "hint": "A empresa ainda nao possui plano atual definido.",
+        }
+
+    at = at_time or timezone.now()
+    status = subscription.status
+    is_access_active = subscription.is_access_active(at)
+
+    if status == CompanySubscription.Status.TRIAL:
+        tone = "pending" if is_access_active else "warn"
+        hint = "Periodo de avaliacao em andamento." if is_access_active else "Trial encerrado."
+    elif status == CompanySubscription.Status.ACTIVE:
+        tone = "success" if is_access_active else "warn"
+        hint = "Assinatura ativa e apta para uso." if is_access_active else "Assinatura ativa sem acesso no periodo atual."
+    elif status == CompanySubscription.Status.PAST_DUE:
+        tone = "warn"
+        hint = "Pagamento pendente. A regularizacao pode ser necessaria."
+    elif status == CompanySubscription.Status.CANCELED:
+        tone = "warn"
+        hint = "Assinatura cancelada."
+    elif status == CompanySubscription.Status.EXPIRED:
+        tone = "warn"
+        hint = "Assinatura expirada."
+    else:
+        tone = "warn"
+        hint = "Status de assinatura nao mapeado."
+
+    return {
+        "label": subscription.get_status_display(),
+        "tone": tone,
+        "hint": hint,
+    }
 
 
 def _redirect_if_not_mei(request):
@@ -939,6 +982,7 @@ def company_history(request):
 
 
 @login_required
+@require_company_feature("advanced_reports")
 def company_reports(request):
     denied = _redirect_if_not_empresa(request)
     if denied:
@@ -1127,11 +1171,282 @@ def company_reports(request):
 
 
 @login_required
+@require_company_feature("incident_center")
+def company_incident_center(request):
+    denied = _redirect_if_not_empresa(request)
+    if denied:
+        return denied
+
+    company = _company_for_user(request.user)
+    if not company:
+        return redirect("dashboard_empresa")
+
+    employee_search_form = EmployeeSearchForm(request.GET or None)
+    period_form = PeriodSearchForm(request.GET or None)
+    status_filter = (request.GET.get("status") or "all").strip().lower()
+    if status_filter not in {"all", "critical", "review", "ok"}:
+        status_filter = "all"
+
+    employees_qs = Employee.objects.filter(company=company).select_related("user").order_by("full_name")
+    query = ""
+    if employee_search_form.is_valid():
+        query = (employee_search_form.cleaned_data.get("q") or "").strip()
+    if query:
+        employees_qs = employees_qs.filter(
+            Q(full_name__icontains=query)
+            | Q(user__email__icontains=query)
+            | Q(user__username__icontains=query)
+        )
+
+    today = timezone.localdate()
+    period_start = today.replace(day=1)
+    period_end = today
+    if period_form.is_valid():
+        period_start = period_form.cleaned_data.get("date_from") or period_start
+        period_end = period_form.cleaned_data.get("date_to") or period_end
+    if period_start > period_end:
+        period_start, period_end = period_end, period_start
+
+    period_start_dt = timezone.make_aware(datetime.combine(period_start, time.min))
+    period_end_dt = timezone.make_aware(datetime.combine(period_end, time.max))
+
+    employees = list(employees_qs[:300])
+    employee_ids = [employee.id for employee in employees]
+    contracts = list(
+        Contract.objects.filter(
+            company=company,
+            employee_id__in=employee_ids,
+            employee__isnull=False,
+            employee__user__isnull=False,
+        )
+        .select_related("employee", "employee__user")
+        .order_by("-start_date", "-created_at")
+    )
+    contract_ids = [contract.id for contract in contracts]
+
+    punches = list(
+        Punch.objects.filter(
+            contract_id__in=contract_ids,
+            timestamp__range=(period_start_dt, period_end_dt),
+        )
+        .select_related("contract", "contract__employee", "contract__employee__user")
+        .order_by("-timestamp")
+    )
+
+    punches_by_employee = defaultdict(list)
+    for punch in punches:
+        employee = getattr(punch.contract, "employee", None)
+        if employee:
+            punches_by_employee[employee.id].append(punch)
+
+    pending_requests_qs = ActivityReportRequest.objects.filter(
+        company=company,
+        is_answered=False,
+        employee_id__in=employee_ids,
+        requested_at__range=(period_start_dt, period_end_dt),
+    ).select_related("employee", "employee__user")
+    pending_requests = list(pending_requests_qs.order_by("-requested_at"))
+    pending_requests_by_employee = defaultdict(list)
+    for item in pending_requests:
+        pending_requests_by_employee[item.employee_id].append(item)
+
+    employee_rows = []
+    review_items = []
+    total_incomplete_days = 0
+    total_days_with_notes = 0
+    total_pending_requests = len(pending_requests)
+
+    for employee in employees:
+        employee_punches = punches_by_employee.get(employee.id, [])
+        daily_rows, _max_cols = build_daily_summary(employee_punches, min_punch_columns=4)
+
+        incomplete_days = sum(1 for row in daily_rows if row["is_incomplete"])
+        days_with_notes = sum(1 for row in daily_rows if (row.get("notes_summary") or "").strip())
+        review_days = incomplete_days + days_with_notes
+        employee_pending_requests = pending_requests_by_employee.get(employee.id, [])
+        needs_review = incomplete_days > 0 or days_with_notes > 0 or bool(employee_pending_requests)
+
+        if employee_pending_requests or incomplete_days >= 3:
+            risk_tone = "danger"
+            risk_label = "Critico"
+        elif needs_review:
+            risk_tone = "warn"
+            risk_label = "Em revisao"
+        else:
+            risk_tone = "success"
+            risk_label = "Estavel"
+
+        matches_filter = (
+            status_filter == "all"
+            or (status_filter == "critical" and risk_label == "Critico")
+            or (status_filter == "review" and risk_label == "Em revisao")
+            or (status_filter == "ok" and risk_label == "Estavel")
+        )
+        if not matches_filter:
+            continue
+
+        total_incomplete_days += incomplete_days
+        total_days_with_notes += days_with_notes
+
+        employee_row = {
+            "employee": employee,
+            "incomplete_days": incomplete_days,
+            "days_with_notes": days_with_notes,
+            "review_days": review_days,
+            "pending_requests": len(employee_pending_requests),
+            "worked_days": len(daily_rows),
+            "risk_tone": risk_tone,
+            "risk_label": risk_label,
+            "profile_url": reverse("company_mei_profile", args=[employee.id]),
+            "history_url": f"{reverse('company_history')}?employee={employee.id}&date_from={period_start}&date_to={period_end}",
+        }
+        employee_rows.append(employee_row)
+
+        for row in daily_rows:
+            note_text = (row.get("notes_summary") or "").strip()
+            if not row["is_incomplete"] and not note_text:
+                continue
+            review_items.append(
+                {
+                    "employee": employee,
+                    "date": row["date"],
+                    "status": row["status"],
+                    "is_incomplete": row["is_incomplete"],
+                    "notes_summary": note_text,
+                    "total_hours_hhmm": row["total_hours_hhmm"],
+                    "punch_times": row["punch_times"],
+                    "history_url": f"{reverse('company_history')}?employee={employee.id}&date_from={row['date']}&date_to={row['date']}",
+                }
+            )
+
+    employee_rows.sort(
+        key=lambda item: (
+            0 if item["risk_label"] == "Critico" else 1 if item["risk_label"] == "Em revisao" else 2,
+            -item["pending_requests"],
+            -item["incomplete_days"],
+            item["employee"].full_name.lower(),
+        )
+    )
+    review_items.sort(
+        key=lambda item: (
+            item["date"],
+            1 if item["is_incomplete"] else 0,
+            item["employee"].full_name.lower(),
+        ),
+        reverse=True,
+    )
+
+    context = {
+        "company": company,
+        "employee_search_form": employee_search_form,
+        "period_form": period_form,
+        "status_filter": status_filter,
+        "period_start": period_start.strftime("%Y-%m-%d"),
+        "period_end": period_end.strftime("%Y-%m-%d"),
+        "employee_rows": employee_rows[:300],
+        "review_items": review_items[:500],
+        "pending_requests": pending_requests[:120],
+        "summary_total_people": len(employee_rows),
+        "summary_incomplete_days": total_incomplete_days,
+        "summary_days_with_notes": total_days_with_notes,
+        "summary_pending_requests": total_pending_requests,
+    }
+    return render(request, "accounts/company_incident_center.html", context)
+
+
+@login_required
 def company_docs(request):
     denied = _redirect_if_not_empresa(request)
     if denied:
         return denied
     return render(request, "accounts/company_docs.html")
+
+
+@login_required
+def company_plan(request):
+    denied = _redirect_if_not_empresa(request)
+    if denied:
+        return denied
+
+    company = _company_for_user(request.user)
+    if not company:
+        return redirect("dashboard_empresa")
+
+    now = timezone.now()
+    subscription = company.current_subscription()
+    status_badge = _subscription_status_badge(subscription, at_time=now)
+
+    plans = list(
+        Plan.objects.filter(is_active=True)
+        .prefetch_related("plan_features__feature")
+        .order_by("tier")
+    )
+    current_plan_id = subscription.plan_id if subscription else None
+
+    plan_cards = []
+    for plan in plans:
+        enabled_features = [
+            plan_feature.feature
+            for plan_feature in plan.plan_features.all()
+            if plan_feature.is_enabled and plan_feature.feature.is_active
+        ]
+        plan_cards.append(
+            {
+                "plan": plan,
+                "is_current": plan.id == current_plan_id,
+                "feature_count": len(enabled_features),
+                "feature_preview": enabled_features[:5],
+            }
+        )
+
+    current_plan_tier = subscription.plan.tier if subscription else 0
+    suggested_upgrade = next((plan for plan in plans if plan.tier > current_plan_tier), None)
+
+    available_features = []
+    blocked_features = []
+    features = Feature.objects.filter(is_active=True).order_by("category", "name")
+
+    for feature in features:
+        access = get_company_feature_access(
+            company=company,
+            feature_code=feature.code,
+            user_role=None,
+            at_time=now,
+        )
+        feature_item = {
+            "feature": feature,
+            "allowed": access.allowed,
+            "reason": access.reason,
+            "reason_label": humanize_feature_reason(access.reason),
+            "audience_label": feature.get_required_role_display(),
+        }
+        if access.allowed:
+            available_features.append(feature_item)
+        else:
+            blocked_features.append(feature_item)
+
+    date_format = "%d/%m/%Y"
+
+    def _fmt_dt(value):
+        if not value:
+            return "-"
+        return timezone.localtime(value).strftime(date_format)
+
+    context = {
+        "company": company,
+        "subscription": subscription,
+        "subscription_status_badge": status_badge,
+        "plan_cards": plan_cards,
+        "available_features": available_features,
+        "blocked_features": blocked_features,
+        "current_plan_name": subscription.plan.name if subscription else "Sem plano",
+        "current_plan_code": subscription.plan.code if subscription else "",
+        "period_start_label": _fmt_dt(subscription.current_period_start) if subscription else "-",
+        "period_end_label": _fmt_dt(subscription.current_period_end) if subscription else "-",
+        "trial_end_label": _fmt_dt(subscription.trial_ends_at) if subscription else "-",
+        "suggested_upgrade": suggested_upgrade,
+    }
+    return render(request, "accounts/company_plan.html", context)
 
 
 @login_required

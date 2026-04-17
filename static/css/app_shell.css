@@ -143,6 +143,22 @@
   opacity: 0.8;
 }
 
+.item.is-locked-premium {
+  border-style: dashed;
+  border-color: var(--warning-border);
+  background: color-mix(in oklab, var(--warning-bg) 72%, var(--surface-raised));
+}
+
+.item.is-locked-premium .icon {
+  background: var(--warning-bg);
+  border-color: var(--warning-border);
+  color: var(--warning-text);
+}
+
+.item.is-locked-premium strong {
+  color: var(--color-text-strong);
+}
+
 .badge {
   background: var(--badge-solid-bg);
   color: var(--badge-solid-text);

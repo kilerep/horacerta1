@@ -1,4 +1,5 @@
 from companies.models import Company
+from companies.feature_flags import get_user_feature_access
 from timeclock.models import ActivityReportRequest
 
 
@@ -43,6 +44,9 @@ def header_profile_media(request):
     header_company_name = "Empresa"
     header_mode = "mei"
     pending_reports_count = 0
+    header_feature_access = {}
+    header_current_plan_code = ""
+    header_current_plan_name = ""
 
     try:
         if request.user.role == "EMPRESA":
@@ -59,10 +63,24 @@ def header_profile_media(request):
                     company=company,
                     is_answered=False,
                 ).count()
+            reports_access = get_user_feature_access(request.user, "advanced_reports")
+            themes_access = get_user_feature_access(request.user, "custom_themes")
+            incident_access = get_user_feature_access(request.user, "incident_center")
+            header_feature_access["advanced_reports"] = reports_access.allowed
+            header_feature_access["custom_themes"] = themes_access.allowed
+            header_feature_access["incident_center"] = incident_access.allowed
+            if reports_access.plan_code:
+                header_current_plan_code = reports_access.plan_code
+                header_current_plan_name = reports_access.plan_name or ""
         else:
             employee = getattr(request.user, "employee_profile", None)
             if employee and employee.profile_photo:
                 photo_url = employee.profile_photo.url
+            themes_access = get_user_feature_access(request.user, "custom_themes")
+            header_feature_access["custom_themes"] = themes_access.allowed
+            if themes_access.plan_code:
+                header_current_plan_code = themes_access.plan_code
+                header_current_plan_name = themes_access.plan_name or ""
     except Exception:
         # Fallback silencioso para nao quebrar layout se arquivo estiver ausente.
         pass
@@ -74,4 +92,10 @@ def header_profile_media(request):
         "header_company_name": header_company_name,
         "header_mode": header_mode,
         "pending_reports_count": pending_reports_count,
+        "header_feature_access": header_feature_access,
+        "header_can_use_custom_themes": header_feature_access.get("custom_themes", False),
+        "header_can_use_advanced_reports": header_feature_access.get("advanced_reports", False),
+        "header_can_use_incident_center": header_feature_access.get("incident_center", False),
+        "header_current_plan_code": header_current_plan_code,
+        "header_current_plan_name": header_current_plan_name,
     }

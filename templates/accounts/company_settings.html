@@ -42,6 +42,18 @@
 
   <div class="settings-grid" style="margin-top:12px;">
     <article class="settings-item">
+      <h3>Meu plano</h3>
+      <p>Consulte assinatura atual, recursos disponiveis e pontos de upgrade do produto.</p>
+      <div><a class="btn primary" href="{% url 'company_plan' %}">Abrir meu plano</a></div>
+    </article>
+
+    <article class="settings-item">
+      <h3>Centro de pendencias (Pro)</h3>
+      <p>Acompanhe dias incompletos, observacoes e itens de revisao por funcionario.</p>
+      <div><a class="btn" href="{% url 'company_incident_center' %}">Abrir painel Pro</a></div>
+    </article>
+
+    <article class="settings-item">
       <h3>Perfil da empresa</h3>
       <p>Atualize razao social, contato, endereco e logo usados no sistema.</p>
       <div><a class="btn primary" href="{% url 'company_profile' %}">Abrir perfil</a></div>

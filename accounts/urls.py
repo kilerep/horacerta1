@@ -48,9 +48,11 @@ urlpatterns = [
     path("empresa/meis/<uuid:employee_id>/", views.company_mei_profile, name="company_mei_profile"),
     path("empresa/contratos/", views.company_contracts, name="company_contracts"),
     path("empresa/relatorios/", views.company_reports, name="company_reports"),
+    path("empresa/pendencias/", views.company_incident_center, name="company_incident_center"),
     path("dashboard/history/", views.company_history, name="company_history"),
     path("empresa/historico/", views.company_history, name="company_history_legacy"),
     path("empresa/docs/", views.company_docs, name="company_docs"),
+    path("empresa/meu-plano/", views.company_plan, name="company_plan"),
     path("empresa/configuracoes/", views.company_settings, name="company_settings"),
 
     path("me/painel/", views.mei_panel, name="mei_panel"),

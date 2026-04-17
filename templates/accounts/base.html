@@ -22,7 +22,14 @@
 </head>
 
 <!-- Mudanca aqui -->
-<body data-theme="executive-blue" data-default-theme="executive-blue" data-theme-company="{{ header_company_theme|default:'' }}" data-theme-user="{{ header_user_theme|default:'' }}" class="{% if request.user.is_authenticated and request.user.role == 'EMPRESA' %}role-company {% elif request.user.is_authenticated %}role-mei {% endif %}{% block body_class %}{% endblock %}">
+<body
+  data-theme="executive-blue"
+  data-default-theme="executive-blue"
+  data-theme-company="{{ header_company_theme|default:'' }}"
+  data-theme-user="{{ header_user_theme|default:'' }}"
+  data-can-custom-themes="{% if request.user.is_authenticated %}{% if header_can_use_custom_themes %}1{% else %}0{% endif %}{% else %}1{% endif %}"
+  data-company-plan-code="{{ header_current_plan_code|default:'' }}"
+  class="{% if request.user.is_authenticated and request.user.role == 'EMPRESA' %}role-company {% elif request.user.is_authenticated %}role-mei {% endif %}{% block body_class %}{% endblock %}">
   {% if request.user.is_authenticated %}
     <div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true"></div>
   {% endif %}
@@ -58,7 +65,7 @@
                   <div class="icon">A</div>
                   <div><strong>Documentos</strong><div class="muted item-sub">anexos e arquivos</div></div>
                 </a>
-                <a class="item {% if current == 'company_reports' %}is-active{% endif %}" href="{% url 'company_reports' %}">
+                <a class="item {% if current == 'company_reports' %}is-active{% endif %} {% if not header_can_use_advanced_reports %}is-locked-premium{% endif %}" href="{% url 'company_reports' %}">
                   <div class="icon">R</div>
                   <div>
                     <strong>
@@ -66,8 +73,35 @@
                       {% if pending_reports_count %}
                         <span class="badge">{{ pending_reports_count }}</span>
                       {% endif %}
+                      {% if not header_can_use_advanced_reports %}
+                        <span class="badge warn">Premium</span>
+                      {% endif %}
                     </strong>
-                    <div class="muted item-sub">analise e exportacao</div>
+                    <div class="muted item-sub">
+                      {% if header_can_use_advanced_reports %}
+                        analise e exportacao
+                      {% else %}
+                        recurso disponivel a partir do plano Pro
+                      {% endif %}
+                    </div>
+                  </div>
+                </a>
+                <a class="item {% if current == 'company_incident_center' %}is-active{% endif %} {% if not header_can_use_incident_center %}is-locked-premium{% endif %}" href="{% url 'company_incident_center' %}">
+                  <div class="icon">I</div>
+                  <div>
+                    <strong>
+                      Centro de Pendencias
+                      {% if not header_can_use_incident_center %}
+                        <span class="badge warn">Pro</span>
+                      {% endif %}
+                    </strong>
+                    <div class="muted item-sub">
+                      {% if header_can_use_incident_center %}
+                        revisao de ocorrencias do periodo
+                      {% else %}
+                        recurso disponivel a partir do plano Pro
+                      {% endif %}
+                    </div>
                   </div>
                 </a>
                 <a class="item {% if current == 'company_history' or current == 'company_history_legacy' %}is-active{% endif %}" href="{% url 'company_history' %}">
@@ -77,6 +111,10 @@
               </div>
               <div class="menu-group">
                 <div class="menu-label">Conta</div>
+                <a class="item {% if current == 'company_plan' %}is-active{% endif %}" href="{% url 'company_plan' %}">
+                  <div class="icon">P</div>
+                  <div><strong>Meu Plano</strong><div class="muted item-sub">assinatura e recursos</div></div>
+                </a>
                 <a class="item {% if current == 'company_settings' %}is-active{% endif %}" href="{% url 'company_settings' %}">
                   <div class="icon">S</div>
                   <div><strong>Configuracoes</strong><div class="muted item-sub">organizacao e operacao</div></div>
@@ -164,13 +202,16 @@
             {% endif %}
           </div>
           <div class="top-right">
-            <div class="theme-switch" aria-label="Tema visual">
+            <div class="theme-switch {% if request.user.is_authenticated and not header_can_use_custom_themes %}theme-switch--locked{% endif %}" aria-label="Tema visual">
               <span class="theme-switch__label">Tema</span>
-              <select class="theme-switch__select" data-theme-control>
+              <select class="theme-switch__select" data-theme-control {% if request.user.is_authenticated and not header_can_use_custom_themes %}disabled title="Temas extras disponiveis no plano Pro"{% endif %}>
                 <option value="executive-blue">Azul Executivo Premium</option>
                 <option value="graphite-premium">Grafite Premium</option>
                 <option value="corporate-light-blue">Azul Claro Corporativo</option>
               </select>
+              {% if request.user.is_authenticated and not header_can_use_custom_themes %}
+                <span class="theme-switch__premium-note">Plano Pro para temas extras</span>
+              {% endif %}
             </div>
           </div>
         </header>
