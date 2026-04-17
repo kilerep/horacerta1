@@ -6,6 +6,7 @@ from xml.sax.saxutils import escape
 import zipfile
 from collections import defaultdict
 import json
+from uuid import UUID
 
 from django.conf import settings
 from django.contrib.auth import get_user_model, login, logout
@@ -1184,19 +1185,31 @@ def company_incident_center(request):
     employee_search_form = EmployeeSearchForm(request.GET or None)
     period_form = PeriodSearchForm(request.GET or None)
     status_filter = (request.GET.get("status") or "all").strip().lower()
-    if status_filter not in {"all", "critical", "review", "ok"}:
+    if status_filter not in {"all", "pending", "reviewed"}:
         status_filter = "all"
 
+    type_filter = (request.GET.get("type") or "all").strip().lower()
+    if type_filter not in {"all", "incomplete", "justification", "request"}:
+        type_filter = "all"
+
+    selected_employee = (request.GET.get("employee") or "").strip()
+
     employees_qs = Employee.objects.filter(company=company).select_related("user").order_by("full_name")
-    query = ""
+    search_query = ""
     if employee_search_form.is_valid():
-        query = (employee_search_form.cleaned_data.get("q") or "").strip()
-    if query:
+        search_query = (employee_search_form.cleaned_data.get("q") or "").strip()
+    if search_query:
         employees_qs = employees_qs.filter(
-            Q(full_name__icontains=query)
-            | Q(user__email__icontains=query)
-            | Q(user__username__icontains=query)
+            Q(full_name__icontains=search_query)
+            | Q(user__email__icontains=search_query)
+            | Q(user__username__icontains=search_query)
         )
+    if selected_employee:
+        try:
+            selected_employee = str(UUID(selected_employee))
+            employees_qs = employees_qs.filter(id=selected_employee)
+        except (ValueError, TypeError):
+            selected_employee = ""
 
     today = timezone.localdate()
     period_start = today.replace(day=1)
@@ -1243,94 +1256,131 @@ def company_incident_center(request):
         company=company,
         is_answered=False,
         employee_id__in=employee_ids,
-        requested_at__range=(period_start_dt, period_end_dt),
+        requested_at__lte=period_end_dt,
     ).select_related("employee", "employee__user")
     pending_requests = list(pending_requests_qs.order_by("-requested_at"))
-    pending_requests_by_employee = defaultdict(list)
-    for item in pending_requests:
-        pending_requests_by_employee[item.employee_id].append(item)
+    answered_requests_qs = ActivityReportRequest.objects.filter(
+        company=company,
+        is_answered=True,
+        employee_id__in=employee_ids,
+        responded_at__isnull=False,
+    ).select_related("employee")
+    answered_requests = list(answered_requests_qs)
 
-    employee_rows = []
-    review_items = []
-    total_incomplete_days = 0
-    total_days_with_notes = 0
-    total_pending_requests = len(pending_requests)
+    answered_ranges_by_employee = defaultdict(list)
+    for req in answered_requests:
+        if req.date_from and req.date_to:
+            range_start = req.date_from if req.date_from <= req.date_to else req.date_to
+            range_end = req.date_to if req.date_to >= req.date_from else req.date_from
+            answered_ranges_by_employee[req.employee_id].append((range_start, range_end))
+        elif req.date_from:
+            answered_ranges_by_employee[req.employee_id].append((req.date_from, req.date_from))
+        elif req.date_to:
+            answered_ranges_by_employee[req.employee_id].append((req.date_to, req.date_to))
+
+    def _is_reviewed(employee_id, day_value):
+        ranges = answered_ranges_by_employee.get(employee_id, [])
+        for range_start, range_end in ranges:
+            if range_start <= day_value <= range_end:
+                return True
+        return False
+
+    pending_items = []
+    unique_incomplete_days = 0
+    unique_days_with_notes = 0
+    unique_employee_ids = set()
 
     for employee in employees:
         employee_punches = punches_by_employee.get(employee.id, [])
         daily_rows, _max_cols = build_daily_summary(employee_punches, min_punch_columns=4)
 
-        incomplete_days = sum(1 for row in daily_rows if row["is_incomplete"])
-        days_with_notes = sum(1 for row in daily_rows if (row.get("notes_summary") or "").strip())
-        review_days = incomplete_days + days_with_notes
-        employee_pending_requests = pending_requests_by_employee.get(employee.id, [])
-        needs_review = incomplete_days > 0 or days_with_notes > 0 or bool(employee_pending_requests)
-
-        if employee_pending_requests or incomplete_days >= 3:
-            risk_tone = "danger"
-            risk_label = "Critico"
-        elif needs_review:
-            risk_tone = "warn"
-            risk_label = "Em revisao"
-        else:
-            risk_tone = "success"
-            risk_label = "Estavel"
-
-        matches_filter = (
-            status_filter == "all"
-            or (status_filter == "critical" and risk_label == "Critico")
-            or (status_filter == "review" and risk_label == "Em revisao")
-            or (status_filter == "ok" and risk_label == "Estavel")
-        )
-        if not matches_filter:
-            continue
-
-        total_incomplete_days += incomplete_days
-        total_days_with_notes += days_with_notes
-
-        employee_row = {
-            "employee": employee,
-            "incomplete_days": incomplete_days,
-            "days_with_notes": days_with_notes,
-            "review_days": review_days,
-            "pending_requests": len(employee_pending_requests),
-            "worked_days": len(daily_rows),
-            "risk_tone": risk_tone,
-            "risk_label": risk_label,
-            "profile_url": reverse("company_mei_profile", args=[employee.id]),
-            "history_url": f"{reverse('company_history')}?employee={employee.id}&date_from={period_start}&date_to={period_end}",
-        }
-        employee_rows.append(employee_row)
-
         for row in daily_rows:
             note_text = (row.get("notes_summary") or "").strip()
-            if not row["is_incomplete"] and not note_text:
+            has_incomplete = row["is_incomplete"]
+            has_justification = bool(note_text)
+            if not has_incomplete and not has_justification:
                 continue
-            review_items.append(
+
+            if has_incomplete and has_justification:
+                pending_type = "incomplete"
+                type_label = "Incompleto com justificativa"
+                type_tone = "danger"
+            elif has_incomplete:
+                pending_type = "incomplete"
+                type_label = "Registro incompleto"
+                type_tone = "danger"
+            else:
+                pending_type = "justification"
+                type_label = "Com justificativa"
+                type_tone = "warn"
+
+            is_reviewed = _is_reviewed(employee.id, row["date"])
+            status_key = "reviewed" if is_reviewed else "pending"
+            status_label = "Revisado" if is_reviewed else "Pendente"
+            status_tone = "success" if is_reviewed else "warn"
+
+            matches_status = status_filter == "all" or status_filter == status_key
+            matches_type = type_filter == "all" or type_filter == pending_type
+            if not (matches_status and matches_type):
+                continue
+
+            unique_employee_ids.add(employee.id)
+            if has_incomplete:
+                unique_incomplete_days += 1
+            if has_justification:
+                unique_days_with_notes += 1
+
+            pending_items.append(
                 {
                     "employee": employee,
                     "date": row["date"],
-                    "status": row["status"],
-                    "is_incomplete": row["is_incomplete"],
+                    "type_key": pending_type,
+                    "type_label": type_label,
+                    "type_tone": type_tone,
+                    "status_key": status_key,
+                    "status_label": status_label,
+                    "status_tone": status_tone,
                     "notes_summary": note_text,
+                    "punches_count": row["punches_count"],
                     "total_hours_hhmm": row["total_hours_hhmm"],
-                    "punch_times": row["punch_times"],
                     "history_url": f"{reverse('company_history')}?employee={employee.id}&date_from={row['date']}&date_to={row['date']}",
+                    "profile_url": reverse("company_mei_profile", args=[employee.id]),
                 }
             )
 
-    employee_rows.sort(
-        key=lambda item: (
-            0 if item["risk_label"] == "Critico" else 1 if item["risk_label"] == "Em revisao" else 2,
-            -item["pending_requests"],
-            -item["incomplete_days"],
-            item["employee"].full_name.lower(),
+    for req in pending_requests:
+        request_day = timezone.localtime(req.requested_at).date()
+        if request_day < period_start or request_day > period_end:
+            continue
+        if type_filter not in {"all", "request"}:
+            continue
+        if status_filter not in {"all", "pending"}:
+            continue
+
+        unique_employee_ids.add(req.employee_id)
+        pending_items.append(
+            {
+                "employee": req.employee,
+                "date": request_day,
+                "type_key": "request",
+                "type_label": "Solicitacao pendente",
+                "type_tone": "warn",
+                "status_key": "pending",
+                "status_label": "Pendente",
+                "status_tone": "warn",
+                "notes_summary": (req.message or "").strip(),
+                "punches_count": "-",
+                "total_hours_hhmm": "-",
+                "history_url": f"{reverse('company_history')}?employee={req.employee_id}&date_from={request_day}&date_to={request_day}",
+                "profile_url": reverse("company_mei_profile", args=[req.employee_id]),
+            }
         )
-    )
-    review_items.sort(
+
+    pending_items.sort(
         key=lambda item: (
             item["date"],
-            1 if item["is_incomplete"] else 0,
+            1 if item["status_key"] == "pending" else 0,
+            1 if item["type_key"] == "incomplete" else 0,
             item["employee"].full_name.lower(),
         ),
         reverse=True,
@@ -1341,15 +1391,16 @@ def company_incident_center(request):
         "employee_search_form": employee_search_form,
         "period_form": period_form,
         "status_filter": status_filter,
+        "type_filter": type_filter,
+        "selected_employee": selected_employee,
+        "employee_options": employees,
         "period_start": period_start.strftime("%Y-%m-%d"),
         "period_end": period_end.strftime("%Y-%m-%d"),
-        "employee_rows": employee_rows[:300],
-        "review_items": review_items[:500],
-        "pending_requests": pending_requests[:120],
-        "summary_total_people": len(employee_rows),
-        "summary_incomplete_days": total_incomplete_days,
-        "summary_days_with_notes": total_days_with_notes,
-        "summary_pending_requests": total_pending_requests,
+        "pending_items": pending_items[:700],
+        "summary_total_pending": len(pending_items),
+        "summary_incomplete_days": unique_incomplete_days,
+        "summary_justifications": unique_days_with_notes,
+        "summary_people_with_occurrence": len(unique_employee_ids),
     }
     return render(request, "accounts/company_incident_center.html", context)
 

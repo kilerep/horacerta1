@@ -50,12 +50,6 @@
       font-weight: 900;
       line-height: 1.1;
     }
-    .incident-layout {
-      display: grid;
-      grid-template-columns: minmax(0, 1.4fr) minmax(330px, 1fr);
-      gap: 12px;
-      align-items: start;
-    }
     .incident-card {
       border: 1px solid var(--color-border);
       border-radius: var(--radius-md);
@@ -75,7 +69,7 @@
     .incident-filters {
       margin-top: 10px;
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: 8px;
       align-items: end;
     }
@@ -143,26 +137,6 @@
       background: var(--danger-bg);
       color: var(--danger-text);
     }
-    .incident-list {
-      margin-top: 10px;
-      display: grid;
-      gap: 8px;
-    }
-    .incident-item {
-      border: 1px solid var(--color-border);
-      border-radius: 11px;
-      background: var(--surface-subtle);
-      padding: 10px;
-      display: grid;
-      gap: 5px;
-    }
-    .incident-item__top {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
     .incident-item__meta {
       color: var(--color-text-muted);
       font-size: 12px;
@@ -177,14 +151,11 @@
       padding: 12px;
     }
     @media (max-width: 1100px) {
-      .incident-layout {
-        grid-template-columns: 1fr;
-      }
       .incident-kpis {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
       .incident-filters {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
       }
     }
     @media (max-width: 680px) {
@@ -202,139 +173,112 @@
     <article class="incident-hero">
       <h2 class="incident-title">Painel Pro de pendencias e ocorrencias</h2>
       <p class="incident-subtitle">
-        Visao operacional para RH monitorar dias incompletos, observacoes de ponto, pendencias por colaborador e itens que exigem revisao no periodo.
+        Visao operacional para RH monitorar dias incompletos, batidas impares, justificativas e itens que exigem revisao no periodo.
       </p>
       <div class="incident-kpis">
-        <div class="incident-kpi"><div class="k">Colaboradores monitorados</div><div class="v">{{ summary_total_people }}</div></div>
+        <div class="incident-kpi"><div class="k">Total de pendencias</div><div class="v">{{ summary_total_pending }}</div></div>
         <div class="incident-kpi"><div class="k">Dias incompletos</div><div class="v">{{ summary_incomplete_days }}</div></div>
-        <div class="incident-kpi"><div class="k">Dias com observacoes</div><div class="v">{{ summary_days_with_notes }}</div></div>
-        <div class="incident-kpi"><div class="k">Solicitacoes pendentes</div><div class="v">{{ summary_pending_requests }}</div></div>
+        <div class="incident-kpi"><div class="k">Justificativas encontradas</div><div class="v">{{ summary_justifications }}</div></div>
+        <div class="incident-kpi"><div class="k">Funcionarios com ocorrencia</div><div class="v">{{ summary_people_with_occurrence }}</div></div>
       </div>
     </article>
 
-    <div class="incident-layout">
-      <section class="incident-card">
-        <h3>Pendencias por funcionario</h3>
-        <p>Periodo {{ period_start }} ate {{ period_end }}. Use filtros para priorizar revisoes.</p>
+    <section class="incident-card">
+      <h3>Lista principal de pendencias</h3>
+      <p>Periodo {{ period_start }} ate {{ period_end }}. Itens agrupados por funcionario e data.</p>
 
-        <form method="get" class="incident-filters" data-submit-once="true">
-          <div class="incident-field">
-            <label>{{ employee_search_form.q.label }}</label>
-            {{ employee_search_form.q }}
-          </div>
-          <div class="incident-field">
-            <label>{{ period_form.date_from.label }}</label>
-            {{ period_form.date_from }}
-          </div>
-          <div class="incident-field">
-            <label>{{ period_form.date_to.label }}</label>
-            {{ period_form.date_to }}
-          </div>
-          <div class="incident-field">
-            <label>Status</label>
-            <select name="status">
-              <option value="all" {% if status_filter == 'all' %}selected{% endif %}>Todos</option>
-              <option value="critical" {% if status_filter == 'critical' %}selected{% endif %}>Critico</option>
-              <option value="review" {% if status_filter == 'review' %}selected{% endif %}>Em revisao</option>
-              <option value="ok" {% if status_filter == 'ok' %}selected{% endif %}>Estavel</option>
-            </select>
-          </div>
-          <div style="grid-column: 1 / -1; display:flex; gap:8px; flex-wrap:wrap;">
-            <button class="btn primary" type="submit" data-loading-text="Aplicando filtros...">Aplicar filtros</button>
-            <a class="btn" href="{% url 'company_incident_center' %}">Limpar</a>
-          </div>
-        </form>
+      <form method="get" class="incident-filters" data-submit-once="true">
+        <div class="incident-field">
+          <label>{{ period_form.date_from.label }}</label>
+          {{ period_form.date_from }}
+        </div>
+        <div class="incident-field">
+          <label>{{ period_form.date_to.label }}</label>
+          {{ period_form.date_to }}
+        </div>
+        <div class="incident-field">
+          <label>Funcionario</label>
+          <select name="employee">
+            <option value="">Todos</option>
+            {% for employee in employee_options %}
+              <option value="{{ employee.id }}" {% if selected_employee == employee.id|stringformat:"s" %}selected{% endif %}>
+                {{ employee.full_name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="incident-field">
+          <label>Status</label>
+          <select name="status">
+            <option value="all" {% if status_filter == 'all' %}selected{% endif %}>Todos</option>
+            <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pendente</option>
+            <option value="reviewed" {% if status_filter == 'reviewed' %}selected{% endif %}>Revisado</option>
+          </select>
+        </div>
+        <div class="incident-field">
+          <label>Tipo de pendencia</label>
+          <select name="type">
+            <option value="all" {% if type_filter == 'all' %}selected{% endif %}>Todos</option>
+            <option value="incomplete" {% if type_filter == 'incomplete' %}selected{% endif %}>Incompleto</option>
+            <option value="justification" {% if type_filter == 'justification' %}selected{% endif %}>Com justificativa</option>
+            <option value="request" {% if type_filter == 'request' %}selected{% endif %}>Solicitacao pendente</option>
+          </select>
+        </div>
+        <div class="incident-field" style="grid-column: 1 / -1;">
+          <label>{{ employee_search_form.q.label }}</label>
+          {{ employee_search_form.q }}
+        </div>
+        <div style="grid-column: 1 / -1; display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn primary" type="submit" data-loading-text="Aplicando filtros...">Aplicar filtros</button>
+          <a class="btn" href="{% url 'company_incident_center' %}">Limpar</a>
+        </div>
+      </form>
 
-        <div class="incident-table-wrap">
-          <table class="incident-table">
-            <thead>
+      <div class="incident-table-wrap">
+        <table class="incident-table">
+          <thead>
               <tr>
                 <th>Funcionario</th>
-                <th>Risco</th>
-                <th>Dias incompletos</th>
-                <th>Dias com observacao</th>
-                <th>Solicitacoes</th>
+                <th>Data</th>
+                <th>Tipo da pendencia</th>
+                <th>Status</th>
+                <th>Observacao/justificativa</th>
                 <th>Acoes</th>
               </tr>
-            </thead>
-            <tbody>
-              {% for row in employee_rows %}
+          </thead>
+          <tbody>
+              {% for item in pending_items %}
                 <tr>
                   <td>
-                    <strong>{{ row.employee.full_name }}</strong><br>
-                    <span class="incident-item__meta">{{ row.employee.user.email|default:row.employee.user.username }}</span>
+                    <strong>{{ item.employee.full_name }}</strong><br>
+                    <span class="incident-item__meta">{{ item.employee.user.email|default:item.employee.user.username }}</span>
                   </td>
-                  <td><span class="risk-badge {{ row.risk_tone }}">{{ row.risk_label }}</span></td>
-                  <td>{{ row.incomplete_days }}</td>
-                  <td>{{ row.days_with_notes }}</td>
-                  <td>{{ row.pending_requests }}</td>
+                  <td>{{ item.date|date:"d/m/Y" }}</td>
+                  <td><span class="risk-badge {{ item.type_tone }}">{{ item.type_label }}</span></td>
+                  <td><span class="risk-badge {{ item.status_tone }}">{{ item.status_label }}</span></td>
+                  <td>
+                    {% if item.notes_summary %}
+                      {{ item.notes_summary }}
+                    {% else %}
+                      <span class="incident-item__meta">Sem observacao registrada.</span>
+                    {% endif %}
+                    <div class="incident-item__meta">Batidas: {{ item.punches_count }} | Horas: {{ item.total_hours_hhmm }}</div>
+                  </td>
                   <td style="display:flex; gap:6px; flex-wrap:wrap;">
-                    <a class="btn" href="{{ row.profile_url }}">Perfil</a>
-                    <a class="btn" href="{{ row.history_url }}">Historico</a>
+                    <a class="btn" href="{{ item.history_url }}">Detalhes</a>
+                    <a class="btn" href="{{ item.profile_url }}">Funcionario</a>
                   </td>
                 </tr>
               {% empty %}
                 <tr>
                   <td colspan="6">
-                    <div class="incident-empty">Nenhum colaborador encontrado para os filtros atuais.</div>
+                    <div class="incident-empty">Nenhuma pendencia encontrada para os filtros atuais.</div>
                   </td>
                 </tr>
               {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="incident-card">
-        <h3>Itens do periodo para revisao</h3>
-        <p>Dias com falta de par de ponto ou com observacoes de justificativa.</p>
-        {% if review_items %}
-          <div class="incident-list">
-            {% for item in review_items %}
-              <article class="incident-item">
-                <div class="incident-item__top">
-                  <strong>{{ item.employee.full_name }} - {{ item.date|date:"d/m/Y" }}</strong>
-                  <span class="risk-badge {% if item.is_incomplete %}danger{% else %}warn{% endif %}">
-                    {% if item.is_incomplete %}Incompleto{% else %}Com observacao{% endif %}
-                  </span>
-                </div>
-                <div class="incident-item__meta">
-                  Horas: {{ item.total_hours_hhmm }} | Batidas: {{ item.punch_times|join:", " }}
-                </div>
-                {% if item.notes_summary %}
-                  <div class="incident-item__meta">Obs: {{ item.notes_summary }}</div>
-                {% endif %}
-                <div><a class="btn" href="{{ item.history_url }}">Abrir dia no historico</a></div>
-              </article>
-            {% endfor %}
-          </div>
-        {% else %}
-          <div class="incident-empty">Nenhum item pendente para revisao no periodo selecionado.</div>
-        {% endif %}
-
-        <h3 style="margin-top:16px;">Solicitacoes de resposta pendentes</h3>
-        <p>Pedidos de detalhamento ainda sem retorno do colaborador.</p>
-        {% if pending_requests %}
-          <div class="incident-list">
-            {% for req in pending_requests %}
-              <article class="incident-item">
-                <div class="incident-item__top">
-                  <strong>{{ req.employee.full_name }}</strong>
-                  <span class="risk-badge warn">Aguardando resposta</span>
-                </div>
-                <div class="incident-item__meta">
-                  Solicitado em {{ req.requested_at|date:"d/m/Y H:i" }}{% if req.date_from or req.date_to %} | Periodo {{ req.date_from|default:"-" }} ate {{ req.date_to|default:"-" }}{% endif %}
-                </div>
-                {% if req.message %}
-                  <div class="incident-item__meta">Mensagem: {{ req.message }}</div>
-                {% endif %}
-              </article>
-            {% endfor %}
-          </div>
-        {% else %}
-          <div class="incident-empty">Nao ha solicitacoes pendentes no periodo.</div>
-        {% endif %}
-      </section>
-    </div>
+          </tbody>
+        </table>
+      </div>
+    </section>
   </section>
 {% endblock %}
