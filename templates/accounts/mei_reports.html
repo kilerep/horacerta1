@@ -49,6 +49,18 @@
     border:1px dashed rgba(255,255,255,.18);
     border-radius:12px; padding:12px;
   }
+  .sr-badge{
+    display:inline-flex;
+    align-items:center;
+    border-radius:999px;
+    padding:4px 10px;
+    font-size:12px;
+    font-weight:700;
+    border:1px solid transparent;
+  }
+  .sr-badge--pending{ background:rgba(255,187,0,.12); border-color:rgba(255,187,0,.28); color:#ffd36a; }
+  .sr-badge--responded{ background:rgba(79,124,255,.15); border-color:rgba(79,124,255,.35); color:#b9ccff; }
+  .sr-badge--reviewed{ background:rgba(24,195,125,.15); border-color:rgba(24,195,125,.35); color:#b2f5d8; }
   @media (max-width: 920px){
     .sr-grid{ grid-template-columns:1fr; }
     .sr-actions .btn{ width:100%; justify-content:center; }
@@ -61,6 +73,102 @@
       Relatorio de servico enviado com sucesso.
     </section>
   {% endif %}
+
+  <section class="sr-panel">
+    <h2 class="sr-title">Solicitacoes recebidas da empresa</h2>
+    <p class="sr-sub">Acompanhe o que esta pendente e responda com relatorio de servico vinculado a cada solicitacao.</p>
+    <div class="sr-meta">Pendentes: {{ pending_requests|length }} | Respondidas/Revisadas: {{ responded_requests|length }}</div>
+    <div class="sr-table-wrap">
+      <table class="sr-table">
+        <thead>
+          <tr>
+            <th>Solicitado em</th>
+            <th>Empresa</th>
+            <th>Assunto</th>
+            <th>Periodo</th>
+            <th>Status</th>
+            <th>Acoes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in pending_requests %}
+            <tr>
+              <td>{{ item.requested_at|date:"d/m/Y H:i" }}</td>
+              <td>{{ item.company.name }}</td>
+              <td>{{ item.subject|default:"Solicitacao de relatorio" }}</td>
+              <td>
+                {% if item.date_from or item.date_to %}
+                  {{ item.date_from|date:"d/m/Y"|default:"-" }} ate {{ item.date_to|date:"d/m/Y"|default:"-" }}
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td><span class="sr-badge sr-badge--pending">Pendente</span></td>
+              <td><a class="btn primary" href="{% url 'mei_service_report_request_detail' item.id %}">Responder</a></td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6">
+                <div class="sr-empty">
+                  <strong>Nenhuma solicitacao pendente no momento.</strong>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="sr-panel">
+    <h2 class="sr-title">Historico de solicitacoes</h2>
+    <p class="sr-sub">Solicitacoes que ja receberam resposta e estao em acompanhamento.</p>
+    <div class="sr-table-wrap">
+      <table class="sr-table">
+        <thead>
+          <tr>
+            <th>Solicitado em</th>
+            <th>Assunto</th>
+            <th>Status</th>
+            <th>Resposta</th>
+            <th>Acoes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in responded_requests %}
+            <tr>
+              <td>{{ item.requested_at|date:"d/m/Y H:i" }}</td>
+              <td>{{ item.subject|default:"Solicitacao de relatorio" }}</td>
+              <td>
+                {% if item.status == "RESPONDED" %}
+                  <span class="sr-badge sr-badge--responded">Respondida</span>
+                {% else %}
+                  <span class="sr-badge sr-badge--reviewed">Revisada</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if item.response_report %}
+                  {{ item.response_report.title }}<br>
+                  <span class="muted">{{ item.response_report.report_date|date:"d/m/Y" }}</span>
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td><a class="btn" href="{% url 'mei_service_report_request_detail' item.id %}">Abrir detalhe</a></td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="5">
+                <div class="sr-empty">
+                  <strong>Sem solicitacoes respondidas ainda.</strong>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
 
   <section class="sr-panel">
     <h2 class="sr-title">Novo relatorio de servico</h2>

@@ -119,6 +119,11 @@ class Punch(models.Model):
 
 
 class ActivityReportRequest(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "Pendente"
+        RESPONDED = "RESPONDED", "Respondida"
+        REVIEWED = "REVIEWED", "Revisada"
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     company = models.ForeignKey(
@@ -133,20 +138,49 @@ class ActivityReportRequest(models.Model):
         null=False,
         blank=False,
     )
+    contract = models.ForeignKey(
+        Contract,
+        on_delete=models.PROTECT,
+        related_name="activity_report_requests",
+        null=True,
+        blank=True,
+    )
     requested_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
         related_name="requested_activity_report_requests",
     )
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="reviewed_activity_report_requests",
+        null=True,
+        blank=True,
+    )
+    response_report = models.ForeignKey(
+        "ServiceReport",
+        on_delete=models.SET_NULL,
+        related_name="linked_activity_report_requests",
+        null=True,
+        blank=True,
+    )
 
     date_from = models.DateField(null=True, blank=True)
     date_to = models.DateField(null=True, blank=True)
+    subject = models.CharField(max_length=160, blank=True, default="")
+    instruction = models.TextField(blank=True, default="")
     message = models.TextField(blank=True, default="")
     response_text = models.TextField(blank=True, default="")
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PENDING,
+    )
 
     is_answered = models.BooleanField(default=False)
     requested_at = models.DateTimeField(auto_now_add=True)
     responded_at = models.DateTimeField(null=True, blank=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ["-requested_at"]
@@ -162,10 +196,40 @@ class ActivityReportRequest(models.Model):
             company_id=self.company_id,
         ).exists():
             errors["employee"] = "Employee da solicitacao precisa pertencer a empresa."
+        if self.contract_id:
+            contract = Contract.objects.select_related("employee", "company").filter(id=self.contract_id).first()
+            if not contract:
+                errors["contract"] = "Vinculo informado nao existe."
+            else:
+                if self.company_id and contract.company_id != self.company_id:
+                    errors["company"] = "Empresa da solicitacao difere da empresa do vinculo."
+                if self.employee_id and contract.employee_id != self.employee_id:
+                    errors["employee"] = "Profissional da solicitacao difere do profissional do vinculo."
+        if self.date_from and self.date_to and self.date_from > self.date_to:
+            errors["date_to"] = "Data final nao pode ser anterior a data inicial."
+        if self.status in {self.Status.RESPONDED, self.Status.REVIEWED} and not self.response_report_id:
+            errors["response_report"] = "Solicitacao respondida precisa de relatorio vinculado."
+        if self.status == self.Status.REVIEWED and not self.reviewed_by_id:
+            errors["reviewed_by"] = "Solicitacao revisada precisa de usuario revisor."
         if errors:
             raise ValidationError(errors)
 
     def save(self, *args, **kwargs):
+        if not self.subject and self.message:
+            self.subject = (self.message[:157] + "...") if len(self.message) > 160 else self.message
+        if not self.instruction and self.message:
+            self.instruction = self.message
+
+        self.is_answered = self.status in {self.Status.RESPONDED, self.Status.REVIEWED}
+        if self.status == self.Status.PENDING:
+            self.responded_at = None
+            self.reviewed_at = None
+            self.reviewed_by = None
+        elif self.status in {self.Status.RESPONDED, self.Status.REVIEWED} and not self.responded_at:
+            self.responded_at = timezone.now()
+        if self.status == self.Status.REVIEWED and not self.reviewed_at:
+            self.reviewed_at = timezone.now()
+
         self.full_clean()
         return super().save(*args, **kwargs)
 

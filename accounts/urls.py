@@ -46,6 +46,7 @@ urlpatterns = [
     path("empresa/", views.dashboard_empresa, name="dashboard_empresa"),
     path("empresa/meis/", views.company_meis, name="company_meis"),
     path("empresa/meis/<uuid:employee_id>/", views.company_mei_profile, name="company_mei_profile"),
+    path("empresa/meis/<uuid:employee_id>/fechamento/", views.company_mei_closure, name="company_mei_closure"),
     path("empresa/contratos/", views.company_contracts, name="company_contracts"),
     path("empresa/relatorios-servico/", views.company_service_reports, name="company_service_reports"),
     path(
@@ -57,6 +58,7 @@ urlpatterns = [
     path("empresa/operacao-hoje/", views.company_today_center, name="company_today_center"),
     path("empresa/resumo-operacional/", views.company_operational_summary, name="company_operational_summary"),
     path("empresa/pendencias/", views.company_incident_center, name="company_incident_center"),
+    path("empresa/confiabilidade-registro/", views.company_attendance_reliability, name="company_attendance_reliability"),
     path("dashboard/history/", views.company_history, name="company_history"),
     path("empresa/historico/", views.company_history, name="company_history_legacy"),
     path("empresa/docs/", views.company_docs, name="company_docs"),
@@ -71,6 +73,11 @@ urlpatterns = [
     path("me/contrato/", views.mei_contract, name="mei_contract"),
     path("me/relatorios/", views.mei_reports, name="mei_reports"),
     path("me/relatorios/<uuid:report_id>/", views.mei_service_report_detail, name="mei_service_report_detail"),
+    path(
+        "me/relatorios/solicitacoes/<uuid:request_id>/",
+        views.mei_service_report_request_detail,
+        name="mei_service_report_request_detail",
+    ),
 
     path("help/", views.help_view, name="help"),
     path("terms/", views.terms_view, name="terms"),

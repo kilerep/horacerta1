@@ -5,8 +5,8 @@ from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 
-from companies.models import Company, Employee
-from timeclock.models import Contract, ServiceReport
+from companies.models import Company, CompanyAttendancePolicy, CompanyAuthorizedLocation, Employee
+from timeclock.models import ActivityReportRequest, Contract, ServiceReport
 
 User = get_user_model()
 
@@ -138,6 +138,112 @@ class ServiceReportCreateForm(forms.ModelForm):
         if commit:
             report.save()
         return report
+
+
+class CompanyActivityReportRequestForm(forms.ModelForm):
+    employee = forms.ModelChoiceField(
+        label="Profissional",
+        queryset=Employee.objects.none(),
+    )
+    contract = forms.ModelChoiceField(
+        label="Vinculo (opcional)",
+        queryset=Contract.objects.none(),
+        required=False,
+        empty_label="Selecionar depois",
+    )
+
+    class Meta:
+        model = ActivityReportRequest
+        fields = ["employee", "contract", "date_from", "date_to", "subject", "instruction"]
+        widgets = {
+            "date_from": forms.DateInput(attrs={"type": "date"}),
+            "date_to": forms.DateInput(attrs={"type": "date"}),
+            "subject": forms.TextInput(attrs={"placeholder": "Ex.: Relatorio de servico semanal"}),
+            "instruction": forms.Textarea(
+                attrs={
+                    "rows": 3,
+                    "placeholder": "Instrucao curta para orientar o profissional na resposta.",
+                }
+            ),
+        }
+        labels = {
+            "date_from": "Data inicial",
+            "date_to": "Data final",
+            "subject": "Titulo/assunto",
+            "instruction": "Instrucao",
+        }
+
+    def __init__(self, *args, company=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.company = company
+        employee_qs = Employee.objects.none()
+        contract_qs = Contract.objects.none()
+        if company:
+            employee_qs = (
+                Employee.objects.filter(company=company, user__role=User.Role.FUNCIONARIO, user__isnull=False)
+                .select_related("user")
+                .order_by("full_name")
+            )
+            contract_qs = (
+                Contract.objects.filter(
+                    company=company,
+                    employee__in=employee_qs,
+                    employee__isnull=False,
+                    employee__user__isnull=False,
+                )
+                .select_related("employee", "employee__user", "company")
+                .order_by("employee__full_name", "-start_date", "-created_at")
+            )
+        self.fields["employee"].queryset = employee_qs
+        self.fields["employee"].label_from_instance = (
+            lambda obj: f"{obj.full_name} - {(obj.user.email or obj.user.username)}"
+        )
+        self.fields["contract"].queryset = contract_qs
+        self.fields["contract"].label_from_instance = (
+            lambda obj: (
+                f"{obj.employee.full_name} | inicio {obj.start_date.strftime('%d/%m/%Y') if obj.start_date else '-'}"
+                f" | R$ {obj.hourly_rate}/h"
+            )
+        )
+
+    def clean(self):
+        data = super().clean()
+        employee = data.get("employee")
+        contract = data.get("contract")
+        date_from = data.get("date_from")
+        date_to = data.get("date_to")
+        subject = (data.get("subject") or "").strip()
+        instruction = (data.get("instruction") or "").strip()
+
+        if not subject:
+            self.add_error("subject", "Informe o titulo da solicitacao.")
+        if not (date_from or date_to):
+            self.add_error("date_from", "Informe uma data ou periodo para a solicitacao.")
+        if date_from and date_to and date_to < date_from:
+            self.add_error("date_to", "Data final nao pode ser anterior a data inicial.")
+
+        if self.company and employee and employee.company_id != self.company.id:
+            self.add_error("employee", "Selecione um profissional da sua empresa.")
+        if contract and employee and contract.employee_id != employee.id:
+            self.add_error("contract", "O vinculo selecionado deve pertencer ao profissional escolhido.")
+        if self.company and contract and contract.company_id != self.company.id:
+            self.add_error("contract", "Selecione um vinculo da sua empresa.")
+
+        data["subject"] = subject
+        data["instruction"] = instruction
+        return data
+
+    def save(self, commit=True, requested_by=None):
+        request_obj = super().save(commit=False)
+        if self.company:
+            request_obj.company = self.company
+        if requested_by:
+            request_obj.requested_by = requested_by
+        request_obj.message = request_obj.instruction
+        request_obj.status = ActivityReportRequest.Status.PENDING
+        if commit:
+            request_obj.save()
+        return request_obj
 
 
 class CompanyMEICreateForm(forms.Form):
@@ -404,6 +510,52 @@ class CompanyProfileForm(forms.ModelForm):
         widgets = {
             "address": forms.Textarea(attrs={"rows": 3}),
         }
+
+
+class CompanyAttendancePolicyForm(forms.ModelForm):
+    class Meta:
+        model = CompanyAttendancePolicy
+        fields = ["validation_mode"]
+        labels = {
+            "validation_mode": "Modo de validacao de horarios",
+        }
+
+
+class CompanyAuthorizedLocationForm(forms.ModelForm):
+    class Meta:
+        model = CompanyAuthorizedLocation
+        fields = [
+            "name",
+            "address_or_description",
+            "latitude",
+            "longitude",
+            "allowed_radius_m",
+            "is_active",
+        ]
+        labels = {
+            "name": "Nome do local",
+            "address_or_description": "Endereco ou descricao",
+            "latitude": "Latitude",
+            "longitude": "Longitude",
+            "allowed_radius_m": "Raio permitido (metros)",
+            "is_active": "Local ativo",
+        }
+        widgets = {
+            "address_or_description": forms.TextInput(attrs={"placeholder": "Ex.: Unidade Centro - Recepcao principal"}),
+            "latitude": forms.NumberInput(attrs={"step": "0.000001", "placeholder": "-23.550520"}),
+            "longitude": forms.NumberInput(attrs={"step": "0.000001", "placeholder": "-46.633308"}),
+            "allowed_radius_m": forms.NumberInput(attrs={"min": 10, "step": 1}),
+        }
+
+    def clean_allowed_radius_m(self):
+        radius = self.cleaned_data.get("allowed_radius_m")
+        if radius is None:
+            return radius
+        if radius < 10:
+            raise forms.ValidationError("Informe no minimo 10 metros.")
+        if radius > 5000:
+            raise forms.ValidationError("Para V1, o limite maximo permitido e 5000 metros.")
+        return radius
 
 
 class MEIProfileForm(forms.ModelForm):

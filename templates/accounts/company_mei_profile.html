@@ -119,6 +119,7 @@
     <div class="mei-actions">
       <a class="btn" href="{{ meis_url }}">Voltar para MEIs</a>
       <a class="btn" href="{{ history_url }}">Ver historico</a>
+      <a class="btn" href="{{ closure_url }}">Fechamento individual</a>
       {% if activation.key == "pending" %}
         <button type="button" class="btn" data-copy-text="Ative seu acesso no HoraCerta em {{ activation_link }} usando o email {{ employee.user.email|default:employee.user.username }}.">Copiar link de ativacao</button>
       {% endif %}

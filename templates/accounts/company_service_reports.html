@@ -16,14 +16,17 @@
   .sr-title{ margin:0; font-size:20px; }
   .sr-sub{ margin:8px 0 0; color:var(--muted); font-size:13px; max-width:760px; }
   .sr-filters{ margin-top:12px; display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+  .sr-grid{ margin-top:12px; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
   .sr-field{ min-width:220px; display:grid; gap:6px; flex:1; }
+  .sr-field--full{ grid-column:1 / -1; }
   .sr-field label{ color:var(--muted); font-size:12px; font-weight:700; }
-  .sr-field input, .sr-field select{
+  .sr-field input, .sr-field select, .sr-field textarea{
     width:100%; min-height:44px; border-radius:12px; border:1px solid var(--border);
     background:rgba(255,255,255,.06); color:var(--text); padding:10px 12px;
   }
+  .sr-field textarea{ min-height:100px; resize:vertical; line-height:1.45; }
   .sr-actions{ display:flex; gap:8px; flex-wrap:wrap; }
-  .sr-cards{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+  .sr-cards{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
   .sr-stat{ border:1px solid var(--border); border-radius:12px; background:rgba(255,255,255,.03); padding:12px; }
   .sr-stat .k{ color:var(--muted); font-size:12px; }
   .sr-stat .v{ margin-top:4px; font-size:24px; font-weight:800; }
@@ -33,14 +36,47 @@
   .sr-table th{ color:var(--muted); font-size:13px; }
   .sr-table tr:last-child td{ border-bottom:none; }
   .sr-empty{ border:1px dashed rgba(255,255,255,.18); border-radius:12px; padding:12px; display:grid; gap:8px; }
+  .sr-error{
+    border:1px solid rgba(255,94,94,.3);
+    border-radius:10px;
+    background:rgba(255,94,94,.12);
+    color:#ffd8d8;
+    font-size:12px;
+    padding:6px 8px;
+  }
+  .sr-badge{
+    display:inline-flex;
+    align-items:center;
+    border-radius:999px;
+    padding:4px 10px;
+    font-size:12px;
+    font-weight:700;
+    border:1px solid transparent;
+  }
+  .sr-badge--pending{ background:rgba(255,187,0,.12); border-color:rgba(255,187,0,.28); color:#ffd36a; }
+  .sr-badge--responded{ background:rgba(79,124,255,.15); border-color:rgba(79,124,255,.35); color:#b9ccff; }
+  .sr-badge--reviewed{ background:rgba(24,195,125,.15); border-color:rgba(24,195,125,.35); color:#b2f5d8; }
+  .sr-meta{ color:var(--muted); font-size:12px; }
   @media (max-width: 980px){
     .sr-cards{ grid-template-columns:1fr; }
     .sr-filters{ align-items:stretch; }
+    .sr-grid{ grid-template-columns:1fr; }
     .sr-actions .btn{ width:100%; justify-content:center; }
   }
 </style>
 
 <div class="sr-wrap">
+  {% if request.GET.event == "request_created" %}
+    <section class="hc-global-feedback" role="status" aria-live="polite">
+      Solicitacao de relatorio criada com sucesso.
+    </section>
+  {% endif %}
+  {% if request.GET.event == "request_reviewed" %}
+    <section class="hc-global-feedback" role="status" aria-live="polite">
+      Solicitacao marcada como revisada.
+    </section>
+  {% endif %}
+
   <section class="sr-panel">
     <h2 class="sr-title">Consulta de relatorios enviados</h2>
     <p class="sr-sub">Modulo de relatorio de servico separado do ponto. Use filtros para consulta operacional por periodo e profissional.</p>
@@ -81,11 +117,140 @@
       <div class="v">{{ unique_professionals }}</div>
     </article>
     <article class="sr-stat">
+      <div class="k">Solicitacoes pendentes</div>
+      <div class="v">{{ pending_requests_count }}</div>
+    </article>
+    <article class="sr-stat">
       <div class="k">Ultimo envio</div>
       <div class="v" style="font-size:16px;">
         {% if latest_submission %}{{ latest_submission|date:"d/m/Y H:i" }}{% else %}-{% endif %}
       </div>
     </article>
+  </section>
+
+  <section class="sr-panel">
+    <h2 class="sr-title">Nova solicitacao de relatorio</h2>
+    <p class="sr-sub">Solicite relatorios de servico por profissional, com data ou periodo e instrucao curta.</p>
+    <form method="post" data-submit-once="true">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="create_request">
+      <div class="sr-grid">
+        <div class="sr-field">
+          <label for="{{ request_form.employee.id_for_label }}">{{ request_form.employee.label }}</label>
+          {{ request_form.employee }}
+          {% if request_form.employee.errors %}<div class="sr-error">{{ request_form.employee.errors }}</div>{% endif %}
+        </div>
+        <div class="sr-field">
+          <label for="{{ request_form.contract.id_for_label }}">{{ request_form.contract.label }}</label>
+          {{ request_form.contract }}
+          {% if request_form.contract.errors %}<div class="sr-error">{{ request_form.contract.errors }}</div>{% endif %}
+        </div>
+        <div class="sr-field">
+          <label for="{{ request_form.date_from.id_for_label }}">{{ request_form.date_from.label }}</label>
+          {{ request_form.date_from }}
+          {% if request_form.date_from.errors %}<div class="sr-error">{{ request_form.date_from.errors }}</div>{% endif %}
+        </div>
+        <div class="sr-field">
+          <label for="{{ request_form.date_to.id_for_label }}">{{ request_form.date_to.label }}</label>
+          {{ request_form.date_to }}
+          {% if request_form.date_to.errors %}<div class="sr-error">{{ request_form.date_to.errors }}</div>{% endif %}
+        </div>
+        <div class="sr-field sr-field--full">
+          <label for="{{ request_form.subject.id_for_label }}">{{ request_form.subject.label }}</label>
+          {{ request_form.subject }}
+          {% if request_form.subject.errors %}<div class="sr-error">{{ request_form.subject.errors }}</div>{% endif %}
+        </div>
+        <div class="sr-field sr-field--full">
+          <label for="{{ request_form.instruction.id_for_label }}">{{ request_form.instruction.label }}</label>
+          {{ request_form.instruction }}
+          {% if request_form.instruction.errors %}<div class="sr-error">{{ request_form.instruction.errors }}</div>{% endif %}
+        </div>
+      </div>
+      {% if request_form.non_field_errors %}
+        <div class="sr-error" style="margin-top:10px;">{{ request_form.non_field_errors }}</div>
+      {% endif %}
+      <div class="sr-actions" style="margin-top:10px;">
+        <button class="btn primary" type="submit" data-loading-text="Enviando solicitacao...">Criar solicitacao</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="sr-panel">
+    <h2 class="sr-title">Solicitacoes de relatorio</h2>
+    <p class="sr-sub">Acompanhe o status das solicitacoes e acesse o relatorio vinculado quando o profissional responder.</p>
+    <div class="sr-table-wrap">
+      <table class="sr-table">
+        <thead>
+          <tr>
+            <th>Solicitado em</th>
+            <th>Profissional</th>
+            <th>Periodo</th>
+            <th>Assunto</th>
+            <th>Status</th>
+            <th>Resposta</th>
+            <th>Acoes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in requests %}
+            <tr>
+              <td>{{ item.requested_at|date:"d/m/Y H:i" }}</td>
+              <td>{{ item.employee.full_name }}<br><span class="muted">{{ item.employee.user.email|default:item.employee.user.username }}</span></td>
+              <td>
+                {% if item.date_from or item.date_to %}
+                  {{ item.date_from|date:"d/m/Y"|default:"-" }} ate {{ item.date_to|date:"d/m/Y"|default:"-" }}
+                {% else %}
+                  <span class="sr-meta">Sem periodo definido</span>
+                {% endif %}
+              </td>
+              <td>
+                <strong>{{ item.subject|default:"Solicitacao de relatorio" }}</strong>
+                {% if item.instruction %}
+                  <div class="sr-meta" style="margin-top:4px;">{{ item.instruction|truncatechars:140 }}</div>
+                {% endif %}
+              </td>
+              <td>
+                {% if item.status == "PENDING" %}
+                  <span class="sr-badge sr-badge--pending">Pendente</span>
+                {% elif item.status == "RESPONDED" %}
+                  <span class="sr-badge sr-badge--responded">Respondida</span>
+                {% else %}
+                  <span class="sr-badge sr-badge--reviewed">Revisada</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if item.response_report %}
+                  <a class="btn" href="{% url 'company_service_report_detail' item.response_report.id %}">Abrir relatorio</a>
+                {% else %}
+                  <span class="sr-meta">Aguardando envio do profissional</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if item.response_report and item.status != "REVIEWED" %}
+                  <form method="post" data-submit-once="true">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="mark_reviewed">
+                    <input type="hidden" name="request_id" value="{{ item.id }}">
+                    <button class="btn" type="submit">Marcar revisada</button>
+                  </form>
+                {% else %}
+                  <span class="sr-meta">-</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="7">
+                <div class="sr-empty">
+                  <strong>Nenhuma solicitacao encontrada.</strong>
+                  <p class="sr-sub" style="margin:0;">Crie a primeira solicitacao para iniciar o acompanhamento operacional.</p>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </section>
 
   <section class="sr-panel">

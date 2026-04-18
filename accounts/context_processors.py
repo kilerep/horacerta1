@@ -63,7 +63,7 @@ def header_profile_media(request):
             if company:
                 pending_reports_count = ActivityReportRequest.objects.filter(
                     company=company,
-                    is_answered=False,
+                    status=ActivityReportRequest.Status.PENDING,
                 ).count()
             reports_access = get_user_feature_access(request.user, "advanced_reports")
             themes_access = get_user_feature_access(request.user, "custom_themes")

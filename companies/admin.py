@@ -1,6 +1,8 @@
 from django.contrib import admin
 from .models import (
     Company,
+    CompanyAttendancePolicy,
+    CompanyAuthorizedLocation,
     CompanyFeatureOverride,
     CompanySubscription,
     Employee,
@@ -63,3 +65,19 @@ class CompanyFeatureOverrideAdmin(admin.ModelAdmin):
     search_fields = ("company__name", "feature__code", "feature__name", "reason")
     list_filter = ("mode", "feature")
     ordering = ("-updated_at",)
+
+
+@admin.register(CompanyAttendancePolicy)
+class CompanyAttendancePolicyAdmin(admin.ModelAdmin):
+    list_display = ("company", "validation_mode", "updated_by", "updated_at")
+    search_fields = ("company__name",)
+    list_filter = ("validation_mode",)
+    ordering = ("company__name",)
+
+
+@admin.register(CompanyAuthorizedLocation)
+class CompanyAuthorizedLocationAdmin(admin.ModelAdmin):
+    list_display = ("name", "company", "allowed_radius_m", "is_active", "updated_at")
+    search_fields = ("name", "company__name", "address_or_description")
+    list_filter = ("company", "is_active")
+    ordering = ("company__name", "name")

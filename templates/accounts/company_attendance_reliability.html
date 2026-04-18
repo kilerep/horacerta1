@@ -1,0 +1,246 @@
+{% extends "accounts/base.html" %}
+{% block title %}Confiabilidade do registro{% endblock %}
+{% block page_title %}Confiabilidade do registro{% endblock %}
+
+{% block content %}
+<style>
+  .rel-wrap{ display:grid; gap:14px; }
+  .rel-panel{
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:16px;
+    background:
+      linear-gradient(140deg, rgba(79,124,255,.10), transparent 42%),
+      linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+  }
+  .rel-title{ margin:0; font-size:20px; }
+  .rel-sub{ margin:8px 0 0; color:var(--muted); font-size:13px; max-width:780px; }
+  .rel-grid{ margin-top:12px; display:grid; gap:10px; grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .rel-field{ display:flex; flex-direction:column; gap:6px; }
+  .rel-field--full{ grid-column:1 / -1; }
+  .rel-field label{ color:var(--muted); font-size:12px; font-weight:700; }
+  .rel-field input, .rel-field select, .rel-field textarea{
+    width:100%;
+    min-height:44px;
+    border-radius:12px;
+    border:1px solid var(--border);
+    background:rgba(255,255,255,.06);
+    color:var(--text);
+    padding:10px 12px;
+  }
+  .rel-actions{ margin-top:10px; display:flex; gap:8px; flex-wrap:wrap; }
+  .rel-error{
+    border:1px solid rgba(255,94,94,.3);
+    border-radius:10px;
+    background:rgba(255,94,94,.12);
+    color:#ffd8d8;
+    font-size:12px;
+    padding:6px 8px;
+  }
+  .rel-cards{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+  .rel-card{ border:1px solid var(--border); border-radius:12px; padding:12px; background:rgba(255,255,255,.03); }
+  .rel-card .k{ color:var(--muted); font-size:12px; }
+  .rel-card .v{ margin-top:4px; font-size:22px; font-weight:800; }
+  .rel-table-wrap{ margin-top:12px; border:1px solid var(--border); border-radius:14px; overflow-x:auto; }
+  .rel-table{ width:100%; border-collapse:collapse; min-width:980px; }
+  .rel-table th,.rel-table td{
+    text-align:left;
+    padding:11px 10px;
+    border-bottom:1px solid rgba(255,255,255,.07);
+    vertical-align:top;
+  }
+  .rel-table th{ color:var(--muted); font-size:13px; }
+  .rel-table tr:last-child td{ border-bottom:none; }
+  .status{
+    display:inline-flex;
+    align-items:center;
+    border-radius:999px;
+    padding:4px 10px;
+    font-size:12px;
+    font-weight:700;
+    border:1px solid transparent;
+  }
+  .status.on{ background:rgba(45,211,145,.15); border-color:rgba(45,211,145,.35); color:#ccffea; }
+  .status.off{ background:rgba(255,176,32,.15); border-color:rgba(255,176,32,.35); color:#ffe7ad; }
+  .empty{
+    border:1px dashed rgba(255,255,255,.2);
+    border-radius:12px;
+    padding:12px;
+    color:var(--muted);
+    font-size:13px;
+  }
+  @media (max-width: 980px){
+    .rel-grid{ grid-template-columns:1fr; }
+    .rel-cards{ grid-template-columns:1fr; }
+    .rel-actions .btn{ width:100%; justify-content:center; }
+  }
+</style>
+
+<div class="rel-wrap">
+  {% if request.GET.event == "policy_saved" %}
+    <section class="hc-global-feedback" role="status" aria-live="polite">
+      Politica de registro atualizada com sucesso.
+    </section>
+  {% elif request.GET.event == "location_created" %}
+    <section class="hc-global-feedback" role="status" aria-live="polite">
+      Local autorizado cadastrado com sucesso.
+    </section>
+  {% elif request.GET.event == "location_updated" %}
+    <section class="hc-global-feedback" role="status" aria-live="polite">
+      Local autorizado atualizado com sucesso.
+    </section>
+  {% elif request.GET.event == "location_toggled" %}
+    <section class="hc-global-feedback" role="status" aria-live="polite">
+      Status do local atualizado.
+    </section>
+  {% endif %}
+
+  <section class="rel-panel">
+    <h2 class="rel-title">Politica de validacao de horarios</h2>
+    <p class="rel-sub">
+      Defina como sua empresa deseja validar os registros de horarios. Esta configuracao prepara a base para evolucoes de geolocalizacao e QR.
+    </p>
+    <form method="post" data-submit-once="true">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="save_policy">
+      <div class="rel-grid">
+        <div class="rel-field rel-field--full">
+          <label for="{{ policy_form.validation_mode.id_for_label }}">{{ policy_form.validation_mode.label }}</label>
+          {{ policy_form.validation_mode }}
+          {% if policy_form.validation_mode.errors %}<div class="rel-error">{{ policy_form.validation_mode.errors }}</div>{% endif %}
+        </div>
+      </div>
+      {% if policy_form.non_field_errors %}
+        <div class="rel-error" style="margin-top:10px;">{{ policy_form.non_field_errors }}</div>
+      {% endif %}
+      <div class="rel-actions">
+        <button class="btn primary" type="submit" data-loading-text="Salvando politica...">Salvar politica</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="rel-cards">
+    <article class="rel-card">
+      <div class="k">Modo atual</div>
+      <div class="v">{{ policy.get_validation_mode_display }}</div>
+    </article>
+    <article class="rel-card">
+      <div class="k">Locais ativos</div>
+      <div class="v">{{ active_locations_count }}</div>
+    </article>
+    <article class="rel-card">
+      <div class="k">Locais inativos</div>
+      <div class="v">{{ inactive_locations_count }}</div>
+    </article>
+  </section>
+
+  <section class="rel-panel">
+    <h2 class="rel-title">{% if editing_location %}Editar local autorizado{% else %}Novo local autorizado{% endif %}</h2>
+    <p class="rel-sub">Cadastre os locais da operacao para uso futuro nas validacoes por localizacao.</p>
+    <form method="post" data-submit-once="true">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="save_location">
+      {% if editing_location %}
+        <input type="hidden" name="location_id" value="{{ editing_location.id }}">
+      {% endif %}
+      <div class="rel-grid">
+        <div class="rel-field">
+          <label for="{{ location_form.name.id_for_label }}">{{ location_form.name.label }}</label>
+          {{ location_form.name }}
+          {% if location_form.name.errors %}<div class="rel-error">{{ location_form.name.errors }}</div>{% endif %}
+        </div>
+        <div class="rel-field">
+          <label for="{{ location_form.allowed_radius_m.id_for_label }}">{{ location_form.allowed_radius_m.label }}</label>
+          {{ location_form.allowed_radius_m }}
+          {% if location_form.allowed_radius_m.errors %}<div class="rel-error">{{ location_form.allowed_radius_m.errors }}</div>{% endif %}
+        </div>
+        <div class="rel-field rel-field--full">
+          <label for="{{ location_form.address_or_description.id_for_label }}">{{ location_form.address_or_description.label }}</label>
+          {{ location_form.address_or_description }}
+          {% if location_form.address_or_description.errors %}<div class="rel-error">{{ location_form.address_or_description.errors }}</div>{% endif %}
+        </div>
+        <div class="rel-field">
+          <label for="{{ location_form.latitude.id_for_label }}">{{ location_form.latitude.label }}</label>
+          {{ location_form.latitude }}
+          {% if location_form.latitude.errors %}<div class="rel-error">{{ location_form.latitude.errors }}</div>{% endif %}
+        </div>
+        <div class="rel-field">
+          <label for="{{ location_form.longitude.id_for_label }}">{{ location_form.longitude.label }}</label>
+          {{ location_form.longitude }}
+          {% if location_form.longitude.errors %}<div class="rel-error">{{ location_form.longitude.errors }}</div>{% endif %}
+        </div>
+        <div class="rel-field rel-field--full">
+          <label for="{{ location_form.is_active.id_for_label }}">{{ location_form.is_active.label }}</label>
+          {{ location_form.is_active }}
+          {% if location_form.is_active.errors %}<div class="rel-error">{{ location_form.is_active.errors }}</div>{% endif %}
+        </div>
+      </div>
+      {% if location_form.non_field_errors %}
+        <div class="rel-error" style="margin-top:10px;">{{ location_form.non_field_errors }}</div>
+      {% endif %}
+      <div class="rel-actions">
+        <button class="btn primary" type="submit" data-loading-text="Salvando local...">
+          {% if editing_location %}Atualizar local{% else %}Cadastrar local{% endif %}
+        </button>
+        {% if editing_location %}
+          <a class="btn" href="{% url 'company_attendance_reliability' %}">Cancelar edicao</a>
+        {% endif %}
+      </div>
+    </form>
+  </section>
+
+  <section class="rel-panel">
+    <h2 class="rel-title">Locais autorizados cadastrados</h2>
+    {% if locations %}
+      <div class="rel-table-wrap">
+        <table class="rel-table">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Endereco/descricao</th>
+              <th>Latitude</th>
+              <th>Longitude</th>
+              <th>Raio (m)</th>
+              <th>Status</th>
+              <th>Atualizado em</th>
+              <th>Acoes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in locations %}
+              <tr>
+                <td>{{ item.name }}</td>
+                <td>{{ item.address_or_description|default:"-" }}</td>
+                <td>{{ item.latitude }}</td>
+                <td>{{ item.longitude }}</td>
+                <td>{{ item.allowed_radius_m }}</td>
+                <td>
+                  {% if item.is_active %}
+                    <span class="status on">Ativo</span>
+                  {% else %}
+                    <span class="status off">Inativo</span>
+                  {% endif %}
+                </td>
+                <td>{{ item.updated_at|date:"d/m/Y H:i" }}</td>
+                <td>
+                  <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <a class="btn" href="?edit={{ item.id }}">Editar</a>
+                    <form method="post" data-submit-once="true">
+                      {% csrf_token %}
+                      <input type="hidden" name="action" value="toggle_location">
+                      <input type="hidden" name="location_id" value="{{ item.id }}">
+                      <button class="btn" type="submit">{% if item.is_active %}Inativar{% else %}Ativar{% endif %}</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty">Nenhum local autorizado cadastrado ainda.</div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

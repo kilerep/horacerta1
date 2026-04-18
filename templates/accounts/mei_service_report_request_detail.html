@@ -1,0 +1,168 @@
+{% extends "accounts/base.html" %}
+{% block title %}Solicitacao de relatorio{% endblock %}
+{% block page_title %}Solicitacao de relatorio{% endblock %}
+
+{% block content %}
+<style>
+  .rq-wrap{ display:grid; gap:14px; }
+  .rq-panel{
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:16px;
+    background:
+      radial-gradient(circle at 10% -10%, rgba(79,124,255,.22), transparent 42%),
+      linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+  }
+  .rq-title{ margin:0; font-size:20px; }
+  .rq-sub{ margin:8px 0 0; color:var(--muted); font-size:13px; max-width:760px; }
+  .rq-grid{ margin-top:12px; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+  .rq-kv{ border:1px solid var(--border); border-radius:12px; background:rgba(255,255,255,.03); padding:12px; }
+  .rq-kv .k{ color:var(--muted); font-size:12px; }
+  .rq-kv .v{ margin-top:4px; font-weight:700; }
+  .rq-form-grid{ margin-top:12px; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+  .rq-field{ display:flex; flex-direction:column; gap:6px; }
+  .rq-field--full{ grid-column:1 / -1; }
+  .rq-field label{ color:var(--muted); font-size:12px; font-weight:700; }
+  .rq-field input, .rq-field select, .rq-field textarea{
+    width:100%;
+    min-height:44px;
+    border-radius:12px;
+    border:1px solid var(--border);
+    background:rgba(255,255,255,.06);
+    color:var(--text);
+    padding:10px 12px;
+  }
+  .rq-field textarea{ min-height:120px; resize:vertical; line-height:1.45; }
+  .rq-actions{ margin-top:10px; display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+  .rq-error{
+    border:1px solid rgba(255,94,94,.3);
+    border-radius:10px;
+    background:rgba(255,94,94,.12);
+    color:#ffd8d8;
+    font-size:12px;
+    padding:6px 8px;
+  }
+  .rq-badge{
+    display:inline-flex;
+    align-items:center;
+    border-radius:999px;
+    padding:4px 10px;
+    font-size:12px;
+    font-weight:700;
+    border:1px solid transparent;
+  }
+  .rq-badge--pending{ background:rgba(255,187,0,.12); border-color:rgba(255,187,0,.28); color:#ffd36a; }
+  .rq-badge--responded{ background:rgba(79,124,255,.15); border-color:rgba(79,124,255,.35); color:#b9ccff; }
+  .rq-badge--reviewed{ background:rgba(24,195,125,.15); border-color:rgba(24,195,125,.35); color:#b2f5d8; }
+  @media (max-width: 920px){
+    .rq-grid, .rq-form-grid{ grid-template-columns:1fr; }
+    .rq-actions .btn{ width:100%; justify-content:center; }
+  }
+</style>
+
+<div class="rq-wrap">
+  {% if request.GET.event == "request_answered" %}
+    <section class="hc-global-feedback" role="status" aria-live="polite">
+      Solicitacao respondida com sucesso.
+    </section>
+  {% endif %}
+
+  <section class="rq-panel">
+    <h2 class="rq-title">Detalhe da solicitacao</h2>
+    <p class="rq-sub">Resposta via relatorio de servico, sem relacao com justificativa de horario ou ponto.</p>
+    <div class="rq-grid">
+      <article class="rq-kv">
+        <div class="k">Empresa</div>
+        <div class="v">{{ report_request.company.name }}</div>
+      </article>
+      <article class="rq-kv">
+        <div class="k">Status</div>
+        <div class="v">
+          {% if report_request.status == "PENDING" %}
+            <span class="rq-badge rq-badge--pending">Pendente</span>
+          {% elif report_request.status == "RESPONDED" %}
+            <span class="rq-badge rq-badge--responded">Respondida</span>
+          {% else %}
+            <span class="rq-badge rq-badge--reviewed">Revisada</span>
+          {% endif %}
+        </div>
+      </article>
+      <article class="rq-kv">
+        <div class="k">Solicitado em</div>
+        <div class="v">{{ report_request.requested_at|date:"d/m/Y H:i" }}</div>
+      </article>
+      <article class="rq-kv">
+        <div class="k">Periodo solicitado</div>
+        <div class="v">
+          {% if report_request.date_from or report_request.date_to %}
+            {{ report_request.date_from|date:"d/m/Y"|default:"-" }} ate {{ report_request.date_to|date:"d/m/Y"|default:"-" }}
+          {% else %}
+            Sem periodo definido
+          {% endif %}
+        </div>
+      </article>
+      <article class="rq-kv" style="grid-column:1 / -1;">
+        <div class="k">Assunto</div>
+        <div class="v">{{ report_request.subject|default:"Solicitacao de relatorio" }}</div>
+      </article>
+      <article class="rq-kv" style="grid-column:1 / -1;">
+        <div class="k">Instrucao</div>
+        <div class="v">{{ report_request.instruction|default:"Sem instrucao adicional."|linebreaksbr }}</div>
+      </article>
+    </div>
+  </section>
+
+  {% if can_respond %}
+    <section class="rq-panel">
+      <h2 class="rq-title">Responder solicitacao</h2>
+      <p class="rq-sub">Preencha e envie um relatorio de servico vinculado a esta solicitacao.</p>
+      <form method="post" data-submit-once="true">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="respond_request">
+        <div class="rq-form-grid">
+          <div class="rq-field">
+            <label for="{{ report_form.report_date.id_for_label }}">{{ report_form.report_date.label }}</label>
+            {{ report_form.report_date }}
+            {% if report_form.report_date.errors %}<div class="rq-error">{{ report_form.report_date.errors }}</div>{% endif %}
+          </div>
+          <div class="rq-field">
+            <label for="{{ report_form.contract.id_for_label }}">{{ report_form.contract.label }}</label>
+            {{ report_form.contract }}
+            {% if report_form.contract.errors %}<div class="rq-error">{{ report_form.contract.errors }}</div>{% endif %}
+          </div>
+          <div class="rq-field rq-field--full">
+            <label for="{{ report_form.title.id_for_label }}">{{ report_form.title.label }}</label>
+            {{ report_form.title }}
+            {% if report_form.title.errors %}<div class="rq-error">{{ report_form.title.errors }}</div>{% endif %}
+          </div>
+          <div class="rq-field rq-field--full">
+            <label for="{{ report_form.description.id_for_label }}">{{ report_form.description.label }}</label>
+            {{ report_form.description }}
+            {% if report_form.description.errors %}<div class="rq-error">{{ report_form.description.errors }}</div>{% endif %}
+          </div>
+        </div>
+        {% if report_form.non_field_errors %}
+          <div class="rq-error" style="margin-top:10px;">{{ report_form.non_field_errors }}</div>
+        {% endif %}
+        <div class="rq-actions">
+          <a class="btn" href="{{ reports_url }}">Voltar para relatorios</a>
+          <button class="btn primary" type="submit" data-loading-text="Enviando resposta...">Enviar resposta</button>
+        </div>
+      </form>
+    </section>
+  {% else %}
+    <section class="rq-panel">
+      <h2 class="rq-title">Resposta registrada</h2>
+      {% if report_request.response_report %}
+        <p class="rq-sub">Esta solicitacao ja foi respondida. Voce pode abrir o relatorio vinculado.</p>
+        <div class="rq-actions" style="justify-content:flex-start;">
+          <a class="btn primary" href="{% url 'mei_service_report_detail' report_request.response_report.id %}">Abrir relatorio enviado</a>
+          <a class="btn" href="{{ reports_url }}">Voltar para relatorios</a>
+        </div>
+      {% else %}
+        <p class="rq-sub">Solicitacao sem relatorio vinculado. Se isso ocorrer com frequencia, acione o suporte interno.</p>
+      {% endif %}
+    </section>
+  {% endif %}
+</div>
+{% endblock %}

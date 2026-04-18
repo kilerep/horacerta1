@@ -283,6 +283,87 @@ class CompanyFeatureOverride(models.Model):
         return True
 
 
+class CompanyAttendancePolicy(models.Model):
+    class ValidationMode(models.TextChoices):
+        FREE = "FREE", "Livre"
+        GEOLOCATION = "GEOLOCATION", "Com localizacao"
+        PRESENTIAL_QR = "PRESENTIAL_QR", "Presencial com QR"
+
+    company = models.OneToOneField(
+        Company,
+        on_delete=models.CASCADE,
+        related_name="attendance_policy",
+    )
+    validation_mode = models.CharField(
+        max_length=20,
+        choices=ValidationMode.choices,
+        default=ValidationMode.FREE,
+    )
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="updated_attendance_policies",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Company Attendance Policy"
+        verbose_name_plural = "Company Attendance Policies"
+
+    def __str__(self) -> str:
+        return f"{self.company.name} -> {self.get_validation_mode_display()}"
+
+
+class CompanyAuthorizedLocation(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    company = models.ForeignKey(
+        Company,
+        on_delete=models.CASCADE,
+        related_name="authorized_locations",
+    )
+    name = models.CharField(max_length=120)
+    address_or_description = models.CharField(max_length=220, blank=True, default="")
+    latitude = models.DecimalField(max_digits=9, decimal_places=6)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6)
+    allowed_radius_m = models.PositiveIntegerField(default=120)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["name", "-updated_at"]
+        verbose_name = "Company Authorized Location"
+        verbose_name_plural = "Company Authorized Locations"
+        indexes = [
+            models.Index(fields=["company", "is_active"]),
+            models.Index(fields=["company", "name"]),
+        ]
+
+    def clean(self):
+        errors = {}
+        if not self.company_id:
+            errors["company"] = "Local autorizado precisa de uma empresa valida."
+        if self.latitude is None or self.latitude < -90 or self.latitude > 90:
+            errors["latitude"] = "Latitude precisa estar entre -90 e 90."
+        if self.longitude is None or self.longitude < -180 or self.longitude > 180:
+            errors["longitude"] = "Longitude precisa estar entre -180 e 180."
+        if not self.allowed_radius_m or self.allowed_radius_m < 10:
+            errors["allowed_radius_m"] = "Raio permitido precisa ser de no minimo 10 metros."
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f"{self.company.name} | {self.name}"
+
+
 def company_has_feature(company: Company, feature_code: str, user_role: str | None = None, at_time=None) -> bool:
     at = at_time or timezone.now()
     feature = Feature.objects.filter(code=feature_code, is_active=True).first()

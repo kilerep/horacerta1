@@ -14,6 +14,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model, login, logout
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required
+from django.db import transaction
 from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -23,7 +24,15 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils import timezone
 from django.views.decorators.http import require_GET
 
-from companies.models import Company, CompanySubscription, Employee, Feature, Plan
+from companies.models import (
+    Company,
+    CompanyAttendancePolicy,
+    CompanyAuthorizedLocation,
+    CompanySubscription,
+    Employee,
+    Feature,
+    Plan,
+)
 from companies.feature_flags import (
     get_company_feature_access,
     humanize_feature_reason,
@@ -42,6 +51,9 @@ from timeclock.state import (
 )
 
 from .forms import (
+    CompanyAttendancePolicyForm,
+    CompanyAuthorizedLocationForm,
+    CompanyActivityReportRequestForm,
     CompanyContractForm,
     CompanyMEICreateForm,
     CompanyProfileForm,
@@ -94,7 +106,7 @@ def _company_for_user(user):
 def _pending_reports_count_for_company(company):
     if not company:
         return 0
-    return ActivityReportRequest.objects.filter(company=company, is_answered=False).count()
+    return ActivityReportRequest.objects.filter(company=company, status=ActivityReportRequest.Status.PENDING).count()
 
 
 def _contract_mei_label(contract):
@@ -1014,10 +1026,185 @@ def company_mei_profile(request, employee_id):
             "create_contract_url": f"{reverse('company_meis')}?link_for={employee.id}#vinculo-existente",
             "edit_contract_url": f"{reverse('company_contracts')}?edit={latest_contract.id}" if latest_contract else None,
             "history_url": f"{reverse('company_history')}?employee={employee.id}",
+            "closure_url": f"{reverse('company_mei_closure', args=[employee.id])}",
             "meis_url": reverse("company_meis"),
             "activation_link": request.build_absolute_uri(reverse("password_reset")),
         },
     )
+
+
+@login_required
+def company_mei_closure(request, employee_id):
+    denied = _redirect_if_not_empresa(request)
+    if denied:
+        return denied
+
+    company = _company_for_user(request.user)
+    employee = get_object_or_404(
+        Employee.objects.select_related("user"),
+        id=employee_id,
+        company=company,
+        user__role=User.Role.FUNCIONARIO,
+    )
+
+    period_form = PeriodSearchForm(request.GET or None)
+    today = timezone.localdate()
+    first_day = today.replace(day=1)
+    date_from = first_day
+    date_to = today
+    if period_form.is_valid():
+        date_from = period_form.cleaned_data.get("date_from") or first_day
+        date_to = period_form.cleaned_data.get("date_to") or today
+    if date_from > date_to:
+        date_from, date_to = date_to, date_from
+
+    contracts = list(
+        Contract.objects.filter(
+            company=company,
+            employee=employee,
+            employee__isnull=False,
+            employee__user__isnull=False,
+        )
+        .select_related("company", "employee", "employee__user")
+        .order_by("-start_date", "-created_at")
+    )
+    current_contract = next((item for item in contracts if contract_is_operational(item)), contracts[0] if contracts else None)
+
+    start_dt = timezone.make_aware(datetime.combine(date_from, time.min))
+    end_dt = timezone.make_aware(datetime.combine(date_to, time.max))
+
+    punches = list(
+        Punch.objects.filter(contract__in=contracts, timestamp__range=(start_dt, end_dt))
+        .select_related("contract", "contract__company", "contract__employee", "contract__employee__user")
+        .order_by("timestamp")
+    )
+    grouped_rows, _max_cols = build_daily_summary(punches, min_punch_columns=4)
+    rows_by_date = {row["date"]: row for row in grouped_rows}
+    daily_rows = []
+    current_day = date_from
+    while current_day <= date_to:
+        existing = rows_by_date.get(current_day)
+        if existing:
+            row = existing
+            punches_label = " - ".join(row["punch_times"]) if row["punch_times"] else "-"
+            if row["is_incomplete"]:
+                status_label = "Incompleto"
+                status_tone = "warn"
+            else:
+                status_label = "Completo"
+                status_tone = "ok"
+        else:
+            row = {
+                "date": current_day,
+                "punches_count": 0,
+                "punch_times": [],
+                "total_seconds": 0,
+                "total_hours_hhmm": "00:00",
+                "is_incomplete": False,
+            }
+            punches_label = "-"
+            status_label = "Sem registros"
+            status_tone = "empty"
+        row["punches_label"] = punches_label
+        row["status_label"] = status_label
+        row["status_tone"] = status_tone
+        daily_rows.append(row)
+        current_day += timedelta(days=1)
+    daily_rows = sorted(daily_rows, key=lambda item: item["date"], reverse=True)
+
+    days_with_records = sum(1 for row in daily_rows if row["punches_count"] > 0)
+    total_punches = sum(row["punches_count"] for row in daily_rows)
+    total_seconds = sum(row["total_seconds"] for row in daily_rows)
+    total_hours_hhmm = format_hhmm(total_seconds)
+    complete_days = sum(1 for row in daily_rows if row["punches_count"] > 0 and not row["is_incomplete"])
+    incomplete_days = sum(1 for row in daily_rows if row["punches_count"] > 0 and row["is_incomplete"])
+
+    service_reports = list(
+        ServiceReport.objects.filter(
+            company=company,
+            employee=employee,
+            report_date__gte=date_from,
+            report_date__lte=date_to,
+        )
+        .select_related("contract", "company")
+        .order_by("-report_date", "-created_at")[:200]
+    )
+
+    rates_by_day = {}
+    for punch in punches:
+        day_key = timezone.localtime(punch.timestamp).date()
+        rates_by_day.setdefault(day_key, {})[punch.contract_id] = punch.contract.hourly_rate or Decimal("0")
+
+    estimated_value = Decimal("0.00")
+    for row in grouped_rows:
+        day_rates = rates_by_day.get(row["date"], {})
+        if day_rates:
+            # Reaproveita a logica simples: usa taxa media dos vinculos registrados no dia.
+            avg_rate = sum(day_rates.values(), Decimal("0")) / Decimal(len(day_rates))
+            estimated_value += (Decimal(row["total_seconds"]) / Decimal("3600")) * avg_rate
+
+    current_hourly_rate = current_contract.hourly_rate if current_contract else None
+    if estimated_value == Decimal("0.00") and current_hourly_rate and total_seconds > 0:
+        estimated_value = (Decimal(total_seconds) / Decimal("3600")) * (current_hourly_rate or Decimal("0"))
+    estimated_value = estimated_value.quantize(Decimal("0.01"))
+
+    def _as_brl(value):
+        brl = f"{(value or Decimal('0')):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        return f"R$ {brl}"
+
+    period_label = f"{date_from.strftime('%d/%m/%Y')} ate {date_to.strftime('%d/%m/%Y')}"
+    export_kind = (request.GET.get("export") or "").strip().lower()
+    if export_kind == "pdf":
+        employee_name = employee.full_name or employee.user.email or employee.user.username
+        lines = [
+            "HoraCerta - Fechamento individual do profissional",
+            f"Empresa: {company.name if company else '-'}",
+            f"Profissional: {employee_name}",
+            f"Periodo: {period_label}",
+            f"Dias com registro: {days_with_records}",
+            f"Total de horarios: {total_punches}",
+            f"Total de horas: {total_hours_hhmm}",
+            f"Dias completos: {complete_days}",
+            f"Dias incompletos: {incomplete_days}",
+            f"Valor/hora atual: {_as_brl(current_hourly_rate) if current_hourly_rate else '-'}",
+            f"Valor acumulado no periodo: {_as_brl(estimated_value)}",
+            "",
+            "Conferencia diaria (maximo 35 linhas):",
+        ]
+        for row in daily_rows[:35]:
+            lines.append(
+                f"{row['date'].strftime('%d/%m/%Y')} | qtd={row['punches_count']} | {row['punches_label']} | total={row['total_hours_hhmm']} | {row['status_label']}"
+            )
+        if service_reports:
+            lines.append("")
+            lines.append("Relatorios de servico no periodo (maximo 10 linhas):")
+            for report in service_reports[:10]:
+                lines.append(f"{report.report_date.strftime('%d/%m/%Y')} | {report.title}")
+        return _build_pdf_response("horacerta_fechamento_individual.pdf", lines)
+
+    context = {
+        "company": company,
+        "employee": employee,
+        "period_form": period_form,
+        "period_label": period_label,
+        "date_from_value": date_from.strftime("%Y-%m-%d"),
+        "date_to_value": date_to.strftime("%Y-%m-%d"),
+        "current_contract": current_contract,
+        "days_with_records": days_with_records,
+        "total_punches": total_punches,
+        "total_hours_hhmm": total_hours_hhmm,
+        "complete_days": complete_days,
+        "incomplete_days": incomplete_days,
+        "current_hourly_rate": current_hourly_rate,
+        "current_hourly_rate_brl": _as_brl(current_hourly_rate) if current_hourly_rate else "-",
+        "estimated_value": estimated_value,
+        "estimated_value_brl": _as_brl(estimated_value),
+        "daily_rows": daily_rows,
+        "service_reports": service_reports,
+        "history_url": f"{reverse('company_history')}?employee={employee.id}&date_from={date_from.strftime('%Y-%m-%d')}&date_to={date_to.strftime('%Y-%m-%d')}",
+        "profile_url": reverse("company_mei_profile", args=[employee.id]),
+    }
+    return render(request, "accounts/company_mei_closure.html", context)
 
 
 @login_required
@@ -2053,6 +2240,77 @@ def company_settings(request):
 
 
 @login_required
+def company_attendance_reliability(request):
+    denied = _redirect_if_not_empresa(request)
+    if denied:
+        return denied
+
+    company = _company_for_user(request.user)
+    if not company:
+        return redirect("dashboard_empresa")
+
+    policy, _created = CompanyAttendancePolicy.objects.get_or_create(company=company)
+    locations_qs = CompanyAuthorizedLocation.objects.filter(company=company).order_by("-is_active", "name", "-updated_at")
+    locations = list(locations_qs[:400])
+
+    editing_location = None
+    edit_id = (request.GET.get("edit") or "").strip()
+    if edit_id:
+        editing_location = CompanyAuthorizedLocation.objects.filter(id=edit_id, company=company).first()
+
+    policy_form = CompanyAttendancePolicyForm(instance=policy)
+    location_form = CompanyAuthorizedLocationForm(instance=editing_location)
+
+    if request.method == "POST":
+        action = (request.POST.get("action") or "").strip().lower()
+        if action == "save_policy":
+            policy_form = CompanyAttendancePolicyForm(request.POST, instance=policy)
+            if policy_form.is_valid():
+                policy_obj = policy_form.save(commit=False)
+                policy_obj.company = company
+                policy_obj.updated_by = request.user
+                policy_obj.save()
+                return redirect(f"{reverse('company_attendance_reliability')}?event=policy_saved")
+        elif action == "save_location":
+            location_id = (request.POST.get("location_id") or "").strip()
+            location_obj = CompanyAuthorizedLocation.objects.filter(id=location_id, company=company).first() if location_id else None
+            location_form = CompanyAuthorizedLocationForm(request.POST, instance=location_obj)
+            if location_form.is_valid():
+                saved = location_form.save(commit=False)
+                saved.company = company
+                saved.save()
+                if location_obj:
+                    return redirect(f"{reverse('company_attendance_reliability')}?event=location_updated")
+                return redirect(f"{reverse('company_attendance_reliability')}?event=location_created")
+            editing_location = location_obj
+        elif action == "toggle_location":
+            location_id = (request.POST.get("location_id") or "").strip()
+            location_obj = CompanyAuthorizedLocation.objects.filter(id=location_id, company=company).first()
+            if location_obj:
+                location_obj.is_active = not location_obj.is_active
+                location_obj.save(update_fields=["is_active", "updated_at"])
+                return redirect(f"{reverse('company_attendance_reliability')}?event=location_toggled")
+
+    active_locations_count = sum(1 for item in locations if item.is_active)
+    inactive_locations_count = len(locations) - active_locations_count
+
+    return render(
+        request,
+        "accounts/company_attendance_reliability.html",
+        {
+            "company": company,
+            "policy": policy,
+            "policy_form": policy_form,
+            "location_form": location_form,
+            "locations": locations,
+            "editing_location": editing_location,
+            "active_locations_count": active_locations_count,
+            "inactive_locations_count": inactive_locations_count,
+        },
+    )
+
+
+@login_required
 def company_service_reports(request):
     denied = _redirect_if_not_empresa(request)
     if denied:
@@ -2076,6 +2334,27 @@ def company_service_reports(request):
         date_from, date_to = date_to, date_from
         date_from_raw, date_to_raw = date_from.strftime("%Y-%m-%d"), date_to.strftime("%Y-%m-%d")
 
+    request_form = CompanyActivityReportRequestForm(company=company)
+    if request.method == "POST":
+        action = (request.POST.get("action") or "").strip().lower()
+        if action == "create_request":
+            request_form = CompanyActivityReportRequestForm(request.POST, company=company)
+            if request_form.is_valid():
+                request_form.save(requested_by=request.user)
+                return redirect(f"{reverse('company_service_reports')}?event=request_created")
+        elif action == "mark_reviewed":
+            request_id = (request.POST.get("request_id") or "").strip()
+            req = ActivityReportRequest.objects.filter(id=request_id, company=company).first()
+            if (
+                req
+                and req.response_report_id
+                and req.status in {ActivityReportRequest.Status.RESPONDED, ActivityReportRequest.Status.REVIEWED}
+            ):
+                req.status = ActivityReportRequest.Status.REVIEWED
+                req.reviewed_by = request.user
+                req.save(update_fields=["status", "reviewed_by", "responded_at", "reviewed_at", "is_answered"])
+                return redirect(f"{reverse('company_service_reports')}?event=request_reviewed")
+
     reports_qs = (
         ServiceReport.objects.filter(company=company).select_related("employee", "employee__user", "contract", "company")
         if company
@@ -2092,17 +2371,35 @@ def company_service_reports(request):
     total_reports = len(reports)
     unique_professionals = len({str(item.employee_id) for item in reports})
     latest_submission = reports[0].created_at if reports else None
+    requests_qs = ActivityReportRequest.objects.filter(company=company).select_related(
+        "employee",
+        "employee__user",
+        "contract",
+        "response_report",
+        "reviewed_by",
+    )
+    if selected_employee:
+        requests_qs = requests_qs.filter(employee_id=selected_employee)
+    if date_from:
+        requests_qs = requests_qs.filter(Q(date_from__gte=date_from) | Q(date_to__gte=date_from) | Q(requested_at__date__gte=date_from))
+    if date_to:
+        requests_qs = requests_qs.filter(Q(date_from__lte=date_to) | Q(date_to__lte=date_to) | Q(requested_at__date__lte=date_to))
+    requests = list(requests_qs.order_by("-requested_at")[:300])
+    pending_requests_count = sum(1 for item in requests if item.status == ActivityReportRequest.Status.PENDING)
 
     context = {
         "company": company,
         "employees": employees,
+        "request_form": request_form,
         "reports": reports,
+        "requests": requests,
         "selected_employee": selected_employee,
         "date_from": date_from_raw,
         "date_to": date_to_raw,
         "total_reports": total_reports,
         "unique_professionals": unique_professionals,
         "latest_submission": latest_submission,
+        "pending_requests_count": pending_requests_count,
     }
     return render(request, "accounts/company_service_reports.html", context)
 
@@ -2415,6 +2712,13 @@ def mei_reports(request):
     reports_qs = ServiceReport.objects.filter(employee=employee).select_related("company", "contract").order_by(
         "-report_date", "-created_at"
     )
+    requests_qs = (
+        ActivityReportRequest.objects.filter(employee=employee)
+        .select_related("company", "contract", "requested_by", "response_report")
+        .order_by("-requested_at")
+    )
+    pending_requests = [item for item in requests_qs[:300] if item.status == ActivityReportRequest.Status.PENDING]
+    responded_requests = [item for item in requests_qs[:300] if item.status != ActivityReportRequest.Status.PENDING]
     report_form = ServiceReportCreateForm(employee=employee)
 
     if request.method == "POST" and (request.POST.get("action") or "").strip().lower() == "create_report":
@@ -2431,6 +2735,8 @@ def mei_reports(request):
             "employee": employee,
             "report_form": report_form,
             "reports": reports,
+            "pending_requests": pending_requests,
+            "responded_requests": responded_requests,
         },
     )
 
@@ -2453,6 +2759,93 @@ def mei_service_report_detail(request, report_id):
         {
             "employee": employee,
             "report": report,
+            "reports_url": reverse("mei_reports"),
+        },
+    )
+
+
+@login_required
+def mei_service_report_request_detail(request, request_id):
+    denied = _redirect_if_not_mei(request)
+    if denied:
+        return denied
+
+    employee = getattr(request.user, "employee_profile", None)
+    if not employee:
+        return redirect("mei_panel")
+
+    report_request = get_object_or_404(
+        ActivityReportRequest.objects.select_related(
+            "company",
+            "contract",
+            "employee",
+            "employee__user",
+            "requested_by",
+            "response_report",
+        ),
+        id=request_id,
+        employee=employee,
+    )
+
+    can_respond = report_request.status == ActivityReportRequest.Status.PENDING
+    initial = {
+        "report_date": report_request.date_to or report_request.date_from or timezone.localdate(),
+        "title": report_request.subject[:120] if report_request.subject else "",
+    }
+    if report_request.contract_id:
+        initial["contract"] = report_request.contract_id
+
+    report_form = ServiceReportCreateForm(employee=employee, initial=initial)
+    if report_request.contract_id:
+        report_form.fields["contract"].queryset = (
+            Contract.objects.filter(
+                id=report_request.contract_id,
+                employee=employee,
+                company=report_request.company,
+            )
+            .select_related("company")
+            .order_by("-start_date", "-created_at")
+        )
+
+    if request.method == "POST" and (request.POST.get("action") or "").strip().lower() == "respond_request" and can_respond:
+        report_form = ServiceReportCreateForm(request.POST, employee=employee)
+        if report_request.contract_id:
+            report_form.fields["contract"].queryset = (
+                Contract.objects.filter(
+                    id=report_request.contract_id,
+                    employee=employee,
+                    company=report_request.company,
+                )
+                .select_related("company")
+                .order_by("-start_date", "-created_at")
+            )
+        if report_form.is_valid():
+            with transaction.atomic():
+                report = report_form.save()
+                report_request.response_report = report
+                report_request.response_text = report.description
+                report_request.status = ActivityReportRequest.Status.RESPONDED
+                report_request.save(
+                    update_fields=[
+                        "response_report",
+                        "response_text",
+                        "status",
+                        "responded_at",
+                        "reviewed_at",
+                        "reviewed_by",
+                        "is_answered",
+                    ]
+                )
+            return redirect(f"{reverse('mei_service_report_request_detail', args=[report_request.id])}?event=request_answered")
+
+    return render(
+        request,
+        "accounts/mei_service_report_request_detail.html",
+        {
+            "employee": employee,
+            "report_request": report_request,
+            "report_form": report_form,
+            "can_respond": can_respond,
             "reports_url": reverse("mei_reports"),
         },
     )
