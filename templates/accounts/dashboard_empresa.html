@@ -205,7 +205,7 @@
 
           <div class="table-wrap" style="margin-top:10px;">
             <table class="table">
-              <thead><tr><th>Registro recente</th><th>Profissional</th><th>Empresa</th><th>Vinculo</th></tr></thead>
+              <thead><tr><th>Registro recente</th><th>Profissional</th><th>Empresa</th><th>Vinculo</th><th>Selo de confianca</th></tr></thead>
               <tbody>
                 {% for row in punches_period %}
                   <tr>
@@ -213,9 +213,17 @@
                     <td>{{ row.mei_name }}</td>
                     <td>{{ row.punch.contract.company.name }}</td>
                     <td>R$ {{ row.punch.contract.hourly_rate }}/h</td>
+                    <td>
+                      <span class="pill {% if row.confidence_tone == 'success' %}success{% elif row.confidence_tone == 'pending' %}pending{% elif row.confidence_tone == 'warn' %}warn{% endif %}">
+                        {{ row.confidence_label }}
+                      </span>
+                      <div class="muted" style="margin-top:4px;font-size:12px;">
+                        {{ row.validation_method_label }} | local: {{ row.validated_location_name }} | distancia: {{ row.distance_label }}
+                      </div>
+                    </td>
                   </tr>
                 {% empty %}
-                  <tr><td colspan="4"><div class="empty-panel"><strong>Sem movimentacao no periodo.</strong><p>Ajuste as datas para ampliar a consulta ou acompanhe novos lancamentos em tempo real.</p></div></td></tr>
+                  <tr><td colspan="5"><div class="empty-panel"><strong>Sem movimentacao no periodo.</strong><p>Ajuste as datas para ampliar a consulta ou acompanhe novos lancamentos em tempo real.</p></div></td></tr>
                 {% endfor %}
               </tbody>
             </table>

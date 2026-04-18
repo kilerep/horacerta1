@@ -9,6 +9,9 @@
   var form = document.getElementById("hcPunchForm");
   var punchBtn = document.getElementById("hcPunchBtn");
   var punchLabel = punchBtn ? punchBtn.querySelector(".hc-punch-btn__label") : null;
+  var geoLatitudeInput = document.getElementById("hcGeoLatitude");
+  var geoLongitudeInput = document.getElementById("hcGeoLongitude");
+  var geoAccuracyInput = document.getElementById("hcGeoAccuracy");
 
   var manualOpenBtn = document.getElementById("hcManualOpen");
   var manualModal = document.getElementById("hcManualModal");
@@ -101,21 +104,87 @@
 
   function bindPunchSubmit() {
     if (!form || !punchBtn) return;
+    form.dataset.submitting = "0";
+    form.dataset.geoReady = "0";
+
+    function clearGeoFields() {
+      if (geoLatitudeInput) geoLatitudeInput.value = "";
+      if (geoLongitudeInput) geoLongitudeInput.value = "";
+      if (geoAccuracyInput) geoAccuracyInput.value = "";
+    }
+
+    function submitWithGeo(coords) {
+      clearGeoFields();
+      if (coords) {
+        if (geoLatitudeInput && typeof coords.latitude === "number") {
+          geoLatitudeInput.value = String(coords.latitude.toFixed(6));
+        }
+        if (geoLongitudeInput && typeof coords.longitude === "number") {
+          geoLongitudeInput.value = String(coords.longitude.toFixed(6));
+        }
+        if (geoAccuracyInput && typeof coords.accuracy === "number") {
+          geoAccuracyInput.value = String(Math.round(coords.accuracy * 100) / 100);
+        }
+      }
+      form.dataset.geoReady = "1";
+      form.submit();
+    }
+
+    function resolveGeolocationAndSubmit() {
+      if (!navigator.geolocation) {
+        submitWithGeo(null);
+        return;
+      }
+
+      var completed = false;
+      function complete(coords) {
+        if (completed) return;
+        completed = true;
+        submitWithGeo(coords);
+      }
+
+      var fallbackTimer = window.setTimeout(function () {
+        complete(null);
+      }, 2600);
+
+      navigator.geolocation.getCurrentPosition(
+        function (position) {
+          window.clearTimeout(fallbackTimer);
+          complete(position && position.coords ? position.coords : null);
+        },
+        function () {
+          window.clearTimeout(fallbackTimer);
+          complete(null);
+        },
+        {
+          enableHighAccuracy: false,
+          timeout: 2200,
+          maximumAge: 60000
+        }
+      );
+    }
 
     form.addEventListener("submit", function (event) {
+      if (form.dataset.geoReady === "1") {
+        return;
+      }
+
+      event.preventDefault();
       if (form.dataset.submitting === "1") {
-        event.preventDefault();
         return;
       }
 
       form.dataset.submitting = "1";
       setSubmittingState(true);
+      resolveGeolocationAndSubmit();
     });
 
     form.addEventListener(
       "invalid",
       function () {
         form.dataset.submitting = "0";
+        form.dataset.geoReady = "0";
+        clearGeoFields();
         setSubmittingState(false);
       },
       true
@@ -123,6 +192,8 @@
 
     window.addEventListener("pageshow", function () {
       form.dataset.submitting = "0";
+      form.dataset.geoReady = "0";
+      clearGeoFields();
       setSubmittingState(false);
     });
   }

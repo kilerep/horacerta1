@@ -1,5 +1,6 @@
 import csv
 from datetime import datetime, time
+from decimal import Decimal, InvalidOperation
 from io import BytesIO
 
 from django.contrib.auth.decorators import login_required
@@ -18,7 +19,7 @@ from reportlab.lib.styles import getSampleStyleSheet
 
 from accounts.models import User
 from .models import ActivityReportRequest, Contract, Punch
-from .services import build_daily_summary, filter_punches_by_period, format_hhmm
+from .services import build_daily_summary, evaluate_punch_confidence, filter_punches_by_period, format_hhmm
 from .state import contract_operational_q, employee_lifecycle_summary
 
 
@@ -70,6 +71,16 @@ def _resolve_selected_contract(contracts_qs, contract_id):
         if selected:
             return selected
     return contracts_qs.first()
+
+
+def _parse_geo_decimal(raw_value):
+    value = (raw_value or "").strip()
+    if not value:
+        return None
+    try:
+        return Decimal(value)
+    except (InvalidOperation, TypeError):
+        return None
 
 
 @login_required
@@ -126,9 +137,25 @@ def employee_dashboard(request):
         )
 
     if request.method == "POST" and request.POST.get("action") == "punch":
+        geo_latitude = _parse_geo_decimal(request.POST.get("geo_latitude"))
+        geo_longitude = _parse_geo_decimal(request.POST.get("geo_longitude"))
+        geo_accuracy_m = _parse_geo_decimal(request.POST.get("geo_accuracy_m"))
+        confidence = evaluate_punch_confidence(
+            selected_contract,
+            latitude=geo_latitude,
+            longitude=geo_longitude,
+            accuracy_m=geo_accuracy_m,
+        )
         Punch.objects.create(
             contract=selected_contract,
             timestamp=timezone.now(),
+            geo_latitude=geo_latitude,
+            geo_longitude=geo_longitude,
+            geo_accuracy_m=geo_accuracy_m,
+            validated_location=confidence.get("validated_location"),
+            distance_to_location_m=confidence.get("distance_to_location_m"),
+            validation_method=confidence.get("validation_method") or Punch.ValidationMethod.FREE_POLICY,
+            confidence_status=confidence.get("confidence_status") or Punch.ConfidenceStatus.FREE,
         )
         return redirect(f"{request.path}?event=punch_saved&contract={selected_contract.id}")
 
@@ -306,6 +333,7 @@ def create_manual_punches(request):
         )
 
     ordered_hm = sorted(requested_hm)
+    confidence = evaluate_punch_confidence(contract, latitude=None, longitude=None, accuracy_m=None)
     with transaction.atomic():
         for hour, minute in ordered_hm:
             manual_timestamp = timezone.make_aware(
@@ -316,6 +344,8 @@ def create_manual_punches(request):
                 contract=contract,
                 timestamp=manual_timestamp,
                 is_manual=True,
+                validation_method=confidence.get("validation_method") or Punch.ValidationMethod.FREE_POLICY,
+                confidence_status=confidence.get("confidence_status") or Punch.ConfidenceStatus.FREE,
             )
 
     return JsonResponse(

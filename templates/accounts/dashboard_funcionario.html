@@ -158,6 +158,9 @@
           <form id="hcPunchForm" method="post" action="?contract={{ selected_contract.id }}" class="hc-field">
             {% csrf_token %}
             <input type="hidden" name="action" value="punch">
+            <input type="hidden" name="geo_latitude" id="hcGeoLatitude" value="">
+            <input type="hidden" name="geo_longitude" id="hcGeoLongitude" value="">
+            <input type="hidden" name="geo_accuracy_m" id="hcGeoAccuracy" value="">
             <button id="hcPunchBtn" class="hc-punch-btn" type="submit">
               <span class="hc-punch-btn__label">Registrar horario</span>
               <span class="hc-punch-btn__spinner" aria-hidden="true"></span>

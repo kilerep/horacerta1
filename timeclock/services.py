@@ -1,6 +1,9 @@
 from datetime import date, datetime, time
+from math import atan2, cos, radians, sin, sqrt
 
 from django.utils import timezone
+
+from companies.models import CompanyAttendancePolicy, CompanyAuthorizedLocation
 
 
 def format_punch_time(local_dt):
@@ -88,3 +91,79 @@ def build_daily_summary(punches, min_punch_columns=4):
         row["punch_columns"] = row["punch_times"] + ["-"] * (max_columns - len(row["punch_times"]))
 
     return rows, max_columns
+
+
+def haversine_distance_meters(lat1, lon1, lat2, lon2):
+    earth_radius_m = 6371000.0
+    d_lat = radians(lat2 - lat1)
+    d_lon = radians(lon2 - lon1)
+    a = sin(d_lat / 2) ** 2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(d_lon / 2) ** 2
+    c = 2 * atan2(sqrt(a), sqrt(1 - a))
+    return earth_radius_m * c
+
+
+def evaluate_punch_confidence(contract, latitude=None, longitude=None, accuracy_m=None):
+    policy = CompanyAttendancePolicy.objects.filter(company=contract.company).first()
+    validation_mode = (
+        policy.validation_mode if policy else CompanyAttendancePolicy.ValidationMode.FREE
+    )
+
+    result = {
+        "validation_method": "FREE_POLICY",
+        "confidence_status": "FREE",
+        "validated_location": None,
+        "distance_to_location_m": None,
+    }
+
+    if validation_mode == CompanyAttendancePolicy.ValidationMode.FREE:
+        return result
+
+    if validation_mode == CompanyAttendancePolicy.ValidationMode.PRESENTIAL_QR:
+        result["validation_method"] = "PRESENTIAL_QR_PENDING"
+        result["confidence_status"] = "FREE"
+        return result
+
+    result["validation_method"] = "GEOLOCATION"
+    locations = list(
+        CompanyAuthorizedLocation.objects.filter(company=contract.company, is_active=True).order_by("name")
+    )
+    if not locations:
+        result["confidence_status"] = "FREE"
+        return result
+
+    if latitude is None or longitude is None:
+        result["confidence_status"] = "NO_LOCATION"
+        return result
+
+    nearest_location = None
+    nearest_distance = None
+    for item in locations:
+        distance = haversine_distance_meters(
+            float(latitude),
+            float(longitude),
+            float(item.latitude),
+            float(item.longitude),
+        )
+        if nearest_distance is None or distance < nearest_distance:
+            nearest_distance = distance
+            nearest_location = item
+
+    if nearest_location:
+        result["validated_location"] = nearest_location
+        result["distance_to_location_m"] = round(float(nearest_distance), 2)
+
+    if accuracy_m is not None:
+        try:
+            accuracy_value = float(accuracy_m)
+        except (TypeError, ValueError):
+            accuracy_value = None
+        if accuracy_value and accuracy_value > 200:
+            result["confidence_status"] = "IMPRECISE"
+            return result
+
+    if nearest_location and nearest_distance is not None and nearest_distance <= float(nearest_location.allowed_radius_m):
+        result["confidence_status"] = "ON_SITE"
+    else:
+        result["confidence_status"] = "OUT_OF_RADIUS"
+
+    return result

@@ -592,7 +592,7 @@ def dashboard_empresa(request):
         punches_period_qs = Punch.objects.filter(
             contract__in=contracts_qs,
             timestamp__range=(start_dt, end_dt),
-        ).select_related("contract", "contract__employee", "contract__employee__user")
+        ).select_related("contract", "contract__employee", "contract__employee__user", "validated_location")
 
         total_registered_professionals = len(all_employees)
         total_active_professionals = state_counters[PROFESSIONAL_STATE_ATIVO]
@@ -645,7 +645,23 @@ def dashboard_empresa(request):
     punch_rows = []
     for punch in punches_period_qs.order_by("-timestamp")[:120]:
         mei_name = _contract_mei_label(punch.contract)
-        punch_rows.append({"punch": punch, "mei_name": mei_name})
+        distance_value = "-"
+        if punch.distance_to_location_m is not None:
+            try:
+                distance_value = f"{float(punch.distance_to_location_m):.1f} m"
+            except (TypeError, ValueError):
+                distance_value = "-"
+        punch_rows.append(
+            {
+                "punch": punch,
+                "mei_name": mei_name,
+                "confidence_label": punch.get_confidence_status_display(),
+                "confidence_tone": punch.confidence_tone,
+                "validation_method_label": punch.get_validation_method_display(),
+                "validated_location_name": punch.validated_location.name if punch.validated_location else "-",
+                "distance_label": distance_value,
+            }
+        )
 
     quick_links = [
         {

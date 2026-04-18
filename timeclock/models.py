@@ -4,7 +4,7 @@ from django.db import models, transaction
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.utils import timezone
-from companies.models import Company, Employee
+from companies.models import Company, CompanyAuthorizedLocation, Employee
 
 
 class Contract(models.Model):
@@ -84,6 +84,18 @@ class Contract(models.Model):
 
 
 class Punch(models.Model):
+    class ValidationMethod(models.TextChoices):
+        FREE_POLICY = "FREE_POLICY", "Politica livre"
+        GEOLOCATION = "GEOLOCATION", "Geolocalizacao"
+        PRESENTIAL_QR_PENDING = "PRESENTIAL_QR_PENDING", "Presencial com QR (pendente)"
+
+    class ConfidenceStatus(models.TextChoices):
+        FREE = "FREE", "Livre"
+        ON_SITE = "ON_SITE", "No local"
+        OUT_OF_RADIUS = "OUT_OF_RADIUS", "Fora do raio"
+        NO_LOCATION = "NO_LOCATION", "Sem localizacao"
+        IMPRECISE = "IMPRECISE", "Localizacao imprecisa"
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     contract = models.ForeignKey(
@@ -95,6 +107,28 @@ class Punch(models.Model):
     timestamp = models.DateTimeField(default=timezone.now, editable=False)
     note = models.TextField(blank=True, default="")
     is_manual = models.BooleanField(default=False)
+    geo_latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    geo_longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    geo_accuracy_m = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    validated_location = models.ForeignKey(
+        CompanyAuthorizedLocation,
+        on_delete=models.SET_NULL,
+        related_name="validated_punches",
+        null=True,
+        blank=True,
+    )
+    distance_to_location_m = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    validation_method = models.CharField(
+        max_length=30,
+        choices=ValidationMethod.choices,
+        default=ValidationMethod.FREE_POLICY,
+    )
+    confidence_status = models.CharField(
+        max_length=20,
+        choices=ConfidenceStatus.choices,
+        default=ConfidenceStatus.FREE,
+    )
+    confidence_checked_at = models.DateTimeField(null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -115,7 +149,24 @@ class Punch(models.Model):
         elif not isinstance(self.timestamp, datetime):
             raise ValueError("Punch.timestamp must be a datetime instance.")
 
+        if not self.validation_method:
+            self.validation_method = self.ValidationMethod.FREE_POLICY
+        if not self.confidence_status:
+            self.confidence_status = self.ConfidenceStatus.FREE
+        if not self.confidence_checked_at:
+            self.confidence_checked_at = timezone.now()
+
         super().save(*args, **kwargs)
+
+    @property
+    def confidence_tone(self):
+        if self.confidence_status == self.ConfidenceStatus.ON_SITE:
+            return "success"
+        if self.confidence_status in {self.ConfidenceStatus.OUT_OF_RADIUS, self.ConfidenceStatus.NO_LOCATION}:
+            return "warn"
+        if self.confidence_status == self.ConfidenceStatus.IMPRECISE:
+            return "pending"
+        return "neutral"
 
 
 class ActivityReportRequest(models.Model):
