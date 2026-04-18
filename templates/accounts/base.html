@@ -40,6 +40,13 @@
           <div class="sub">
             <span>Plataforma de Gestao de Jornada</span>
             <span class="sub-badge">v1.0 Beta</span>
+            {% if request.user.role == "EMPRESA" and header_current_plan_name %}
+              <span class="sub-plan">
+                <span class="premium-badge premium-badge--{{ header_current_plan_tone }}">
+                  Plano atual: {{ header_current_plan_name }}
+                </span>
+              </span>
+            {% endif %}
           </div>
         </div>
 
@@ -195,7 +202,12 @@
               <div class="title">{% block page_title %}HoraCerta{% endblock %}</div>
             </div>
             {% if header_mode == "company" %}
-              <div class="meta">Empresa: <strong>{{ header_company_name|default:"Empresa" }}</strong></div>
+              <div class="meta">
+                Empresa: <strong>{{ header_company_name|default:"Empresa" }}</strong>
+                {% if header_current_plan_name %}
+                  <span style="margin-left:6px;">| Plano: <strong>{{ header_current_plan_name }}</strong></span>
+                {% endif %}
+              </div>
             {% else %}
               <div class="meta">Logado como: <strong>{{ header_display_name|default:"Usuario" }}</strong></div>
             {% endif %}

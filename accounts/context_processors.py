@@ -48,6 +48,7 @@ def header_profile_media(request):
     header_feature_required_plan = {}
     header_current_plan_code = ""
     header_current_plan_name = ""
+    header_current_plan_tone = "premium"
 
     try:
         if request.user.role == "EMPRESA":
@@ -94,6 +95,14 @@ def header_profile_media(request):
             if themes_access.plan_code:
                 header_current_plan_code = themes_access.plan_code
                 header_current_plan_name = themes_access.plan_name or ""
+
+        plan_code = (header_current_plan_code or "").strip().lower()
+        if "business" in plan_code:
+            header_current_plan_tone = "business"
+        elif "pro" in plan_code:
+            header_current_plan_tone = "pro"
+        elif plan_code:
+            header_current_plan_tone = "premium"
     except Exception:
         # Fallback silencioso para nao quebrar layout se arquivo estiver ausente.
         pass
@@ -118,4 +127,5 @@ def header_profile_media(request):
         "header_incident_required_plan_name": header_feature_required_plan.get("incident_center", {}).get("name", ""),
         "header_current_plan_code": header_current_plan_code,
         "header_current_plan_name": header_current_plan_name,
+        "header_current_plan_tone": header_current_plan_tone,
     }

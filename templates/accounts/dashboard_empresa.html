@@ -133,6 +133,13 @@
             <p class="company-subtitle">
               Painel executivo para acompanhar base ativa, jornada e prioridades da operacao.
             </p>
+            {% if header_current_plan_name %}
+              <div style="margin-top:8px;">
+                <span class="premium-badge premium-badge--{{ header_current_plan_tone }}">
+                  Plano atual: {{ header_current_plan_name }}
+                </span>
+              </div>
+            {% endif %}
           </div>
         </div>
         <section class="exec-kpis" style="margin-top:12px;">

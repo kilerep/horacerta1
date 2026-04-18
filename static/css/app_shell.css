@@ -45,6 +45,11 @@
   gap: 6px;
 }
 
+.brand .sub-plan {
+  display: inline-flex;
+  align-items: center;
+}
+
 .brand .sub-badge {
   display: inline-flex;
   align-items: center;
