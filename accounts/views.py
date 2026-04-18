@@ -641,6 +641,7 @@ def dashboard_empresa(request):
             "url": reverse("company_operational_summary"),
             "hint": "Visao por profissional no periodo",
         },
+        {"label": "Central de hoje", "url": reverse("company_today_center"), "hint": "Acompanhamento operacional diario"},
         {"label": "Gerenciar profissionais", "url": reverse("company_meis"), "hint": "Cadastro e status dos MEIs"},
         {"label": "Ver vinculos", "url": reverse("company_contracts"), "hint": "Lista, status e edicao"},
         {"label": "Abrir historico", "url": reverse("company_history"), "hint": "Conferencia por periodo"},
@@ -1231,6 +1232,128 @@ def company_history(request):
         "calendar_current_query": build_history_query({"month": today.replace(day=1).strftime("%Y-%m")}),
     }
     return render(request, "accounts/company_history.html", context)
+
+
+@login_required
+def company_today_center(request):
+    denied = _redirect_if_not_empresa(request)
+    if denied:
+        return denied
+
+    company = _company_for_user(request.user)
+    today = timezone.localdate()
+    now_local = timezone.localtime()
+    today_start_dt = timezone.make_aware(datetime.combine(today, time.min))
+    today_end_dt = timezone.make_aware(datetime.combine(today, time.max))
+
+    operational_contracts_qs = (
+        Contract.objects.filter(
+            company=company,
+            employee__isnull=False,
+            employee__user__isnull=False,
+        )
+        .filter(contract_operational_q())
+        .select_related("employee", "employee__user", "company")
+        if company
+        else Contract.objects.none()
+    )
+    operational_contracts = list(operational_contracts_qs.order_by("employee__full_name"))
+
+    operational_by_employee = {}
+    for contract in operational_contracts:
+        operational_by_employee.setdefault(contract.employee_id, contract)
+
+    today_punches = list(
+        Punch.objects.filter(contract__in=operational_contracts_qs, timestamp__range=(today_start_dt, today_end_dt))
+        .select_related("contract", "contract__employee", "contract__employee__user")
+        .order_by("timestamp")
+    )
+
+    times_by_employee = defaultdict(list)
+    for punch in today_punches:
+        local_ts = timezone.localtime(punch.timestamp)
+        times_by_employee[punch.contract.employee_id].append(local_ts)
+
+    no_records_rows = []
+    in_progress_rows = []
+    finished_rows = []
+    incomplete_rows = []
+    status_rows = []
+
+    for employee_id, contract in operational_by_employee.items():
+        employee = contract.employee
+        day_times = sorted(times_by_employee.get(employee_id, []))
+        punches_count = len(day_times)
+        total_seconds, is_incomplete = compute_day_total(day_times)
+        total_hours_hhmm = format_hhmm(total_seconds)
+        punches_label = " - ".join(ts.strftime("%H:%M") for ts in day_times) if day_times else "-"
+
+        if punches_count == 0:
+            status_key = "no_records"
+            status_label = "Sem registros hoje"
+            status_tone = "neutral"
+        elif is_incomplete and now_local.hour >= 20:
+            status_key = "incomplete"
+            status_label = "Dia incompleto"
+            status_tone = "warn"
+        elif is_incomplete:
+            status_key = "in_progress"
+            status_label = "Jornada em andamento"
+            status_tone = "progress"
+        else:
+            status_key = "finished"
+            status_label = "Dia finalizado"
+            status_tone = "ok"
+
+        row = {
+            "employee": employee,
+            "contract": contract,
+            "status_key": status_key,
+            "status_label": status_label,
+            "status_tone": status_tone,
+            "punches_count": punches_count,
+            "punches_label": punches_label,
+            "total_hours_hhmm": total_hours_hhmm,
+            "history_url": (
+                f"{reverse('company_history')}?employee={employee.id}&date_from={today.strftime('%Y-%m-%d')}"
+                f"&date_to={today.strftime('%Y-%m-%d')}"
+            ),
+            "profile_url": reverse("company_mei_profile", args=[employee.id]),
+        }
+        status_rows.append(row)
+        if status_key == "no_records":
+            no_records_rows.append(row)
+        elif status_key == "in_progress":
+            in_progress_rows.append(row)
+        elif status_key == "finished":
+            finished_rows.append(row)
+        elif status_key == "incomplete":
+            incomplete_rows.append(row)
+
+    reports_today_qs = (
+        ServiceReport.objects.filter(company=company, created_at__range=(today_start_dt, today_end_dt))
+        .select_related("employee", "employee__user", "contract")
+        .order_by("-created_at")
+        if company
+        else ServiceReport.objects.none()
+    )
+    reports_today = list(reports_today_qs[:12])
+
+    context = {
+        "company": company,
+        "today": today,
+        "total_professionals_with_records_today": sum(1 for row in status_rows if row["punches_count"] > 0),
+        "total_punches_today": len(today_punches),
+        "journeys_in_progress_count": len(in_progress_rows),
+        "incomplete_days_count": len(incomplete_rows),
+        "service_reports_today_count": reports_today_qs.count(),
+        "no_records_rows": no_records_rows[:30],
+        "in_progress_rows": in_progress_rows[:30],
+        "finished_rows": finished_rows[:30],
+        "incomplete_rows": incomplete_rows[:30],
+        "reports_today": reports_today,
+    }
+    return render(request, "accounts/company_today_center.html", context)
 
 
 @login_required

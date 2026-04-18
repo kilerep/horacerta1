@@ -54,6 +54,7 @@ urlpatterns = [
         name="company_service_report_detail",
     ),
     path("empresa/relatorios/", views.company_reports, name="company_reports"),
+    path("empresa/operacao-hoje/", views.company_today_center, name="company_today_center"),
     path("empresa/resumo-operacional/", views.company_operational_summary, name="company_operational_summary"),
     path("empresa/pendencias/", views.company_incident_center, name="company_incident_center"),
     path("dashboard/history/", views.company_history, name="company_history"),

@@ -1,0 +1,263 @@
+{% extends "accounts/base.html" %}
+{% block title %}Central Operacional de Hoje{% endblock %}
+{% block page_title %}Central Operacional de Hoje{% endblock %}
+
+{% block content %}
+  <style>
+    .today-wrap{ display:grid; gap:14px; }
+    .panel{
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      background:
+        linear-gradient(140deg, rgba(79,124,255,.1), transparent 42%),
+        linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+      padding:16px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.03), 0 12px 28px rgba(3,7,20,.24);
+    }
+    .hero-title{ margin:0; font-size:20px; font-weight:800; }
+    .hero-sub{ margin:7px 0 0; color:var(--muted); font-size:13px; }
+    .cards{
+      display:grid;
+      grid-template-columns:repeat(5, minmax(0,1fr));
+      gap:10px;
+      margin-top:12px;
+    }
+    .card{
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:12px;
+      background:rgba(255,255,255,.03);
+      padding:12px;
+    }
+    .card .k{ color:var(--muted); font-size:12px; }
+    .card .v{ margin-top:5px; font-size:28px; line-height:1; font-weight:900; }
+    .card .h{ margin-top:5px; color:var(--muted); font-size:12px; }
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0,1fr));
+      gap:12px;
+    }
+    .section-head{ display:flex; justify-content:space-between; gap:8px; align-items:flex-start; flex-wrap:wrap; }
+    .section-head h3{ margin:0; font-size:16px; }
+    .section-sub{ margin:6px 0 0; color:var(--muted); font-size:13px; }
+    .status-pill{
+      display:inline-flex;
+      border:1px solid var(--border);
+      border-radius:999px;
+      padding:4px 9px;
+      font-size:12px;
+      font-weight:700;
+      background:rgba(255,255,255,.05);
+    }
+    .status-pill.ok{ border-color:rgba(45,211,145,.4); background:rgba(45,211,145,.13); color:#ccffea; }
+    .status-pill.warn{ border-color:rgba(255,176,32,.42); background:rgba(255,176,32,.14); color:#ffe7ad; }
+    .status-pill.progress{ border-color:rgba(47,124,255,.42); background:rgba(47,124,255,.16); color:#d8e6ff; }
+    .status-pill.neutral{ border-color:rgba(148,163,184,.35); background:rgba(148,163,184,.14); color:#dce7ff; }
+    .table-wrap{
+      margin-top:10px;
+      border:1px solid var(--border);
+      border-radius:12px;
+      overflow:auto;
+    }
+    .table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:640px;
+    }
+    .table th,.table td{
+      text-align:left;
+      padding:10px 9px;
+      border-bottom:1px solid rgba(255,255,255,.07);
+      vertical-align:top;
+      font-size:13px;
+    }
+    .table th{ color:var(--muted); font-size:12px; font-weight:700; }
+    .table tr:last-child td{ border-bottom:none; }
+    .empty{
+      display:grid;
+      gap:8px;
+      border:1px dashed rgba(255,255,255,.18);
+      border-radius:12px;
+      background:rgba(255,255,255,.03);
+      padding:12px;
+    }
+    .empty strong{ font-size:14px; }
+    .empty p{ margin:0; color:var(--muted); font-size:13px; }
+    @media (max-width: 1180px){
+      .cards{ grid-template-columns:repeat(2, minmax(0,1fr)); }
+      .grid{ grid-template-columns:1fr; }
+    }
+    @media (max-width: 760px){
+      .cards{ grid-template-columns:1fr; }
+      .table{ min-width:0; }
+    }
+  </style>
+
+  <div class="today-wrap">
+    <section class="panel">
+      <h2 class="hero-title">Central Operacional de Hoje</h2>
+      <p class="hero-sub">Visao diaria para acompanhamento rapido dos profissionais no dia {{ today|date:"d/m/Y" }}.</p>
+      <div class="cards">
+        <article class="card">
+          <div class="k">Com registros hoje</div>
+          <div class="v">{{ total_professionals_with_records_today }}</div>
+          <div class="h">Profissionais com pelo menos 1 horario</div>
+        </article>
+        <article class="card">
+          <div class="k">Total de horarios hoje</div>
+          <div class="v">{{ total_punches_today }}</div>
+          <div class="h">Marcacoes consolidadas no dia</div>
+        </article>
+        <article class="card">
+          <div class="k">Jornadas em andamento</div>
+          <div class="v">{{ journeys_in_progress_count }}</div>
+          <div class="h">Dia com horarios em quantidade impar (antes das 20h)</div>
+        </article>
+        <article class="card">
+          <div class="k">Dias incompletos</div>
+          <div class="v">{{ incomplete_days_count }}</div>
+          <div class="h">Quantidade impar de horarios apos 20h</div>
+        </article>
+        <article class="card">
+          <div class="k">Relatorios de servico hoje</div>
+          <div class="v">{{ service_reports_today_count }}</div>
+          <div class="h">Envios realizados no dia atual</div>
+        </article>
+      </div>
+    </section>
+
+    <section class="grid">
+      <article class="panel">
+        <div class="section-head">
+          <div>
+            <h3>Profissionais sem horarios hoje</h3>
+            <p class="section-sub">Prioridade para validar ausencia de registro.</p>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Profissional</th><th>Status</th><th>Acoes</th></tr></thead>
+            <tbody>
+              {% for row in no_records_rows %}
+                <tr>
+                  <td>{{ row.employee.full_name }}<br><span class="muted">{{ row.employee.user.email|default:row.employee.user.username }}</span></td>
+                  <td><span class="status-pill neutral">{{ row.status_label }}</span></td>
+                  <td><a class="btn" href="{{ row.profile_url }}">Perfil</a> <a class="btn" href="{{ row.history_url }}">Historico</a></td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="3"><div class="empty"><strong>Nenhum caso sem horario.</strong><p>A base operacional possui registros para todos os profissionais ativos hoje.</p></div></td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="section-head">
+          <div>
+            <h3>Jornadas em andamento</h3>
+            <p class="section-sub">Profissionais com dia aberto no momento.</p>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Profissional</th><th>Horarios</th><th>Total parcial</th><th>Acoes</th></tr></thead>
+            <tbody>
+              {% for row in in_progress_rows %}
+                <tr>
+                  <td>{{ row.employee.full_name }}</td>
+                  <td>{{ row.punches_label }}</td>
+                  <td>{{ row.total_hours_hhmm }}</td>
+                  <td><a class="btn" href="{{ row.history_url }}">Historico</a></td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="4"><div class="empty"><strong>Sem jornadas em andamento.</strong><p>Nenhum profissional com dia aberto neste momento.</p></div></td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </article>
+    </section>
+
+    <section class="grid">
+      <article class="panel">
+        <div class="section-head">
+          <div>
+            <h3>Profissionais com dia finalizado</h3>
+            <p class="section-sub">Dias com quantidade par de horarios no momento.</p>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Profissional</th><th>Qtd</th><th>Horarios</th><th>Total do dia</th></tr></thead>
+            <tbody>
+              {% for row in finished_rows %}
+                <tr>
+                  <td>{{ row.employee.full_name }}</td>
+                  <td>{{ row.punches_count }}</td>
+                  <td>{{ row.punches_label }}</td>
+                  <td><span class="status-pill ok">{{ row.total_hours_hhmm }}</span></td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="4"><div class="empty"><strong>Sem dias finalizados ainda.</strong><p>Os profissionais ainda estao sem registros ou em jornada em andamento.</p></div></td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="section-head">
+          <div>
+            <h3>Profissionais com dia incompleto</h3>
+            <p class="section-sub">Casos com quantidade impar de horarios apos 20h.</p>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Profissional</th><th>Status</th><th>Horarios</th><th>Acoes</th></tr></thead>
+            <tbody>
+              {% for row in incomplete_rows %}
+                <tr>
+                  <td>{{ row.employee.full_name }}</td>
+                  <td><span class="status-pill warn">{{ row.status_label }}</span></td>
+                  <td>{{ row.punches_label }}</td>
+                  <td><a class="btn" href="{{ row.history_url }}">Historico</a></td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="4"><div class="empty"><strong>Sem dias incompletos.</strong><p>Nao foram detectadas pendencias operacionais neste fechamento diario.</p></div></td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </article>
+    </section>
+
+    <section class="panel">
+      <div class="section-head">
+        <div>
+          <h3>Ultimos relatorios de servico enviados hoje</h3>
+          <p class="section-sub">Acompanhamento rapido de atividade enviada pelos profissionais no dia.</p>
+        </div>
+        <a class="btn" href="{% url 'company_service_reports' %}">Abrir relatorios de servico</a>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Enviado em</th><th>Profissional</th><th>Data do servico</th><th>Titulo</th><th>Acoes</th></tr></thead>
+          <tbody>
+            {% for report in reports_today %}
+              <tr>
+                <td>{{ report.created_at|date:"d/m/Y H:i" }}</td>
+                <td>{{ report.employee.full_name }}<br><span class="muted">{{ report.employee.user.email|default:report.employee.user.username }}</span></td>
+                <td>{{ report.report_date|date:"d/m/Y" }}</td>
+                <td>{{ report.title }}</td>
+                <td><a class="btn" href="{% url 'company_service_report_detail' report.id %}">Detalhe</a></td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="5"><div class="empty"><strong>Nenhum relatorio enviado hoje.</strong><p>Os envios do modulo de servico aparecerao aqui em tempo real.</p></div></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+{% endblock %}
