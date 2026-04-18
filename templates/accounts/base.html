@@ -71,6 +71,10 @@
                   <div class="icon">A</div>
                   <div><strong>Documentos</strong><div class="muted item-sub">anexos e arquivos</div></div>
                 </a>
+                <a class="item {% if current == 'company_service_reports' or current == 'company_service_report_detail' %}is-active{% endif %}" href="{% url 'company_service_reports' %}">
+                  <div class="icon">S</div>
+                  <div><strong>Relatorios de Servico</strong><div class="muted item-sub">envios dos profissionais</div></div>
+                </a>
                 <a class="item {% if current == 'company_reports' %}is-active{% endif %} {% if not header_can_use_advanced_reports %}is-locked-premium{% endif %}" href="{% url 'company_reports' %}">
                   <div class="icon">R</div>
                   <div>
@@ -166,9 +170,9 @@
                   <div class="icon">E</div>
                   <div><strong>Exportar CSV</strong><div class="muted item-sub">arquivo de apoio</div></div>
                 </a>
-                <a class="item muted {% if current == 'mei_reports' %}is-active{% endif %}" href="{% url 'mei_reports' %}">
+                <a class="item {% if current == 'mei_reports' or current == 'mei_service_report_detail' %}is-active{% endif %}" href="{% url 'mei_reports' %}">
                   <div class="icon">R</div>
-                  <div><strong>Relatorios</strong><div class="muted item-sub">resumo pessoal</div></div>
+                  <div><strong>Relatorios de Servico</strong><div class="muted item-sub">envio e consulta pessoal</div></div>
                 </a>
               </div>
             {% endwith %}

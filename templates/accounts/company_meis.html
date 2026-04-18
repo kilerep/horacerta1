@@ -27,12 +27,22 @@
       <div class="company-meis__alert">Profissional e vinculo inicial criados com sucesso.</div>
     {% elif request.GET.status == "link_created" %}
       <div class="company-meis__alert">Primeiro vinculo configurado com sucesso para o profissional selecionado.</div>
+    {% elif request.GET.status == "access_deactivated" %}
+      <div class="company-meis__alert">Acesso do profissional desativado com sucesso.</div>
+    {% elif request.GET.status == "access_reactivated" %}
+      <div class="company-meis__alert">Acesso do profissional reativado com sucesso.</div>
+    {% elif request.GET.status == "invalid_employee" %}
+      <div class="company-meis__error company-meis__error--wide">Profissional invalido para esta empresa.</div>
     {% endif %}
     {% if show_flow_notice %}
       <div class="company-meis__alert">
         O fluxo principal foi simplificado: cadastre o MEI e, se quiser, ja configure o primeiro vinculo neste mesmo formulario.
       </div>
     {% endif %}
+    <div class="company-meis__flow-note">
+      Nao ha convite dedicado por token neste ciclo. Para ativacao segura, use o link de redefinicao de senha.
+      <button type="button" class="btn" data-copy-text="{{ activation_link }}">Copiar link de ativacao geral</button>
+    </div>
 
     <form method="post" enctype="multipart/form-data" class="company-meis__create-form">
       {% csrf_token %}
@@ -181,11 +191,23 @@
           <p class="company-meis__list-subtitle">Acompanhe situacao dos profissionais e acesse as proximas acoes de cada MEI.</p>
           <div class="company-meis__list-meta">
             <span class="company-meis__meta-pill">Resultados: {{ employees|length }}</span>
+            <span class="company-meis__meta-pill">Pendentes: {{ activation_counts.pending }}</span>
+            <span class="company-meis__meta-pill">Ativos: {{ activation_counts.active }}</span>
+            <span class="company-meis__meta-pill">Inativos: {{ activation_counts.inactive }}</span>
             <span class="company-meis__meta-pill">Consulta operacional em tempo real</span>
           </div>
         </div>
         <form method="get" class="company-meis__search">
           <div class="company-meis__search-field">{{ employee_search_form.q }}</div>
+          <div class="company-meis__search-filter">
+            <label for="activation-filter">Ativacao</label>
+            <select id="activation-filter" name="activation">
+              <option value="all" {% if activation_filter == "all" %}selected{% endif %}>Todos</option>
+              <option value="pending" {% if activation_filter == "pending" %}selected{% endif %}>Pendente de ativacao</option>
+              <option value="active" {% if activation_filter == "active" %}selected{% endif %}>Ativo</option>
+              <option value="inactive" {% if activation_filter == "inactive" %}selected{% endif %}>Inativo/desativado</option>
+            </select>
+          </div>
           <button class="btn primary" type="submit">Atualizar lista</button>
         </form>
       </header>
@@ -195,6 +217,7 @@
           <thead>
             <tr>
               <th>Profissional</th>
+              <th>Status de ativacao</th>
               <th>Estado operacional</th>
               <th>Vinculos</th>
               <th>Acoes</th>
@@ -207,6 +230,10 @@
                   <strong>{{ row.employee.full_name }}</strong><br>
                   <span class="company-meis__muted">{{ row.employee.user.email|default:row.employee.user.username }}</span>
                 </td>
+                <td data-label="Status de ativacao">
+                  <span class="company-meis__pill company-meis__pill--{{ row.activation.tone }}">{{ row.activation.label }}</span>
+                  <div class="company-meis__state-hint">{{ row.activation.hint }}</div>
+                </td>
                 <td data-label="Estado operacional">
                   <span class="company-meis__pill company-meis__pill--{{ row.state.tone }}">{{ row.state.label }}</span>
                   <div class="company-meis__state-hint">{{ row.state.hint }}</div>
@@ -218,16 +245,34 @@
                 <td data-label="Acoes" class="company-meis__actions-cell">
                   <a class="btn" href="{{ row.profile_url }}">Abrir perfil</a>
                   <a class="btn" href="{{ row.situation_url }}">Ver situacao</a>
+                  {% if row.activation.key == "pending" %}
+                    <button type="button" class="btn" data-copy-text="{{ row.activation_copy_text }}">Copiar link de ativacao</button>
+                  {% endif %}
                   {% if row.total_contracts == 0 %}
                     <a class="btn primary" href="{{ row.setup_first_link_url }}">Configurar vinculo inicial</a>
                   {% else %}
                     <a class="btn primary" href="{{ row.manage_contracts_url }}">Gerenciar vinculos</a>
                   {% endif %}
+                  {% if row.activation.key == "inactive" %}
+                    <form method="post" class="company-meis__inline-form">
+                      {% csrf_token %}
+                      <input type="hidden" name="action" value="reactivate_access">
+                      <input type="hidden" name="employee_id" value="{{ row.employee.id }}">
+                      <button type="submit" class="btn primary">Reativar acesso</button>
+                    </form>
+                  {% else %}
+                    <form method="post" class="company-meis__inline-form">
+                      {% csrf_token %}
+                      <input type="hidden" name="action" value="deactivate_access">
+                      <input type="hidden" name="employee_id" value="{{ row.employee.id }}">
+                      <button type="submit" class="btn" onclick="return confirm('Deseja desativar o acesso deste profissional?');">Desativar acesso</button>
+                    </form>
+                  {% endif %}
                 </td>
               </tr>
             {% empty %}
               <tr>
-                <td colspan="4">
+                <td colspan="5">
                   <div class="company-meis__empty">
                     <strong>Nenhum MEI encontrado.</strong>
                     <p>Revise os filtros aplicados ou cadastre um novo profissional para iniciar a operacao.</p>
@@ -241,4 +286,26 @@
       </div>
     </section>
   </div>
+  <script>
+    (function () {
+      function copyText(value) {
+        if (!value) return;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(value).then(function () {
+            window.alert("Conteudo copiado para a area de transferencia.");
+          }).catch(function () {
+            window.prompt("Copie o conteudo abaixo:", value);
+          });
+          return;
+        }
+        window.prompt("Copie o conteudo abaixo:", value);
+      }
+
+      document.addEventListener("click", function (event) {
+        var trigger = event.target.closest("[data-copy-text]");
+        if (!trigger) return;
+        copyText(trigger.getAttribute("data-copy-text"));
+      });
+    })();
+  </script>
 {% endblock %}

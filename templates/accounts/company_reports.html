@@ -199,7 +199,7 @@
 
     <section class="panel">
       <h2 class="table-title">Relatorio diario de operacao</h2>
-      <p class="table-subtitle">Resumo de jornada por dia para leitura operacional. Justificativa de batida nao faz parte deste fluxo.</p>
+      <p class="table-subtitle">Resumo de jornada por dia para leitura operacional. Justificativa de horario nao faz parte deste fluxo.</p>
 
       <div class="table-wrap">
         <table class="table">
@@ -260,7 +260,7 @@
 
     <section id="request-report" class="panel">
       <h2 class="table-title">Solicitar detalhamento de atividades</h2>
-      <p class="table-subtitle">Este bloco e para relatorio de servico/trabalho realizado, sem relacao com justificativa de batida.</p>
+      <p class="table-subtitle">Este bloco e para relatorio de servico/trabalho realizado, sem relacao com justificativa de horario.</p>
       <form method="post" class="row" style="margin-top:10px;" data-submit-once="true">
         {% csrf_token %}
         <input type="hidden" name="action" value="request_activity_report">

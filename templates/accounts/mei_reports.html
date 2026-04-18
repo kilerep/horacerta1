@@ -1,44 +1,140 @@
 {% extends "accounts/base.html" %}
-{% block title %}Relatorios{% endblock %}
-{% block page_title %}Relatorios{% endblock %}
+{% block title %}Relatorios de servico{% endblock %}
+{% block page_title %}Relatorios de servico{% endblock %}
 
 {% block content %}
 <style>
-  .mei-reports-wrap{ display:grid; gap:12px; }
-  .mei-reports-card{
+  .sr-wrap{ display:grid; gap:14px; }
+  .sr-panel{
     border:1px solid var(--border);
     border-radius:var(--radius);
     padding:16px;
     background:
-      radial-gradient(circle at 14% -8%, rgba(79,124,255,.2), transparent 42%),
+      radial-gradient(circle at 10% -10%, rgba(79,124,255,.22), transparent 42%),
       linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
   }
-  .mei-reports-title{ margin:0; font-size:20px; }
-  .mei-reports-subtitle{ margin:8px 0 0; color:var(--muted); max-width:760px; }
-  .mei-reports-status{
-    margin-top:12px;
-    border:1px solid rgba(255,176,32,.35);
+  .sr-title{ margin:0; font-size:20px; }
+  .sr-sub{ margin:8px 0 0; color:var(--muted); font-size:13px; max-width:760px; }
+  .sr-grid{ margin-top:12px; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+  .sr-field{ display:flex; flex-direction:column; gap:6px; }
+  .sr-field--full{ grid-column:1 / -1; }
+  .sr-field label{ color:var(--muted); font-size:12px; font-weight:700; }
+  .sr-field input, .sr-field select, .sr-field textarea{
+    width:100%;
+    min-height:44px;
     border-radius:12px;
-    background:rgba(255,176,32,.12);
-    color:#ffe7b5;
+    border:1px solid var(--border);
+    background:rgba(255,255,255,.06);
+    color:var(--text);
     padding:10px 12px;
-    font-size:14px;
   }
-  .mei-reports-actions{ margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; }
+  .sr-field textarea{ min-height:120px; resize:vertical; line-height:1.45; }
+  .sr-error{
+    border:1px solid rgba(255,94,94,.3);
+    border-radius:10px;
+    background:rgba(255,94,94,.12);
+    color:#ffd8d8;
+    font-size:12px;
+    padding:6px 8px;
+  }
+  .sr-actions{ margin-top:10px; display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+  .sr-meta{ margin-top:10px; color:var(--muted); font-size:12px; }
+  .sr-table-wrap{ margin-top:12px; border:1px solid var(--border); border-radius:14px; overflow-x:auto; }
+  .sr-table{ width:100%; border-collapse:collapse; min-width:760px; }
+  .sr-table th, .sr-table td{ text-align:left; padding:11px 10px; border-bottom:1px solid rgba(255,255,255,.07); vertical-align:top; }
+  .sr-table th{ color:var(--muted); font-size:13px; }
+  .sr-table tr:last-child td{ border-bottom:none; }
+  .sr-empty{
+    display:grid; gap:8px; justify-items:start;
+    border:1px dashed rgba(255,255,255,.18);
+    border-radius:12px; padding:12px;
+  }
+  @media (max-width: 920px){
+    .sr-grid{ grid-template-columns:1fr; }
+    .sr-actions .btn{ width:100%; justify-content:center; }
+  }
 </style>
 
-<div class="mei-reports-wrap">
-  <section class="mei-reports-card">
-    <h2 class="mei-reports-title">Relatorios</h2>
-    <p class="mei-reports-subtitle">
-      Esta area e dedicada a relatorios de servico/trabalho realizado, separada do fluxo de ponto. Enquanto evoluimos o modulo, use Historico e Exportacoes para acompanhamento de horarios.
-    </p>
-    <div class="mei-reports-status">
-      Status atual: painel de indicadores em evolucao, sem impacto no registro e no fechamento das horas.
-    </div>
-    <div class="mei-reports-actions">
-      <a class="btn primary" href="{% url 'mei_history' %}">Abrir historico</a>
-      <a class="btn" href="{% url 'mei_export' %}">Abrir exportacoes</a>
+<div class="sr-wrap">
+  {% if request.GET.event == "report_created" %}
+    <section class="hc-global-feedback" role="status" aria-live="polite">
+      Relatorio de servico enviado com sucesso.
+    </section>
+  {% endif %}
+
+  <section class="sr-panel">
+    <h2 class="sr-title">Novo relatorio de servico</h2>
+    <p class="sr-sub">Modulo separado do ponto. Registre o trabalho executado sem relacao com o registro de horarios.</p>
+    <form method="post" data-submit-once="true">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="create_report">
+      <div class="sr-grid">
+        <div class="sr-field">
+          <label for="{{ report_form.report_date.id_for_label }}">{{ report_form.report_date.label }}</label>
+          {{ report_form.report_date }}
+          {% if report_form.report_date.errors %}<div class="sr-error">{{ report_form.report_date.errors }}</div>{% endif %}
+        </div>
+        <div class="sr-field">
+          <label for="{{ report_form.contract.id_for_label }}">{{ report_form.contract.label }}</label>
+          {{ report_form.contract }}
+          {% if report_form.contract.errors %}<div class="sr-error">{{ report_form.contract.errors }}</div>{% endif %}
+        </div>
+        <div class="sr-field sr-field--full">
+          <label for="{{ report_form.title.id_for_label }}">{{ report_form.title.label }}</label>
+          {{ report_form.title }}
+          {% if report_form.title.errors %}<div class="sr-error">{{ report_form.title.errors }}</div>{% endif %}
+        </div>
+        <div class="sr-field sr-field--full">
+          <label for="{{ report_form.description.id_for_label }}">{{ report_form.description.label }}</label>
+          {{ report_form.description }}
+          {% if report_form.description.errors %}<div class="sr-error">{{ report_form.description.errors }}</div>{% endif %}
+        </div>
+      </div>
+      {% if report_form.non_field_errors %}
+        <div class="sr-error" style="margin-top:10px;">{{ report_form.non_field_errors }}</div>
+      {% endif %}
+      <div class="sr-actions">
+        <button class="btn primary" type="submit" data-loading-text="Enviando relatorio...">Enviar relatorio</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="sr-panel">
+    <h2 class="sr-title">Meus relatorios enviados</h2>
+    <p class="sr-sub">Consulta rapida dos relatorios de servico ja registrados no sistema.</p>
+    <div class="sr-meta">Total: {{ reports|length }} relatorio(s)</div>
+    <div class="sr-table-wrap">
+      <table class="sr-table">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Empresa/vinculo</th>
+            <th>Titulo</th>
+            <th>Enviado em</th>
+            <th>Acoes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for report in reports %}
+            <tr>
+              <td>{{ report.report_date|date:"d/m/Y" }}</td>
+              <td>{{ report.company.name }}</td>
+              <td>{{ report.title }}</td>
+              <td>{{ report.created_at|date:"d/m/Y H:i" }}</td>
+              <td><a class="btn" href="{% url 'mei_service_report_detail' report.id %}">Abrir detalhe</a></td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="5">
+                <div class="sr-empty">
+                  <strong>Nenhum relatorio enviado.</strong>
+                  <p class="sr-sub" style="margin:0;">Use o formulario acima para registrar o primeiro servico.</p>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
   </section>
 </div>

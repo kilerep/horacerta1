@@ -1,0 +1,58 @@
+{% extends "accounts/base.html" %}
+{% block title %}Detalhe do relatorio{% endblock %}
+{% block page_title %}Detalhe do relatorio{% endblock %}
+
+{% block content %}
+<style>
+  .detail-wrap{ display:grid; gap:12px; }
+  .detail-card{
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:16px;
+    background:
+      radial-gradient(circle at 10% -12%, rgba(79,124,255,.2), transparent 45%),
+      linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+  }
+  .detail-title{ margin:0; font-size:22px; }
+  .detail-sub{ margin:8px 0 0; color:var(--muted); }
+  .detail-grid{ margin-top:12px; display:grid; gap:10px; grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .detail-box{ border:1px solid rgba(255,255,255,.1); border-radius:12px; padding:12px; background:rgba(255,255,255,.03); }
+  .detail-box strong{ display:block; margin-bottom:4px; }
+  .detail-box span{ color:var(--muted); font-size:13px; line-height:1.45; }
+  .detail-text{ white-space:pre-wrap; line-height:1.55; }
+  .detail-actions{ margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; }
+  @media (max-width: 900px){ .detail-grid{ grid-template-columns:1fr; } }
+</style>
+
+<div class="detail-wrap">
+  <section class="detail-card">
+    <h2 class="detail-title">{{ report.title }}</h2>
+    <p class="detail-sub">Relatorio de servico separado do fluxo de ponto.</p>
+    <div class="detail-grid">
+      <article class="detail-box">
+        <strong>Data do servico</strong>
+        <span>{{ report.report_date|date:"d/m/Y" }}</span>
+      </article>
+      <article class="detail-box">
+        <strong>Empresa</strong>
+        <span>{{ report.company.name }}</span>
+      </article>
+      <article class="detail-box">
+        <strong>Vinculo</strong>
+        <span>Inicio {{ report.contract.start_date|date:"d/m/Y" }} | R$ {{ report.contract.hourly_rate }}/h</span>
+      </article>
+      <article class="detail-box">
+        <strong>Enviado em</strong>
+        <span>{{ report.created_at|date:"d/m/Y H:i" }}</span>
+      </article>
+      <article class="detail-box" style="grid-column:1 / -1;">
+        <strong>Descricao do servico</strong>
+        <span class="detail-text">{{ report.description }}</span>
+      </article>
+    </div>
+    <div class="detail-actions">
+      <a class="btn" href="{{ reports_url }}">Voltar para relatorios</a>
+    </div>
+  </section>
+</div>
+{% endblock %}

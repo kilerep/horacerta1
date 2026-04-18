@@ -35,6 +35,7 @@
   .mei-pill.success{ border-color:rgba(45,211,145,.35); background:rgba(45,211,145,.12); color:#ccffea; }
   .mei-pill.pending{ border-color:rgba(255,176,32,.42); background:rgba(255,176,32,.14); color:#ffe7ad; }
   .mei-pill.warn{ border-color:rgba(255,94,94,.35); background:rgba(255,94,94,.12); color:#ffd8d8; }
+  .mei-pill.neutral{ border-color:rgba(148,163,184,.35); background:rgba(148,163,184,.12); color:#dce7ff; }
   .mei-grid{
     margin-top:12px;
     display:grid;
@@ -50,6 +51,7 @@
   .mei-box strong{ display:block; margin-bottom:4px; }
   .mei-box span{ color:var(--muted); font-size:13px; line-height:1.45; }
   .mei-actions{ margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; }
+  .mei-inline-form{ display:inline-flex; }
   .mei-table-wrap{
     border:1px solid var(--border);
     border-radius:14px;
@@ -79,13 +81,17 @@
         <p class="mei-profile-subtitle">{{ employee.user.email|default:employee.user.username }}</p>
       </div>
       <div>
-        <span class="mei-pill {% if state.tone == 'success' %}success{% elif state.tone == 'pending' %}pending{% elif state.tone == 'warn' %}warn{% endif %}">
-          {{ state.label }}
+        <span class="mei-pill {% if activation.tone == 'success' %}success{% elif activation.tone == 'pending' %}pending{% elif activation.tone == 'warn' %}warn{% else %}neutral{% endif %}">
+          {{ activation.label }}
         </span>
       </div>
     </div>
 
     <div class="mei-grid">
+      <article class="mei-box">
+        <strong>Status de ativacao</strong>
+        <span>{{ activation.hint }}</span>
+      </article>
       <article class="mei-box">
         <strong>Situacao operacional</strong>
         <span>{{ state.hint }}</span>
@@ -113,10 +119,30 @@
     <div class="mei-actions">
       <a class="btn" href="{{ meis_url }}">Voltar para MEIs</a>
       <a class="btn" href="{{ history_url }}">Ver historico</a>
+      {% if activation.key == "pending" %}
+        <button type="button" class="btn" data-copy-text="Ative seu acesso no HoraCerta em {{ activation_link }} usando o email {{ employee.user.email|default:employee.user.username }}.">Copiar link de ativacao</button>
+      {% endif %}
       {% if edit_contract_url %}
         <a class="btn primary" href="{{ edit_contract_url }}">Editar vinculo</a>
       {% else %}
         <a class="btn primary" href="{{ create_contract_url }}">Ir para MEIs</a>
+      {% endif %}
+      {% if activation.key == "inactive" %}
+        <form method="post" action="{% url 'company_meis' %}" class="mei-inline-form">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="reactivate_access">
+          <input type="hidden" name="employee_id" value="{{ employee.id }}">
+          <input type="hidden" name="next" value="{{ request.path }}">
+          <button type="submit" class="btn primary">Reativar acesso</button>
+        </form>
+      {% else %}
+        <form method="post" action="{% url 'company_meis' %}" class="mei-inline-form">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="deactivate_access">
+          <input type="hidden" name="employee_id" value="{{ employee.id }}">
+          <input type="hidden" name="next" value="{{ request.path }}">
+          <button type="submit" class="btn" onclick="return confirm('Deseja desativar o acesso deste profissional?');">Desativar acesso</button>
+        </form>
       {% endif %}
     </div>
   </section>
@@ -165,4 +191,26 @@
     </div>
   </section>
 </div>
+<script>
+  (function () {
+    function copyText(value) {
+      if (!value) return;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(value).then(function () {
+          window.alert("Conteudo copiado para a area de transferencia.");
+        }).catch(function () {
+          window.prompt("Copie o conteudo abaixo:", value);
+        });
+        return;
+      }
+      window.prompt("Copie o conteudo abaixo:", value);
+    }
+
+    document.addEventListener("click", function (event) {
+      var trigger = event.target.closest("[data-copy-text]");
+      if (!trigger) return;
+      copyText(trigger.getAttribute("data-copy-text"));
+    });
+  })();
+</script>
 {% endblock %}

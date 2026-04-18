@@ -171,3 +171,68 @@ class ActivityReportRequest(models.Model):
 
     def __str__(self):
         return f"ActivityReportRequest<{self.id}> {self.company.name} -> {self.employee.full_name}"
+
+
+class ServiceReport(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    company = models.ForeignKey(
+        Company,
+        on_delete=models.PROTECT,
+        related_name="service_reports",
+    )
+    employee = models.ForeignKey(
+        Employee,
+        on_delete=models.PROTECT,
+        related_name="service_reports",
+    )
+    contract = models.ForeignKey(
+        Contract,
+        on_delete=models.PROTECT,
+        related_name="service_reports",
+    )
+
+    report_date = models.DateField(default=timezone.localdate)
+    title = models.CharField(max_length=120)
+    description = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-report_date", "-created_at"]
+        indexes = [
+            models.Index(fields=["company", "report_date"]),
+            models.Index(fields=["employee", "report_date"]),
+            models.Index(fields=["contract", "report_date"]),
+        ]
+
+    def clean(self):
+        errors = {}
+        if not self.company_id:
+            errors["company"] = "Relatorio precisa de uma empresa valida."
+        if not self.employee_id:
+            errors["employee"] = "Relatorio precisa de um profissional valido."
+        if not self.contract_id:
+            errors["contract"] = "Relatorio precisa de um vinculo valido."
+
+        if self.contract_id:
+            contract = Contract.objects.select_related("employee", "company").filter(id=self.contract_id).first()
+            if not contract:
+                errors["contract"] = "Vinculo informado nao existe."
+            else:
+                if self.company_id and contract.company_id != self.company_id:
+                    errors["company"] = "Empresa do relatorio difere da empresa do vinculo."
+                if self.employee_id and contract.employee_id != self.employee_id:
+                    errors["employee"] = "Profissional do relatorio difere do profissional do vinculo."
+                if self.company_id and self.employee_id and contract.employee.company_id != self.company_id:
+                    errors["employee"] = "Profissional informado nao pertence a empresa."
+
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"ServiceReport<{self.id}> {self.report_date:%d/%m/%Y} {self.title}"

@@ -6,7 +6,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from companies.models import Company, Employee
-from timeclock.models import Contract
+from timeclock.models import Contract, ServiceReport
 
 User = get_user_model()
 
@@ -70,6 +70,74 @@ class PeriodSearchForm(forms.Form):
         required=False,
         widget=forms.DateInput(attrs={"type": "date"}),
     )
+
+
+class ServiceReportCreateForm(forms.ModelForm):
+    contract = forms.ModelChoiceField(
+        label="Vinculo/empresa",
+        queryset=Contract.objects.none(),
+        empty_label="Selecione um vinculo",
+    )
+
+    class Meta:
+        model = ServiceReport
+        fields = ["report_date", "contract", "title", "description"]
+        widgets = {
+            "report_date": forms.DateInput(attrs={"type": "date"}),
+            "title": forms.TextInput(attrs={"placeholder": "Resumo curto do servico executado"}),
+            "description": forms.Textarea(
+                attrs={
+                    "rows": 5,
+                    "placeholder": "Descreva o trabalho realizado no dia, entregas e contexto operacional.",
+                }
+            ),
+        }
+        labels = {
+            "report_date": "Data do servico",
+            "title": "Titulo",
+            "description": "Descricao do servico",
+        }
+
+    def __init__(self, *args, employee=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.employee = employee
+        contracts_qs = Contract.objects.none()
+        if employee:
+            contracts_qs = (
+                Contract.objects.filter(
+                    employee=employee,
+                    is_active=True,
+                    company__isnull=False,
+                )
+                .select_related("company")
+                .order_by("company__name", "-start_date", "-created_at")
+            )
+        self.fields["contract"].queryset = contracts_qs
+        self.fields["contract"].label_from_instance = (
+            lambda obj: f"{obj.company.name} | inicio {obj.start_date.strftime('%d/%m/%Y') if obj.start_date else '-'} | R$ {obj.hourly_rate}/h"
+        )
+
+    def clean_contract(self):
+        contract = self.cleaned_data.get("contract")
+        if not contract:
+            return contract
+        if self.employee and contract.employee_id != self.employee.id:
+            raise forms.ValidationError("Selecione um vinculo valido do seu perfil.")
+        return contract
+
+    def save(self, commit=True):
+        report = super().save(commit=False)
+        if self.employee:
+            report.employee = self.employee
+            report.company = self.employee.company
+        contract = self.cleaned_data.get("contract")
+        if contract:
+            report.contract = contract
+            report.company = contract.company
+            report.employee = contract.employee
+        if commit:
+            report.save()
+        return report
 
 
 class CompanyMEICreateForm(forms.Form):

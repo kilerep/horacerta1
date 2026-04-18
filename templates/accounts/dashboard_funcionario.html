@@ -93,11 +93,11 @@
             <strong class="hc-journey-v">{{ today_date|date:"d/m/Y" }}</strong>
           </article>
           <article class="hc-journey-card">
-            <span class="hc-journey-k">Batidas hoje</span>
+            <span class="hc-journey-k">Horarios hoje</span>
             <strong class="hc-journey-v">{{ total_punches_today }}</strong>
           </article>
           <article class="hc-journey-card">
-            <span class="hc-journey-k">Ultima batida</span>
+            <span class="hc-journey-k">Ultimo horario</span>
             <strong class="hc-journey-v">{{ last_punch_today_label }}</strong>
           </article>
           <article class="hc-journey-card">
@@ -112,7 +112,7 @@
             {% for punch_time in today_punch_times %}
               <span class="hc-chip">{{ punch_time }}</span>
             {% empty %}
-              <span class="hc-empty-text">Nenhuma batida registrada hoje.</span>
+              <span class="hc-empty-text">Nenhum horario registrado hoje.</span>
             {% endfor %}
           </div>
         </section>

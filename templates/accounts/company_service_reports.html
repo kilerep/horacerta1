@@ -1,0 +1,130 @@
+{% extends "accounts/base.html" %}
+{% block title %}Relatorios de servico{% endblock %}
+{% block page_title %}Relatorios de servico{% endblock %}
+
+{% block content %}
+<style>
+  .sr-wrap{ display:grid; gap:14px; }
+  .sr-panel{
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:16px;
+    background:
+      linear-gradient(145deg, rgba(79,124,255,.1), transparent 45%),
+      linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+  }
+  .sr-title{ margin:0; font-size:20px; }
+  .sr-sub{ margin:8px 0 0; color:var(--muted); font-size:13px; max-width:760px; }
+  .sr-filters{ margin-top:12px; display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+  .sr-field{ min-width:220px; display:grid; gap:6px; flex:1; }
+  .sr-field label{ color:var(--muted); font-size:12px; font-weight:700; }
+  .sr-field input, .sr-field select{
+    width:100%; min-height:44px; border-radius:12px; border:1px solid var(--border);
+    background:rgba(255,255,255,.06); color:var(--text); padding:10px 12px;
+  }
+  .sr-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+  .sr-cards{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+  .sr-stat{ border:1px solid var(--border); border-radius:12px; background:rgba(255,255,255,.03); padding:12px; }
+  .sr-stat .k{ color:var(--muted); font-size:12px; }
+  .sr-stat .v{ margin-top:4px; font-size:24px; font-weight:800; }
+  .sr-table-wrap{ border:1px solid var(--border); border-radius:14px; overflow-x:auto; }
+  .sr-table{ width:100%; border-collapse:collapse; min-width:940px; }
+  .sr-table th,.sr-table td{ text-align:left; padding:11px 10px; border-bottom:1px solid rgba(255,255,255,.07); vertical-align:top; }
+  .sr-table th{ color:var(--muted); font-size:13px; }
+  .sr-table tr:last-child td{ border-bottom:none; }
+  .sr-empty{ border:1px dashed rgba(255,255,255,.18); border-radius:12px; padding:12px; display:grid; gap:8px; }
+  @media (max-width: 980px){
+    .sr-cards{ grid-template-columns:1fr; }
+    .sr-filters{ align-items:stretch; }
+    .sr-actions .btn{ width:100%; justify-content:center; }
+  }
+</style>
+
+<div class="sr-wrap">
+  <section class="sr-panel">
+    <h2 class="sr-title">Consulta de relatorios enviados</h2>
+    <p class="sr-sub">Modulo de relatorio de servico separado do ponto. Use filtros para consulta operacional por periodo e profissional.</p>
+    <form method="get" class="sr-filters">
+      <div class="sr-field">
+        <label for="employee-filter">Profissional</label>
+        <select id="employee-filter" name="employee">
+          <option value="">Todos</option>
+          {% for e in employees %}
+            <option value="{{ e.id }}" {% if selected_employee and selected_employee == e.id|stringformat:"s" %}selected{% endif %}>
+              {{ e.full_name }} - {{ e.user.email|default:e.user.username }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="sr-field">
+        <label for="date-from">De</label>
+        <input id="date-from" type="date" name="date_from" value="{{ date_from }}">
+      </div>
+      <div class="sr-field">
+        <label for="date-to">Ate</label>
+        <input id="date-to" type="date" name="date_to" value="{{ date_to }}">
+      </div>
+      <div class="sr-actions">
+        <button class="btn primary" type="submit">Atualizar consulta</button>
+        <a class="btn" href="{% url 'company_service_reports' %}">Limpar filtros</a>
+      </div>
+    </form>
+  </section>
+
+  <section class="sr-cards">
+    <article class="sr-stat">
+      <div class="k">Relatorios no resultado</div>
+      <div class="v">{{ total_reports }}</div>
+    </article>
+    <article class="sr-stat">
+      <div class="k">Profissionais no resultado</div>
+      <div class="v">{{ unique_professionals }}</div>
+    </article>
+    <article class="sr-stat">
+      <div class="k">Ultimo envio</div>
+      <div class="v" style="font-size:16px;">
+        {% if latest_submission %}{{ latest_submission|date:"d/m/Y H:i" }}{% else %}-{% endif %}
+      </div>
+    </article>
+  </section>
+
+  <section class="sr-panel">
+    <h2 class="sr-title">Relatorios recebidos</h2>
+    <div class="sr-table-wrap">
+      <table class="sr-table">
+        <thead>
+          <tr>
+            <th>Data do servico</th>
+            <th>Profissional</th>
+            <th>Empresa/vinculo</th>
+            <th>Titulo</th>
+            <th>Enviado em</th>
+            <th>Acoes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for report in reports %}
+            <tr>
+              <td>{{ report.report_date|date:"d/m/Y" }}</td>
+              <td>{{ report.employee.full_name }}<br><span class="muted">{{ report.employee.user.email|default:report.employee.user.username }}</span></td>
+              <td>{{ report.company.name }}</td>
+              <td>{{ report.title }}</td>
+              <td>{{ report.created_at|date:"d/m/Y H:i" }}</td>
+              <td><a class="btn" href="{% url 'company_service_report_detail' report.id %}">Abrir detalhe</a></td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6">
+                <div class="sr-empty">
+                  <strong>Nenhum relatorio encontrado.</strong>
+                  <p class="sr-sub" style="margin:0;">Ajuste o periodo ou aguarde novos envios dos profissionais.</p>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}

@@ -261,7 +261,7 @@
                     {% else %}
                       <span class="incident-item__meta">Sem contexto adicional.</span>
                     {% endif %}
-                    <div class="incident-item__meta">Batidas: {{ item.punches_count }} | Horas: {{ item.total_hours_hhmm }}</div>
+                    <div class="incident-item__meta">Horarios: {{ item.punches_count }} | Horas: {{ item.total_hours_hhmm }}</div>
                   </td>
                   <td style="display:flex; gap:6px; flex-wrap:wrap;">
                     <a class="btn" href="{{ item.history_url }}">Detalhes</a>

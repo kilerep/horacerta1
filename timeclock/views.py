@@ -51,6 +51,8 @@ def _active_contracts_for_employee_user(user):
     return (
         Contract.objects.filter(
             employee__user=user,
+            employee__is_active=True,
+            employee__user__is_active=True,
             employee__isnull=False,
             employee__user__isnull=False,
         )
@@ -168,17 +170,17 @@ def employee_dashboard(request):
         journey_status_key = "no_records"
         journey_status_label = "Sem registros hoje"
         journey_status_tone = "neutral"
-        journey_next_action = "Registre a primeira batida do dia para iniciar a jornada."
+        journey_next_action = "Registre o primeiro horario do dia para iniciar a jornada."
     elif total_punches_today % 2 == 1 and current_hour >= 20:
         journey_status_key = "incomplete"
         journey_status_label = "Dia incompleto"
         journey_status_tone = "warn"
-        journey_next_action = "Dia encerrado com batida pendente. Ajustes operacionais devem ser tratados com o encarregado."
+        journey_next_action = "Dia encerrado com horario pendente. Ajustes operacionais devem ser tratados com o encarregado."
     elif total_punches_today % 2 == 1:
         journey_status_key = "in_progress"
         journey_status_label = "Jornada em andamento"
         journey_status_tone = "progress"
-        journey_next_action = "Registre a proxima batida ao concluir a etapa atual da jornada."
+        journey_next_action = "Registre o proximo horario ao concluir a etapa atual da jornada."
     else:
         journey_status_key = "finished"
         journey_status_label = "Dia finalizado"
@@ -335,6 +337,8 @@ def export_csv(request):
         Contract.objects.select_related("company", "employee", "employee__user"),
         id=contract_id,
         employee__user=request.user,
+        employee__is_active=True,
+        employee__user__is_active=True,
         is_active=True,
     )
 
@@ -385,6 +389,8 @@ def export_xlsx(request):
         Contract.objects.select_related("company", "employee", "employee__user"),
         id=contract_id,
         employee__user=request.user,
+        employee__is_active=True,
+        employee__user__is_active=True,
         is_active=True,
     )
 
@@ -458,6 +464,8 @@ def export_pdf(request):
         Contract.objects.select_related("company", "employee", "employee__user"),
         id=contract_id,
         employee__user=request.user,
+        employee__is_active=True,
+        employee__user__is_active=True,
         is_active=True,
     )
 
