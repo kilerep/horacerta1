@@ -4,6 +4,8 @@ from io import BytesIO
 from urllib.parse import urlencode, urlparse
 from xml.sax.saxutils import escape
 import zipfile
+import csv
+from calendar import monthrange
 from collections import defaultdict
 import json
 from uuid import UUID
@@ -256,6 +258,17 @@ def _parse_iso_date(raw_value):
         return datetime.strptime(value, "%Y-%m-%d").date()
     except ValueError:
         return None
+
+
+def _parse_year_month(raw_value):
+    value = (raw_value or "").strip()
+    if not value:
+        return None
+    try:
+        parsed = datetime.strptime(value, "%Y-%m").date()
+    except ValueError:
+        return None
+    return parsed.replace(day=1)
 
 
 def _excel_col_name(index):
@@ -1017,64 +1030,205 @@ def company_history(request):
     employees = Employee.objects.filter(company=company).select_related("user").order_by("full_name") if company else Employee.objects.none()
 
     selected_employee = (request.GET.get("employee") or "").strip()
-    page_raw = (request.GET.get("page") or "1").strip()
 
-    contracts = (
-        Contract.objects.filter(
+    today = timezone.localdate()
+    first_day = today.replace(day=1)
+    date_from = first_day
+    date_to = today
+    if period_form.is_valid():
+        date_from = period_form.cleaned_data.get("date_from") or first_day
+        date_to = period_form.cleaned_data.get("date_to") or today
+    if date_from > date_to:
+        date_from, date_to = date_to, date_from
+
+    selected_employee_obj = employees.filter(id=selected_employee).first() if selected_employee else None
+    month_start = _parse_year_month(request.GET.get("month")) or today.replace(day=1)
+    month_first_weekday, month_days_count = monthrange(month_start.year, month_start.month)
+    month_end = month_start.replace(day=month_days_count)
+    selected_day = _parse_iso_date(request.GET.get("selected_day"))
+    if selected_day and (selected_day < month_start or selected_day > month_end):
+        selected_day = None
+
+    contracts_qs = Contract.objects.none()
+    punches_qs = Punch.objects.none()
+    history_rows = []
+    summary_days_with_records = 0
+    summary_total_punches = 0
+    summary_total_seconds = 0
+    summary_total_hours = "00:00"
+    summary_incomplete_days = 0
+    period_label = f"{date_from.strftime('%d/%m/%Y')} ate {date_to.strftime('%d/%m/%Y')}"
+    calendar_weeks = []
+    calendar_day_detail = None
+    calendar_month_label = month_start.strftime("%m/%Y")
+    weekday_labels = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sab", "Dom"]
+    prev_month_start = (month_start - timedelta(days=1)).replace(day=1)
+    next_month_start = (month_end + timedelta(days=1)).replace(day=1)
+
+    def build_history_query(extra_params):
+        query = {}
+        if selected_employee:
+            query["employee"] = selected_employee
+        period_from_value = (request.GET.get("date_from") or "").strip()
+        period_to_value = (request.GET.get("date_to") or "").strip()
+        if period_from_value:
+            query["date_from"] = period_from_value
+        if period_to_value:
+            query["date_to"] = period_to_value
+        query.update(extra_params)
+        return urlencode(query)
+
+    if selected_employee_obj and company:
+        contracts_qs = Contract.objects.filter(
             company=company,
+            employee=selected_employee_obj,
             employee__isnull=False,
             employee__user__isnull=False,
+        ).select_related("employee", "employee__user", "company")
+
+        start_dt = timezone.make_aware(datetime.combine(date_from, time.min))
+        end_dt = timezone.make_aware(datetime.combine(date_to, time.max))
+        punches_qs = Punch.objects.filter(contract__in=contracts_qs, timestamp__range=(start_dt, end_dt)).select_related(
+            "contract", "contract__employee", "contract__employee__user"
         )
-        if company
-        else Contract.objects.none()
-    )
-    punches = Punch.objects.filter(contract__in=contracts).select_related(
-        "contract", "contract__employee", "contract__employee__user"
-    )
 
-    if selected_employee:
-        punches = punches.filter(contract__employee_id=selected_employee)
+        grouped_rows, _max_punches = build_daily_summary(list(punches_qs.order_by("timestamp")), min_punch_columns=4)
+        history_rows = sorted(grouped_rows, key=lambda row: row["date"], reverse=True)
+        for row in history_rows:
+            row["punches_label"] = " - ".join(row["punch_times"]) if row["punch_times"] else "-"
+            row["status_label"] = "Incompleto" if row["is_incomplete"] else "Completo"
+            row["status_tone"] = "warn" if row["is_incomplete"] else "ok"
 
-    if period_form.is_valid():
-        d1 = period_form.cleaned_data.get("date_from")
-        d2 = period_form.cleaned_data.get("date_to")
-        if d1:
-            punches = punches.filter(timestamp__gte=timezone.make_aware(datetime.combine(d1, time.min)))
-        if d2:
-            punches = punches.filter(timestamp__lte=timezone.make_aware(datetime.combine(d2, time.max)))
+        summary_days_with_records = len(history_rows)
+        summary_total_punches = sum(row["punches_count"] for row in history_rows)
+        summary_total_seconds = sum(row["total_seconds"] for row in history_rows)
+        summary_total_hours = format_hhmm(summary_total_seconds)
+        summary_incomplete_days = sum(1 for row in history_rows if row["is_incomplete"])
 
-    total_count = punches.count()
-    page_size = 200
-    try:
-        page = max(1, int(page_raw))
-    except ValueError:
-        page = 1
-    offset = (page - 1) * page_size
-    punches_page = list(punches.order_by("-timestamp")[offset : offset + page_size])
-    showing_count = len(punches_page)
+        calendar_start_dt = timezone.make_aware(datetime.combine(month_start, time.min))
+        calendar_end_dt = timezone.make_aware(datetime.combine(month_end, time.max))
+        calendar_punches_qs = Punch.objects.filter(
+            contract__in=contracts_qs,
+            timestamp__range=(calendar_start_dt, calendar_end_dt),
+        ).select_related("contract", "contract__employee", "contract__employee__user")
+        calendar_grouped_rows, _calendar_cols = build_daily_summary(list(calendar_punches_qs.order_by("timestamp")), min_punch_columns=4)
+        calendar_by_day = {row["date"]: row for row in calendar_grouped_rows}
 
-    base_qs = {}
-    if selected_employee:
-        base_qs["employee"] = selected_employee
-    if request.GET.get("date_from"):
-        base_qs["date_from"] = request.GET.get("date_from")
-    if request.GET.get("date_to"):
-        base_qs["date_to"] = request.GET.get("date_to")
+        calendar_cells = [None] * month_first_weekday
+        for day_number in range(1, month_days_count + 1):
+            day_date = month_start.replace(day=day_number)
+            day_row = calendar_by_day.get(day_date)
+            if day_row:
+                status_key = "incomplete" if day_row["is_incomplete"] else "complete"
+                status_label = "Incompleto" if day_row["is_incomplete"] else "Completo"
+                punches_label = " - ".join(day_row["punch_times"]) if day_row["punch_times"] else "-"
+                punches_count = day_row["punches_count"]
+                total_hours_hhmm = day_row["total_hours_hhmm"]
+            else:
+                status_key = "empty"
+                status_label = "Sem registros"
+                punches_label = "-"
+                punches_count = 0
+                total_hours_hhmm = "00:00"
 
-    prev_query = urlencode({**base_qs, "page": page - 1}) if page > 1 else ""
-    next_query = urlencode({**base_qs, "page": page + 1}) if (offset + showing_count) < total_count else ""
+            day_query = build_history_query(
+                {
+                    "month": month_start.strftime("%Y-%m"),
+                    "selected_day": day_date.strftime("%Y-%m-%d"),
+                }
+            )
+            cell = {
+                "date": day_date,
+                "day_number": day_number,
+                "status_key": status_key,
+                "status_label": status_label,
+                "punches_label": punches_label,
+                "punches_count": punches_count,
+                "total_hours_hhmm": total_hours_hhmm,
+                "query": day_query,
+                "is_selected": bool(selected_day and selected_day == day_date),
+            }
+            calendar_cells.append(cell)
+
+            if selected_day and selected_day == day_date:
+                calendar_day_detail = cell
+
+        while len(calendar_cells) % 7 != 0:
+            calendar_cells.append(None)
+        calendar_weeks = [calendar_cells[index : index + 7] for index in range(0, len(calendar_cells), 7)]
+
+    export_kind = (request.GET.get("export") or "").strip().lower()
+    if export_kind in {"csv", "xlsx", "pdf"} and selected_employee_obj:
+        export_rows = []
+        for row in history_rows:
+            export_rows.append(
+                [
+                    row["date"].strftime("%d/%m/%Y"),
+                    row["punches_count"],
+                    row["punches_label"],
+                    row["total_hours_hhmm"],
+                    row["status_label"],
+                ]
+            )
+
+        headers = ["Data", "Quantidade de horarios", "Horarios registrados", "Total do dia", "Status do dia"]
+        employee_name = selected_employee_obj.full_name or selected_employee_obj.user.email or selected_employee_obj.user.username
+        if export_kind == "csv":
+            response = HttpResponse(content_type="text/csv; charset=utf-8")
+            response["Content-Disposition"] = 'attachment; filename="horacerta_historico_profissional.csv"'
+            writer = csv.writer(response)
+            writer.writerow([f"Empresa: {company.name if company else '-'}"])
+            writer.writerow([f"Profissional: {employee_name}"])
+            writer.writerow([f"Periodo: {period_label}"])
+            writer.writerow([])
+            writer.writerow(headers)
+            for line in export_rows:
+                writer.writerow(line)
+            return response
+
+        if export_kind == "xlsx":
+            return _build_xlsx_response("horacerta_historico_profissional.xlsx", headers, export_rows)
+
+        if export_kind == "pdf":
+            lines = [
+                "HoraCerta - Historico do profissional",
+                f"Empresa: {company.name if company else '-'}",
+                f"Profissional: {employee_name}",
+                f"Periodo: {period_label}",
+                f"Dias com registro: {summary_days_with_records}",
+                f"Total de horarios: {summary_total_punches}",
+                f"Total de horas: {summary_total_hours}",
+                f"Dias incompletos: {summary_incomplete_days}",
+                "",
+                "Tabela de conferencia (maximo 45 linhas no PDF):",
+            ]
+            for row in history_rows[:45]:
+                lines.append(
+                    f"{row['date'].strftime('%d/%m/%Y')} | qtd={row['punches_count']} | {row['punches_label']} | total={row['total_hours_hhmm']} | {row['status_label']}"
+                )
+            return _build_pdf_response("horacerta_historico_profissional.pdf", lines)
 
     context = {
         "company": company,
         "period_form": period_form,
         "employees": employees,
         "selected_employee": selected_employee,
-        "punches": punches_page,
-        "total_count": total_count,
-        "showing_count": showing_count,
-        "page": page,
-        "prev_query": prev_query,
-        "next_query": next_query,
+        "selected_employee_obj": selected_employee_obj,
+        "history_rows": history_rows,
+        "period_label": period_label,
+        "summary_days_with_records": summary_days_with_records,
+        "summary_total_punches": summary_total_punches,
+        "summary_total_hours": summary_total_hours,
+        "summary_incomplete_days": summary_incomplete_days,
+        "summary_total_seconds": summary_total_seconds,
+        "calendar_month_label": calendar_month_label,
+        "calendar_month_iso": month_start.strftime("%Y-%m"),
+        "calendar_weekday_labels": weekday_labels,
+        "calendar_weeks": calendar_weeks,
+        "calendar_day_detail": calendar_day_detail,
+        "calendar_prev_query": build_history_query({"month": prev_month_start.strftime("%Y-%m")}),
+        "calendar_next_query": build_history_query({"month": next_month_start.strftime("%Y-%m")}),
+        "calendar_current_query": build_history_query({"month": today.replace(day=1).strftime("%Y-%m")}),
     }
     return render(request, "accounts/company_history.html", context)
 

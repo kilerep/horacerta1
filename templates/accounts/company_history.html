@@ -49,19 +49,140 @@
       box-shadow: 0 0 0 3px rgba(79,124,255,.16);
       background:rgba(255,255,255,.08);
     }
-    .filter-actions{
+    .filter-actions{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+    .summary-grid{
+      display:grid;
+      grid-template-columns: repeat(4, minmax(0,1fr));
+      gap:10px;
+    }
+    .summary-item{
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:12px;
+      background:rgba(255,255,255,.03);
+    }
+    .summary-item .k{ color:var(--muted); font-size:12px; }
+    .summary-item .v{ margin-top:4px; font-size:24px; font-weight:800; line-height:1.1; }
+    .summary-item .h{ margin-top:4px; color:var(--muted); font-size:12px; }
+    .table-actions{ margin-top:10px; display:flex; gap:8px; flex-wrap:wrap; }
+    .calendar-head{
+      margin-top:12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .calendar-title{ margin:0; font-size:16px; }
+    .calendar-nav{ display:flex; gap:8px; flex-wrap:wrap; }
+    .calendar-legend{
+      margin-top:8px;
       display:flex;
       gap:8px;
       flex-wrap:wrap;
-      align-items:center;
     }
+    .calendar-legend-item{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      font-size:12px;
+      color:var(--muted);
+    }
+    .calendar-dot{
+      width:10px;
+      height:10px;
+      border-radius:999px;
+      display:inline-block;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.1);
+    }
+    .calendar-dot.complete{ border-color:rgba(45,211,145,.45); background:rgba(45,211,145,.18); }
+    .calendar-dot.incomplete{ border-color:rgba(255,176,32,.45); background:rgba(255,176,32,.2); }
+    .calendar-dot.empty{ border-color:rgba(148,163,184,.35); background:rgba(148,163,184,.16); }
+    .calendar-grid-wrap{ margin-top:10px; border:1px solid var(--border); border-radius:14px; overflow:auto; }
+    .calendar-grid{
+      width:100%;
+      border-collapse:collapse;
+      min-width:760px;
+    }
+    .calendar-grid th,
+    .calendar-grid td{
+      border-bottom:1px solid rgba(255,255,255,.07);
+      border-right:1px solid rgba(255,255,255,.07);
+      vertical-align:top;
+    }
+    .calendar-grid th:last-child,
+    .calendar-grid td:last-child{ border-right:none; }
+    .calendar-grid tr:last-child td{ border-bottom:none; }
+    .calendar-grid th{
+      color:var(--muted);
+      font-size:12px;
+      font-weight:700;
+      text-align:center;
+      padding:8px 6px;
+      background:rgba(255,255,255,.03);
+    }
+    .calendar-cell-empty{ min-height:94px; background:rgba(255,255,255,.015); }
+    .calendar-day{
+      display:block;
+      min-height:94px;
+      padding:8px;
+      text-decoration:none;
+      color:var(--text);
+      background:rgba(255,255,255,.015);
+      transition:background .18s ease;
+    }
+    .calendar-day:hover{ background:rgba(255,255,255,.05); }
+    .calendar-day.is-selected{ outline:2px solid rgba(79,124,255,.6); outline-offset:-2px; }
+    .calendar-day .day-top{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:6px;
+    }
+    .calendar-day .day-number{
+      font-size:14px;
+      font-weight:800;
+      line-height:1;
+    }
+    .calendar-day .day-status{
+      margin-top:6px;
+      font-size:11px;
+      font-weight:700;
+      display:inline-flex;
+      border-radius:999px;
+      padding:2px 8px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.05);
+    }
+    .calendar-day.complete .day-status{ border-color:rgba(45,211,145,.45); color:#ccffea; background:rgba(45,211,145,.16); }
+    .calendar-day.incomplete .day-status{ border-color:rgba(255,176,32,.45); color:#ffe7ad; background:rgba(255,176,32,.18); }
+    .calendar-day.empty .day-status{ border-color:rgba(148,163,184,.35); color:#dce7ff; background:rgba(148,163,184,.14); }
+    .calendar-day .day-meta{
+      margin-top:6px;
+      font-size:11px;
+      color:var(--muted);
+      line-height:1.3;
+    }
+    .day-detail{
+      margin-top:10px;
+      border:1px solid var(--border);
+      border-radius:12px;
+      background:rgba(255,255,255,.03);
+      padding:12px;
+      display:grid;
+      gap:8px;
+    }
+    .day-detail h3{ margin:0; font-size:15px; }
+    .day-detail-line{ font-size:13px; color:var(--muted); }
+    .day-detail-line strong{ color:var(--text); }
     .table-title{ margin:0; }
     .table-subtitle{ margin:7px 0 0; color:var(--muted); font-size:13px; }
     .table-wrap{ margin-top:12px; border:1px solid var(--border); border-radius:14px; overflow:auto; }
     .table{
       width:100%;
       border-collapse: collapse;
-      min-width:700px;
+      min-width:920px;
     }
     .table th, .table td{
       text-align:left;
@@ -73,8 +194,34 @@
     .table th{ color:var(--muted); font-weight:700; }
     .table tr:last-child td{ border-bottom:none; }
     .table tbody tr:hover td{ background:rgba(255,255,255,.03); }
-    .meta{ color:var(--muted); font-size:13px; margin-top:12px; display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; }
-    .pager{ display:flex; gap:8px; }
+    .status-badge{
+      display:inline-flex;
+      border:1px solid var(--border);
+      border-radius:999px;
+      padding:4px 10px;
+      font-size:12px;
+      font-weight:700;
+      background:rgba(255,255,255,.05);
+    }
+    .status-badge.ok{
+      border-color:rgba(45,211,145,.38);
+      background:rgba(45,211,145,.12);
+      color:#ccffea;
+    }
+    .status-badge.warn{
+      border-color:rgba(255,176,32,.42);
+      background:rgba(255,176,32,.14);
+      color:#ffe7ad;
+    }
+    .meta{
+      margin-top:10px;
+      color:var(--muted);
+      font-size:13px;
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+    }
     .history-empty{
       display:grid;
       justify-items:start;
@@ -87,8 +234,9 @@
     .history-empty strong{ font-size:15px; }
     .history-empty p{ margin:0; color:var(--muted); font-size:13px; }
     @media (max-width:920px){
+      .summary-grid{ grid-template-columns: 1fr; }
       .filter-actions .btn,
-      .pager .btn{
+      .table-actions .btn{
         width:100%;
         justify-content:center;
       }
@@ -100,14 +248,14 @@
       <header class="panel-head">
         <div>
           <h2 class="panel-title">Filtros de historico</h2>
-          <p class="panel-subtitle">Selecione MEI e periodo para consultar lancamentos com contexto operacional.</p>
+          <p class="panel-subtitle">Selecione profissional e periodo para conferencia operacional diaria.</p>
         </div>
       </header>
       <form method="get" class="row" data-submit-once="true">
         <div class="field">
-          <label>MEI</label>
+          <label>Profissional</label>
           <select name="employee">
-            <option value="">Todos</option>
+            <option value="">Selecione...</option>
             {% for e in employees %}
               <option value="{{ e.id }}" {% if selected_employee and selected_employee == e.id|stringformat:"s" %}selected{% endif %}>
                 {{ e.full_name }} - {{ e.user.email|default:e.user.username }}
@@ -133,50 +281,165 @@
       </form>
     </section>
 
+    {% if selected_employee_obj %}
+      <section class="panel">
+        <h2 class="table-title">Calendario operacional mensal</h2>
+        <p class="table-subtitle">Leitura visual mensal para identificar rapidamente dias completos, incompletos e sem registros.</p>
+
+        <div class="calendar-head">
+          <h3 class="calendar-title">{{ calendar_month_label }}</h3>
+          <div class="calendar-nav">
+            <a class="btn" href="?{{ calendar_prev_query }}">Mes anterior</a>
+            <a class="btn" href="?{{ calendar_current_query }}">Mes atual</a>
+            <a class="btn" href="?{{ calendar_next_query }}">Proximo mes</a>
+          </div>
+        </div>
+
+        <div class="calendar-legend">
+          <span class="calendar-legend-item"><span class="calendar-dot complete"></span>Completo</span>
+          <span class="calendar-legend-item"><span class="calendar-dot incomplete"></span>Incompleto</span>
+          <span class="calendar-legend-item"><span class="calendar-dot empty"></span>Sem registros</span>
+        </div>
+
+        <div class="calendar-grid-wrap">
+          <table class="calendar-grid">
+            <thead>
+              <tr>
+                {% for weekday_label in calendar_weekday_labels %}
+                  <th>{{ weekday_label }}</th>
+                {% endfor %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for week in calendar_weeks %}
+                <tr>
+                  {% for day in week %}
+                    {% if day %}
+                      <td>
+                        <a class="calendar-day {{ day.status_key }} {% if day.is_selected %}is-selected{% endif %}" href="?{{ day.query }}">
+                          <div class="day-top">
+                            <span class="day-number">{{ day.day_number }}</span>
+                          </div>
+                          <span class="day-status">{{ day.status_label }}</span>
+                          <div class="day-meta">Qtd: {{ day.punches_count }} | {{ day.total_hours_hhmm }}</div>
+                        </a>
+                      </td>
+                    {% else %}
+                      <td><div class="calendar-cell-empty"></div></td>
+                    {% endif %}
+                  {% endfor %}
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="7">
+                    <div class="history-empty">
+                      <strong>Calendario sem dados para exibir.</strong>
+                      <p>Atualize o filtro do profissional para carregar a leitura mensal.</p>
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        {% if calendar_day_detail %}
+          <div class="day-detail">
+            <h3>Detalhe do dia {{ calendar_day_detail.date|date:"d/m/Y" }}</h3>
+            <div class="day-detail-line">Status do dia: <strong>{{ calendar_day_detail.status_label }}</strong></div>
+            <div class="day-detail-line">Quantidade de horarios: <strong>{{ calendar_day_detail.punches_count }}</strong></div>
+            <div class="day-detail-line">Horarios registrados: <strong>{{ calendar_day_detail.punches_label }}</strong></div>
+            <div class="day-detail-line">Total do dia: <strong>{{ calendar_day_detail.total_hours_hhmm }}</strong></div>
+          </div>
+        {% endif %}
+      </section>
+    {% endif %}
+
     <section class="panel">
-      <h2 class="table-title">Lancamentos de horario</h2>
-      <p class="table-subtitle">Timeline de marcacoes para conferencia de presenca, consistencia e acompanhamento continuo.</p>
+      <h2 class="table-title">Historico diario de conferencia</h2>
+      <p class="table-subtitle">Visualizacao tabular em estilo planilha para leitura rapida da operacao.</p>
+      <div class="meta">
+        <div>
+          {% if selected_employee_obj %}
+            Profissional: <strong>{{ selected_employee_obj.full_name }}</strong> | Periodo: <strong>{{ period_label }}</strong>
+          {% else %}
+            Selecione um profissional para carregar a tabela de conferencia.
+          {% endif %}
+        </div>
+      </div>
+
+      {% if selected_employee_obj %}
+        <div class="summary-grid" style="margin-top:12px;">
+          <article class="summary-item">
+            <div class="k">Dias com registro</div>
+            <div class="v">{{ summary_days_with_records }}</div>
+            <div class="h">Dias com pelo menos 1 horario</div>
+          </article>
+          <article class="summary-item">
+            <div class="k">Total de horarios</div>
+            <div class="v">{{ summary_total_punches }}</div>
+            <div class="h">Marcacoes no periodo filtrado</div>
+          </article>
+          <article class="summary-item">
+            <div class="k">Total de horas</div>
+            <div class="v">{{ summary_total_hours }}</div>
+            <div class="h">Soma consolidada por dia</div>
+          </article>
+          <article class="summary-item">
+            <div class="k">Dias incompletos</div>
+            <div class="v">{{ summary_incomplete_days }}</div>
+            <div class="h">Dias com quantidade impar de horarios</div>
+          </article>
+        </div>
+
+        <div class="table-actions">
+          <a class="btn" href="?employee={{ selected_employee }}&date_from={{ period_form.date_from.value|default:'' }}&date_to={{ period_form.date_to.value|default:'' }}&export=pdf">Exportar PDF</a>
+          <a class="btn" href="?employee={{ selected_employee }}&date_from={{ period_form.date_from.value|default:'' }}&date_to={{ period_form.date_to.value|default:'' }}&export=xlsx">Exportar Excel</a>
+          <a class="btn" href="?employee={{ selected_employee }}&date_from={{ period_form.date_from.value|default:'' }}&date_to={{ period_form.date_to.value|default:'' }}&export=csv">Exportar CSV</a>
+        </div>
+      {% endif %}
+
       <div class="table-wrap">
         <table class="table">
           <thead>
             <tr>
-              <th>MEI</th>
               <th>Data</th>
-              <th>Hora</th>
+              <th>Quantidade de horarios</th>
+              <th>Horarios registrados</th>
+              <th>Total do dia</th>
+              <th>Status do dia</th>
             </tr>
           </thead>
           <tbody>
-            {% for p in punches %}
+            {% for row in history_rows %}
               <tr>
-                <td>{{ p.contract.employee.full_name|default:p.contract.employee.user.email|default:p.contract.employee.user.username }}</td>
-                <td>{{ p.timestamp|date:"d/m/Y" }}</td>
-                <td>{{ p.timestamp|date:"H:i" }}</td>
+                <td>{{ row.date|date:"d/m/Y" }}</td>
+                <td>{{ row.punches_count }}</td>
+                <td>{{ row.punches_label }}</td>
+                <td>{{ row.total_hours_hhmm }}</td>
+                <td>
+                  <span class="status-badge {% if row.status_tone == 'warn' %}warn{% else %}ok{% endif %}">
+                    {{ row.status_label }}
+                  </span>
+                </td>
               </tr>
             {% empty %}
               <tr>
-                <td colspan="3">
+                <td colspan="5">
                   <div class="history-empty">
-                    <strong>Nenhum lancamento encontrado.</strong>
-                    <p>Amplie o periodo ou selecione outro MEI para localizar registros da operacao.</p>
-                    <a class="btn primary" href="{% url 'dashboard_empresa' %}">Ir para dashboard da empresa</a>
+                    {% if selected_employee_obj %}
+                      <strong>Nenhum horario encontrado no periodo.</strong>
+                      <p>Ajuste o periodo selecionado para carregar os dias de registro.</p>
+                    {% else %}
+                      <strong>Selecione um profissional para iniciar a conferencia.</strong>
+                      <p>A tabela diaria e as exportacoes ficam disponiveis apos escolher o profissional.</p>
+                    {% endif %}
                   </div>
                 </td>
               </tr>
             {% endfor %}
           </tbody>
         </table>
-      </div>
-
-      <div class="meta">
-        <div>Mostrando {{ showing_count }} de {{ total_count }} lancamento(s)</div>
-        <div class="pager">
-          {% if prev_query %}
-            <a class="btn" href="?{{ prev_query }}">Anterior</a>
-          {% endif %}
-          {% if next_query %}
-            <a class="btn" href="?{{ next_query }}">Proxima</a>
-          {% endif %}
-        </div>
       </div>
     </section>
   </div>
