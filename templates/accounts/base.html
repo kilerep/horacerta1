@@ -85,7 +85,7 @@
                     </strong>
                     <div class="muted item-sub">
                       {% if header_can_use_advanced_reports %}
-                        analise e exportacao
+                        servico e atividades
                       {% else %}
                         recurso disponivel a partir de {{ header_reports_required_plan_name|default:"plano premium" }}
                       {% endif %}
@@ -113,6 +113,10 @@
                 <a class="item {% if current == 'company_history' or current == 'company_history_legacy' %}is-active{% endif %}" href="{% url 'company_history' %}">
                   <div class="icon">H</div>
                   <div><strong>Historico</strong><div class="muted item-sub">lancamentos e consulta por periodo</div></div>
+                </a>
+                <a class="item {% if current == 'company_operational_summary' %}is-active{% endif %}" href="{% url 'company_operational_summary' %}">
+                  <div class="icon">O</div>
+                  <div><strong>Resumo Operacional</strong><div class="muted item-sub">conferencia por profissional</div></div>
                 </a>
               </div>
               <div class="menu-group">

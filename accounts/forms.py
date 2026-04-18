@@ -12,72 +12,36 @@ User = get_user_model()
 
 
 class UnifiedSignupForm(forms.Form):
-    ROLE_CHOICES = (
-        ("EMPRESA", "Empresa (RH/Admin)"),
-        ("FUNCIONARIO", "Funcionario / MEI"),
-    )
-
-    account_type = forms.ChoiceField(
-        label="Tipo de conta",
-        choices=ROLE_CHOICES,
-        widget=forms.RadioSelect,
-    )
-
-    # Campos EMPRESA
     company_name = forms.CharField(label="Nome da empresa", max_length=120, required=False)
     company_email = forms.EmailField(label="Email da empresa (opcional)", required=False)
     rh_email = forms.EmailField(label="Email do RH/Admin", required=False)
-
-    # Campos MEI
-    full_name = forms.CharField(label="Nome completo", max_length=120, required=False)
-    mei_email = forms.EmailField(label="Email do MEI", required=False)
-
-    # Senha (para ambos)
     password1 = forms.CharField(label="Senha", widget=forms.PasswordInput)
     password2 = forms.CharField(label="Confirmar senha", widget=forms.PasswordInput)
 
-    def _clear_irrelevant_fields(self, field_names):
-        # Remove erros e valores de campos que nao pertencem ao tipo escolhido.
-        for field_name in field_names:
-            self.cleaned_data[field_name] = ""
-            if field_name in self.errors:
-                del self.errors[field_name]
-
     def clean(self):
         data = super().clean()
-
-        acc_type = data.get("account_type")
         pwd1 = data.get("password1")
         pwd2 = data.get("password2")
 
         if pwd1 != pwd2:
             self.add_error("password2", "As senhas nao conferem.")
 
-        if acc_type == "EMPRESA":
-            self._clear_irrelevant_fields(("full_name", "mei_email"))
+        company_name = (data.get("company_name") or "").strip()
+        if not company_name:
+            self.add_error("company_name", "Informe o nome da empresa.")
+        else:
+            data["company_name"] = company_name
 
-            if not data.get("company_name"):
-                self.add_error("company_name", "Informe o nome da empresa.")
+        company_email = (data.get("company_email") or "").strip().lower()
+        data["company_email"] = company_email
 
-            if not data.get("rh_email"):
-                self.add_error("rh_email", "Informe o email do RH/Admin.")
-            else:
-                email = data["rh_email"].strip().lower()
-                if User.objects.filter(email__iexact=email).exists() or User.objects.filter(username__iexact=email).exists():
-                    self.add_error("rh_email", "Ja existe um usuario com esse email.")
-
-        elif acc_type == "FUNCIONARIO":
-            self._clear_irrelevant_fields(("company_name", "company_email", "rh_email"))
-
-            if not data.get("full_name"):
-                self.add_error("full_name", "Informe seu nome completo.")
-
-            if not data.get("mei_email"):
-                self.add_error("mei_email", "Informe seu email.")
-            else:
-                email = data["mei_email"].strip().lower()
-                if User.objects.filter(email__iexact=email).exists() or User.objects.filter(username__iexact=email).exists():
-                    self.add_error("mei_email", "Ja existe um usuario com esse email.")
+        rh_email = (data.get("rh_email") or "").strip().lower()
+        if not rh_email:
+            self.add_error("rh_email", "Informe o email do RH/Admin.")
+        else:
+            data["rh_email"] = rh_email
+            if User.objects.filter(email__iexact=rh_email).exists() or User.objects.filter(username__iexact=rh_email).exists():
+                self.add_error("rh_email", "Ja existe um usuario com esse email.")
 
         return data
 

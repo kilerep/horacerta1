@@ -9,8 +9,6 @@
   var form = document.getElementById("hcPunchForm");
   var punchBtn = document.getElementById("hcPunchBtn");
   var punchLabel = punchBtn ? punchBtn.querySelector(".hc-punch-btn__label") : null;
-  var obsToggle = document.getElementById("hcObsToggle");
-  var obsWrap = document.getElementById("hcObsWrap");
 
   var manualOpenBtn = document.getElementById("hcManualOpen");
   var manualModal = document.getElementById("hcManualModal");
@@ -126,17 +124,6 @@
     window.addEventListener("pageshow", function () {
       form.dataset.submitting = "0";
       setSubmittingState(false);
-    });
-  }
-
-  function bindObservationToggle() {
-    if (!obsToggle || !obsWrap) return;
-
-    obsToggle.addEventListener("click", function () {
-      var isOpen = obsWrap.classList.toggle("is-open");
-      obsWrap.setAttribute("aria-hidden", isOpen ? "false" : "true");
-      obsToggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
-      obsToggle.textContent = isOpen ? "Ocultar observacao" : "Adicionar observacao";
     });
   }
 
@@ -343,7 +330,6 @@
   applyGreetingAndDate(new Date());
   renderClock();
   bindPunchSubmit();
-  bindObservationToggle();
   bindManualModal();
 
   setInterval(renderClock, 1000);

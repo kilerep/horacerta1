@@ -1,0 +1,223 @@
+{% extends "accounts/base.html" %}
+{% block title %}Resumo Operacional da Empresa{% endblock %}
+{% block page_title %}Resumo Operacional da Empresa{% endblock %}
+
+{% block content %}
+  <style>
+    .ops-wrap{ display:grid; gap:14px; }
+    .panel{
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      background:
+        linear-gradient(140deg, rgba(79,124,255,.10), transparent 44%),
+        linear-gradient(180deg, rgba(250,204,21,.06), rgba(255,255,255,.03));
+      padding:18px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.03), 0 12px 28px rgba(3,7,20,.28);
+    }
+    .panel-head{ display:flex; justify-content:space-between; gap:10px; align-items:flex-start; flex-wrap:wrap; }
+    .panel-title{ margin:0; }
+    .panel-sub{ margin:7px 0 0; color:var(--muted); font-size:13px; }
+    .cards{
+      display:grid;
+      grid-template-columns: repeat(5, minmax(130px, 1fr));
+      gap:10px;
+    }
+    .card{
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:12px;
+      background:rgba(255,255,255,.03);
+      display:grid;
+      gap:5px;
+    }
+    .card .k{ color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+    .card .v{ font-size:24px; font-weight:800; }
+    .card .h{ color:var(--muted); font-size:12px; }
+    .filter-grid{
+      display:grid;
+      grid-template-columns: repeat(4, minmax(180px, 1fr));
+      gap:10px;
+      align-items:end;
+    }
+    .field{ display:grid; gap:6px; }
+    label{ color:var(--muted); font-size:13px; font-weight:700; }
+    input, select{
+      width:100%;
+      min-height:42px;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.06);
+      color:var(--text);
+      outline:none;
+      transition:border-color .18s ease, box-shadow .18s ease, background .18s ease;
+    }
+    input[type="date"]{ color-scheme:dark; }
+    input:focus, select:focus{
+      border-color:rgba(79,124,255,.55);
+      box-shadow:0 0 0 3px rgba(79,124,255,.16);
+      background:rgba(255,255,255,.08);
+    }
+    .actions{ display:flex; gap:8px; flex-wrap:wrap; }
+    .table-wrap{ margin-top:12px; border:1px solid var(--border); border-radius:14px; overflow:auto; }
+    .table{ width:100%; border-collapse:collapse; min-width:920px; }
+    .table th,.table td{
+      text-align:left;
+      padding:12px 10px;
+      border-bottom:1px solid rgba(255,255,255,.07);
+      font-size:14px;
+      vertical-align:middle;
+    }
+    .table th{ color:var(--muted); font-weight:700; }
+    .table tr:last-child td{ border-bottom:none; }
+    .table tbody tr:hover td{ background:rgba(255,255,255,.03); }
+    .status{
+      display:inline-flex;
+      align-items:center;
+      border-radius:999px;
+      padding:4px 10px;
+      font-size:12px;
+      font-weight:700;
+      border:1px solid transparent;
+    }
+    .status.empty{ background:rgba(148,163,184,.16); color:#cbd5e1; border-color:rgba(148,163,184,.35); }
+    .status.warn{ background:rgba(248,113,113,.15); color:#fecaca; border-color:rgba(248,113,113,.35); }
+    .status.ok{ background:rgba(16,185,129,.15); color:#bbf7d0; border-color:rgba(16,185,129,.35); }
+    .empty{
+      border:1px dashed rgba(255,255,255,.2);
+      border-radius:12px;
+      padding:12px;
+      background:rgba(255,255,255,.03);
+      color:var(--muted);
+    }
+    @media (max-width:1100px){
+      .cards{ grid-template-columns: repeat(2, minmax(140px, 1fr)); }
+      .filter-grid{ grid-template-columns: repeat(2, minmax(140px, 1fr)); }
+    }
+    @media (max-width:760px){
+      .cards, .filter-grid{ grid-template-columns: 1fr; }
+      .actions .btn{ width:100%; justify-content:center; }
+    }
+  </style>
+
+  <div class="ops-wrap">
+    <section class="panel">
+      <header class="panel-head">
+        <div>
+          <h2 class="panel-title">Resumo do periodo</h2>
+          <p class="panel-sub">Visao operacional para conferencia rapida da jornada por profissional.</p>
+        </div>
+      </header>
+      <div class="cards">
+        <article class="card">
+          <div class="k">Profissionais com registro</div>
+          <div class="v">{{ summary_professionals_with_records }}</div>
+          <div class="h">Com batidas no intervalo selecionado</div>
+        </article>
+        <article class="card">
+          <div class="k">Total de batidas</div>
+          <div class="v">{{ summary_total_punches }}</div>
+          <div class="h">Soma de registros de horario</div>
+        </article>
+        <article class="card">
+          <div class="k">Total de horas</div>
+          <div class="v">{{ summary_total_hours }}</div>
+          <div class="h">Acumulado do periodo</div>
+        </article>
+        <article class="card">
+          <div class="k">Dias incompletos</div>
+          <div class="v">{{ summary_total_incomplete_days }}</div>
+          <div class="h">Dias com jornada incompleta</div>
+        </article>
+        <article class="card">
+          <div class="k">Periodo</div>
+          <div class="v" style="font-size:18px;">{{ period_label }}</div>
+          <div class="h">Filtro em uso</div>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel">
+      <header class="panel-head">
+        <div>
+          <h2 class="panel-title">Filtros operacionais</h2>
+          <p class="panel-sub">Aplique periodo e profissional para acompanhar a operacao com foco diario.</p>
+        </div>
+      </header>
+      <form method="get" class="filter-grid" data-submit-once="true">
+        <div class="field">
+          <label>{{ period_form.date_from.label }}</label>
+          {{ period_form.date_from }}
+        </div>
+        <div class="field">
+          <label>{{ period_form.date_to.label }}</label>
+          {{ period_form.date_to }}
+        </div>
+        <div class="field">
+          <label>Profissional</label>
+          <select name="employee">
+            <option value="">Todos</option>
+            {% for e in employees %}
+              <option value="{{ e.id }}" {% if selected_employee and selected_employee == e.id|stringformat:"s" %}selected{% endif %}>
+                {{ e.full_name }} - {{ e.user.email|default:e.user.username }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label>Empresa/Unidade</label>
+          <select name="scope">
+            <option value="company" selected>{{ company.name|default:"Empresa atual" }}</option>
+          </select>
+        </div>
+        <div class="actions">
+          <button class="btn primary" type="submit" data-loading-text="Atualizando resumo...">Atualizar resumo</button>
+          <a class="btn" href="{% url 'company_operational_summary' %}">Limpar filtros</a>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel">
+      <header class="panel-head">
+        <div>
+          <h2 class="panel-title">Resumo por profissional</h2>
+          <p class="panel-sub">Dias com registro, batidas, horas e status geral no periodo.</p>
+        </div>
+      </header>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Profissional</th>
+              <th>Dias com registro</th>
+              <th>Total de batidas</th>
+              <th>Total de horas</th>
+              <th>Dias incompletos</th>
+              <th>Status</th>
+              <th>Detalhes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in employee_rows %}
+              <tr>
+                <td>{{ row.employee.full_name|default:row.employee.user.email|default:row.employee.user.username }}</td>
+                <td>{{ row.days_with_records }}</td>
+                <td>{{ row.total_punches }}</td>
+                <td>{{ row.total_hours_hhmm }}</td>
+                <td>{{ row.incomplete_days }}</td>
+                <td><span class="status {{ row.status_kind }}">{{ row.status_label }}</span></td>
+                <td><a class="btn" href="{{ row.details_url }}">Ver detalhes</a></td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="7">
+                  <div class="empty">Nenhum profissional encontrado para os filtros selecionados.</div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+{% endblock %}

@@ -48,6 +48,7 @@ urlpatterns = [
     path("empresa/meis/<uuid:employee_id>/", views.company_mei_profile, name="company_mei_profile"),
     path("empresa/contratos/", views.company_contracts, name="company_contracts"),
     path("empresa/relatorios/", views.company_reports, name="company_reports"),
+    path("empresa/resumo-operacional/", views.company_operational_summary, name="company_operational_summary"),
     path("empresa/pendencias/", views.company_incident_center, name="company_incident_center"),
     path("dashboard/history/", views.company_history, name="company_history"),
     path("empresa/historico/", views.company_history, name="company_history_legacy"),

@@ -90,13 +90,6 @@
     .table th{ color:var(--muted); font-weight:700; }
     .table tr:last-child td{ border-bottom:none; }
     .table tbody tr:hover td{ background:rgba(255,255,255,.03); }
-    .table .notes-cell{
-      white-space:normal;
-      word-break:break-word;
-      overflow-wrap:anywhere;
-      min-width:240px;
-      max-width:420px;
-    }
     .table-wrap{
       overflow-x:auto;
       border:1px solid var(--border);
@@ -120,14 +113,6 @@
     }
     .report-card .line{ font-size:13px; color:var(--muted); }
     .report-card .line strong{ color:var(--text); font-size:14px; }
-    .report-card .obs{
-      border-top:1px dashed rgba(255,255,255,.14);
-      padding-top:8px;
-      white-space:normal;
-      word-break:break-word;
-      overflow-wrap:anywhere;
-      line-height:1.45;
-    }
     .muted{ color:var(--muted); }
     .reports-empty{
       display:grid;
@@ -160,7 +145,7 @@
       <header class="panel-head">
         <div>
           <h2 class="panel-title">Filtros e exportacoes</h2>
-          <p class="panel-subtitle">Configure o periodo e gere relatorios para analise e fechamento da operacao.</p>
+          <p class="panel-subtitle">Modulo de relatorio de servico, separado do fluxo de ponto. Use os filtros para analise gerencial.</p>
         </div>
       </header>
       <form method="get" class="row" style="margin-top:10px;" data-submit-once="true">
@@ -214,7 +199,7 @@
 
     <section class="panel">
       <h2 class="table-title">Relatorio diario de operacao</h2>
-      <p class="table-subtitle">Acompanhe data, profissional, status e total do dia para conferencia operacional.</p>
+      <p class="table-subtitle">Resumo de jornada por dia para leitura operacional. Justificativa de batida nao faz parte deste fluxo.</p>
 
       <div class="table-wrap">
         <table class="table">
@@ -226,7 +211,6 @@
               <th>Horarios</th>
               <th>Total do dia</th>
               <th>Status</th>
-              <th>Observacao</th>
             </tr>
           </thead>
           <tbody>
@@ -238,11 +222,10 @@
                 <td>{{ row.punches_label }}</td>
                 <td>{{ row.total_hours_hhmm }}</td>
                 <td>{{ row.status }}</td>
-                <td class="notes-cell">{% if row.has_note %}{{ row.note }}{% else %}<span class="muted">-</span>{% endif %}</td>
               </tr>
             {% empty %}
               <tr>
-                <td colspan="7">
+                <td colspan="6">
                   <div class="reports-empty">
                     <strong>Nenhum registro diario encontrado.</strong>
                     <p>Ajuste o periodo ou selecione outro MEI para gerar um relatorio detalhado.</p>
@@ -263,9 +246,6 @@
             <div class="line">Status: <strong>{{ row.status }}</strong></div>
             <div class="line">Total do dia: <strong>{{ row.total_hours_hhmm }}</strong></div>
             <div class="line">Horarios: <strong>{{ row.punches_label }}</strong></div>
-            {% if row.has_note %}
-              <div class="obs"><strong>Observacao:</strong> {{ row.note }}</div>
-            {% endif %}
           </article>
         {% empty %}
           <div class="reports-empty">
@@ -280,7 +260,7 @@
 
     <section id="request-report" class="panel">
       <h2 class="table-title">Solicitar detalhamento de atividades</h2>
-      <p class="table-subtitle">Peça ao MEI um retorno descritivo para complementar auditoria e conferencia do periodo.</p>
+      <p class="table-subtitle">Este bloco e para relatorio de servico/trabalho realizado, sem relacao com justificativa de batida.</p>
       <form method="post" class="row" style="margin-top:10px;" data-submit-once="true">
         {% csrf_token %}
         <input type="hidden" name="action" value="request_activity_report">

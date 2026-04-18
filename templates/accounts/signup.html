@@ -123,71 +123,6 @@
       line-height: 1.45;
     }
 
-    .mode-block {
-      margin-top: 16px;
-    }
-
-    .mode-label {
-      display: block;
-      margin: 0 0 8px;
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.03em;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
-
-    .type-grid {
-      display: grid;
-      gap: 10px;
-      grid-template-columns: repeat(2, minmax(180px, 1fr));
-    }
-
-    .type-option {
-      border: 1px solid var(--color-border);
-      border-radius: 14px;
-      background: var(--surface-raised);
-      padding: 12px 14px;
-      cursor: pointer;
-      display: flex;
-      gap: 10px;
-      align-items: flex-start;
-      transition: border-color 0.14s ease, background 0.14s ease, box-shadow 0.14s ease;
-    }
-
-    .type-option:hover {
-      border-color: var(--border-brand);
-      background: var(--menu-hover-bg);
-    }
-
-    .type-option input {
-      width: auto;
-      margin: 2px 0 0;
-    }
-
-    .type-option-text {
-      display: grid;
-      gap: 4px;
-    }
-
-    .type-option-title {
-      font-size: 0.92rem;
-      font-weight: 700;
-      line-height: 1.25;
-    }
-
-    .type-option-note {
-      font-size: 12px;
-      color: var(--muted);
-      line-height: 1.35;
-    }
-
-    .type-option.active {
-      border-color: var(--menu-active-border);
-      box-shadow: inset 0 0 0 1px var(--menu-active-border);
-      background: var(--menu-active-bg);
-    }
-
     .section {
       margin-top: 14px;
       border: 1px solid var(--color-border);
@@ -284,10 +219,6 @@
       font-size: 14px;
     }
 
-    [hidden] {
-      display: none !important;
-    }
-
     @media (min-width: 980px) {
       .signup-layout {
         grid-template-columns: minmax(260px, 0.9fr) minmax(440px, 1.1fr);
@@ -295,10 +226,6 @@
     }
 
     @media (max-width: 760px) {
-      .type-grid {
-        grid-template-columns: 1fr;
-      }
-
       .row {
         grid-template-columns: 1fr;
       }
@@ -314,49 +241,29 @@
   <div class="signup-wrap">
     <section class="signup-intro">
       <span class="signup-kicker">Primeiro passo</span>
-      <h1 class="signup-title">Criar conta no HoraCerta</h1>
+      <h1 class="signup-title">Criar conta da empresa no HoraCerta</h1>
       <p class="signup-sub">
-        Configure seu acesso em poucos minutos para comecar a operacao com mais controle, clareza e confianca.
+        Este cadastro publico e exclusivo para empresa, RH ou admin principal da organizacao.
       </p>
     </section>
 
     <div class="signup-layout">
       <aside class="signup-benefits">
-        <h2>Cadastro pensado para operacao real</h2>
-        <p>A estrutura de conta ja nasce alinhada ao fluxo do produto e facilita os proximos passos no sistema.</p>
+        <h2>Fluxo oficial de onboarding</h2>
+        <p>A empresa cria a conta principal aqui e depois cadastra os profissionais internamente no painel.</p>
         <ul>
-          <li>Organizacao inicial da empresa e do responsavel da conta.</li>
-          <li>Fluxo simples, com validacao clara em cada campo.</li>
-          <li>Base pronta para evoluir para rotina completa no painel.</li>
+          <li>Conta principal da organizacao (empresa/RH/admin).</li>
+          <li>Cadastro de profissionais via area interna da empresa.</li>
+          <li>Ativacao de profissional mantida em fluxo separado.</li>
         </ul>
       </aside>
 
       <section class="signup-card">
-        <h2 class="form-title">Dados da nova conta</h2>
-        <p class="form-sub">Preencha as informacoes abaixo para concluir seu cadastro com seguranca.</p>
+        <h2 class="form-title">Dados da conta principal da empresa</h2>
+        <p class="form-sub">Preencha as informacoes abaixo para criar o acesso inicial da organizacao.</p>
 
         <form method="post" novalidate>
           {% csrf_token %}
-
-          <div class="mode-block">
-            <span class="mode-label">{{ form.account_type.label }}</span>
-            <div class="type-grid" id="typeGrid">
-              {% for radio in form.account_type %}
-                <label class="type-option" data-type="{{ radio.data.value }}">
-                  {{ radio.tag }}
-                  <span class="type-option-text">
-                    <span class="type-option-title">{{ radio.choice_label }}</span>
-                    {% if radio.data.value == "EMPRESA" %}
-                      <span class="type-option-note">Fluxo principal para abertura da conta corporativa.</span>
-                    {% else %}
-                      <span class="type-option-note">Cadastro MEI geralmente acontece pela empresa no painel.</span>
-                    {% endif %}
-                  </span>
-                </label>
-              {% endfor %}
-            </div>
-            {% if form.account_type.errors %}<div class="field-error" role="alert">{{ form.account_type.errors }}</div>{% endif %}
-          </div>
 
           <section class="section" id="blockEmpresa">
             <div class="section-head">
@@ -378,25 +285,6 @@
                 <label for="{{ form.rh_email.id_for_label }}">{{ form.rh_email.label }}</label>
                 {{ form.rh_email }}
                 {% if form.rh_email.errors %}<div class="field-error" role="alert">{{ form.rh_email.errors }}</div>{% endif %}
-              </div>
-            </div>
-          </section>
-
-          <section class="section" id="blockMei" hidden>
-            <div class="section-head">
-              <h3>Dados do MEI</h3>
-              <p>Campos disponiveis para o fluxo alternativo de cadastro.</p>
-            </div>
-            <div class="row">
-              <div class="field">
-                <label for="{{ form.full_name.id_for_label }}">{{ form.full_name.label }}</label>
-                {{ form.full_name }}
-                {% if form.full_name.errors %}<div class="field-error" role="alert">{{ form.full_name.errors }}</div>{% endif %}
-              </div>
-              <div class="field">
-                <label for="{{ form.mei_email.id_for_label }}">{{ form.mei_email.label }}</label>
-                {{ form.mei_email }}
-                {% if form.mei_email.errors %}<div class="field-error" role="alert">{{ form.mei_email.errors }}</div>{% endif %}
               </div>
             </div>
           </section>
@@ -432,56 +320,4 @@
       </section>
     </div>
   </div>
-
-  <script>
-    (function () {
-      const empresaBlock = document.getElementById("blockEmpresa");
-      const meiBlock = document.getElementById("blockMei");
-      const typeCards = document.querySelectorAll(".type-option");
-      const radios = document.querySelectorAll('input[name="account_type"]');
-
-      const empresaFields = [
-        document.getElementById("id_company_name"),
-        document.getElementById("id_company_email"),
-        document.getElementById("id_rh_email")
-      ];
-      const meiFields = [
-        document.getElementById("id_full_name"),
-        document.getElementById("id_mei_email")
-      ];
-
-      function setDisabled(fields, disabled) {
-        fields.forEach(function (field) {
-          if (!field) return;
-          field.disabled = disabled;
-          if (disabled) field.value = "";
-        });
-      }
-
-      function paintActiveCard(currentType) {
-        typeCards.forEach(function (card) {
-          card.classList.toggle("active", card.dataset.type === currentType);
-        });
-      }
-
-      function setMode(type) {
-        const isMei = type === "FUNCIONARIO";
-        empresaBlock.hidden = isMei;
-        meiBlock.hidden = !isMei;
-
-        setDisabled(empresaFields, isMei);
-        setDisabled(meiFields, !isMei);
-        paintActiveCard(type);
-      }
-
-      radios.forEach(function (radio) {
-        radio.addEventListener("change", function () {
-          setMode(radio.value);
-        });
-      });
-
-      const checked = document.querySelector('input[name="account_type"]:checked');
-      setMode(checked ? checked.value : "EMPRESA");
-    })();
-  </script>
 {% endblock %}

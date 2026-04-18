@@ -219,43 +219,89 @@ main,
   text-shadow:0 10px 26px rgba(79,124,255,.28);
 }
 
-.hc-badge{
+.hc-journey-status{
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  margin:12px auto 0;
-  min-height:32px;
+  margin:14px auto 0;
+  min-height:34px;
   border-radius:999px;
   border:1px solid var(--border);
-  padding:6px 12px;
+  padding:6px 14px;
   font-size:12px;
-  font-weight:800;
+  font-weight:900;
+  letter-spacing:.02em;
   background:rgba(255,255,255,.06);
 }
 
-.hc-badge--warn{
-  border-color:rgba(250,204,21,.45);
-  background:rgba(250,204,21,.14);
-  color:#fff0b5;
-}
-
-.hc-badge--ok{
-  border-color:rgba(45,211,145,.45);
-  background:rgba(45,211,145,.14);
-  color:#dcffe9;
-}
-
-.hc-badge--neutral{
-  border-color:rgba(255,255,255,.18);
-  background:rgba(255,255,255,.06);
+.hc-journey-status--neutral{
+  border-color:rgba(255,255,255,.2);
   color:#dfe8ff;
+  background:rgba(255,255,255,.06);
 }
 
-.hc-badge-hint{
-  margin:6px 0 0;
-  font-size:12px;
+.hc-journey-status--progress{
+  border-color:rgba(79,124,255,.5);
+  color:#dbe7ff;
+  background:rgba(79,124,255,.18);
+}
+
+.hc-journey-status--warn{
+  border-color:rgba(250,204,21,.45);
+  color:#fff0b5;
+  background:rgba(250,204,21,.14);
+}
+
+.hc-journey-status--ok{
+  border-color:rgba(45,211,145,.45);
+  color:#dcffe9;
+  background:rgba(45,211,145,.14);
+}
+
+.hc-journey-next{
+  margin:8px 0 0;
   color:var(--muted);
-  min-height:16px;
+  font-size:13px;
+  line-height:1.45;
+}
+
+.hc-journey-summary{
+  margin-top:12px;
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0, 1fr));
+  gap:8px;
+  text-align:left;
+}
+
+.hc-journey-card{
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:14px;
+  padding:10px;
+  background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+}
+
+.hc-journey-k{
+  display:block;
+  color:var(--muted);
+  font-size:12px;
+}
+
+.hc-journey-v{
+  margin-top:4px;
+  display:block;
+  font-size:18px;
+  line-height:1.2;
+}
+
+.hc-journey-today{
+  margin-top:12px;
+  text-align:left;
+}
+
+.hc-journey-today-title{
+  margin:0 0 8px;
+  font-size:14px;
+  font-weight:800;
 }
 
 .hc-action-stack{
@@ -549,6 +595,10 @@ body.hc-modal-open{
   }
 
   .hc-meta-grid{
+    grid-template-columns:1fr;
+  }
+
+  .hc-journey-summary{
     grid-template-columns:1fr;
   }
 }

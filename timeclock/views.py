@@ -124,11 +124,9 @@ def employee_dashboard(request):
         )
 
     if request.method == "POST" and request.POST.get("action") == "punch":
-        note = (request.POST.get("note") or "").strip()
         Punch.objects.create(
             contract=selected_contract,
             timestamp=timezone.now(),
-            note=note,
         )
         return redirect(f"{request.path}?event=punch_saved&contract={selected_contract.id}")
 
@@ -149,9 +147,14 @@ def employee_dashboard(request):
         end_dt = timezone.make_aware(datetime.combine(today, time.max))
         qs_filtered = qs.filter(timestamp__range=(start_dt, end_dt))
 
-    total_punches_today = punches_today.count()
-    today_summary, _today_columns = build_daily_summary(punches_today, min_punch_columns=4)
+    punches_today_list = list(punches_today)
+    total_punches_today = len(punches_today_list)
+    today_summary, _today_columns = build_daily_summary(punches_today_list, min_punch_columns=4)
     status_today = today_summary[0]["status"] if today_summary else "INCOMPLETO"
+    today_total_partial_hhmm = today_summary[0]["total_hours_hhmm"] if today_summary else "00:00"
+    last_punch_today = punches_today_list[-1] if punches_today_list else None
+    last_punch_today_label = timezone.localtime(last_punch_today.timestamp).strftime("%H:%M") if last_punch_today else "-"
+    today_punch_times = [timezone.localtime(punch.timestamp).strftime("%H:%M") for punch in punches_today_list]
     now_local = timezone.localtime()
     current_hour = now_local.hour
     if 5 <= current_hour <= 11:
@@ -161,6 +164,26 @@ def employee_dashboard(request):
     else:
         greeting = "Boa noite"
     day_status_label = "Dia fechado" if total_punches_today % 2 == 0 else "Dia em andamento"
+    if total_punches_today == 0:
+        journey_status_key = "no_records"
+        journey_status_label = "Sem registros hoje"
+        journey_status_tone = "neutral"
+        journey_next_action = "Registre a primeira batida do dia para iniciar a jornada."
+    elif total_punches_today % 2 == 1 and current_hour >= 20:
+        journey_status_key = "incomplete"
+        journey_status_label = "Dia incompleto"
+        journey_status_tone = "warn"
+        journey_next_action = "Dia encerrado com batida pendente. Ajustes operacionais devem ser tratados com o encarregado."
+    elif total_punches_today % 2 == 1:
+        journey_status_key = "in_progress"
+        journey_status_label = "Jornada em andamento"
+        journey_status_tone = "progress"
+        journey_next_action = "Registre a proxima batida ao concluir a etapa atual da jornada."
+    else:
+        journey_status_key = "finished"
+        journey_status_label = "Dia finalizado"
+        journey_status_tone = "ok"
+        journey_next_action = "Jornada do dia fechada. Acompanhe o historico e os totais para conferencia."
 
     history_filtered = list(qs_filtered.order_by("timestamp"))
     history_days, history_punch_columns = build_daily_summary(history_filtered, min_punch_columns=4)
@@ -177,6 +200,13 @@ def employee_dashboard(request):
         "greeting": greeting,
         "today_date": now_local.date(),
         "day_status_label": day_status_label,
+        "journey_status_key": journey_status_key,
+        "journey_status_label": journey_status_label,
+        "journey_status_tone": journey_status_tone,
+        "journey_next_action": journey_next_action,
+        "today_total_partial_hhmm": today_total_partial_hhmm,
+        "last_punch_today_label": last_punch_today_label,
+        "today_punch_times": today_punch_times,
         "history": qs_filtered.order_by("-timestamp")[:200],
         "history_days": history_days_desc,
         "recent_history_days": recent_history_days,
@@ -199,7 +229,6 @@ def create_manual_punches(request):
 
     contract_id = (request.POST.get("contract") or "").strip()
     manual_date_raw = (request.POST.get("manual_date") or "").strip()
-    note = (request.POST.get("note") or "").strip()
     raw_times = request.POST.getlist("times")
 
     errors = []
@@ -284,7 +313,6 @@ def create_manual_punches(request):
             Punch.objects.create(
                 contract=contract,
                 timestamp=manual_timestamp,
-                note=note,
                 is_manual=True,
             )
 
@@ -295,24 +323,6 @@ def create_manual_punches(request):
             "contract_id": str(contract.id),
         }
     )
-
-
-@login_required
-def edit_punch_note(request, punch_id):
-    punch = get_object_or_404(
-        Punch,
-        id=punch_id,
-        contract__employee__user=request.user,
-        contract__is_active=True,
-    )
-    contract_id = request.GET.get("contract") or str(punch.contract.id)
-
-    if request.method == "POST":
-        punch.note = (request.POST.get("note") or "").strip()
-        punch.save(update_fields=["note"])
-        return redirect(f"/me/?contract={contract_id}")
-
-    return render(request, "accounts/punch_note_edit.html", {"punch": punch, "contract_id": contract_id})
 
 
 @login_required
@@ -343,7 +353,7 @@ def export_csv(request):
     header = ["Empresa", "Data"]
     for idx in range(1, max_punches + 1):
         header.append(f"horário {idx}")
-    header.extend(["Observacoes", "Total Horas (HH:MM)", "Status"])
+    header.extend(["Total Horas (HH:MM)", "Status"])
     writer.writerow(header)
 
     for row in sorted(daily_rows, key=lambda x: x["date"], reverse=True):
@@ -352,7 +362,6 @@ def export_csv(request):
                 contract.company.name,
                 row["date"].strftime("%d/%m/%Y"),
                 *row["punch_columns"],
-                row["notes_summary"],
                 row["total_hours_hhmm"],
                 row["status"],
             ]
@@ -391,7 +400,7 @@ def export_xlsx(request):
     ws = wb.active
     ws.title = "horários"
 
-    headers = ["Funcionario", "Empresa", "Data", "Hora", "Observacao"]
+    headers = ["Funcionario", "Empresa", "Data", "Hora"]
     ws.append(headers)
     for cell in ws[1]:
         cell.font = Font(bold=True)
@@ -400,7 +409,7 @@ def export_xlsx(request):
 
     for punch in punches:
         local_ts = timezone.localtime(punch.timestamp)
-        ws.append([employee_name, contract.company.name, local_ts.date(), local_ts.time(), punch.note or ""])
+        ws.append([employee_name, contract.company.name, local_ts.date(), local_ts.time()])
 
     for row in ws.iter_rows(min_row=2, max_row=ws.max_row):
         row[2].number_format = "DD/MM/YYYY"
@@ -410,23 +419,22 @@ def export_xlsx(request):
     ws.column_dimensions["B"].width = 28
     ws.column_dimensions["C"].width = 14
     ws.column_dimensions["D"].width = 12
-    ws.column_dimensions["E"].width = 50
 
     daily_rows, _max_cols = build_daily_summary(punches, min_punch_columns=4)
     total_seconds = sum(row["total_seconds"] for row in daily_rows)
     total_hours_hhmm = format_hhmm(total_seconds)
 
     ws.append([])
-    ws.append(["Resumo", "", "", "", ""])
+    ws.append(["Resumo", "", "", ""])
     ws[f"A{ws.max_row}"].font = Font(bold=True)
     period_label = (
         f"{start_date.strftime('%d/%m/%Y')} ate {end_date.strftime('%d/%m/%Y')}"
         if start_date and end_date
         else "Periodo completo"
     )
-    ws.append(["Periodo", period_label, "", "", ""])
-    ws.append(["Total de horários", len(punches), "", "", ""])
-    ws.append(["Total de horas", total_hours_hhmm, "", "", ""])
+    ws.append(["Periodo", period_label, "", ""])
+    ws.append(["Total de horários", len(punches), "", ""])
+    ws.append(["Total de horas", total_hours_hhmm, "", ""])
 
     output = BytesIO()
     wb.save(output)

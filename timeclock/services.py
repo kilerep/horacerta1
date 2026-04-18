@@ -60,12 +60,7 @@ def build_daily_summary(punches, min_punch_columns=4):
     for punch in punches:
         local_ts = timezone.localtime(punch.timestamp)
         day = local_ts.date()
-        by_day.setdefault(day, []).append(
-            {
-                "local_ts": local_ts,
-                "note": (punch.note or "").strip(),
-            }
-        )
+        by_day.setdefault(day, []).append({"local_ts": local_ts})
 
     rows = []
     max_columns = min_punch_columns
@@ -75,13 +70,12 @@ def build_daily_summary(punches, min_punch_columns=4):
 
         total_seconds, is_incomplete = compute_day_total([item["local_ts"] for item in points])
 
-        notes = [item["note"] for item in points if item["note"]]
         rows.append(
             {
                 "date": day,
                 "punches_count": len(points),
                 "punch_times": [format_punch_time(item["local_ts"]) for item in points],
-                "notes_summary": " | ".join(notes[:3]) + (" ..." if len(notes) > 3 else ""),
+                "notes_summary": "",
                 "total_seconds": total_seconds,
                 "total_hours_hhmm": format_hhmm(total_seconds),
                 "status": "INCOMPLETO" if is_incomplete else "OK",

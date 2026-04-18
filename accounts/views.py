@@ -1,4 +1,4 @@
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from decimal import Decimal
 from io import BytesIO
 from urllib.parse import urlencode, urlparse
@@ -363,29 +363,21 @@ def signup(request):
     if request.method == "POST":
         form = UnifiedSignupForm(request.POST)
         if form.is_valid():
-            acc_type = form.cleaned_data["account_type"]
             pwd = form.cleaned_data["password1"]
-
-            if acc_type == "EMPRESA":
-                rh_email = form.cleaned_data["rh_email"].strip().lower()
-                user = User.objects.create_user(
-                    username=rh_email,
-                    email=rh_email,
-                    password=pwd,
-                    role=User.Role.EMPRESA,
-                )
-                Company.objects.create(
-                    name=form.cleaned_data["company_name"].strip(),
-                    email=form.cleaned_data.get("company_email") or None,
-                    owner=user,
-                )
-                login(request, user, backend="accounts.backends.EmailOrUsernameBackend")
-                return _redirect_for_role(user)
-
-            form.add_error(
-                "account_type",
-                "Cadastro de MEI e feito pela empresa, na area de MEIs.",
+            rh_email = form.cleaned_data["rh_email"]
+            user = User.objects.create_user(
+                username=rh_email,
+                email=rh_email,
+                password=pwd,
+                role=User.Role.EMPRESA,
             )
+            Company.objects.create(
+                name=form.cleaned_data["company_name"],
+                email=form.cleaned_data.get("company_email") or None,
+                owner=user,
+            )
+            login(request, user, backend="accounts.backends.EmailOrUsernameBackend")
+            return _redirect_for_role(user)
     else:
         form = UnifiedSignupForm()
 
@@ -581,6 +573,11 @@ def dashboard_empresa(request):
         punch_rows.append({"punch": punch, "mei_name": mei_name})
 
     quick_links = [
+        {
+            "label": "Resumo operacional",
+            "url": reverse("company_operational_summary"),
+            "hint": "Visao por profissional no periodo",
+        },
         {"label": "Gerenciar profissionais", "url": reverse("company_meis"), "hint": "Cadastro e status dos MEIs"},
         {"label": "Ver vinculos", "url": reverse("company_contracts"), "hint": "Lista, status e edicao"},
         {"label": "Abrir historico", "url": reverse("company_history"), "hint": "Conferencia por periodo"},
@@ -983,6 +980,141 @@ def company_history(request):
 
 
 @login_required
+def company_operational_summary(request):
+    denied = _redirect_if_not_empresa(request)
+    if denied:
+        return denied
+
+    company = _company_for_user(request.user)
+    period_form = PeriodSearchForm(request.GET or None)
+    employees_qs = (
+        Employee.objects.filter(company=company).select_related("user").order_by("full_name")
+        if company
+        else Employee.objects.none()
+    )
+
+    selected_employee = (request.GET.get("employee") or "").strip()
+    selected_scope = (request.GET.get("scope") or "company").strip().lower()
+    if selected_scope not in {"company"}:
+        selected_scope = "company"
+
+    today = timezone.localdate()
+    first_day = today.replace(day=1)
+    date_from = first_day
+    date_to = today
+    if period_form.is_valid():
+        date_from = period_form.cleaned_data.get("date_from") or first_day
+        date_to = period_form.cleaned_data.get("date_to") or today
+    if date_from > date_to:
+        date_from, date_to = date_to, date_from
+
+    filtered_employees_qs = employees_qs
+    if selected_employee:
+        filtered_employees_qs = filtered_employees_qs.filter(id=selected_employee)
+
+    employees = list(filtered_employees_qs)
+    contracts_qs = (
+        Contract.objects.filter(
+            company=company,
+            employee__in=employees,
+            employee__isnull=False,
+            employee__user__isnull=False,
+        )
+        .filter(contract_operational_q())
+        .select_related("employee", "employee__user", "company")
+        if company and employees
+        else Contract.objects.none()
+    )
+
+    start_dt = timezone.make_aware(datetime.combine(date_from, time.min))
+    end_dt = timezone.make_aware(datetime.combine(date_to, time.max))
+    punches = list(
+        Punch.objects.filter(contract__in=contracts_qs, timestamp__range=(start_dt, end_dt))
+        .select_related("contract", "contract__employee", "contract__employee__user")
+        .order_by("timestamp")
+    )
+
+    rows_by_employee = {}
+    for employee in employees:
+        rows_by_employee[str(employee.id)] = {
+            "employee": employee,
+            "days_with_records": 0,
+            "total_punches": 0,
+            "total_seconds": 0,
+            "total_hours_hhmm": "00:00",
+            "incomplete_days": 0,
+            "status_label": "Sem registros no periodo",
+            "status_kind": "empty",
+            "details_url": (
+                f"{reverse('company_history')}?employee={employee.id}&date_from={date_from.strftime('%Y-%m-%d')}"
+                f"&date_to={date_to.strftime('%Y-%m-%d')}"
+            ),
+        }
+
+    punches_by_employee_day = defaultdict(list)
+    for punch in punches:
+        local_ts = timezone.localtime(punch.timestamp)
+        employee_id = str(punch.contract.employee_id)
+        punches_by_employee_day[(employee_id, local_ts.date())].append(local_ts)
+
+    for (employee_id, _day), times in punches_by_employee_day.items():
+        row = rows_by_employee.get(employee_id)
+        if not row:
+            continue
+        ordered_times = sorted(times)
+        total_seconds, is_incomplete = compute_day_total(ordered_times)
+        row["days_with_records"] += 1
+        row["total_punches"] += len(ordered_times)
+        row["total_seconds"] += total_seconds
+        if is_incomplete:
+            row["incomplete_days"] += 1
+
+    employee_rows = list(rows_by_employee.values())
+    for row in employee_rows:
+        row["total_hours_hhmm"] = format_hhmm(row["total_seconds"])
+        if row["total_punches"] == 0:
+            row["status_label"] = "Sem registros no periodo"
+            row["status_kind"] = "empty"
+        elif row["incomplete_days"] > 0:
+            row["status_label"] = f"Atencao: {row['incomplete_days']} dia(s) incompleto(s)"
+            row["status_kind"] = "warn"
+        else:
+            row["status_label"] = "Operacao regular no periodo"
+            row["status_kind"] = "ok"
+
+    employee_rows.sort(
+        key=lambda item: (
+            -item["days_with_records"],
+            -item["incomplete_days"],
+            item["employee"].full_name.lower(),
+        )
+    )
+
+    summary_professionals_with_records = sum(1 for row in employee_rows if row["days_with_records"] > 0)
+    summary_total_punches = sum(row["total_punches"] for row in employee_rows)
+    summary_total_seconds = sum(row["total_seconds"] for row in employee_rows)
+    summary_total_incomplete_days = sum(row["incomplete_days"] for row in employee_rows)
+
+    context = {
+        "company": company,
+        "period_form": period_form,
+        "employees": employees_qs,
+        "selected_employee": selected_employee,
+        "selected_scope": selected_scope,
+        "selected_scope_label": "Empresa atual",
+        "period_label": f"{date_from.strftime('%d/%m/%Y')} ate {date_to.strftime('%d/%m/%Y')}",
+        "period_from": date_from.strftime("%Y-%m-%d"),
+        "period_to": date_to.strftime("%Y-%m-%d"),
+        "summary_professionals_with_records": summary_professionals_with_records,
+        "summary_total_punches": summary_total_punches,
+        "summary_total_hours": format_hhmm(summary_total_seconds),
+        "summary_total_incomplete_days": summary_total_incomplete_days,
+        "employee_rows": employee_rows,
+    }
+    return render(request, "accounts/company_operational_summary.html", context)
+
+
+@login_required
 @require_company_feature("advanced_reports")
 def company_reports(request):
     denied = _redirect_if_not_empresa(request)
@@ -1044,7 +1176,6 @@ def company_reports(request):
         mei_name = _contract_mei_label(contract)
         daily_rows, _max_cols = build_daily_summary(contract_punches_sorted, min_punch_columns=4)
         for row in daily_rows:
-            note_text = (row.get("notes_summary") or "").strip()
             daily_report_rows.append(
                 {
                     "date": row["date"],
@@ -1054,8 +1185,6 @@ def company_reports(request):
                     "status": row["status"],
                     "total_hours_hhmm": row["total_hours_hhmm"],
                     "punches_label": " | ".join(row["punch_times"]) if row["punch_times"] else "-",
-                    "note": note_text,
-                    "has_note": bool(note_text),
                 }
             )
 
@@ -1107,7 +1236,7 @@ def company_reports(request):
         return redirect(f"{reverse('company_reports')}?{'&'.join(query_parts)}")
 
     if export_kind == "xlsx":
-        headers = ["MEI", "Data", "Hora", "Valor/h", "Observacao"]
+        headers = ["MEI", "Data", "Hora", "Valor/h"]
         rows = []
         for punch in punches:
             mei_name = _contract_mei_label(punch.contract)
@@ -1118,12 +1247,11 @@ def company_reports(request):
                     local_ts.strftime("%d/%m/%Y"),
                     local_ts.strftime("%H:%M"),
                     float(punch.contract.hourly_rate),
-                    punch.note or "",
                 ]
             )
         rows.append([])
-        rows.append(["Total punches", metrics["total_punches"], "Total hours", metrics["total_hours_hhmm"], "Estimated payment"])
-        rows.append(["", "", "", "", float(metrics["estimated_payment"])])
+        rows.append(["Total punches", metrics["total_punches"], "Total hours", metrics["total_hours_hhmm"]])
+        rows.append(["Estimated payment", float(metrics["estimated_payment"]), "", ""])
         return _build_xlsx_response("horacerta_relatorio.xlsx", headers, rows)
 
     if export_kind == "pdf":
@@ -1134,7 +1262,7 @@ def company_reports(request):
                 employee_name = emp_obj.full_name
 
         lines = [
-            "HoraCerta - Relatorio de horários",
+            "HoraCerta - Relatorio de servico",
             f"Empresa: {company.name if company else '-'}",
             f"MEI: {employee_name}",
             f"Periodo: {date_from_raw or '-'} ate {date_to_raw or '-'}",
@@ -1143,12 +1271,12 @@ def company_reports(request):
             f"Total de horários: {metrics['total_punches']}",
             f"Pagamento estimado: R$ {metrics['estimated_payment']}",
             "",
-            "horários (ultimas 25):",
+            "registros de horario (ultimos 25):",
         ]
         for punch in punches[:25]:
             mei_name = _contract_mei_label(punch.contract)
             local_ts = timezone.localtime(punch.timestamp)
-            lines.append(f"{local_ts:%d/%m/%Y %H:%M} | {mei_name} | {punch.note or '-'}")
+            lines.append(f"{local_ts:%d/%m/%Y %H:%M} | {mei_name}")
         return _build_pdf_response("horacerta_relatorio.pdf", lines)
 
     requests_qs = ActivityReportRequest.objects.filter(company=company).select_related("employee", "employee__user")
@@ -1189,7 +1317,7 @@ def company_incident_center(request):
         status_filter = "all"
 
     type_filter = (request.GET.get("type") or "all").strip().lower()
-    if type_filter not in {"all", "incomplete", "justification", "request"}:
+    if type_filter not in {"all", "incomplete", "request"}:
         type_filter = "all"
 
     selected_employee = (request.GET.get("employee") or "").strip()
@@ -1287,7 +1415,7 @@ def company_incident_center(request):
 
     pending_items = []
     unique_incomplete_days = 0
-    unique_days_with_notes = 0
+    service_request_items = 0
     unique_employee_ids = set()
 
     for employee in employees:
@@ -1295,24 +1423,13 @@ def company_incident_center(request):
         daily_rows, _max_cols = build_daily_summary(employee_punches, min_punch_columns=4)
 
         for row in daily_rows:
-            note_text = (row.get("notes_summary") or "").strip()
             has_incomplete = row["is_incomplete"]
-            has_justification = bool(note_text)
-            if not has_incomplete and not has_justification:
+            if not has_incomplete:
                 continue
 
-            if has_incomplete and has_justification:
-                pending_type = "incomplete"
-                type_label = "Incompleto com justificativa"
-                type_tone = "danger"
-            elif has_incomplete:
-                pending_type = "incomplete"
-                type_label = "Registro incompleto"
-                type_tone = "danger"
-            else:
-                pending_type = "justification"
-                type_label = "Com justificativa"
-                type_tone = "warn"
+            pending_type = "incomplete"
+            type_label = "Registro incompleto"
+            type_tone = "danger"
 
             is_reviewed = _is_reviewed(employee.id, row["date"])
             status_key = "reviewed" if is_reviewed else "pending"
@@ -1327,8 +1444,6 @@ def company_incident_center(request):
             unique_employee_ids.add(employee.id)
             if has_incomplete:
                 unique_incomplete_days += 1
-            if has_justification:
-                unique_days_with_notes += 1
 
             pending_items.append(
                 {
@@ -1340,7 +1455,7 @@ def company_incident_center(request):
                     "status_key": status_key,
                     "status_label": status_label,
                     "status_tone": status_tone,
-                    "notes_summary": note_text,
+                    "notes_summary": "",
                     "punches_count": row["punches_count"],
                     "total_hours_hhmm": row["total_hours_hhmm"],
                     "history_url": f"{reverse('company_history')}?employee={employee.id}&date_from={row['date']}&date_to={row['date']}",
@@ -1358,6 +1473,7 @@ def company_incident_center(request):
             continue
 
         unique_employee_ids.add(req.employee_id)
+        service_request_items += 1
         pending_items.append(
             {
                 "employee": req.employee,
@@ -1399,7 +1515,7 @@ def company_incident_center(request):
         "pending_items": pending_items[:700],
         "summary_total_pending": len(pending_items),
         "summary_incomplete_days": unique_incomplete_days,
-        "summary_justifications": unique_days_with_notes,
+        "summary_service_requests": service_request_items,
         "summary_people_with_occurrence": len(unique_employee_ids),
     }
     return render(request, "accounts/company_incident_center.html", context)
@@ -1694,52 +1810,86 @@ def mei_history(request):
     selected_contract = None
     punches = Punch.objects.none()
     selected_contract_id = request.GET.get("contract")
-    date_from_raw = request.GET.get("date_from") or ""
-    date_to_raw = request.GET.get("date_to") or ""
+    date_from_raw = (request.GET.get("date_from") or "").strip()
+    date_to_raw = (request.GET.get("date_to") or "").strip()
+    parsed_date_from = None
+    parsed_date_to = None
 
     if contracts.exists():
         selected_contract = contracts.filter(id=selected_contract_id).first() if selected_contract_id else contracts.first()
         if selected_contract:
+            if not date_from_raw and not date_to_raw:
+                today = timezone.localdate()
+                date_from_raw = today.replace(day=1).strftime("%Y-%m-%d")
+                date_to_raw = today.strftime("%Y-%m-%d")
             base_punches = Punch.objects.filter(contract=selected_contract).order_by("timestamp")
-            punches, _, _ = filter_punches_by_period(base_punches, date_from_raw, date_to_raw)
+            punches, parsed_date_from, parsed_date_to = filter_punches_by_period(base_punches, date_from_raw, date_to_raw)
 
-    grouped_rows, max_punches = build_daily_summary(punches, min_punch_columns=4)
-    month_names_pt = [
-        "Janeiro",
-        "Fevereiro",
-        "Marco",
-        "Abril",
-        "Maio",
-        "Junho",
-        "Julho",
-        "Agosto",
-        "Setembro",
-        "Outubro",
-        "Novembro",
-        "Dezembro",
-    ]
-    history_month_groups = []
-    for row in grouped_rows:
-        row_date = row["date"]
-        month_key = (row_date.year, row_date.month)
-        if not history_month_groups or history_month_groups[-1]["key"] != month_key:
-            history_month_groups.append(
-                {
-                    "key": month_key,
-                    "label": f"{month_names_pt[row_date.month - 1]} {row_date.year}",
-                    "items": [],
-                }
-            )
-        history_month_groups[-1]["items"].append(row)
+    grouped_rows, max_punches = build_daily_summary(list(punches), min_punch_columns=4)
+    rows_by_date = {row["date"]: row for row in grouped_rows}
+    history_rows = []
+
+    if parsed_date_from and parsed_date_to:
+        current_day = parsed_date_from
+        while current_day <= parsed_date_to:
+            existing = rows_by_date.get(current_day)
+            if existing:
+                history_rows.append(existing)
+            else:
+                history_rows.append(
+                    {
+                        "date": current_day,
+                        "punches_count": 0,
+                        "punch_times": [],
+                        "punch_columns": ["-"] * max_punches,
+                        "total_seconds": 0,
+                        "total_hours_hhmm": "00:00",
+                        "status": "SEM REGISTROS",
+                        "is_incomplete": False,
+                    }
+                )
+            current_day += timedelta(days=1)
+    else:
+        history_rows = grouped_rows
+
+    history_rows = sorted(history_rows, key=lambda row: row["date"], reverse=True)
+    for row in history_rows:
+        if row["punches_count"] == 0:
+            row["status_label"] = "Sem registros"
+            row["status_kind"] = "empty"
+        elif row["is_incomplete"]:
+            row["status_label"] = "Incompleto"
+            row["status_kind"] = "incomplete"
+        else:
+            row["status_label"] = "Completo"
+            row["status_kind"] = "complete"
+        row["punch_times_label"] = " - ".join(row["punch_times"]) if row["punch_times"] else "-"
+
+    total_days_with_records = sum(1 for row in history_rows if row["punches_count"] > 0)
+    total_punches = sum(row["punches_count"] for row in history_rows)
+    total_seconds = sum(row["total_seconds"] for row in history_rows)
+    total_hours_period = format_hhmm(total_seconds)
+    total_days_complete = sum(1 for row in history_rows if row["punches_count"] > 0 and not row["is_incomplete"])
+    total_days_incomplete = sum(1 for row in history_rows if row["punches_count"] > 0 and row["is_incomplete"])
+
+    if parsed_date_from and parsed_date_to:
+        period_label = f"{parsed_date_from.strftime('%d/%m/%Y')} ate {parsed_date_to.strftime('%d/%m/%Y')}"
+    else:
+        period_label = "Periodo completo"
 
     context = {
         "contracts": contracts,
         "selected_contract": selected_contract,
         "date_from": date_from_raw,
         "date_to": date_to_raw,
-        "history_days": grouped_rows,
-        "history_month_groups": history_month_groups,
+        "period_label": period_label,
+        "history_rows": history_rows,
         "history_punch_columns": range(1, max_punches + 1),
+        "summary_total_days_with_records": total_days_with_records,
+        "summary_total_punches": total_punches,
+        "summary_total_hours": total_hours_period,
+        "summary_total_days_complete": total_days_complete,
+        "summary_total_days_incomplete": total_days_incomplete,
     }
     return render(request, "accounts/mei_history.html", context)
 

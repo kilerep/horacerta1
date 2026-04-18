@@ -4,6 +4,7 @@
 
 {% block content %}
   <style>
+    .history-wrap{display:grid;gap:14px}
     .panel{
       border:1px solid var(--border);
       border-radius:var(--radius);
@@ -12,10 +13,12 @@
         radial-gradient(circle at 14% 0, rgba(79,124,255,.24), transparent 44%),
         linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
     }
+    .panel-title{margin:0}
+    .panel-sub{margin:8px 0 0;color:var(--muted);font-size:13px}
     .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
     .field{display:flex;flex-direction:column;gap:6px;min-width:180px;flex:1}
     label{font-size:13px;color:var(--muted)}
-    input, select{
+    input,select{
       width:100%;
       padding:11px 12px;
       border-radius:12px;
@@ -24,59 +27,50 @@
       color:var(--text);
       outline:none;
     }
-    .month-group{margin-top:14px}
-    .month-group:first-of-type{margin-top:12px}
-    .month-heading{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      margin:0 0 8px;
-      padding:10px 12px;
-      border:1px solid rgba(79,124,255,.35);
-      border-radius:12px;
-      background:linear-gradient(180deg, rgba(79,124,255,.22), rgba(79,124,255,.08));
-      color:#dbe7ff;
-      letter-spacing:.06em;
-      text-transform:uppercase;
-      font-size:12px;
-      font-weight:700;
+    .summary-grid{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:8px;
+      margin-top:10px;
     }
+    .summary-card{
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:12px;
+      padding:10px;
+      background:rgba(255,255,255,.03);
+    }
+    .summary-card .k{font-size:12px;color:var(--muted)}
+    .summary-card .v{margin-top:4px;font-size:22px;font-weight:900;line-height:1.1}
+    .summary-card .s{margin-top:4px;font-size:12px;color:var(--muted)}
     .table-wrap{
+      margin-top:10px;
       overflow-x:auto;
-      overflow-y:hidden;
       border:1px solid var(--border);
       border-radius:12px;
       background:rgba(255,255,255,.02);
       -webkit-overflow-scrolling:touch;
-      scrollbar-width:thin;
-      scrollbar-color:rgba(79,124,255,.45) rgba(255,255,255,.06);
     }
-    .table-wrap::-webkit-scrollbar{height:8px}
-    .table-wrap::-webkit-scrollbar-track{background:rgba(255,255,255,.06);border-radius:999px}
-    .table-wrap::-webkit-scrollbar-thumb{background:rgba(79,124,255,.45);border-radius:999px}
-    .table{width:100%;border-collapse:collapse;min-width:760px}
+    .table{width:100%;min-width:860px;border-collapse:collapse}
     .table th,.table td{
       text-align:left;
       padding:10px;
       border-bottom:1px solid rgba(255,255,255,.08);
       font-size:14px;
-      white-space:nowrap;
       vertical-align:top;
+      white-space:nowrap;
     }
     .table th{background:#20396b;color:#f3f6ff}
     .table tr:last-child td{border-bottom:none}
-    .muted{color:var(--muted)}
     .status-badge{
       display:inline-flex;
       align-items:center;
-      gap:6px;
-      font-weight:600;
       border-radius:999px;
-      padding:4px 9px;
+      padding:4px 10px;
+      font-size:12px;
+      font-weight:800;
       border:1px solid transparent;
     }
-    .status-ok{
+    .status-complete{
       color:#2dd391;
       background:rgba(45,211,145,.12);
       border-color:rgba(45,211,145,.25);
@@ -86,16 +80,10 @@
       background:rgba(250,204,21,.12);
       border-color:rgba(250,204,21,.25);
     }
-    .notes-cell{white-space:normal;width:30%;min-width:180px;max-width:360px}
-    .note-text{
-      display:-webkit-box;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      -webkit-box-orient:vertical;
-      -webkit-line-clamp:2;
-      line-height:1.4;
-      word-break:break-word;
-      overflow-wrap:anywhere;
+    .status-empty{
+      color:#d7e4ff;
+      background:rgba(255,255,255,.08);
+      border-color:rgba(255,255,255,.2);
     }
     .empty-state{
       margin-top:12px;
@@ -107,86 +95,104 @@
       background:rgba(255,255,255,.02);
     }
     @media (max-width: 900px){
-      .panel{padding:12px}
-      .month-heading{padding:9px 10px}
-      .table{min-width:700px}
+      .summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .table{min-width:760px}
     }
     @media (max-width: 640px){
       .field{min-width:100%}
       .row .btn{width:100%}
+      .summary-grid{grid-template-columns:1fr}
       .table th,.table td{padding:9px;font-size:13px}
-      .notes-cell{min-width:160px;max-width:240px}
     }
   </style>
 
-  <section class="panel">
-    <h2 style="margin:0 0 8px;">Historico por dia</h2>
-    <form method="get" class="row" data-submit-once="true">
-      <div class="field">
-        <label>Empresa e contrato</label>
-        <select name="contract" onchange="this.form.submit()">
-          {% for c in contracts %}
-            <option value="{{ c.id }}" {% if selected_contract and c.id == selected_contract.id %}selected{% endif %}>
-              {{ c.company.name }} - R$ {{ c.hourly_rate }}/h
-            </option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="field">
-        <label>De</label>
-        <input type="date" name="date_from" value="{{ date_from }}">
-      </div>
-      <div class="field">
-        <label>Ate</label>
-        <input type="date" name="date_to" value="{{ date_to }}">
-      </div>
-      <button class="btn primary" type="submit" data-loading-text="Aplicando filtros...">Filtrar</button>
-    </form>
+  <div class="history-wrap">
+    <section class="panel">
+      <h2 class="panel-title">Filtros do historico</h2>
+      <p class="panel-sub">Selecione vinculo e periodo para acompanhar sua jornada com clareza.</p>
+      <form method="get" class="row" data-submit-once="true">
+        <div class="field">
+          <label>Empresa e contrato</label>
+          <select name="contract" onchange="this.form.submit()">
+            {% for c in contracts %}
+              <option value="{{ c.id }}" {% if selected_contract and c.id == selected_contract.id %}selected{% endif %}>
+                {{ c.company.name }} - R$ {{ c.hourly_rate }}/h
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label>De</label>
+          <input type="date" name="date_from" value="{{ date_from }}">
+        </div>
+        <div class="field">
+          <label>Ate</label>
+          <input type="date" name="date_to" value="{{ date_to }}">
+        </div>
+        <button class="btn primary" type="submit" data-loading-text="Aplicando filtros...">Filtrar</button>
+      </form>
+    </section>
 
-    {% if history_month_groups %}
-      {% for month_group in history_month_groups %}
-        <section class="month-group">
-          <h3 class="month-heading">{{ month_group.label }}</h3>
-          <div class="table-wrap">
-            <table class="table">
-              <thead>
+    <section class="panel">
+      <h2 class="panel-title">Resumo do periodo</h2>
+      <p class="panel-sub">Intervalo selecionado: <strong>{{ period_label }}</strong></p>
+      <div class="summary-grid">
+        <article class="summary-card">
+          <div class="k">Dias com registro</div>
+          <div class="v">{{ summary_total_days_with_records }}</div>
+        </article>
+        <article class="summary-card">
+          <div class="k">Batidas no periodo</div>
+          <div class="v">{{ summary_total_punches }}</div>
+        </article>
+        <article class="summary-card">
+          <div class="k">Total de horas</div>
+          <div class="v">{{ summary_total_hours }}</div>
+        </article>
+        <article class="summary-card">
+          <div class="k">Dias completos</div>
+          <div class="v">{{ summary_total_days_complete }}</div>
+        </article>
+        <article class="summary-card">
+          <div class="k">Dias incompletos</div>
+          <div class="v">{{ summary_total_days_incomplete }}</div>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-title">Historico diario</h2>
+      <p class="panel-sub">Visao por dia para leitura rapida: batidas, horarios, total e status.</p>
+      {% if history_rows %}
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Batidas</th>
+                <th>Horarios registrados</th>
+                <th>Total do dia</th>
+                <th>Status do dia</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in history_rows %}
                 <tr>
-                  <th>Data</th>
-                  {% for n in history_punch_columns %}
-                    <th>Horario {{ n }}</th>
-                  {% endfor %}
-                  <th>Observacoes</th>
-                  <th>Total do dia</th>
-                  <th>Status</th>
+                  <td>{{ row.date|date:"d/m/Y" }}</td>
+                  <td>{{ row.punches_count }}</td>
+                  <td>{{ row.punch_times_label }}</td>
+                  <td>{{ row.total_hours_hhmm }}</td>
+                  <td>
+                    <span class="status-badge status-{{ row.status_kind }}">{{ row.status_label }}</span>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {% for d in month_group.items %}
-                  <tr>
-                    <td>{{ d.date|date:"d/m/Y" }}</td>
-                    {% for bt in d.punch_columns %}
-                      <td>{{ bt }}</td>
-                    {% endfor %}
-                    <td class="notes-cell" title="{{ d.notes_summary|default:'-' }}">
-                      <span class="note-text">{% if d.notes_summary %}{{ d.notes_summary }}{% else %}-{% endif %}</span>
-                    </td>
-                    <td>{{ d.total_hours_hhmm }}</td>
-                    <td>
-                      {% if d.is_incomplete %}
-                        <span class="status-badge status-incomplete">Incompleto</span>
-                      {% else %}
-                        <span class="status-badge status-ok">OK</span>
-                      {% endif %}
-                    </td>
-                  </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      {% endfor %}
-    {% else %}
-      <div class="empty-state">Sem registros no periodo.</div>
-    {% endif %}
-  </section>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="empty-state">Sem registros no periodo.</div>
+      {% endif %}
+    </section>
+  </div>
 {% endblock %}
