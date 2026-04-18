@@ -14,9 +14,25 @@
       <section class="hc-feedback hc-feedback--ok" role="status" aria-live="polite">
         Horario registrado com sucesso.
       </section>
+    {% elif request.GET.event == "punch_saved_qr_missing" %}
+      <section class="hc-feedback hc-feedback--warn" role="status" aria-live="polite">
+        Horario registrado, mas sem confirmacao QR exigida para este momento.
+      </section>
     {% elif request.GET.event == "manual_saved" %}
       <section class="hc-feedback hc-feedback--ok" role="status" aria-live="polite">
         Registro manual salvo com sucesso{% if request.GET.created %} ({{ request.GET.created }} horario{% if request.GET.created != "1" %}s{% endif %}){% endif %}.
+      </section>
+    {% elif request.GET.event == "qr_confirmed" %}
+      <section class="hc-feedback hc-feedback--ok" role="status" aria-live="polite">
+        Presenca confirmada por QR. Faça sua marcacao normalmente.
+      </section>
+    {% elif request.GET.event == "qr_invalid" %}
+      <section class="hc-feedback hc-feedback--warn" role="status" aria-live="polite">
+        QR invalido ou inativo para confirmacao presencial.
+      </section>
+    {% elif request.GET.event == "qr_contract_missing" %}
+      <section class="hc-feedback hc-feedback--warn" role="status" aria-live="polite">
+        Seu perfil nao possui vinculo operacional ativo para este local QR.
       </section>
     {% elif request.GET.event == "report_sent" %}
       <section class="hc-feedback hc-feedback--ok" role="status" aria-live="polite">

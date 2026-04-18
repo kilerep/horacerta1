@@ -1,0 +1,121 @@
+{% extends "accounts/base.html" %}
+{% block title %}Detalhe do registro{% endblock %}
+{% block page_title %}Detalhe do registro revisado{% endblock %}
+
+{% block content %}
+<style>
+  .rd-wrap{ display:grid; gap:14px; }
+  .rd-panel{
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:16px;
+    background:
+      linear-gradient(140deg, rgba(79,124,255,.1), transparent 42%),
+      linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+  }
+  .rd-title{ margin:0; font-size:20px; }
+  .rd-sub{ margin:8px 0 0; color:var(--muted); font-size:13px; }
+  .rd-grid{ margin-top:12px; display:grid; gap:10px; grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .rd-item{ border:1px solid var(--border); border-radius:12px; background:rgba(255,255,255,.03); padding:12px; }
+  .rd-item .k{ color:var(--muted); font-size:12px; }
+  .rd-item .v{ margin-top:4px; font-weight:700; }
+  .rd-badge{
+    display:inline-flex; align-items:center; border-radius:999px; padding:4px 10px;
+    font-size:12px; font-weight:700; border:1px solid transparent;
+  }
+  .rd-badge.success{ background:rgba(45,211,145,.14); border-color:rgba(45,211,145,.35); color:#ccffea; }
+  .rd-badge.pending{ background:rgba(255,176,32,.14); border-color:rgba(255,176,32,.35); color:#ffe7ad; }
+  .rd-badge.warn{ background:rgba(255,94,94,.14); border-color:rgba(255,94,94,.35); color:#ffd8d8; }
+  .rd-badge.neutral{ background:rgba(148,163,184,.14); border-color:rgba(148,163,184,.35); color:#dce7ff; }
+  @media (max-width: 900px){
+    .rd-grid{ grid-template-columns:1fr; }
+  }
+</style>
+
+<div class="rd-wrap">
+  <section class="rd-panel">
+    <div style="display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; align-items:flex-start;">
+      <div>
+        <h2 class="rd-title">Registro de {{ punch.timestamp|date:"d/m/Y H:i" }}</h2>
+        <p class="rd-sub">Profissional: {{ employee_name }} | Empresa: {{ company.name }}</p>
+      </div>
+      <div><a class="btn" href="{{ back_url }}">Voltar para central</a></div>
+    </div>
+
+    <div class="rd-grid">
+      <article class="rd-item">
+        <div class="k">Status de confianca</div>
+        <div class="v"><span class="rd-badge {{ punch.confidence_tone }}">{{ punch.get_confidence_status_display }}</span></div>
+      </article>
+      <article class="rd-item">
+        <div class="k">Metodo de validacao</div>
+        <div class="v">{{ punch.get_validation_method_display }}</div>
+      </article>
+      <article class="rd-item">
+        <div class="k">Metodo operacional do registro</div>
+        <div class="v">{{ punch.audit_method_label }}</div>
+      </article>
+      <article class="rd-item">
+        <div class="k">Status QR presencial</div>
+        <div class="v"><span class="rd-badge {{ punch.qr_tone }}">{{ punch.get_qr_confirmation_status_display }}</span></div>
+      </article>
+      <article class="rd-item">
+        <div class="k">Local autorizado associado</div>
+        <div class="v">{% if punch.validated_location %}{{ punch.validated_location.name }}{% else %}-{% endif %}</div>
+      </article>
+      <article class="rd-item">
+        <div class="k">Distancia calculada</div>
+        <div class="v">{{ distance_label }}</div>
+      </article>
+      <article class="rd-item">
+        <div class="k">Precisao informada</div>
+        <div class="v">{{ accuracy_label }}</div>
+      </article>
+      <article class="rd-item">
+        <div class="k">Coordenadas capturadas</div>
+        <div class="v">
+          {% if punch.geo_latitude and punch.geo_longitude %}
+            lat {{ punch.geo_latitude }} | lon {{ punch.geo_longitude }}
+          {% else %}
+            Sem localizacao
+          {% endif %}
+        </div>
+      </article>
+      <article class="rd-item">
+        <div class="k">Local confirmado via QR</div>
+        <div class="v">{% if punch.qr_confirmed_location %}{{ punch.qr_confirmed_location.name }}{% else %}-{% endif %}</div>
+      </article>
+      <article class="rd-item">
+        <div class="k">Vinculo</div>
+        <div class="v">R$ {{ punch.contract.hourly_rate }}/h | inicio {{ punch.contract.start_date|date:"d/m/Y" }}</div>
+      </article>
+      <article class="rd-item">
+        <div class="k">Tipo de lancamento</div>
+        <div class="v">{% if punch.is_manual %}Manual{% else %}Normal{% endif %}</div>
+      </article>
+      <article class="rd-item">
+        <div class="k">Timestamp tecnico (persistencia)</div>
+        <div class="v">{{ punch.created_at|date:"d/m/Y H:i:s" }}</div>
+      </article>
+      <article class="rd-item">
+        <div class="k">Timestamp tecnico (validacao de confianca)</div>
+        <div class="v">{{ punch.confidence_checked_at|date:"d/m/Y H:i:s"|default:"-" }}</div>
+      </article>
+      <article class="rd-item">
+        <div class="k">Timestamp tecnico (confirmacao QR)</div>
+        <div class="v">{{ punch.qr_confirmed_at|date:"d/m/Y H:i:s"|default:"-" }}</div>
+      </article>
+      <article class="rd-item">
+        <div class="k">Evidencia de auditoria</div>
+        <div class="v">
+          Evento: {{ punch.audit_event_id }}<br>
+          Fonte: {{ audit_source }} | Fluxo: {{ audit_recorded_from }}<br>
+          Politica no momento: {{ audit_policy_mode }}<br>
+          Localizacao coletada: {% if audit_geolocation_collected %}Sim{% else %}Nao{% endif %}<br>
+          QR exigido neste registro: {% if audit_qr_required_for_punch %}Sim{% else %}Nao{% endif %} ({{ audit_qr_requirement_reason }})
+        </div>
+      </article>
+    </div>
+  </section>
+</div>
+{% endblock %}

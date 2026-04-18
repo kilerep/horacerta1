@@ -513,12 +513,76 @@ class CompanyProfileForm(forms.ModelForm):
 
 
 class CompanyAttendancePolicyForm(forms.ModelForm):
+    default_location = forms.ModelChoiceField(
+        queryset=CompanyAuthorizedLocation.objects.none(),
+        required=False,
+        empty_label="Sem local padrao",
+        label="Local padrao (opcional)",
+    )
+
     class Meta:
         model = CompanyAttendancePolicy
-        fields = ["validation_mode"]
+        fields = [
+            "validation_mode",
+            "require_location",
+            "require_qr",
+            "qr_requirement",
+            "default_allowed_radius_m",
+            "default_location",
+        ]
         labels = {
             "validation_mode": "Modo de validacao de horarios",
+            "require_location": "Exigir localizacao no registro",
+            "require_qr": "Exigir confirmacao por QR presencial",
+            "qr_requirement": "Regra de exigencia de QR presencial",
+            "default_allowed_radius_m": "Raio padrao de validacao (metros)",
+            "default_location": "Local padrao (opcional)",
         }
+        widgets = {
+            "default_allowed_radius_m": forms.NumberInput(attrs={"min": 10, "step": 1}),
+        }
+
+    def __init__(self, *args, company=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.company = company
+        default_location_qs = CompanyAuthorizedLocation.objects.none()
+        if company:
+            default_location_qs = CompanyAuthorizedLocation.objects.filter(company=company, is_active=True).order_by("name")
+        self.fields["default_location"].queryset = default_location_qs
+        self.fields["default_location"].label_from_instance = lambda obj: f"{obj.name} | raio {obj.allowed_radius_m}m"
+
+    def clean(self):
+        data = super().clean()
+        mode = data.get("validation_mode")
+        require_location = bool(data.get("require_location"))
+        require_qr = bool(data.get("require_qr"))
+        qr_requirement = data.get("qr_requirement")
+        default_radius = data.get("default_allowed_radius_m")
+        default_location = data.get("default_location")
+
+        if default_radius is not None and default_radius < 10:
+            self.add_error("default_allowed_radius_m", "Informe no minimo 10 metros.")
+        if default_radius is not None and default_radius > 5000:
+            self.add_error("default_allowed_radius_m", "Para V1, o limite maximo permitido e 5000 metros.")
+
+        if mode == CompanyAttendancePolicy.ValidationMode.FREE:
+            data["require_location"] = False
+            data["require_qr"] = False
+            data["qr_requirement"] = CompanyAttendancePolicy.QrRequirement.NONE
+        elif mode == CompanyAttendancePolicy.ValidationMode.GEOLOCATION and not require_location:
+            data["require_location"] = True
+        elif mode == CompanyAttendancePolicy.ValidationMode.PRESENTIAL_QR and not require_qr:
+            data["require_qr"] = True
+
+        if not data.get("require_qr"):
+            data["qr_requirement"] = CompanyAttendancePolicy.QrRequirement.NONE
+        elif data.get("require_qr") and qr_requirement == CompanyAttendancePolicy.QrRequirement.NONE:
+            self.add_error("qr_requirement", "Selecione quando o QR deve ser exigido.")
+
+        if default_location and self.company and default_location.company_id != self.company.id:
+            self.add_error("default_location", "Selecione um local da sua empresa.")
+
+        return data
 
 
 class CompanyAuthorizedLocationForm(forms.ModelForm):

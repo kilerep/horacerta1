@@ -118,6 +118,10 @@
                     </div>
                   </div>
                 </a>
+                <a class="item {% if current == 'company_records_review_center' or current == 'company_record_review_detail' %}is-active{% endif %}" href="{% url 'company_records_review_center' %}">
+                  <div class="icon">V</div>
+                  <div><strong>Revisao de Registros</strong><div class="muted item-sub">selo de confianca e auditoria</div></div>
+                </a>
                 <a class="item {% if current == 'company_history' or current == 'company_history_legacy' %}is-active{% endif %}" href="{% url 'company_history' %}">
                   <div class="icon">H</div>
                   <div><strong>Historico</strong><div class="muted item-sub">lancamentos e consulta por periodo</div></div>

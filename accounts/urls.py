@@ -58,6 +58,17 @@ urlpatterns = [
     path("empresa/operacao-hoje/", views.company_today_center, name="company_today_center"),
     path("empresa/resumo-operacional/", views.company_operational_summary, name="company_operational_summary"),
     path("empresa/pendencias/", views.company_incident_center, name="company_incident_center"),
+    path(
+        "empresa/confiabilidade-registro/locais/<uuid:location_id>/qr/",
+        views.company_location_qr_panel,
+        name="company_location_qr_panel",
+    ),
+    path("empresa/revisao-registros/", views.company_records_review_center, name="company_records_review_center"),
+    path(
+        "empresa/revisao-registros/<uuid:punch_id>/",
+        views.company_record_review_detail,
+        name="company_record_review_detail",
+    ),
     path("empresa/confiabilidade-registro/", views.company_attendance_reliability, name="company_attendance_reliability"),
     path("dashboard/history/", views.company_history, name="company_history"),
     path("empresa/historico/", views.company_history, name="company_history_legacy"),

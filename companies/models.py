@@ -1,4 +1,5 @@
 import uuid
+import secrets
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -289,6 +290,11 @@ class CompanyAttendancePolicy(models.Model):
         GEOLOCATION = "GEOLOCATION", "Com localizacao"
         PRESENTIAL_QR = "PRESENTIAL_QR", "Presencial com QR"
 
+    class QrRequirement(models.TextChoices):
+        NONE = "NONE", "Nao exigir QR"
+        FIRST_PUNCH = "FIRST_PUNCH", "Exigir QR na primeira marcacao"
+        FIRST_AND_LAST = "FIRST_AND_LAST", "Exigir QR na primeira e ultima marcacao"
+
     company = models.OneToOneField(
         Company,
         on_delete=models.CASCADE,
@@ -298,6 +304,21 @@ class CompanyAttendancePolicy(models.Model):
         max_length=20,
         choices=ValidationMode.choices,
         default=ValidationMode.FREE,
+    )
+    require_location = models.BooleanField(default=False)
+    require_qr = models.BooleanField(default=False)
+    qr_requirement = models.CharField(
+        max_length=20,
+        choices=QrRequirement.choices,
+        default=QrRequirement.NONE,
+    )
+    default_allowed_radius_m = models.PositiveIntegerField(default=120)
+    default_location = models.ForeignKey(
+        "CompanyAuthorizedLocation",
+        on_delete=models.SET_NULL,
+        related_name="default_for_attendance_policies",
+        null=True,
+        blank=True,
     )
     updated_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -312,6 +333,26 @@ class CompanyAttendancePolicy(models.Model):
     class Meta:
         verbose_name = "Company Attendance Policy"
         verbose_name_plural = "Company Attendance Policies"
+
+    def clean(self):
+        errors = {}
+        if self.default_allowed_radius_m and self.default_allowed_radius_m < 10:
+            errors["default_allowed_radius_m"] = "Raio padrao precisa ser de no minimo 10 metros."
+        if self.default_location_id and self.company_id:
+            if self.default_location.company_id != self.company_id:
+                errors["default_location"] = "Local padrao precisa pertencer a mesma empresa da politica."
+        if self.validation_mode == self.ValidationMode.FREE:
+            self.require_location = False
+            self.require_qr = False
+            self.qr_requirement = self.QrRequirement.NONE
+        if not self.require_qr:
+            self.qr_requirement = self.QrRequirement.NONE
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
 
     def __str__(self) -> str:
         return f"{self.company.name} -> {self.get_validation_mode_display()}"
@@ -330,6 +371,7 @@ class CompanyAuthorizedLocation(models.Model):
     latitude = models.DecimalField(max_digits=9, decimal_places=6)
     longitude = models.DecimalField(max_digits=9, decimal_places=6)
     allowed_radius_m = models.PositiveIntegerField(default=120)
+    qr_token = models.CharField(max_length=64, unique=True, default="", blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -356,9 +398,19 @@ class CompanyAuthorizedLocation(models.Model):
         if errors:
             raise ValidationError(errors)
 
+    @staticmethod
+    def generate_qr_token():
+        return secrets.token_hex(16)
+
     def save(self, *args, **kwargs):
+        if not self.qr_token:
+            self.qr_token = self.generate_qr_token()
         self.full_clean()
         return super().save(*args, **kwargs)
+
+    def rotate_qr_token(self):
+        self.qr_token = self.generate_qr_token()
+        self.save(update_fields=["qr_token", "updated_at"])
 
     def __str__(self) -> str:
         return f"{self.company.name} | {self.name}"

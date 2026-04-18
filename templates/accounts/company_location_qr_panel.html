@@ -1,0 +1,87 @@
+{% extends "accounts/base.html" %}
+{% block title %}QR presencial do local{% endblock %}
+{% block page_title %}QR presencial do local{% endblock %}
+
+{% block content %}
+<style>
+  .qr-wrap{ display:grid; gap:14px; }
+  .qr-panel{
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:16px;
+    background:
+      linear-gradient(140deg, rgba(79,124,255,.10), transparent 42%),
+      linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+  }
+  .qr-title{ margin:0; font-size:20px; }
+  .qr-sub{ margin:8px 0 0; color:var(--muted); font-size:13px; max-width:760px; }
+  .qr-main{
+    margin-top:12px;
+    display:grid;
+    gap:12px;
+    grid-template-columns:340px 1fr;
+    align-items:flex-start;
+  }
+  .qr-code-box{
+    border:1px solid var(--border);
+    border-radius:12px;
+    background:#fff;
+    padding:10px;
+    width:340px;
+    max-width:100%;
+  }
+  .qr-code-box img{ width:100%; height:auto; display:block; border-radius:8px; }
+  .qr-info{
+    border:1px solid var(--border);
+    border-radius:12px;
+    background:rgba(255,255,255,.03);
+    padding:12px;
+    display:grid;
+    gap:8px;
+  }
+  .qr-link{
+    border:1px solid var(--border);
+    border-radius:10px;
+    background:rgba(255,255,255,.05);
+    padding:10px;
+    font-size:12px;
+    word-break:break-all;
+  }
+  @media (max-width: 900px){
+    .qr-main{ grid-template-columns:1fr; }
+    .qr-code-box{ width:100%; }
+  }
+</style>
+
+<div class="qr-wrap">
+  <section class="qr-panel">
+    <div style="display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; align-items:flex-start;">
+      <div>
+        <h2 class="qr-title">QR Presencial - {{ location.name }}</h2>
+        <p class="qr-sub">
+          Exiba este QR em tela fixa no local para o profissional escanear quando a politica exigir confirmacao presencial.
+        </p>
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <a class="btn" href="{{ back_url }}">Voltar</a>
+      </div>
+    </div>
+
+    <div class="qr-main">
+      <div class="qr-code-box">
+        <img src="{{ qr_image_url }}" alt="QR presencial do local {{ location.name }}">
+      </div>
+      <article class="qr-info">
+        <strong>Informacoes do local</strong>
+        <div><span class="muted">Empresa:</span> {{ company.name }}</div>
+        <div><span class="muted">Local:</span> {{ location.name }}</div>
+        <div><span class="muted">Descricao:</span> {{ location.address_or_description|default:"-" }}</div>
+        <div><span class="muted">Raio permitido:</span> {{ location.allowed_radius_m }} m</div>
+        <div><span class="muted">Status:</span> {% if location.is_active %}Ativo{% else %}Inativo{% endif %}</div>
+        <div><span class="muted">Link de leitura (fallback):</span></div>
+        <div class="qr-link">{{ scan_url }}</div>
+      </article>
+    </div>
+  </section>
+</div>
+{% endblock %}

@@ -96,7 +96,13 @@ class Punch(models.Model):
         NO_LOCATION = "NO_LOCATION", "Sem localizacao"
         IMPRECISE = "IMPRECISE", "Localizacao imprecisa"
 
+    class QrConfirmationStatus(models.TextChoices):
+        NOT_REQUIRED = "NOT_REQUIRED", "Nao exigido"
+        CONFIRMED = "CONFIRMED", "Confirmado por QR"
+        REQUIRED_MISSING = "REQUIRED_MISSING", "QR exigido e nao confirmado"
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    audit_event_id = models.UUIDField(default=uuid.uuid4, editable=False, db_index=True)
 
     contract = models.ForeignKey(
         Contract,
@@ -128,7 +134,21 @@ class Punch(models.Model):
         choices=ConfidenceStatus.choices,
         default=ConfidenceStatus.FREE,
     )
+    qr_confirmation_status = models.CharField(
+        max_length=20,
+        choices=QrConfirmationStatus.choices,
+        default=QrConfirmationStatus.NOT_REQUIRED,
+    )
+    qr_confirmed_location = models.ForeignKey(
+        CompanyAuthorizedLocation,
+        on_delete=models.SET_NULL,
+        related_name="qr_confirmed_punches",
+        null=True,
+        blank=True,
+    )
+    qr_confirmed_at = models.DateTimeField(null=True, blank=True)
     confidence_checked_at = models.DateTimeField(null=True, blank=True)
+    audit_payload = models.JSONField(default=dict, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -153,6 +173,8 @@ class Punch(models.Model):
             self.validation_method = self.ValidationMethod.FREE_POLICY
         if not self.confidence_status:
             self.confidence_status = self.ConfidenceStatus.FREE
+        if not self.qr_confirmation_status:
+            self.qr_confirmation_status = self.QrConfirmationStatus.NOT_REQUIRED
         if not self.confidence_checked_at:
             self.confidence_checked_at = timezone.now()
 
@@ -167,6 +189,24 @@ class Punch(models.Model):
         if self.confidence_status == self.ConfidenceStatus.IMPRECISE:
             return "pending"
         return "neutral"
+
+    @property
+    def qr_tone(self):
+        if self.qr_confirmation_status == self.QrConfirmationStatus.CONFIRMED:
+            return "success"
+        if self.qr_confirmation_status == self.QrConfirmationStatus.REQUIRED_MISSING:
+            return "warn"
+        return "neutral"
+
+    @property
+    def audit_method_label(self):
+        if self.qr_confirmation_status == self.QrConfirmationStatus.CONFIRMED:
+            return "QR presencial"
+        if self.validation_method == self.ValidationMethod.GEOLOCATION:
+            return "Localizacao"
+        if self.validation_method == self.ValidationMethod.PRESENTIAL_QR_PENDING:
+            return "QR presencial (pendente)"
+        return "Livre"
 
 
 class ActivityReportRequest(models.Model):

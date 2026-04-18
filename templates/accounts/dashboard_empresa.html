@@ -205,7 +205,7 @@
 
           <div class="table-wrap" style="margin-top:10px;">
             <table class="table">
-              <thead><tr><th>Registro recente</th><th>Profissional</th><th>Empresa</th><th>Vinculo</th><th>Selo de confianca</th></tr></thead>
+              <thead><tr><th>Registro recente</th><th>Profissional</th><th>Empresa</th><th>Vinculo</th><th>Selo de confianca</th><th>QR presencial</th></tr></thead>
               <tbody>
                 {% for row in punches_period %}
                   <tr>
@@ -221,9 +221,14 @@
                         {{ row.validation_method_label }} | local: {{ row.validated_location_name }} | distancia: {{ row.distance_label }}
                       </div>
                     </td>
+                    <td>
+                      <span class="pill {% if row.qr_tone == 'success' %}success{% elif row.qr_tone == 'warn' %}warn{% endif %}">
+                        {{ row.qr_label }}
+                      </span>
+                    </td>
                   </tr>
                 {% empty %}
-                  <tr><td colspan="5"><div class="empty-panel"><strong>Sem movimentacao no periodo.</strong><p>Ajuste as datas para ampliar a consulta ou acompanhe novos lancamentos em tempo real.</p></div></td></tr>
+                  <tr><td colspan="6"><div class="empty-panel"><strong>Sem movimentacao no periodo.</strong><p>Ajuste as datas para ampliar a consulta ou acompanhe novos lancamentos em tempo real.</p></div></td></tr>
                 {% endfor %}
               </tbody>
             </table>

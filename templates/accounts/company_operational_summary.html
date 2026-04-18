@@ -60,7 +60,7 @@
     }
     .actions{ display:flex; gap:8px; flex-wrap:wrap; }
     .table-wrap{ margin-top:12px; border:1px solid var(--border); border-radius:14px; overflow:auto; }
-    .table{ width:100%; border-collapse:collapse; min-width:920px; }
+    .table{ width:100%; border-collapse:collapse; min-width:1280px; }
     .table th,.table td{
       text-align:left;
       padding:12px 10px;
@@ -135,6 +135,34 @@
           <div class="h">Filtro em uso</div>
         </article>
       </div>
+      <p class="panel-sub" style="margin-top:12px;">Qualidade de validacao consolidada no mesmo periodo.</p>
+      <div class="cards">
+        <article class="card">
+          <div class="k">Validados no local</div>
+          <div class="v">{{ summary_quality_validated_on_site }}</div>
+          <div class="h">Registros com status no local</div>
+        </article>
+        <article class="card">
+          <div class="k">QR confirmado</div>
+          <div class="v">{{ summary_quality_qr_confirmed }}</div>
+          <div class="h">Presencial confirmado por QR</div>
+        </article>
+        <article class="card">
+          <div class="k">Fora do raio</div>
+          <div class="v">{{ summary_quality_out_of_radius }}</div>
+          <div class="h">Registros fora do limite</div>
+        </article>
+        <article class="card">
+          <div class="k">Sem localizacao</div>
+          <div class="v">{{ summary_quality_no_location }}</div>
+          <div class="h">Registros sem coordenadas</div>
+        </article>
+        <article class="card">
+          <div class="k">Pendentes de revisao</div>
+          <div class="v">{{ summary_quality_pending_review }}</div>
+          <div class="h">Status de atencao para revisao</div>
+        </article>
+      </div>
     </section>
 
     <section class="panel">
@@ -173,6 +201,9 @@
         <div class="actions">
           <button class="btn primary" type="submit" data-loading-text="Atualizando resumo...">Atualizar resumo</button>
           <a class="btn" href="{% url 'company_operational_summary' %}">Limpar filtros</a>
+          <a class="btn" href="?date_from={{ period_from }}&date_to={{ period_to }}{% if selected_employee %}&employee={{ selected_employee }}{% endif %}&scope={{ selected_scope }}&export=csv">Exportar CSV</a>
+          <a class="btn" href="?date_from={{ period_from }}&date_to={{ period_to }}{% if selected_employee %}&employee={{ selected_employee }}{% endif %}&scope={{ selected_scope }}&export=xlsx">Exportar XLSX</a>
+          <a class="btn" href="?date_from={{ period_from }}&date_to={{ period_to }}{% if selected_employee %}&employee={{ selected_employee }}{% endif %}&scope={{ selected_scope }}&export=pdf">Exportar PDF</a>
         </div>
       </form>
     </section>
@@ -193,6 +224,11 @@
               <th>Total de horarios</th>
               <th>Total de horas</th>
               <th>Dias incompletos</th>
+              <th>Validados no local</th>
+              <th>QR confirmado</th>
+              <th>Fora do raio</th>
+              <th>Sem localizacao</th>
+              <th>Pend. revisao</th>
               <th>Status</th>
               <th>Detalhes</th>
             </tr>
@@ -205,12 +241,17 @@
                 <td>{{ row.total_punches }}</td>
                 <td>{{ row.total_hours_hhmm }}</td>
                 <td>{{ row.incomplete_days }}</td>
+                <td>{{ row.validated_on_site }}</td>
+                <td>{{ row.qr_confirmed }}</td>
+                <td>{{ row.out_of_radius }}</td>
+                <td>{{ row.no_location }}</td>
+                <td>{{ row.pending_review }}</td>
                 <td><span class="status {{ row.status_kind }}">{{ row.status_label }}</span></td>
                 <td><a class="btn" href="{{ row.details_url }}">Ver detalhes</a></td>
               </tr>
             {% empty %}
               <tr>
-                <td colspan="7">
+                <td colspan="12">
                   <div class="empty">Nenhum profissional encontrado para os filtros selecionados.</div>
                 </td>
               </tr>

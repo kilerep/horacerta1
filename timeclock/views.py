@@ -1,5 +1,5 @@
 import csv
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from decimal import Decimal, InvalidOperation
 from io import BytesIO
 
@@ -18,9 +18,12 @@ from reportlab.platypus import SimpleDocTemplate, Spacer, Table, TableStyle, Par
 from reportlab.lib.styles import getSampleStyleSheet
 
 from accounts.models import User
+from companies.models import CompanyAttendancePolicy, CompanyAuthorizedLocation
 from .models import ActivityReportRequest, Contract, Punch
 from .services import build_daily_summary, evaluate_punch_confidence, filter_punches_by_period, format_hhmm
 from .state import contract_operational_q, employee_lifecycle_summary
+
+QR_PRESENCE_SESSION_KEY = "hc_qr_presence_claims"
 
 
 def _only_employee(user):
@@ -83,6 +86,101 @@ def _parse_geo_decimal(raw_value):
         return None
 
 
+def _load_qr_claims(session):
+    claims = session.get(QR_PRESENCE_SESSION_KEY)
+    if isinstance(claims, dict):
+        return claims
+    return {}
+
+
+def _save_qr_claims(session, claims):
+    session[QR_PRESENCE_SESSION_KEY] = claims
+    session.modified = True
+
+
+def _resolve_qr_requirement(contract, now_local):
+    policy = CompanyAttendancePolicy.objects.filter(company=contract.company).first()
+    if not policy:
+        return {"required": False, "reason": "not_qr_mode"}
+    qr_enabled = bool(policy.require_qr) or policy.validation_mode == CompanyAttendancePolicy.ValidationMode.PRESENTIAL_QR
+    if not qr_enabled:
+        return {"required": False, "reason": "not_qr_mode"}
+    if policy.qr_requirement == CompanyAttendancePolicy.QrRequirement.NONE:
+        return {"required": False, "reason": "qr_not_required"}
+
+    today = now_local.date()
+    day_start = timezone.make_aware(datetime.combine(today, time.min))
+    day_end = timezone.make_aware(datetime.combine(today, time.max))
+    punches_count_today = Punch.objects.filter(contract=contract, timestamp__range=(day_start, day_end)).count()
+
+    if policy.qr_requirement == CompanyAttendancePolicy.QrRequirement.FIRST_PUNCH:
+        return {"required": punches_count_today == 0, "reason": "first_punch", "punches_count_today": punches_count_today}
+
+    # V1: primeira marcacao + fechamento esperado no fim do expediente.
+    is_first_punch = punches_count_today == 0
+    is_evening_closure = punches_count_today >= 1 and (punches_count_today % 2 == 1) and now_local.hour >= 17
+    return {
+        "required": is_first_punch or is_evening_closure,
+        "reason": "first_and_last",
+        "punches_count_today": punches_count_today,
+    }
+
+
+def _policy_audit_snapshot(contract):
+    policy = CompanyAttendancePolicy.objects.filter(company=contract.company).first()
+    if not policy:
+        return {
+            "policy_mode": CompanyAttendancePolicy.ValidationMode.FREE,
+            "require_location": False,
+            "require_qr": False,
+            "qr_requirement": CompanyAttendancePolicy.QrRequirement.NONE,
+            "default_allowed_radius_m": 120,
+            "default_location_id": "",
+        }
+    return {
+        "policy_mode": policy.validation_mode,
+        "require_location": bool(policy.require_location),
+        "require_qr": bool(policy.require_qr),
+        "qr_requirement": policy.qr_requirement,
+        "default_allowed_radius_m": int(policy.default_allowed_radius_m or 120),
+        "default_location_id": str(policy.default_location_id or ""),
+    }
+
+
+def _consume_valid_qr_claim(request, contract):
+    claims = _load_qr_claims(request.session)
+    claim = claims.get(str(contract.id))
+    if not isinstance(claim, dict):
+        return None
+
+    location_id = (claim.get("location_id") or "").strip()
+    claimed_at_raw = (claim.get("claimed_at") or "").strip()
+    if not location_id or not claimed_at_raw:
+        return None
+
+    try:
+        claimed_at = datetime.fromisoformat(claimed_at_raw)
+    except ValueError:
+        return None
+    if timezone.is_naive(claimed_at):
+        claimed_at = timezone.make_aware(claimed_at, timezone.get_current_timezone())
+
+    if timezone.now() - claimed_at > timedelta(minutes=12):
+        return None
+
+    location = CompanyAuthorizedLocation.objects.filter(
+        id=location_id,
+        company=contract.company,
+        is_active=True,
+    ).first()
+    if not location:
+        return None
+
+    claims.pop(str(contract.id), None)
+    _save_qr_claims(request.session, claims)
+    return location
+
+
 @login_required
 def employee_dashboard(request):
     if not _only_employee(request.user):
@@ -140,6 +238,16 @@ def employee_dashboard(request):
         geo_latitude = _parse_geo_decimal(request.POST.get("geo_latitude"))
         geo_longitude = _parse_geo_decimal(request.POST.get("geo_longitude"))
         geo_accuracy_m = _parse_geo_decimal(request.POST.get("geo_accuracy_m"))
+        now_local = timezone.localtime()
+        policy_snapshot = _policy_audit_snapshot(selected_contract)
+        qr_requirement = _resolve_qr_requirement(selected_contract, now_local)
+        qr_required = bool(qr_requirement.get("required"))
+        qr_location = _consume_valid_qr_claim(request, selected_contract) if qr_required else None
+        qr_status = (
+            Punch.QrConfirmationStatus.CONFIRMED
+            if qr_location
+            else (Punch.QrConfirmationStatus.REQUIRED_MISSING if qr_required else Punch.QrConfirmationStatus.NOT_REQUIRED)
+        )
         confidence = evaluate_punch_confidence(
             selected_contract,
             latitude=geo_latitude,
@@ -156,7 +264,22 @@ def employee_dashboard(request):
             distance_to_location_m=confidence.get("distance_to_location_m"),
             validation_method=confidence.get("validation_method") or Punch.ValidationMethod.FREE_POLICY,
             confidence_status=confidence.get("confidence_status") or Punch.ConfidenceStatus.FREE,
+            qr_confirmation_status=qr_status,
+            qr_confirmed_location=qr_location,
+            qr_confirmed_at=timezone.now() if qr_location else None,
+            audit_payload={
+                "source": "WEB_PROFESSIONAL_DASHBOARD",
+                "recorded_from": "button_punch",
+                "policy": policy_snapshot,
+                "qr_required_for_punch": qr_required,
+                "qr_requirement_reason": qr_requirement.get("reason") or "",
+                "geolocation_collected": bool(geo_latitude is not None and geo_longitude is not None),
+                "geolocation_accuracy_m": float(geo_accuracy_m) if geo_accuracy_m is not None else None,
+                "request_user_agent": (request.META.get("HTTP_USER_AGENT") or "")[:180],
+            },
         )
+        if qr_required and not qr_location:
+            return redirect(f"{request.path}?event=punch_saved_qr_missing&contract={selected_contract.id}")
         return redirect(f"{request.path}?event=punch_saved&contract={selected_contract.id}")
 
     date_from_raw = request.GET.get("date_from") or request.GET.get("start")
@@ -251,6 +374,33 @@ def employee_dashboard(request):
 
 
 @login_required
+def qr_presence_checkin(request, token):
+    if not _only_employee(request.user):
+        return redirect("dashboard")
+
+    location = CompanyAuthorizedLocation.objects.filter(qr_token=token, is_active=True).select_related("company").first()
+    if not location:
+        return redirect(f"{reverse('employee_dashboard')}?event=qr_invalid")
+
+    contract = (
+        _active_contracts_for_employee_user(request.user)
+        .filter(company=location.company)
+        .select_related("company", "employee", "employee__user")
+        .first()
+    )
+    if not contract:
+        return redirect(f"{reverse('employee_dashboard')}?event=qr_contract_missing")
+
+    claims = _load_qr_claims(request.session)
+    claims[str(contract.id)] = {
+        "location_id": str(location.id),
+        "claimed_at": timezone.now().isoformat(),
+    }
+    _save_qr_claims(request.session, claims)
+    return redirect(f"{reverse('employee_dashboard')}?event=qr_confirmed&contract={contract.id}")
+
+
+@login_required
 @require_POST
 def create_manual_punches(request):
     if not _only_employee(request.user):
@@ -333,6 +483,7 @@ def create_manual_punches(request):
         )
 
     ordered_hm = sorted(requested_hm)
+    policy_snapshot = _policy_audit_snapshot(contract)
     confidence = evaluate_punch_confidence(contract, latitude=None, longitude=None, accuracy_m=None)
     with transaction.atomic():
         for hour, minute in ordered_hm:
@@ -346,6 +497,15 @@ def create_manual_punches(request):
                 is_manual=True,
                 validation_method=confidence.get("validation_method") or Punch.ValidationMethod.FREE_POLICY,
                 confidence_status=confidence.get("confidence_status") or Punch.ConfidenceStatus.FREE,
+                audit_payload={
+                    "source": "WEB_PROFESSIONAL_DASHBOARD",
+                    "recorded_from": "manual_batch",
+                    "policy": policy_snapshot,
+                    "qr_required_for_punch": False,
+                    "qr_requirement_reason": "manual_entry",
+                    "geolocation_collected": False,
+                    "request_user_agent": (request.META.get("HTTP_USER_AGENT") or "")[:180],
+                },
             )
 
     return JsonResponse(

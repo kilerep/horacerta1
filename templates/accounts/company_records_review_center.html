@@ -1,0 +1,158 @@
+{% extends "accounts/base.html" %}
+{% block title %}Central de revisao de registros{% endblock %}
+{% block page_title %}Central de revisao de registros{% endblock %}
+
+{% block content %}
+<style>
+  .rv-wrap{ display:grid; gap:14px; }
+  .rv-panel{
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:16px;
+    background:
+      linear-gradient(140deg, rgba(79,124,255,.1), transparent 42%),
+      linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+  }
+  .rv-title{ margin:0; font-size:20px; }
+  .rv-sub{ margin:8px 0 0; color:var(--muted); font-size:13px; max-width:780px; }
+  .rv-filters{ margin-top:12px; display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+  .rv-field{ min-width:220px; display:grid; gap:6px; flex:1; }
+  .rv-field label{ color:var(--muted); font-size:12px; font-weight:700; }
+  .rv-field input,.rv-field select{
+    width:100%;
+    min-height:44px;
+    border-radius:12px;
+    border:1px solid var(--border);
+    background:rgba(255,255,255,.06);
+    color:var(--text);
+    padding:10px 12px;
+  }
+  .rv-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+  .rv-cards{ display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; }
+  .rv-stat{ border:1px solid var(--border); border-radius:12px; background:rgba(255,255,255,.03); padding:12px; }
+  .rv-stat .k{ color:var(--muted); font-size:12px; }
+  .rv-stat .v{ margin-top:4px; font-size:24px; font-weight:800; }
+  .rv-table-wrap{ border:1px solid var(--border); border-radius:14px; overflow:auto; }
+  .rv-table{ width:100%; border-collapse:collapse; min-width:1080px; }
+  .rv-table th,.rv-table td{ text-align:left; padding:11px 10px; border-bottom:1px solid rgba(255,255,255,.07); vertical-align:top; }
+  .rv-table th{ color:var(--muted); font-size:13px; }
+  .rv-table tr:last-child td{ border-bottom:none; }
+  .rv-badge{
+    display:inline-flex; align-items:center; border-radius:999px; padding:4px 10px;
+    font-size:12px; font-weight:700; border:1px solid transparent;
+  }
+  .rv-badge.success{ background:rgba(45,211,145,.14); border-color:rgba(45,211,145,.35); color:#ccffea; }
+  .rv-badge.pending{ background:rgba(255,176,32,.14); border-color:rgba(255,176,32,.35); color:#ffe7ad; }
+  .rv-badge.warn{ background:rgba(255,94,94,.14); border-color:rgba(255,94,94,.35); color:#ffd8d8; }
+  .rv-badge.neutral{ background:rgba(148,163,184,.14); border-color:rgba(148,163,184,.35); color:#dce7ff; }
+  .rv-empty{ border:1px dashed rgba(255,255,255,.2); border-radius:12px; padding:12px; color:var(--muted); }
+  @media (max-width: 980px){
+    .rv-cards{ grid-template-columns:1fr; }
+    .rv-filters{ align-items:stretch; }
+    .rv-actions .btn{ width:100%; justify-content:center; }
+  }
+</style>
+
+<div class="rv-wrap">
+  <section class="rv-panel">
+    <h2 class="rv-title">Filtros de revisao</h2>
+    <p class="rv-sub">
+      Revise registros com selo de confianca e localizacao. Foco em visibilidade operacional sem gerar burocracia para o profissional.
+    </p>
+    <form method="get" class="rv-filters" data-submit-once="true">
+      <div class="rv-field">
+        <label for="rv-date-from">{{ period_form.date_from.label }}</label>
+        <input id="rv-date-from" type="date" name="date_from" value="{{ date_from_value }}">
+      </div>
+      <div class="rv-field">
+        <label for="rv-date-to">{{ period_form.date_to.label }}</label>
+        <input id="rv-date-to" type="date" name="date_to" value="{{ date_to_value }}">
+      </div>
+      <div class="rv-field">
+        <label for="rv-employee">Profissional</label>
+        <select id="rv-employee" name="employee">
+          <option value="">Todos</option>
+          {% for e in employees %}
+            <option value="{{ e.id }}" {% if selected_employee and selected_employee == e.id|stringformat:"s" %}selected{% endif %}>
+              {{ e.full_name }} - {{ e.user.email|default:e.user.username }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="rv-field">
+        <label for="rv-status">Status de confianca</label>
+        <select id="rv-status" name="status">
+          {% for value, label in status_choices %}
+            <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="rv-field">
+        <label for="rv-location">Local autorizado</label>
+        <select id="rv-location" name="location">
+          <option value="">Todos</option>
+          {% for loc in locations %}
+            <option value="{{ loc.id }}" {% if selected_location and selected_location == loc.id|stringformat:"s" %}selected{% endif %}>
+              {{ loc.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="rv-actions">
+        <button class="btn primary" type="submit" data-loading-text="Atualizando revisao...">Atualizar</button>
+        <a class="btn" href="{% url 'company_records_review_center' %}">Limpar</a>
+      </div>
+    </form>
+  </section>
+
+  <section class="rv-cards">
+    <article class="rv-stat"><div class="k">Total no resultado</div><div class="v">{{ summary_total }}</div></article>
+    <article class="rv-stat"><div class="k">Fora do raio</div><div class="v">{{ summary_out_of_radius }}</div></article>
+    <article class="rv-stat"><div class="k">Sem localizacao</div><div class="v">{{ summary_no_location }}</div></article>
+    <article class="rv-stat"><div class="k">Localizacao imprecisa</div><div class="v">{{ summary_imprecise }}</div></article>
+    <article class="rv-stat"><div class="k">QR exigido nao confirmado</div><div class="v">{{ summary_qr_missing }}</div></article>
+  </section>
+
+  <section class="rv-panel">
+    <h2 class="rv-title">Lista de revisao</h2>
+    <div class="rv-table-wrap">
+      <table class="rv-table">
+        <thead>
+          <tr>
+            <th>Profissional</th>
+            <th>Data/hora</th>
+            <th>Local esperado</th>
+            <th>Distancia calculada</th>
+            <th>Precisao</th>
+            <th>Status de confianca</th>
+            <th>QR presencial</th>
+            <th>Metodo</th>
+            <th>Timestamp tecnico</th>
+            <th>Acoes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+            <tr>
+              <td>{{ row.employee_name }}</td>
+              <td>{{ row.punch.timestamp|date:"d/m/Y H:i" }}</td>
+              <td>{{ row.expected_location }}</td>
+              <td>{{ row.distance_label }}</td>
+              <td>{{ row.accuracy_label }}</td>
+              <td><span class="rv-badge {{ row.confidence_tone }}">{{ row.confidence_label }}</span></td>
+              <td><span class="rv-badge {{ row.qr_tone }}">{{ row.qr_label }}</span></td>
+              <td>{{ row.punch.audit_method_label }}</td>
+              <td>{{ row.punch.created_at|date:"d/m/Y H:i:s" }}</td>
+              <td><a class="btn" href="{{ row.detail_url }}">Ver detalhe</a></td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="10"><div class="rv-empty">Nenhum registro encontrado para os filtros selecionados.</div></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}

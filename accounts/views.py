@@ -1,7 +1,7 @@
 from datetime import datetime, time, timedelta
 from decimal import Decimal
 from io import BytesIO
-from urllib.parse import urlencode, urlparse
+from urllib.parse import quote, urlencode, urlparse
 from xml.sax.saxutils import escape
 import zipfile
 import csv
@@ -66,6 +66,11 @@ from .forms import (
 )
 
 User = get_user_model()
+REVIEW_CONFIDENCE_STATUSES = {
+    Punch.ConfidenceStatus.OUT_OF_RADIUS,
+    Punch.ConfidenceStatus.NO_LOCATION,
+    Punch.ConfidenceStatus.IMPRECISE,
+}
 
 
 class RenderAwarePasswordResetView(auth_views.PasswordResetView):
@@ -413,6 +418,30 @@ def _compute_report_metrics(punches):
     }
 
 
+def _is_pending_review_punch(punch):
+    return (
+        punch.confidence_status in REVIEW_CONFIDENCE_STATUSES
+        or punch.qr_confirmation_status == Punch.QrConfirmationStatus.REQUIRED_MISSING
+    )
+
+
+def _compute_validation_quality_metrics(punches):
+    total_punches = len(punches)
+    validated_on_site = sum(1 for punch in punches if punch.confidence_status == Punch.ConfidenceStatus.ON_SITE)
+    qr_confirmed = sum(1 for punch in punches if punch.qr_confirmation_status == Punch.QrConfirmationStatus.CONFIRMED)
+    out_of_radius = sum(1 for punch in punches if punch.confidence_status == Punch.ConfidenceStatus.OUT_OF_RADIUS)
+    no_location = sum(1 for punch in punches if punch.confidence_status == Punch.ConfidenceStatus.NO_LOCATION)
+    pending_review = sum(1 for punch in punches if _is_pending_review_punch(punch))
+    return {
+        "total_punches": total_punches,
+        "validated_on_site": validated_on_site,
+        "qr_confirmed": qr_confirmed,
+        "out_of_radius": out_of_radius,
+        "no_location": no_location,
+        "pending_review": pending_review,
+    }
+
+
 def _month_label_ptbr(date_obj):
     month_names = [
         "janeiro",
@@ -657,6 +686,8 @@ def dashboard_empresa(request):
                 "mei_name": mei_name,
                 "confidence_label": punch.get_confidence_status_display(),
                 "confidence_tone": punch.confidence_tone,
+                "qr_label": punch.get_qr_confirmation_status_display(),
+                "qr_tone": punch.qr_tone,
                 "validation_method_label": punch.get_validation_method_display(),
                 "validated_location_name": punch.validated_location.name if punch.validated_location else "-",
                 "distance_label": distance_value,
@@ -670,6 +701,11 @@ def dashboard_empresa(request):
             "hint": "Visao por profissional no periodo",
         },
         {"label": "Central de hoje", "url": reverse("company_today_center"), "hint": "Acompanhamento operacional diario"},
+        {
+            "label": "Central de revisao",
+            "url": reverse("company_records_review_center"),
+            "hint": "Registros com confianca para auditoria",
+        },
         {"label": "Gerenciar profissionais", "url": reverse("company_meis"), "hint": "Cadastro e status dos MEIs"},
         {"label": "Ver vinculos", "url": reverse("company_contracts"), "hint": "Lista, status e edicao"},
         {"label": "Abrir historico", "url": reverse("company_history"), "hint": "Conferencia por periodo"},
@@ -1134,6 +1170,7 @@ def company_mei_closure(request, employee_id):
     total_hours_hhmm = format_hhmm(total_seconds)
     complete_days = sum(1 for row in daily_rows if row["punches_count"] > 0 and not row["is_incomplete"])
     incomplete_days = sum(1 for row in daily_rows if row["punches_count"] > 0 and row["is_incomplete"])
+    quality_metrics = _compute_validation_quality_metrics(punches)
 
     service_reports = list(
         ServiceReport.objects.filter(
@@ -1185,6 +1222,13 @@ def company_mei_closure(request, employee_id):
             f"Valor/hora atual: {_as_brl(current_hourly_rate) if current_hourly_rate else '-'}",
             f"Valor acumulado no periodo: {_as_brl(estimated_value)}",
             "",
+            "Qualidade de validacao:",
+            f"Registros no local: {quality_metrics['validated_on_site']}",
+            f"Registros com QR confirmado: {quality_metrics['qr_confirmed']}",
+            f"Registros fora do raio: {quality_metrics['out_of_radius']}",
+            f"Registros sem localizacao: {quality_metrics['no_location']}",
+            f"Registros pendentes de revisao: {quality_metrics['pending_review']}",
+            "",
             "Conferencia diaria (maximo 35 linhas):",
         ]
         for row in daily_rows[:35]:
@@ -1211,6 +1255,11 @@ def company_mei_closure(request, employee_id):
         "total_hours_hhmm": total_hours_hhmm,
         "complete_days": complete_days,
         "incomplete_days": incomplete_days,
+        "quality_validated_on_site": quality_metrics["validated_on_site"],
+        "quality_qr_confirmed": quality_metrics["qr_confirmed"],
+        "quality_out_of_radius": quality_metrics["out_of_radius"],
+        "quality_no_location": quality_metrics["no_location"],
+        "quality_pending_review": quality_metrics["pending_review"],
         "current_hourly_rate": current_hourly_rate,
         "current_hourly_rate_brl": _as_brl(current_hourly_rate) if current_hourly_rate else "-",
         "estimated_value": estimated_value,
@@ -1623,6 +1672,11 @@ def company_operational_summary(request):
             "total_seconds": 0,
             "total_hours_hhmm": "00:00",
             "incomplete_days": 0,
+            "validated_on_site": 0,
+            "qr_confirmed": 0,
+            "out_of_radius": 0,
+            "no_location": 0,
+            "pending_review": 0,
             "status_label": "Sem registros no periodo",
             "status_kind": "empty",
             "details_url": (
@@ -1632,10 +1686,12 @@ def company_operational_summary(request):
         }
 
     punches_by_employee_day = defaultdict(list)
+    punches_by_employee = defaultdict(list)
     for punch in punches:
         local_ts = timezone.localtime(punch.timestamp)
         employee_id = str(punch.contract.employee_id)
         punches_by_employee_day[(employee_id, local_ts.date())].append(local_ts)
+        punches_by_employee[employee_id].append(punch)
 
     for (employee_id, _day), times in punches_by_employee_day.items():
         row = rows_by_employee.get(employee_id)
@@ -1652,6 +1708,12 @@ def company_operational_summary(request):
     employee_rows = list(rows_by_employee.values())
     for row in employee_rows:
         row["total_hours_hhmm"] = format_hhmm(row["total_seconds"])
+        quality_metrics = _compute_validation_quality_metrics(punches_by_employee.get(str(row["employee"].id), []))
+        row["validated_on_site"] = quality_metrics["validated_on_site"]
+        row["qr_confirmed"] = quality_metrics["qr_confirmed"]
+        row["out_of_radius"] = quality_metrics["out_of_radius"]
+        row["no_location"] = quality_metrics["no_location"]
+        row["pending_review"] = quality_metrics["pending_review"]
         if row["total_punches"] == 0:
             row["status_label"] = "Sem registros no periodo"
             row["status_kind"] = "empty"
@@ -1674,6 +1736,89 @@ def company_operational_summary(request):
     summary_total_punches = sum(row["total_punches"] for row in employee_rows)
     summary_total_seconds = sum(row["total_seconds"] for row in employee_rows)
     summary_total_incomplete_days = sum(row["incomplete_days"] for row in employee_rows)
+    summary_quality = _compute_validation_quality_metrics(punches)
+
+    export_kind = (request.GET.get("export") or "").strip().lower()
+    if export_kind in {"csv", "xlsx", "pdf"}:
+        export_rows = []
+        for row in employee_rows:
+            export_rows.append(
+                [
+                    row["employee"].full_name or row["employee"].user.email or row["employee"].user.username,
+                    row["days_with_records"],
+                    row["total_punches"],
+                    row["total_hours_hhmm"],
+                    row["incomplete_days"],
+                    row["validated_on_site"],
+                    row["qr_confirmed"],
+                    row["out_of_radius"],
+                    row["no_location"],
+                    row["pending_review"],
+                    row["status_label"],
+                ]
+            )
+        headers = [
+            "Profissional",
+            "Dias com registro",
+            "Total de horarios",
+            "Total de horas",
+            "Dias incompletos",
+            "Validados no local",
+            "QR confirmado",
+            "Fora do raio",
+            "Sem localizacao",
+            "Pendentes de revisao",
+            "Status",
+        ]
+        period_label = f"{date_from.strftime('%d/%m/%Y')} ate {date_to.strftime('%d/%m/%Y')}"
+        if export_kind == "csv":
+            response = HttpResponse(content_type="text/csv; charset=utf-8")
+            response["Content-Disposition"] = 'attachment; filename="horacerta_resumo_operacional.csv"'
+            writer = csv.writer(response)
+            writer.writerow([f"Empresa: {company.name if company else '-'}"])
+            writer.writerow([f"Periodo: {period_label}"])
+            writer.writerow([f"Profissionais com registro: {summary_professionals_with_records}"])
+            writer.writerow([f"Total de horarios: {summary_total_punches}"])
+            writer.writerow([f"Total de horas: {format_hhmm(summary_total_seconds)}"])
+            writer.writerow([f"Dias incompletos: {summary_total_incomplete_days}"])
+            writer.writerow([f"Validados no local: {summary_quality['validated_on_site']}"])
+            writer.writerow([f"QR confirmado: {summary_quality['qr_confirmed']}"])
+            writer.writerow([f"Fora do raio: {summary_quality['out_of_radius']}"])
+            writer.writerow([f"Sem localizacao: {summary_quality['no_location']}"])
+            writer.writerow([f"Pendentes de revisao: {summary_quality['pending_review']}"])
+            writer.writerow([])
+            writer.writerow(headers)
+            for line in export_rows:
+                writer.writerow(line)
+            return response
+        if export_kind == "xlsx":
+            return _build_xlsx_response("horacerta_resumo_operacional.xlsx", headers, export_rows)
+        lines = [
+            "HoraCerta - Resumo operacional da empresa",
+            f"Empresa: {company.name if company else '-'}",
+            f"Periodo: {period_label}",
+            f"Profissionais com registro: {summary_professionals_with_records}",
+            f"Total de horarios: {summary_total_punches}",
+            f"Total de horas: {format_hhmm(summary_total_seconds)}",
+            f"Dias incompletos: {summary_total_incomplete_days}",
+            "",
+            "Qualidade de validacao consolidada:",
+            f"Registros no local: {summary_quality['validated_on_site']}",
+            f"Registros com QR confirmado: {summary_quality['qr_confirmed']}",
+            f"Registros fora do raio: {summary_quality['out_of_radius']}",
+            f"Registros sem localizacao: {summary_quality['no_location']}",
+            f"Registros pendentes de revisao: {summary_quality['pending_review']}",
+            "",
+            "Resumo por profissional (maximo 40 linhas):",
+        ]
+        for row in employee_rows[:40]:
+            lines.append(
+                f"{row['employee'].full_name or row['employee'].user.email or row['employee'].user.username} | "
+                f"qtd={row['total_punches']} | horas={row['total_hours_hhmm']} | "
+                f"local={row['validated_on_site']} | qr={row['qr_confirmed']} | "
+                f"fora={row['out_of_radius']} | sem_geo={row['no_location']} | pendente={row['pending_review']}"
+            )
+        return _build_pdf_response("horacerta_resumo_operacional.pdf", lines)
 
     context = {
         "company": company,
@@ -1689,6 +1834,11 @@ def company_operational_summary(request):
         "summary_total_punches": summary_total_punches,
         "summary_total_hours": format_hhmm(summary_total_seconds),
         "summary_total_incomplete_days": summary_total_incomplete_days,
+        "summary_quality_validated_on_site": summary_quality["validated_on_site"],
+        "summary_quality_qr_confirmed": summary_quality["qr_confirmed"],
+        "summary_quality_out_of_radius": summary_quality["out_of_radius"],
+        "summary_quality_no_location": summary_quality["no_location"],
+        "summary_quality_pending_review": summary_quality["pending_review"],
         "employee_rows": employee_rows,
     }
     return render(request, "accounts/company_operational_summary.html", context)
@@ -2274,13 +2424,16 @@ def company_attendance_reliability(request):
     if edit_id:
         editing_location = CompanyAuthorizedLocation.objects.filter(id=edit_id, company=company).first()
 
-    policy_form = CompanyAttendancePolicyForm(instance=policy)
-    location_form = CompanyAuthorizedLocationForm(instance=editing_location)
+    policy_form = CompanyAttendancePolicyForm(instance=policy, company=company)
+    if editing_location:
+        location_form = CompanyAuthorizedLocationForm(instance=editing_location)
+    else:
+        location_form = CompanyAuthorizedLocationForm(initial={"allowed_radius_m": policy.default_allowed_radius_m})
 
     if request.method == "POST":
         action = (request.POST.get("action") or "").strip().lower()
         if action == "save_policy":
-            policy_form = CompanyAttendancePolicyForm(request.POST, instance=policy)
+            policy_form = CompanyAttendancePolicyForm(request.POST, instance=policy, company=company)
             if policy_form.is_valid():
                 policy_obj = policy_form.save(commit=False)
                 policy_obj.company = company
@@ -2306,6 +2459,12 @@ def company_attendance_reliability(request):
                 location_obj.is_active = not location_obj.is_active
                 location_obj.save(update_fields=["is_active", "updated_at"])
                 return redirect(f"{reverse('company_attendance_reliability')}?event=location_toggled")
+        elif action == "rotate_qr_token":
+            location_id = (request.POST.get("location_id") or "").strip()
+            location_obj = CompanyAuthorizedLocation.objects.filter(id=location_id, company=company).first()
+            if location_obj:
+                location_obj.rotate_qr_token()
+                return redirect(f"{reverse('company_attendance_reliability')}?event=qr_rotated")
 
     active_locations_count = sum(1 for item in locations if item.is_active)
     inactive_locations_count = len(locations) - active_locations_count
@@ -2322,6 +2481,211 @@ def company_attendance_reliability(request):
             "editing_location": editing_location,
             "active_locations_count": active_locations_count,
             "inactive_locations_count": inactive_locations_count,
+        },
+    )
+
+
+@login_required
+def company_location_qr_panel(request, location_id):
+    denied = _redirect_if_not_empresa(request)
+    if denied:
+        return denied
+
+    company = _company_for_user(request.user)
+    if not company:
+        return redirect("dashboard_empresa")
+
+    location = get_object_or_404(
+        CompanyAuthorizedLocation,
+        id=location_id,
+        company=company,
+    )
+    scan_url = request.build_absolute_uri(reverse("qr_presence_checkin", args=[location.qr_token]))
+    qr_image_url = f"https://quickchart.io/qr?size=320&text={quote(scan_url, safe='')}"
+
+    return render(
+        request,
+        "accounts/company_location_qr_panel.html",
+        {
+            "company": company,
+            "location": location,
+            "scan_url": scan_url,
+            "qr_image_url": qr_image_url,
+            "back_url": reverse("company_attendance_reliability"),
+        },
+    )
+
+
+@login_required
+def company_records_review_center(request):
+    denied = _redirect_if_not_empresa(request)
+    if denied:
+        return denied
+
+    company = _company_for_user(request.user)
+    if not company:
+        return redirect("dashboard_empresa")
+
+    period_form = PeriodSearchForm(request.GET or None)
+    employees = (
+        Employee.objects.filter(company=company, user__role=User.Role.FUNCIONARIO, user__isnull=False)
+        .select_related("user")
+        .order_by("full_name")
+    )
+    locations = CompanyAuthorizedLocation.objects.filter(company=company).order_by("name")
+
+    today = timezone.localdate()
+    first_day = today.replace(day=1)
+    date_from = first_day
+    date_to = today
+    if period_form.is_valid():
+        date_from = period_form.cleaned_data.get("date_from") or first_day
+        date_to = period_form.cleaned_data.get("date_to") or today
+    if date_from > date_to:
+        date_from, date_to = date_to, date_from
+
+    selected_employee = (request.GET.get("employee") or "").strip()
+    selected_status = (request.GET.get("status") or "").strip().upper()
+    selected_location = (request.GET.get("location") or "").strip()
+
+    start_dt = timezone.make_aware(datetime.combine(date_from, time.min))
+    end_dt = timezone.make_aware(datetime.combine(date_to, time.max))
+
+    review_statuses = {
+        Punch.ConfidenceStatus.OUT_OF_RADIUS,
+        Punch.ConfidenceStatus.NO_LOCATION,
+        Punch.ConfidenceStatus.IMPRECISE,
+    }
+    allowed_statuses = {choice[0] for choice in Punch.ConfidenceStatus.choices}
+    if selected_status not in allowed_statuses:
+        selected_status = "REVIEW"
+
+    punches_qs = (
+        Punch.objects.filter(contract__company=company, timestamp__range=(start_dt, end_dt))
+        .select_related(
+            "contract",
+            "contract__company",
+            "contract__employee",
+            "contract__employee__user",
+            "validated_location",
+        )
+        .order_by("-timestamp")
+    )
+    if selected_employee:
+        punches_qs = punches_qs.filter(contract__employee_id=selected_employee)
+    if selected_location:
+        punches_qs = punches_qs.filter(validated_location_id=selected_location)
+    if selected_status == "REVIEW":
+        punches_qs = punches_qs.filter(
+            Q(confidence_status__in=review_statuses)
+            | Q(qr_confirmation_status=Punch.QrConfirmationStatus.REQUIRED_MISSING)
+        )
+    elif selected_status:
+        punches_qs = punches_qs.filter(confidence_status=selected_status)
+
+    rows = []
+    for punch in punches_qs[:600]:
+        rows.append(
+            {
+                "punch": punch,
+                "employee_name": _contract_mei_label(punch.contract),
+                "expected_location": punch.validated_location.name if punch.validated_location else "-",
+                "distance_label": (
+                    f"{float(punch.distance_to_location_m):.1f} m"
+                    if punch.distance_to_location_m is not None
+                    else "-"
+                ),
+                "accuracy_label": (
+                    f"{float(punch.geo_accuracy_m):.1f} m"
+                    if punch.geo_accuracy_m is not None
+                    else "-"
+                ),
+                "confidence_label": punch.get_confidence_status_display(),
+                "confidence_tone": punch.confidence_tone,
+                "qr_label": punch.get_qr_confirmation_status_display(),
+                "qr_tone": punch.qr_tone,
+                "detail_url": f"{reverse('company_record_review_detail', args=[punch.id])}?from={urlencode(request.GET)}",
+            }
+        )
+
+    status_choices = [("REVIEW", "Pendentes de revisao")] + list(Punch.ConfidenceStatus.choices)
+    summary_total = len(rows)
+    summary_out_of_radius = sum(1 for item in rows if item["punch"].confidence_status == Punch.ConfidenceStatus.OUT_OF_RADIUS)
+    summary_no_location = sum(1 for item in rows if item["punch"].confidence_status == Punch.ConfidenceStatus.NO_LOCATION)
+    summary_imprecise = sum(1 for item in rows if item["punch"].confidence_status == Punch.ConfidenceStatus.IMPRECISE)
+    summary_qr_missing = sum(
+        1 for item in rows if item["punch"].qr_confirmation_status == Punch.QrConfirmationStatus.REQUIRED_MISSING
+    )
+
+    return render(
+        request,
+        "accounts/company_records_review_center.html",
+        {
+            "company": company,
+            "period_form": period_form,
+            "employees": employees,
+            "locations": locations,
+            "status_choices": status_choices,
+            "selected_employee": selected_employee,
+            "selected_status": selected_status,
+            "selected_location": selected_location,
+            "date_from_value": date_from.strftime("%Y-%m-%d"),
+            "date_to_value": date_to.strftime("%Y-%m-%d"),
+            "rows": rows,
+            "summary_total": summary_total,
+            "summary_out_of_radius": summary_out_of_radius,
+            "summary_no_location": summary_no_location,
+            "summary_imprecise": summary_imprecise,
+            "summary_qr_missing": summary_qr_missing,
+        },
+    )
+
+
+@login_required
+def company_record_review_detail(request, punch_id):
+    denied = _redirect_if_not_empresa(request)
+    if denied:
+        return denied
+
+    company = _company_for_user(request.user)
+    if not company:
+        return redirect("dashboard_empresa")
+
+    punch = get_object_or_404(
+        Punch.objects.select_related(
+            "contract",
+            "contract__company",
+            "contract__employee",
+            "contract__employee__user",
+            "validated_location",
+        ),
+        id=punch_id,
+        contract__company=company,
+    )
+    back_query = (request.GET.get("from") or "").strip()
+    if back_query:
+        back_url = f"{reverse('company_records_review_center')}?{back_query}"
+    else:
+        back_url = reverse("company_records_review_center")
+
+    return render(
+        request,
+        "accounts/company_record_review_detail.html",
+        {
+            "company": company,
+            "punch": punch,
+            "employee_name": _contract_mei_label(punch.contract),
+            "distance_label": (
+                f"{float(punch.distance_to_location_m):.1f} m" if punch.distance_to_location_m is not None else "-"
+            ),
+            "accuracy_label": (f"{float(punch.geo_accuracy_m):.1f} m" if punch.geo_accuracy_m is not None else "-"),
+            "audit_source": (punch.audit_payload or {}).get("source", "-"),
+            "audit_recorded_from": (punch.audit_payload or {}).get("recorded_from", "-"),
+            "audit_geolocation_collected": bool((punch.audit_payload or {}).get("geolocation_collected")),
+            "audit_qr_required_for_punch": bool((punch.audit_payload or {}).get("qr_required_for_punch")),
+            "audit_qr_requirement_reason": (punch.audit_payload or {}).get("qr_requirement_reason", "-"),
+            "audit_policy_mode": ((punch.audit_payload or {}).get("policy") or {}).get("policy_mode", "-"),
+            "back_url": back_url,
         },
     )
 

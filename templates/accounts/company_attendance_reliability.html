@@ -69,9 +69,25 @@
     color:var(--muted);
     font-size:13px;
   }
+  .rel-mode-help{
+    margin-top:10px;
+    display:grid;
+    gap:8px;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+  .rel-mode-item{
+    border:1px solid var(--border);
+    border-radius:10px;
+    background:rgba(255,255,255,.03);
+    padding:10px;
+    font-size:12px;
+    color:var(--muted);
+  }
+  .rel-mode-item strong{ display:block; color:var(--text); margin-bottom:4px; }
   @media (max-width: 980px){
     .rel-grid{ grid-template-columns:1fr; }
     .rel-cards{ grid-template-columns:1fr; }
+    .rel-mode-help{ grid-template-columns:1fr; }
     .rel-actions .btn{ width:100%; justify-content:center; }
   }
 </style>
@@ -93,6 +109,10 @@
     <section class="hc-global-feedback" role="status" aria-live="polite">
       Status do local atualizado.
     </section>
+  {% elif request.GET.event == "qr_rotated" %}
+    <section class="hc-global-feedback" role="status" aria-live="polite">
+      Token QR do local atualizado com sucesso.
+    </section>
   {% endif %}
 
   <section class="rel-panel">
@@ -100,6 +120,20 @@
     <p class="rel-sub">
       Defina como sua empresa deseja validar os registros de horarios. Esta configuracao prepara a base para evolucoes de geolocalizacao e QR.
     </p>
+    <div class="rel-mode-help">
+      <article class="rel-mode-item">
+        <strong>Livre</strong>
+        Registro simples, sem exigencias adicionais.
+      </article>
+      <article class="rel-mode-item">
+        <strong>Com localizacao</strong>
+        Usa GPS para classificar confianca por distancia/precisao.
+      </article>
+      <article class="rel-mode-item">
+        <strong>Presencial com QR</strong>
+        Mantem fluxo simples e aplica QR apenas nos momentos definidos.
+      </article>
+    </div>
     <form method="post" data-submit-once="true">
       {% csrf_token %}
       <input type="hidden" name="action" value="save_policy">
@@ -108,6 +142,31 @@
           <label for="{{ policy_form.validation_mode.id_for_label }}">{{ policy_form.validation_mode.label }}</label>
           {{ policy_form.validation_mode }}
           {% if policy_form.validation_mode.errors %}<div class="rel-error">{{ policy_form.validation_mode.errors }}</div>{% endif %}
+        </div>
+        <div class="rel-field">
+          <label for="{{ policy_form.require_location.id_for_label }}">{{ policy_form.require_location.label }}</label>
+          {{ policy_form.require_location }}
+          {% if policy_form.require_location.errors %}<div class="rel-error">{{ policy_form.require_location.errors }}</div>{% endif %}
+        </div>
+        <div class="rel-field">
+          <label for="{{ policy_form.default_allowed_radius_m.id_for_label }}">{{ policy_form.default_allowed_radius_m.label }}</label>
+          {{ policy_form.default_allowed_radius_m }}
+          {% if policy_form.default_allowed_radius_m.errors %}<div class="rel-error">{{ policy_form.default_allowed_radius_m.errors }}</div>{% endif %}
+        </div>
+        <div class="rel-field rel-field--full">
+          <label for="{{ policy_form.default_location.id_for_label }}">{{ policy_form.default_location.label }}</label>
+          {{ policy_form.default_location }}
+          {% if policy_form.default_location.errors %}<div class="rel-error">{{ policy_form.default_location.errors }}</div>{% endif %}
+        </div>
+        <div class="rel-field">
+          <label for="{{ policy_form.require_qr.id_for_label }}">{{ policy_form.require_qr.label }}</label>
+          {{ policy_form.require_qr }}
+          {% if policy_form.require_qr.errors %}<div class="rel-error">{{ policy_form.require_qr.errors }}</div>{% endif %}
+        </div>
+        <div class="rel-field rel-field--full">
+          <label for="{{ policy_form.qr_requirement.id_for_label }}">{{ policy_form.qr_requirement.label }}</label>
+          {{ policy_form.qr_requirement }}
+          {% if policy_form.qr_requirement.errors %}<div class="rel-error">{{ policy_form.qr_requirement.errors }}</div>{% endif %}
         </div>
       </div>
       {% if policy_form.non_field_errors %}
@@ -123,6 +182,9 @@
     <article class="rel-card">
       <div class="k">Modo atual</div>
       <div class="v">{{ policy.get_validation_mode_display }}</div>
+      <div class="k" style="margin-top:6px;">Regra QR: {{ policy.get_qr_requirement_display }}</div>
+      <div class="k" style="margin-top:6px;">Localizacao: {% if policy.require_location %}Exigida{% else %}Nao exigida{% endif %}</div>
+      <div class="k" style="margin-top:6px;">QR: {% if policy.require_qr %}Exigido{% else %}Nao exigido{% endif %}</div>
     </article>
     <article class="rel-card">
       <div class="k">Locais ativos</div>
@@ -225,11 +287,18 @@
                 <td>
                   <div style="display:flex; gap:8px; flex-wrap:wrap;">
                     <a class="btn" href="?edit={{ item.id }}">Editar</a>
+                    <a class="btn" href="{% url 'company_location_qr_panel' item.id %}">Tela QR</a>
                     <form method="post" data-submit-once="true">
                       {% csrf_token %}
                       <input type="hidden" name="action" value="toggle_location">
                       <input type="hidden" name="location_id" value="{{ item.id }}">
                       <button class="btn" type="submit">{% if item.is_active %}Inativar{% else %}Ativar{% endif %}</button>
+                    </form>
+                    <form method="post" data-submit-once="true">
+                      {% csrf_token %}
+                      <input type="hidden" name="action" value="rotate_qr_token">
+                      <input type="hidden" name="location_id" value="{{ item.id }}">
+                      <button class="btn" type="submit">Gerar novo QR</button>
                     </form>
                   </div>
                 </td>

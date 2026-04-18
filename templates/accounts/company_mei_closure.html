@@ -146,6 +146,30 @@
         <div class="h">Estimativa operacional com base no valor/hora do(s) vinculo(s)</div>
       </article>
     </div>
+    <h3 style="margin:14px 0 0;">Qualidade da validacao</h3>
+    <p class="closure-sub">Indicadores de confiabilidade dos registros no mesmo periodo do fechamento.</p>
+    <div class="summary-grid">
+      <article class="summary-item">
+        <div class="k">Validados no local</div>
+        <div class="v">{{ quality_validated_on_site }}</div>
+      </article>
+      <article class="summary-item">
+        <div class="k">QR confirmado</div>
+        <div class="v">{{ quality_qr_confirmed }}</div>
+      </article>
+      <article class="summary-item">
+        <div class="k">Fora do raio</div>
+        <div class="v">{{ quality_out_of_radius }}</div>
+      </article>
+      <article class="summary-item">
+        <div class="k">Sem localizacao</div>
+        <div class="v">{{ quality_no_location }}</div>
+      </article>
+      <article class="summary-item">
+        <div class="k">Pendentes de revisao</div>
+        <div class="v">{{ quality_pending_review }}</div>
+      </article>
+    </div>
   </section>
 
   <section class="closure-panel">
