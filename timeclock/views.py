@@ -88,14 +88,19 @@ def _resolve_selected_contract(contracts_qs, contract_id):
     return contracts_qs.first()
 
 
-def _parse_geo_decimal(raw_value):
+def _parse_geo_decimal(raw_value, min_value=None, max_value=None):
     value = (raw_value or "").strip()
     if not value:
         return None
     try:
-        return Decimal(value)
+        parsed = Decimal(value)
     except (InvalidOperation, TypeError):
         return None
+    if min_value is not None and parsed < Decimal(str(min_value)):
+        return None
+    if max_value is not None and parsed > Decimal(str(max_value)):
+        return None
+    return parsed
 
 
 def _load_qr_claims(session):
@@ -212,6 +217,17 @@ def employee_dashboard(request):
             company=selected_contract.company,
         )
     pending_report_requests = pending_report_requests_qs[:20]
+    selected_policy = CompanyAttendancePolicy.objects.filter(company=selected_contract.company).first() if selected_contract else None
+    location_required_for_selected_contract = bool(
+        selected_policy
+        and (
+            selected_policy.require_location
+            or selected_policy.validation_mode in {
+                CompanyAttendancePolicy.ValidationMode.GEOLOCATION,
+                CompanyAttendancePolicy.ValidationMode.PRESENTIAL_QR,
+            }
+        )
+    )
 
     if request.method == "POST" and request.POST.get("action") == "respond_activity_request":
         request_id = (request.POST.get("request_id") or "").strip()
@@ -258,9 +274,9 @@ def employee_dashboard(request):
         )
 
     if request.method == "POST" and request.POST.get("action") == "punch":
-        geo_latitude = _parse_geo_decimal(request.POST.get("geo_latitude"))
-        geo_longitude = _parse_geo_decimal(request.POST.get("geo_longitude"))
-        geo_accuracy_m = _parse_geo_decimal(request.POST.get("geo_accuracy_m"))
+        geo_latitude = _parse_geo_decimal(request.POST.get("geo_latitude"), min_value=-90, max_value=90)
+        geo_longitude = _parse_geo_decimal(request.POST.get("geo_longitude"), min_value=-180, max_value=180)
+        geo_accuracy_m = _parse_geo_decimal(request.POST.get("geo_accuracy_m"), min_value=0, max_value=10000)
         now_local = timezone.localtime()
         policy_snapshot = _policy_audit_snapshot(selected_contract)
         qr_requirement = _resolve_qr_requirement(selected_contract, now_local)
@@ -392,6 +408,7 @@ def employee_dashboard(request):
         "no_contracts": False,
         "state_context": employee_lifecycle_summary(selected_contract.employee, contracts),
         "pending_report_requests": pending_report_requests,
+        "location_required_for_selected_contract": location_required_for_selected_contract,
         "context_warning": (
             "O vinculo selecionado anteriormente nao esta mais disponivel. Exibindo o vinculo ativo atual."
             if (mei_context.invalid_requested_contract or mei_context.invalid_session_contract)

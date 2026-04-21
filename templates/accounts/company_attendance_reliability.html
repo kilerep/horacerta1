@@ -42,7 +42,7 @@
   .rel-card .k{ color:var(--muted); font-size:12px; }
   .rel-card .v{ margin-top:4px; font-size:22px; font-weight:800; }
   .rel-table-wrap{ margin-top:12px; border:1px solid var(--border); border-radius:14px; overflow-x:auto; }
-  .rel-table{ width:100%; border-collapse:collapse; min-width:980px; }
+  .rel-table{ width:100%; border-collapse:collapse; min-width:880px; }
   .rel-table th,.rel-table td{
     text-align:left;
     padding:11px 10px;
@@ -84,6 +84,46 @@
     color:var(--muted);
   }
   .rel-mode-item strong{ display:block; color:var(--text); margin-bottom:4px; }
+  .rel-mode-banner{
+    margin-top:10px;
+    border:1px solid rgba(255,255,255,.2);
+    border-radius:12px;
+    background:rgba(255,255,255,.05);
+    color:var(--muted);
+    font-size:13px;
+    padding:10px 12px;
+  }
+  .rel-muted{ color:var(--muted); font-size:12px; }
+  .rel-geo-primary{
+    margin-top:10px;
+    border:1px solid rgba(79,124,255,.28);
+    border-radius:12px;
+    background:rgba(79,124,255,.08);
+    padding:10px;
+    display:grid;
+    gap:8px;
+  }
+  .rel-advanced{
+    margin-top:8px;
+    border:1px solid var(--border);
+    border-radius:12px;
+    background:rgba(255,255,255,.03);
+    padding:10px;
+  }
+  .rel-advanced > summary{
+    cursor:pointer;
+    font-weight:700;
+    color:var(--text);
+  }
+  .rel-map-placeholder{
+    margin-top:8px;
+    border:1px dashed rgba(255,255,255,.25);
+    border-radius:10px;
+    padding:10px;
+    color:var(--muted);
+    font-size:12px;
+  }
+  [hidden]{ display:none !important; }
   @media (max-width: 980px){
     .rel-grid{ grid-template-columns:1fr; }
     .rel-cards{ grid-template-columns:1fr; }
@@ -118,22 +158,23 @@
   <section class="rel-panel">
     <h2 class="rel-title">Politica de validacao de horarios</h2>
     <p class="rel-sub">
-      Defina como sua empresa deseja validar os registros de horarios. Esta configuracao prepara a base para evolucoes de geolocalizacao e QR.
+      Escolha uma politica simples para sua operacao. O HoraCerta aplica a regra no momento do registro, sem burocracia para o profissional.
     </p>
     <div class="rel-mode-help">
       <article class="rel-mode-item">
         <strong>Livre</strong>
-        Registro simples, sem exigencias adicionais.
+        Fluxo rapido, sem exigencias de localizacao ou QR.
       </article>
       <article class="rel-mode-item">
         <strong>Com localizacao</strong>
-        Usa GPS para classificar confianca por distancia/precisao.
+        Usa localizacao do momento do registro para classificar confiabilidade.
       </article>
       <article class="rel-mode-item">
         <strong>Presencial com QR</strong>
-        Mantem fluxo simples e aplica QR apenas nos momentos definidos.
+        Exige localizacao e adiciona confirmacao QR presencial.
       </article>
     </div>
+    <div id="relModeBanner" class="rel-mode-banner"></div>
     <form method="post" data-submit-once="true">
       {% csrf_token %}
       <input type="hidden" name="action" value="save_policy">
@@ -143,27 +184,28 @@
           {{ policy_form.validation_mode }}
           {% if policy_form.validation_mode.errors %}<div class="rel-error">{{ policy_form.validation_mode.errors }}</div>{% endif %}
         </div>
-        <div class="rel-field">
+        <div class="rel-field" data-rel-mode-block="location">
           <label for="{{ policy_form.require_location.id_for_label }}">{{ policy_form.require_location.label }}</label>
           {{ policy_form.require_location }}
           {% if policy_form.require_location.errors %}<div class="rel-error">{{ policy_form.require_location.errors }}</div>{% endif %}
         </div>
-        <div class="rel-field">
+        <div class="rel-field" data-rel-mode-block="location">
           <label for="{{ policy_form.default_allowed_radius_m.id_for_label }}">{{ policy_form.default_allowed_radius_m.label }}</label>
           {{ policy_form.default_allowed_radius_m }}
+          <div class="rel-muted">Sugestao para celular: 100 m.</div>
           {% if policy_form.default_allowed_radius_m.errors %}<div class="rel-error">{{ policy_form.default_allowed_radius_m.errors }}</div>{% endif %}
         </div>
-        <div class="rel-field rel-field--full">
+        <div class="rel-field rel-field--full" data-rel-mode-block="location">
           <label for="{{ policy_form.default_location.id_for_label }}">{{ policy_form.default_location.label }}</label>
           {{ policy_form.default_location }}
           {% if policy_form.default_location.errors %}<div class="rel-error">{{ policy_form.default_location.errors }}</div>{% endif %}
         </div>
-        <div class="rel-field">
+        <div class="rel-field" data-rel-mode-block="qr">
           <label for="{{ policy_form.require_qr.id_for_label }}">{{ policy_form.require_qr.label }}</label>
           {{ policy_form.require_qr }}
           {% if policy_form.require_qr.errors %}<div class="rel-error">{{ policy_form.require_qr.errors }}</div>{% endif %}
         </div>
-        <div class="rel-field rel-field--full">
+        <div class="rel-field rel-field--full" data-rel-mode-block="qr">
           <label for="{{ policy_form.qr_requirement.id_for_label }}">{{ policy_form.qr_requirement.label }}</label>
           {{ policy_form.qr_requirement }}
           {% if policy_form.qr_requirement.errors %}<div class="rel-error">{{ policy_form.qr_requirement.errors }}</div>{% endif %}
@@ -182,9 +224,8 @@
     <article class="rel-card">
       <div class="k">Modo atual</div>
       <div class="v">{{ policy.get_validation_mode_display }}</div>
-      <div class="k" style="margin-top:6px;">Regra QR: {{ policy.get_qr_requirement_display }}</div>
-      <div class="k" style="margin-top:6px;">Localizacao: {% if policy.require_location %}Exigida{% else %}Nao exigida{% endif %}</div>
-      <div class="k" style="margin-top:6px;">QR: {% if policy.require_qr %}Exigido{% else %}Nao exigido{% endif %}</div>
+      <div class="k" style="margin-top:6px;">Localizacao: {% if policy.require_location %}Validada no registro{% else %}Nao validada{% endif %}</div>
+      <div class="k" style="margin-top:6px;">QR presencial: {% if policy.require_qr %}Ativo{% else %}Nao ativo{% endif %}</div>
     </article>
     <article class="rel-card">
       <div class="k">Locais ativos</div>
@@ -196,9 +237,11 @@
     </article>
   </section>
 
-  <section class="rel-panel">
+  <section class="rel-panel" id="relLocationPanel">
     <h2 class="rel-title">{% if editing_location %}Editar local autorizado{% else %}Novo local autorizado{% endif %}</h2>
-    <p class="rel-sub">Cadastre os locais da operacao para uso futuro nas validacoes por localizacao.</p>
+    <p class="rel-sub">
+      Cadastre referenciais de operacao para validações de confiabilidade. Coordenadas continuam disponiveis no modo avancado.
+    </p>
     <form method="post" data-submit-once="true">
       {% csrf_token %}
       <input type="hidden" name="action" value="save_location">
@@ -214,6 +257,7 @@
         <div class="rel-field">
           <label for="{{ location_form.allowed_radius_m.id_for_label }}">{{ location_form.allowed_radius_m.label }}</label>
           {{ location_form.allowed_radius_m }}
+          <div class="rel-muted">Recomendado: 100 m para uso com celular.</div>
           {% if location_form.allowed_radius_m.errors %}<div class="rel-error">{{ location_form.allowed_radius_m.errors }}</div>{% endif %}
         </div>
         <div class="rel-field rel-field--full">
@@ -221,22 +265,40 @@
           {{ location_form.address_or_description }}
           {% if location_form.address_or_description.errors %}<div class="rel-error">{{ location_form.address_or_description.errors }}</div>{% endif %}
         </div>
-        <div class="rel-field">
-          <label for="{{ location_form.latitude.id_for_label }}">{{ location_form.latitude.label }}</label>
-          {{ location_form.latitude }}
-          {% if location_form.latitude.errors %}<div class="rel-error">{{ location_form.latitude.errors }}</div>{% endif %}
+      </div>
+
+      <div class="rel-geo-primary">
+        <div class="rel-muted">Coordenadas do local</div>
+        <div class="rel-actions">
+          <button type="button" class="btn" id="relUseCurrentLocation">Usar localizacao atual</button>
+          <button type="button" class="btn" id="relDefineOnMap">Definir no mapa</button>
         </div>
-        <div class="rel-field">
-          <label for="{{ location_form.longitude.id_for_label }}">{{ location_form.longitude.label }}</label>
-          {{ location_form.longitude }}
-          {% if location_form.longitude.errors %}<div class="rel-error">{{ location_form.longitude.errors }}</div>{% endif %}
-        </div>
-        <div class="rel-field rel-field--full">
-          <label for="{{ location_form.is_active.id_for_label }}">{{ location_form.is_active.label }}</label>
-          {{ location_form.is_active }}
-          {% if location_form.is_active.errors %}<div class="rel-error">{{ location_form.is_active.errors }}</div>{% endif %}
+        <div id="relGeoFeedback" class="rel-muted">Permissao sera solicitada apenas neste momento.</div>
+        <div id="relMapPlaceholder" class="rel-map-placeholder" hidden>
+          Integracao com mapa real preparada para Sprint futura. Por enquanto, use "Usar localizacao atual" ou informe coordenadas no modo avancado.
         </div>
       </div>
+
+      <details class="rel-advanced">
+        <summary>Configuracao avancada (coordenadas manuais)</summary>
+        <div class="rel-grid">
+          <div class="rel-field">
+            <label for="{{ location_form.latitude.id_for_label }}">{{ location_form.latitude.label }}</label>
+            {{ location_form.latitude }}
+            {% if location_form.latitude.errors %}<div class="rel-error">{{ location_form.latitude.errors }}</div>{% endif %}
+          </div>
+          <div class="rel-field">
+            <label for="{{ location_form.longitude.id_for_label }}">{{ location_form.longitude.label }}</label>
+            {{ location_form.longitude }}
+            {% if location_form.longitude.errors %}<div class="rel-error">{{ location_form.longitude.errors }}</div>{% endif %}
+          </div>
+          <div class="rel-field rel-field--full">
+            <label for="{{ location_form.is_active.id_for_label }}">{{ location_form.is_active.label }}</label>
+            {{ location_form.is_active }}
+            {% if location_form.is_active.errors %}<div class="rel-error">{{ location_form.is_active.errors }}</div>{% endif %}
+          </div>
+        </div>
+      </details>
       {% if location_form.non_field_errors %}
         <div class="rel-error" style="margin-top:10px;">{{ location_form.non_field_errors }}</div>
       {% endif %}
@@ -258,10 +320,7 @@
         <table class="rel-table">
           <thead>
             <tr>
-              <th>Nome</th>
-              <th>Endereco/descricao</th>
-              <th>Latitude</th>
-              <th>Longitude</th>
+              <th>Local</th>
               <th>Raio (m)</th>
               <th>Status</th>
               <th>Atualizado em</th>
@@ -271,10 +330,11 @@
           <tbody>
             {% for item in locations %}
               <tr>
-                <td>{{ item.name }}</td>
-                <td>{{ item.address_or_description|default:"-" }}</td>
-                <td>{{ item.latitude }}</td>
-                <td>{{ item.longitude }}</td>
+                <td>
+                  <strong>{{ item.name }}</strong><br>
+                  <span class="rel-muted">{{ item.address_or_description|default:"Sem descricao" }}</span><br>
+                  <span class="rel-muted">coord.: {{ item.latitude }}, {{ item.longitude }}</span>
+                </td>
                 <td>{{ item.allowed_radius_m }}</td>
                 <td>
                   {% if item.is_active %}
@@ -287,14 +347,14 @@
                 <td>
                   <div style="display:flex; gap:8px; flex-wrap:wrap;">
                     <a class="btn" href="?edit={{ item.id }}">Editar</a>
-                    <a class="btn" href="{% url 'company_location_qr_panel' item.id %}">Tela QR</a>
+                    <a class="btn" href="{% url 'company_location_qr_panel' item.id %}" data-rel-mode-block="qr-action">Tela QR</a>
                     <form method="post" data-submit-once="true">
                       {% csrf_token %}
                       <input type="hidden" name="action" value="toggle_location">
                       <input type="hidden" name="location_id" value="{{ item.id }}">
                       <button class="btn" type="submit">{% if item.is_active %}Inativar{% else %}Ativar{% endif %}</button>
                     </form>
-                    <form method="post" data-submit-once="true">
+                    <form method="post" data-submit-once="true" data-rel-mode-block="qr-action">
                       {% csrf_token %}
                       <input type="hidden" name="action" value="rotate_qr_token">
                       <input type="hidden" name="location_id" value="{{ item.id }}">
@@ -312,4 +372,81 @@
     {% endif %}
   </section>
 </div>
+
+<script>
+  (function () {
+    var modeInput = document.getElementById("{{ policy_form.validation_mode.id_for_label }}");
+    var modeBanner = document.getElementById("relModeBanner");
+    var locationPanel = document.getElementById("relLocationPanel");
+    var modeBlocks = document.querySelectorAll("[data-rel-mode-block]");
+    var btnUseCurrent = document.getElementById("relUseCurrentLocation");
+    var btnMap = document.getElementById("relDefineOnMap");
+    var mapPlaceholder = document.getElementById("relMapPlaceholder");
+    var geoFeedback = document.getElementById("relGeoFeedback");
+    var latitudeInput = document.getElementById("{{ location_form.latitude.id_for_label }}");
+    var longitudeInput = document.getElementById("{{ location_form.longitude.id_for_label }}");
+
+    function applyModeVisibility() {
+      if (!modeInput) return;
+      var mode = String(modeInput.value || "FREE").toUpperCase();
+      modeBlocks.forEach(function (el) {
+        var block = String(el.getAttribute("data-rel-mode-block") || "");
+        var show = true;
+        if (block === "location") show = mode !== "FREE";
+        if (block === "qr" || block === "qr-action") show = mode === "PRESENTIAL_QR";
+        el.hidden = !show;
+      });
+
+      if (locationPanel) {
+        locationPanel.style.opacity = mode === "FREE" ? "0.9" : "1";
+      }
+
+      if (!modeBanner) return;
+      if (mode === "FREE") {
+        modeBanner.textContent = "Modo Livre ativo. Configuracoes de localizacao e QR ficam minimizadas e podem ser preparadas para uso futuro.";
+      } else if (mode === "GEOLOCATION") {
+        modeBanner.textContent = "Modo com localizacao ativo. O profissional autoriza localizacao apenas no momento de registrar o horario.";
+      } else {
+        modeBanner.textContent = "Modo Presencial com QR ativo. O registro considera localizacao e confirmacao QR conforme a politica.";
+      }
+    }
+
+    function setGeoFeedback(message) {
+      if (geoFeedback) geoFeedback.textContent = message;
+    }
+
+    if (btnUseCurrent) {
+      btnUseCurrent.addEventListener("click", function () {
+        if (!navigator.geolocation) {
+          setGeoFeedback("Seu navegador nao suporta geolocalizacao.");
+          return;
+        }
+        setGeoFeedback("Solicitando permissao de localizacao...");
+        navigator.geolocation.getCurrentPosition(
+          function (position) {
+            if (latitudeInput && position && position.coords) latitudeInput.value = Number(position.coords.latitude).toFixed(6);
+            if (longitudeInput && position && position.coords) longitudeInput.value = Number(position.coords.longitude).toFixed(6);
+            setGeoFeedback("Coordenadas preenchidas com a localizacao atual.");
+          },
+          function () {
+            setGeoFeedback("Nao foi possivel obter sua localizacao agora. Voce pode informar manualmente no modo avancado.");
+          },
+          { enableHighAccuracy: true, timeout: 6000, maximumAge: 0 }
+        );
+      });
+    }
+
+    if (btnMap) {
+      btnMap.addEventListener("click", function () {
+        if (mapPlaceholder) mapPlaceholder.hidden = false;
+        setGeoFeedback("Fluxo de mapa preparado para futura integracao.");
+      });
+    }
+
+    if (modeInput) {
+      modeInput.addEventListener("change", applyModeVisibility);
+      applyModeVisibility();
+    }
+  })();
+</script>
 {% endblock %}

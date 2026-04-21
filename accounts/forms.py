@@ -2,6 +2,7 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AuthenticationForm
 from django.db.models import Q
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 from companies.models import Company, CompanyAttendancePolicy, CompanyAuthorizedLocation, Employee
 from timeclock.models import ActivityReportRequest, Contract, ServiceReport
@@ -571,15 +572,15 @@ class CompanyAttendancePolicyForm(forms.ModelForm):
             "default_location",
         ]
         labels = {
-            "validation_mode": "Modo de validacao de horarios",
-            "require_location": "Exigir localizacao no registro",
-            "require_qr": "Exigir confirmacao por QR presencial",
-            "qr_requirement": "Regra de exigencia de QR presencial",
-            "default_allowed_radius_m": "Raio padrao de validacao (metros)",
+            "validation_mode": "Como validar os registros",
+            "require_location": "Validar localizacao no registro",
+            "require_qr": "Exigir confirmacao presencial por QR",
+            "qr_requirement": "Quando exigir QR",
+            "default_allowed_radius_m": "Raio padrao sugerido (metros)",
             "default_location": "Local padrao (opcional)",
         }
         widgets = {
-            "default_allowed_radius_m": forms.NumberInput(attrs={"min": 10, "step": 1}),
+            "default_allowed_radius_m": forms.NumberInput(attrs={"min": 30, "step": 10, "placeholder": "100"}),
         }
 
     def __init__(self, *args, company=None, **kwargs):
@@ -590,6 +591,8 @@ class CompanyAttendancePolicyForm(forms.ModelForm):
             default_location_qs = CompanyAuthorizedLocation.objects.filter(company=company, is_active=True).order_by("name")
         self.fields["default_location"].queryset = default_location_qs
         self.fields["default_location"].label_from_instance = lambda obj: f"{obj.name} | raio {obj.allowed_radius_m}m"
+        if not self.is_bound and not self.initial.get("default_allowed_radius_m"):
+            self.initial["default_allowed_radius_m"] = 100
 
     def clean(self):
         data = super().clean()
@@ -600,8 +603,8 @@ class CompanyAttendancePolicyForm(forms.ModelForm):
         default_radius = data.get("default_allowed_radius_m")
         default_location = data.get("default_location")
 
-        if default_radius is not None and default_radius < 10:
-            self.add_error("default_allowed_radius_m", "Informe no minimo 10 metros.")
+        if default_radius is not None and default_radius < 30:
+            self.add_error("default_allowed_radius_m", "Use no minimo 30 metros para evitar leituras instaveis de GPS.")
         if default_radius is not None and default_radius > 5000:
             self.add_error("default_allowed_radius_m", "Para V1, o limite maximo permitido e 5000 metros.")
 
@@ -611,8 +614,9 @@ class CompanyAttendancePolicyForm(forms.ModelForm):
             data["qr_requirement"] = CompanyAttendancePolicy.QrRequirement.NONE
         elif mode == CompanyAttendancePolicy.ValidationMode.GEOLOCATION and not require_location:
             data["require_location"] = True
-        elif mode == CompanyAttendancePolicy.ValidationMode.PRESENTIAL_QR and not require_qr:
+        elif mode == CompanyAttendancePolicy.ValidationMode.PRESENTIAL_QR:
             data["require_qr"] = True
+            data["require_location"] = True
 
         if not data.get("require_qr"):
             data["qr_requirement"] = CompanyAttendancePolicy.QrRequirement.NONE
@@ -626,6 +630,9 @@ class CompanyAttendancePolicyForm(forms.ModelForm):
 
 
 class CompanyAuthorizedLocationForm(forms.ModelForm):
+    latitude = forms.CharField(required=True)
+    longitude = forms.CharField(required=True)
+
     class Meta:
         model = CompanyAuthorizedLocation
         fields = [
@@ -639,24 +646,72 @@ class CompanyAuthorizedLocationForm(forms.ModelForm):
         labels = {
             "name": "Nome do local",
             "address_or_description": "Endereco ou descricao",
-            "latitude": "Latitude",
-            "longitude": "Longitude",
+            "latitude": "Latitude (avancado)",
+            "longitude": "Longitude (avancado)",
             "allowed_radius_m": "Raio permitido (metros)",
             "is_active": "Local ativo",
         }
         widgets = {
             "address_or_description": forms.TextInput(attrs={"placeholder": "Ex.: Unidade Centro - Recepcao principal"}),
-            "latitude": forms.NumberInput(attrs={"step": "0.000001", "placeholder": "-23.550520"}),
-            "longitude": forms.NumberInput(attrs={"step": "0.000001", "placeholder": "-46.633308"}),
-            "allowed_radius_m": forms.NumberInput(attrs={"min": 10, "step": 1}),
+            "latitude": forms.TextInput(
+                attrs={
+                    "placeholder": "-23.550520",
+                    "inputmode": "decimal",
+                    "autocomplete": "off",
+                    "spellcheck": "false",
+                }
+            ),
+            "longitude": forms.TextInput(
+                attrs={
+                    "placeholder": "-46.633308",
+                    "inputmode": "decimal",
+                    "autocomplete": "off",
+                    "spellcheck": "false",
+                }
+            ),
+            "allowed_radius_m": forms.NumberInput(attrs={"min": 30, "step": 10, "placeholder": "100"}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.is_bound and (not self.instance or not self.instance.pk) and not self.initial.get("allowed_radius_m"):
+            self.initial["allowed_radius_m"] = 100
+
+    def _parse_coordinate(self, raw_value, *, field_name, min_value, max_value):
+        value = (raw_value or "").strip()
+        if value == "":
+            raise forms.ValidationError("Use 'Usar localizacao atual' ou informe manualmente no modo avancado.")
+        normalized = value.replace(",", ".").replace(" ", "")
+        try:
+            parsed = Decimal(normalized)
+        except (InvalidOperation, TypeError):
+            raise forms.ValidationError("Informe um numero valido.")
+        if parsed < Decimal(str(min_value)) or parsed > Decimal(str(max_value)):
+            raise forms.ValidationError(f"{field_name} deve ficar entre {min_value} e {max_value}.")
+        return parsed.quantize(Decimal("0.000001"), rounding=ROUND_HALF_UP)
+
+    def clean_latitude(self):
+        return self._parse_coordinate(
+            self.cleaned_data.get("latitude"),
+            field_name="Latitude",
+            min_value=-90,
+            max_value=90,
+        )
+
+    def clean_longitude(self):
+        return self._parse_coordinate(
+            self.cleaned_data.get("longitude"),
+            field_name="Longitude",
+            min_value=-180,
+            max_value=180,
+        )
 
     def clean_allowed_radius_m(self):
         radius = self.cleaned_data.get("allowed_radius_m")
         if radius is None:
             return radius
-        if radius < 10:
-            raise forms.ValidationError("Informe no minimo 10 metros.")
+        if radius < 30:
+            raise forms.ValidationError("Use no minimo 30 metros para evitar falsas divergencias de GPS.")
         if radius > 5000:
             raise forms.ValidationError("Para V1, o limite maximo permitido e 5000 metros.")
         return radius

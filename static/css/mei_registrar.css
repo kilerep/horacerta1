@@ -97,6 +97,16 @@ main,
   font-size:13px;
 }
 
+.hc-context-note{
+  border:1px solid rgba(79,124,255,.32);
+  background:rgba(79,124,255,.12);
+  color:#dbe7ff;
+  border-radius:12px;
+  padding:10px 12px;
+  font-size:12px;
+  text-align:left;
+}
+
 .hc-feedback{
   border:1px solid rgba(255,255,255,.14);
   border-radius:12px;

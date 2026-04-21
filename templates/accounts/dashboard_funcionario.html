@@ -175,6 +175,11 @@
               {% endfor %}
             </select>
           </form>
+          {% if location_required_for_selected_contract %}
+            <div class="hc-context-note">
+              Este vinculo valida localizacao no momento do registro. Nao ha rastreamento continuo.
+            </div>
+          {% endif %}
 
           <form id="hcPunchForm" method="post" action="?contract={{ selected_contract.id }}" class="hc-field">
             {% csrf_token %}

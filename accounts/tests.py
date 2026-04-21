@@ -8,6 +8,7 @@ from uuid import uuid4
 from companies.models import Company, CompanyAttendancePolicy, CompanyAuthorizedLocation, Employee
 from timeclock.models import ActivityReportRequest, Contract, Punch, ServiceReport
 from accounts.mei_context import MEI_SELECTED_CONTRACT_SESSION_KEY
+from .forms import CompanyAttendancePolicyForm, CompanyAuthorizedLocationForm
 from .services import MeiLinkError, create_or_link_mei_by_email
 
 User = get_user_model()
@@ -440,3 +441,68 @@ class CompanyAttendanceReliabilityTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 404)
+
+
+class CompanyAttendanceReliabilityFormUxTests(TestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user(
+            username="reliability-forms-owner@example.com",
+            email="reliability-forms-owner@example.com",
+            password="Teste@12345",
+            role=User.Role.EMPRESA,
+        )
+        self.company = Company.objects.create(
+            name="Empresa Form UX",
+            owner=self.owner,
+            email="empresa-form-ux@example.com",
+        )
+
+    def test_location_form_accepts_comma_coordinates_and_rounds(self):
+        form = CompanyAuthorizedLocationForm(
+            data={
+                "name": "Unidade Centro",
+                "address_or_description": "Rua 1",
+                "latitude": "-23,5505204",
+                "longitude": "-46,6333078",
+                "allowed_radius_m": "100",
+                "is_active": "on",
+            },
+            instance=CompanyAuthorizedLocation(company=self.company),
+        )
+
+        self.assertTrue(form.is_valid(), form.errors.as_json())
+        self.assertEqual(str(form.cleaned_data["latitude"]), "-23.550520")
+        self.assertEqual(str(form.cleaned_data["longitude"]), "-46.633308")
+
+    def test_location_form_rejects_too_tight_radius(self):
+        form = CompanyAuthorizedLocationForm(
+            data={
+                "name": "Unidade Centro",
+                "address_or_description": "Rua 1",
+                "latitude": "-23.550520",
+                "longitude": "-46.633308",
+                "allowed_radius_m": "5",
+                "is_active": "on",
+            },
+            instance=CompanyAuthorizedLocation(company=self.company),
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("allowed_radius_m", form.errors)
+
+    def test_policy_form_presential_qr_enforces_location_and_qr(self):
+        policy = CompanyAttendancePolicy(company=self.company)
+        form = CompanyAttendancePolicyForm(
+            data={
+                "validation_mode": CompanyAttendancePolicy.ValidationMode.PRESENTIAL_QR,
+                "default_allowed_radius_m": "100",
+                "default_location": "",
+                "qr_requirement": CompanyAttendancePolicy.QrRequirement.FIRST_PUNCH,
+            },
+            instance=policy,
+            company=self.company,
+        )
+
+        self.assertTrue(form.is_valid(), form.errors.as_json())
+        self.assertTrue(form.cleaned_data["require_location"])
+        self.assertTrue(form.cleaned_data["require_qr"])
