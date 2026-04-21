@@ -75,6 +75,23 @@
   {% endif %}
 
   <section class="sr-panel">
+    <h2 class="sr-title">Contexto atual</h2>
+    <p class="sr-sub">Selecione empresa e vinculo para filtrar solicitacoes e relatorios no contexto operacional correto.</p>
+    <form method="get" class="sr-grid">
+      <div class="sr-field">
+        <label for="sr-contract-selector">Empresa e vinculo</label>
+        <select id="sr-contract-selector" name="contract" onchange="this.form.submit()">
+          {% for c in contracts %}
+            <option value="{{ c.id }}" {% if selected_contract and c.id == selected_contract.id %}selected{% endif %}>
+              {{ c.company.name }} - R$ {{ c.hourly_rate }}/h
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+    </form>
+  </section>
+
+  <section class="sr-panel">
     <h2 class="sr-title">Solicitacoes recebidas da empresa</h2>
     <p class="sr-sub">Acompanhe o que esta pendente e responda com relatorio de servico vinculado a cada solicitacao.</p>
     <div class="sr-meta">Pendentes: {{ pending_requests|length }} | Respondidas/Revisadas: {{ responded_requests|length }}</div>
@@ -104,7 +121,9 @@
                 {% endif %}
               </td>
               <td><span class="sr-badge sr-badge--pending">Pendente</span></td>
-              <td><a class="btn primary" href="{% url 'mei_service_report_request_detail' item.id %}">Responder</a></td>
+              <td>
+                <a class="btn primary" href="{% url 'mei_service_report_request_detail' item.id %}{% if selected_contract %}?contract={{ selected_contract.id }}{% endif %}">Responder</a>
+              </td>
             </tr>
           {% empty %}
             <tr>
@@ -154,7 +173,9 @@
                   -
                 {% endif %}
               </td>
-              <td><a class="btn" href="{% url 'mei_service_report_request_detail' item.id %}">Abrir detalhe</a></td>
+              <td>
+                <a class="btn" href="{% url 'mei_service_report_request_detail' item.id %}{% if selected_contract %}?contract={{ selected_contract.id }}{% endif %}">Abrir detalhe</a>
+              </td>
             </tr>
           {% empty %}
             <tr>
@@ -176,6 +197,9 @@
     <form method="post" data-submit-once="true">
       {% csrf_token %}
       <input type="hidden" name="action" value="create_report">
+      {% if selected_contract %}
+        <input type="hidden" name="selected_contract" value="{{ selected_contract.id }}">
+      {% endif %}
       <div class="sr-grid">
         <div class="sr-field">
           <label for="{{ report_form.report_date.id_for_label }}">{{ report_form.report_date.label }}</label>
@@ -229,7 +253,9 @@
               <td>{{ report.company.name }}</td>
               <td>{{ report.title }}</td>
               <td>{{ report.created_at|date:"d/m/Y H:i" }}</td>
-              <td><a class="btn" href="{% url 'mei_service_report_detail' report.id %}">Abrir detalhe</a></td>
+              <td>
+                <a class="btn" href="{% url 'mei_service_report_detail' report.id %}{% if selected_contract %}?contract={{ selected_contract.id }}{% endif %}">Abrir detalhe</a>
+              </td>
             </tr>
           {% empty %}
             <tr>

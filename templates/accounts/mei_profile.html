@@ -34,8 +34,25 @@
   <section class="panel">
     <h2 style="margin:0;">Meu perfil</h2>
     <p class="muted" style="margin:8px 0 0;">Mantenha seus dados atualizados para facilitar a operacao com a empresa.</p>
+    {% if contracts %}
+      <form method="get" class="row" style="margin-top:10px;">
+        <div class="field">
+          <label>Empresa e contrato</label>
+          <select name="contract" onchange="this.form.submit()">
+            {% for c in contracts %}
+              <option value="{{ c.id }}" {% if selected_contract and c.id == selected_contract.id %}selected{% endif %}>
+                {{ c.company.name }} - R$ {{ c.hourly_rate }}/h
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+      </form>
+    {% endif %}
     <form method="post" enctype="multipart/form-data" style="margin-top:10px;">
       {% csrf_token %}
+      {% if selected_contract %}
+        <input type="hidden" name="selected_contract" value="{{ selected_contract.id }}">
+      {% endif %}
 
       <div class="row">
         <div class="field">

@@ -50,10 +50,10 @@ class Company(models.Model):
 class Employee(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
-    user = models.OneToOneField(
+    user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name="employee_profile",
+        related_name="employee_profiles",
     )
 
     company = models.ForeignKey(
@@ -77,6 +77,12 @@ class Employee(models.Model):
         verbose_name = "Employee"
         verbose_name_plural = "Employees"
         ordering = ["full_name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "company"],
+                name="unique_employee_per_user_company",
+            ),
+        ]
 
     def clean(self):
         errors = {}

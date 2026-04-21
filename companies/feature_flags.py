@@ -8,7 +8,7 @@ from django.shortcuts import render
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import Company, CompanyFeatureOverride, CompanySubscription, Feature, Plan, PlanFeature
+from .models import Company, CompanyFeatureOverride, CompanySubscription, Employee, Feature, Plan, PlanFeature
 
 
 @dataclass(frozen=True)
@@ -44,7 +44,12 @@ def _company_from_user(user) -> Optional[Company]:
     if role == "EMPRESA":
         return user.owned_companies.first()
     if role == "FUNCIONARIO":
-        employee = getattr(user, "employee_profile", None)
+        employee = (
+            Employee.objects.filter(user=user, is_active=True)
+            .select_related("company")
+            .order_by("-created_at")
+            .first()
+        )
         return getattr(employee, "company", None)
     return None
 
@@ -144,6 +149,23 @@ def get_company_feature_access(
 def get_user_feature_access(user, feature_code: str, at_time=None) -> FeatureAccessResult:
     role = getattr(user, "role", None) if getattr(user, "is_authenticated", False) else None
     company = _company_from_user(user)
+    if not getattr(user, "is_authenticated", False):
+        return FeatureAccessResult(
+            feature_code=feature_code,
+            allowed=False,
+            reason="user_not_authenticated",
+            user_role=role,
+        )
+    return get_company_feature_access(
+        company=company,
+        feature_code=feature_code,
+        user_role=role,
+        at_time=at_time,
+    )
+
+
+def get_user_feature_access_for_company(user, company: Company | None, feature_code: str, at_time=None) -> FeatureAccessResult:
+    role = getattr(user, "role", None) if getattr(user, "is_authenticated", False) else None
     if not getattr(user, "is_authenticated", False):
         return FeatureAccessResult(
             feature_code=feature_code,

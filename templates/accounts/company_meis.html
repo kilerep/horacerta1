@@ -25,6 +25,10 @@
       </div>
     {% elif request.GET.status == "created_with_contract" %}
       <div class="company-meis__alert">Profissional e vinculo inicial criados com sucesso.</div>
+    {% elif request.GET.status == "linked_existing_with_contract" %}
+      <div class="company-meis__alert">Conta existente localizada. Novo vinculo criado com sucesso para esta empresa.</div>
+    {% elif request.GET.status == "linked_existing" %}
+      <div class="company-meis__alert">Conta existente localizada. Cadastro vinculado a esta empresa com sucesso.</div>
     {% elif request.GET.status == "link_created" %}
       <div class="company-meis__alert">Primeiro vinculo configurado com sucesso para o profissional selecionado.</div>
     {% elif request.GET.status == "access_deactivated" %}
@@ -44,7 +48,7 @@
       <button type="button" class="btn" data-copy-text="{{ activation_link }}">Copiar link de ativacao geral</button>
     </div>
 
-    <form method="post" enctype="multipart/form-data" class="company-meis__create-form">
+    <form method="post" enctype="multipart/form-data" class="company-meis__create-form" data-email-status-url="{% url 'company_mei_email_status' %}">
       {% csrf_token %}
       <input type="hidden" name="action" value="create_mei">
       <section class="company-meis__section">
@@ -70,14 +74,17 @@
           <div class="company-meis__field">
             <label for="{{ create_mei_form.mei_email.id_for_label }}">{{ create_mei_form.mei_email.label }}</label>
             {{ create_mei_form.mei_email }}
+            <div id="mei-email-status" class="company-meis__hint {% if create_mei_form.account_conflict %}company-meis__error{% endif %}">
+              {{ create_mei_form.account_hint|default:"Informe o email do profissional para criar nova conta ou vincular conta existente." }}
+            </div>
             {% if create_mei_form.mei_email.errors %}<div class="company-meis__error">{{ create_mei_form.mei_email.errors }}</div>{% endif %}
           </div>
-          <div class="company-meis__field">
+          <div id="mei-password1-wrap" class="company-meis__field {% if create_mei_form.account_mode and create_mei_form.account_mode != 'new' %}company-meis__field--hidden{% endif %}">
             <label for="{{ create_mei_form.password1.id_for_label }}">{{ create_mei_form.password1.label }}</label>
             {{ create_mei_form.password1 }}
             {% if create_mei_form.password1.errors %}<div class="company-meis__error">{{ create_mei_form.password1.errors }}</div>{% endif %}
           </div>
-          <div class="company-meis__field">
+          <div id="mei-password2-wrap" class="company-meis__field {% if create_mei_form.account_mode and create_mei_form.account_mode != 'new' %}company-meis__field--hidden{% endif %}">
             <label for="{{ create_mei_form.password2.id_for_label }}">{{ create_mei_form.password2.label }}</label>
             {{ create_mei_form.password2 }}
             {% if create_mei_form.password2.errors %}<div class="company-meis__error">{{ create_mei_form.password2.errors }}</div>{% endif %}
@@ -288,6 +295,72 @@
   </div>
   <script>
     (function () {
+      var createMeiForm = document.querySelector('form[data-email-status-url]');
+      var meiEmailInput = document.getElementById('{{ create_mei_form.mei_email.id_for_label }}');
+      var password1Input = document.getElementById('{{ create_mei_form.password1.id_for_label }}');
+      var password2Input = document.getElementById('{{ create_mei_form.password2.id_for_label }}');
+      var password1Wrap = document.getElementById('mei-password1-wrap');
+      var password2Wrap = document.getElementById('mei-password2-wrap');
+      var emailStatus = document.getElementById('mei-email-status');
+      var emailStatusRequestId = 0;
+
+      function setPasswordVisibility(visible) {
+        [password1Wrap, password2Wrap].forEach(function (wrap) {
+          if (!wrap) return;
+          wrap.classList.toggle('company-meis__field--hidden', !visible);
+        });
+        [password1Input, password2Input].forEach(function (input) {
+          if (!input) return;
+          input.disabled = !visible;
+        });
+      }
+
+      function setEmailStatus(message, mode) {
+        if (!emailStatus) return;
+        emailStatus.textContent = message || '';
+        emailStatus.classList.remove('company-meis__error');
+        if (mode === 'conflict' || mode === 'already_linked') {
+          emailStatus.classList.add('company-meis__error');
+        }
+      }
+
+      function checkEmailStatus() {
+        if (!createMeiForm || !meiEmailInput) return;
+        var rawEmail = (meiEmailInput.value || '').trim();
+        if (!rawEmail || rawEmail.indexOf('@') === -1) {
+          setPasswordVisibility(true);
+          setEmailStatus('Informe o email do profissional para criar nova conta ou vincular conta existente.', 'neutral');
+          return;
+        }
+
+        var endpoint = createMeiForm.getAttribute('data-email-status-url');
+        if (!endpoint) return;
+        emailStatusRequestId += 1;
+        var currentId = emailStatusRequestId;
+        fetch(endpoint + '?email=' + encodeURIComponent(rawEmail), { credentials: 'same-origin' })
+          .then(function (response) { return response.json(); })
+          .then(function (payload) {
+            if (currentId !== emailStatusRequestId) return;
+            if (!payload || !payload.status) return;
+            setEmailStatus(payload.message || '', payload.status);
+            if (payload.status === 'new') {
+              setPasswordVisibility(true);
+            } else {
+              setPasswordVisibility(false);
+            }
+          })
+          .catch(function () {
+            if (currentId !== emailStatusRequestId) return;
+            setEmailStatus('Nao foi possivel validar o email agora. O backend validara no envio.', 'neutral');
+            setPasswordVisibility(true);
+          });
+      }
+
+      if (meiEmailInput) {
+        meiEmailInput.addEventListener('blur', checkEmailStatus);
+        meiEmailInput.addEventListener('change', checkEmailStatus);
+      }
+
       function copyText(value) {
         if (!value) return;
         if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -306,6 +379,10 @@
         if (!trigger) return;
         copyText(trigger.getAttribute("data-copy-text"));
       });
+
+      if ('{{ create_mei_form.account_mode|default:"" }}' === 'existing') {
+        setPasswordVisibility(false);
+      }
     })();
   </script>
 {% endblock %}

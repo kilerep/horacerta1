@@ -136,6 +136,10 @@
   grid-column: 1 / -1;
 }
 
+.company-meis__field--hidden {
+  display: none;
+}
+
 .company-meis__field label {
   color: rgba(255, 255, 255, 0.82);
   font-size: 12px;

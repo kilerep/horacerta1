@@ -16,7 +16,7 @@ from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import Q
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.templatetags.static import static
 from django.urls import reverse
@@ -64,6 +64,7 @@ from .forms import (
     PeriodSearchForm,
     UnifiedSignupForm,
 )
+from .mei_context import mei_contracts_for_user, resolve_mei_context
 
 User = get_user_model()
 REVIEW_CONFIDENCE_STATUSES = {
@@ -743,7 +744,7 @@ def company_meis(request):
         return denied
     company = _company_for_user(request.user)
     form = EmployeeSearchForm(request.GET or None)
-    create_mei_form = CompanyMEICreateForm()
+    create_mei_form = CompanyMEICreateForm(company=company)
     link_for_id = (request.GET.get("link_for") or "").strip()
     link_for_employee = None
     if company and link_for_id:
@@ -812,15 +813,19 @@ def company_meis(request):
                     contract.company = company
                     contract.save()
                     return redirect(f"{reverse('company_meis')}?status=link_created&highlight_employee={employee.id}")
-            create_mei_form = CompanyMEICreateForm()
+            create_mei_form = CompanyMEICreateForm(company=company)
         else:
-            create_mei_form = CompanyMEICreateForm(request.POST, request.FILES)
+            create_mei_form = CompanyMEICreateForm(request.POST, request.FILES, company=company)
             if not company:
                 create_mei_form.add_error(None, "Empresa nao encontrada para criar MEI.")
             elif create_mei_form.is_valid():
-                _employee, contract = create_mei_form.create_mei_and_optional_contract(company)
-                status = "created_with_contract" if contract else "created_mei"
-                return redirect(f"{reverse('company_meis')}?status={status}")
+                employee, contract, link_result = create_mei_form.create_or_link_mei_and_optional_contract(company)
+                if link_result:
+                    if link_result.user_created:
+                        status = "created_with_contract" if contract else "created_mei"
+                    else:
+                        status = "linked_existing_with_contract" if contract else "linked_existing"
+                    return redirect(f"{reverse('company_meis')}?status={status}&highlight_employee={employee.id}")
             create_link_form = CompanyContractForm(company=company, request=request, prefix="link", initial=link_initial)
 
     if company:
@@ -889,6 +894,58 @@ def company_meis(request):
         "pending_reports_count": _pending_reports_count_for_company(company),
     }
     return render(request, "accounts/company_meis.html", context)
+
+
+@login_required
+@require_GET
+def company_mei_email_status(request):
+    denied = _redirect_if_not_empresa(request)
+    if denied:
+        return JsonResponse({"ok": False, "status": "forbidden"}, status=403)
+
+    company = _company_for_user(request.user)
+    raw_email = (request.GET.get("email") or "").strip().lower()
+    if not raw_email:
+        return JsonResponse({"ok": False, "status": "invalid_email", "message": "Informe um email valido."}, status=400)
+
+    user = User.objects.filter(Q(email__iexact=raw_email) | Q(username__iexact=raw_email)).first()
+    if not user:
+        return JsonResponse(
+            {
+                "ok": True,
+                "status": "new",
+                "message": "Novo email: sera criada a conta principal do MEI com senha.",
+            }
+        )
+
+    if user.role != User.Role.FUNCIONARIO:
+        return JsonResponse(
+            {
+                "ok": True,
+                "status": "conflict",
+                "message": "Este email pertence a uma conta de empresa/admin. Use outro email do MEI.",
+            }
+        )
+
+    if company and Employee.objects.filter(user=user, company=company).exists():
+        return JsonResponse(
+            {
+                "ok": True,
+                "status": "already_linked",
+                "message": "Este MEI ja possui vinculo com sua empresa. Use o gerenciamento de vinculos.",
+            }
+        )
+
+    return JsonResponse(
+        {
+            "ok": True,
+            "status": "existing",
+            "message": (
+                "Este profissional ja possui conta no HoraCerta. "
+                "Sera criado apenas um novo vinculo com sua empresa."
+            ),
+        }
+    )
 
 
 @login_required
@@ -2429,6 +2486,8 @@ def company_attendance_reliability(request):
         location_form = CompanyAuthorizedLocationForm(instance=editing_location)
     else:
         location_form = CompanyAuthorizedLocationForm(initial={"allowed_radius_m": policy.default_allowed_radius_m})
+    active_locations_count = sum(1 for item in locations if item.is_active)
+    inactive_locations_count = len(locations) - active_locations_count
 
     if request.method == "POST":
         action = (request.POST.get("action") or "").strip().lower()
@@ -2442,7 +2501,33 @@ def company_attendance_reliability(request):
                 return redirect(f"{reverse('company_attendance_reliability')}?event=policy_saved")
         elif action == "save_location":
             location_id = (request.POST.get("location_id") or "").strip()
-            location_obj = CompanyAuthorizedLocation.objects.filter(id=location_id, company=company).first() if location_id else None
+            location_obj = None
+            if location_id:
+                location_obj = CompanyAuthorizedLocation.objects.filter(id=location_id, company=company).first()
+                if location_obj is None:
+                    location_form = CompanyAuthorizedLocationForm(
+                        request.POST,
+                        instance=CompanyAuthorizedLocation(company=company),
+                    )
+                    location_form.add_error(None, "Local informado nao pertence a sua empresa.")
+                    editing_location = None
+                    return render(
+                        request,
+                        "accounts/company_attendance_reliability.html",
+                        {
+                            "company": company,
+                            "policy": policy,
+                            "policy_form": policy_form,
+                            "location_form": location_form,
+                            "locations": locations,
+                            "editing_location": editing_location,
+                            "active_locations_count": active_locations_count,
+                            "inactive_locations_count": inactive_locations_count,
+                        },
+                        status=400,
+                    )
+            if location_obj is None:
+                location_obj = CompanyAuthorizedLocation(company=company)
             location_form = CompanyAuthorizedLocationForm(request.POST, instance=location_obj)
             if location_form.is_valid():
                 saved = location_form.save(commit=False)
@@ -2454,20 +2539,15 @@ def company_attendance_reliability(request):
             editing_location = location_obj
         elif action == "toggle_location":
             location_id = (request.POST.get("location_id") or "").strip()
-            location_obj = CompanyAuthorizedLocation.objects.filter(id=location_id, company=company).first()
-            if location_obj:
-                location_obj.is_active = not location_obj.is_active
-                location_obj.save(update_fields=["is_active", "updated_at"])
-                return redirect(f"{reverse('company_attendance_reliability')}?event=location_toggled")
+            location_obj = get_object_or_404(CompanyAuthorizedLocation, id=location_id, company=company)
+            location_obj.is_active = not location_obj.is_active
+            location_obj.save(update_fields=["is_active", "updated_at"])
+            return redirect(f"{reverse('company_attendance_reliability')}?event=location_toggled")
         elif action == "rotate_qr_token":
             location_id = (request.POST.get("location_id") or "").strip()
-            location_obj = CompanyAuthorizedLocation.objects.filter(id=location_id, company=company).first()
-            if location_obj:
-                location_obj.rotate_qr_token()
-                return redirect(f"{reverse('company_attendance_reliability')}?event=qr_rotated")
-
-    active_locations_count = sum(1 for item in locations if item.is_active)
-    inactive_locations_count = len(locations) - active_locations_count
+            location_obj = get_object_or_404(CompanyAuthorizedLocation, id=location_id, company=company)
+            location_obj.rotate_qr_token()
+            return redirect(f"{reverse('company_attendance_reliability')}?event=qr_rotated")
 
     return render(
         request,
@@ -2833,19 +2913,9 @@ def mei_panel(request):
     denied = _redirect_if_not_mei(request)
     if denied:
         return denied
-    contracts = (
-        Contract.objects.filter(employee__user=request.user, employee__is_active=True, employee__user__is_active=True, is_active=True)
-        .select_related("company", "employee", "employee__user")
-        .order_by("-created_at")
-    )
-
-    selected_contract = None
-    selected_contract_id = request.GET.get("contract")
-
-    if contracts.exists():
-        selected_contract = contracts.filter(id=selected_contract_id).first() if selected_contract_id else contracts.first()
-        if not selected_contract:
-            selected_contract = contracts.first()
+    mei_context = resolve_mei_context(request)
+    contracts = mei_context.contracts
+    selected_contract = mei_context.selected_contract
 
     current_period_label = _month_label_ptbr(timezone.localdate())
     total_hours_month = "00:00"
@@ -2905,32 +2975,41 @@ def mei_profile(request):
     if denied:
         return denied
 
-    employee = getattr(request.user, "employee_profile", None)
+    mei_context = resolve_mei_context(request, include_inactive_contracts=True)
+    contracts = mei_context.contracts
+    selected_contract = mei_context.selected_contract
+    employee = mei_context.selected_employee
     if not employee:
-        active_contract = (
-            Contract.objects.filter(employee__user=request.user)
-            .select_related("company", "employee", "employee__user")
-            .order_by("-created_at")
+        employee = (
+            Employee.objects.filter(user=request.user)
+            .select_related("company")
+            .order_by("-is_active", "-created_at")
             .first()
         )
-        if not active_contract:
+        if not employee:
             return redirect("mei_panel")
-        employee = Employee.objects.create(
-            user=request.user,
-            company=active_contract.company,
-            full_name=request.user.get_full_name() or request.user.username,
-            is_active=True,
-        )
 
     if request.method == "POST":
         form = MEIProfileForm(request.POST, request.FILES, instance=employee)
         if form.is_valid():
             form.save()
-            return redirect("mei_profile")
+            redirect_url = reverse("mei_profile")
+            if selected_contract:
+                redirect_url = f"{redirect_url}?contract={selected_contract.id}"
+            return redirect(redirect_url)
     else:
         form = MEIProfileForm(instance=employee)
 
-    return render(request, "accounts/mei_profile.html", {"form": form, "employee": employee})
+    return render(
+        request,
+        "accounts/mei_profile.html",
+        {
+            "form": form,
+            "employee": employee,
+            "contracts": contracts,
+            "selected_contract": selected_contract,
+        },
+    )
 
 
 @login_required
@@ -2938,29 +3017,22 @@ def mei_history(request):
     denied = _redirect_if_not_mei(request)
     if denied:
         return denied
-    contracts = Contract.objects.filter(
-        employee__user=request.user,
-        employee__is_active=True,
-        employee__user__is_active=True,
-        is_active=True,
-    ).select_related("company", "employee", "employee__user")
-    selected_contract = None
+    mei_context = resolve_mei_context(request)
+    contracts = mei_context.contracts
+    selected_contract = mei_context.selected_contract
     punches = Punch.objects.none()
-    selected_contract_id = request.GET.get("contract")
     date_from_raw = (request.GET.get("date_from") or "").strip()
     date_to_raw = (request.GET.get("date_to") or "").strip()
     parsed_date_from = None
     parsed_date_to = None
 
-    if contracts.exists():
-        selected_contract = contracts.filter(id=selected_contract_id).first() if selected_contract_id else contracts.first()
-        if selected_contract:
-            if not date_from_raw and not date_to_raw:
-                today = timezone.localdate()
-                date_from_raw = today.replace(day=1).strftime("%Y-%m-%d")
-                date_to_raw = today.strftime("%Y-%m-%d")
-            base_punches = Punch.objects.filter(contract=selected_contract).order_by("timestamp")
-            punches, parsed_date_from, parsed_date_to = filter_punches_by_period(base_punches, date_from_raw, date_to_raw)
+    if selected_contract:
+        if not date_from_raw and not date_to_raw:
+            today = timezone.localdate()
+            date_from_raw = today.replace(day=1).strftime("%Y-%m-%d")
+            date_to_raw = today.strftime("%Y-%m-%d")
+        base_punches = Punch.objects.filter(contract=selected_contract).order_by("timestamp")
+        punches, parsed_date_from, parsed_date_to = filter_punches_by_period(base_punches, date_from_raw, date_to_raw)
 
     grouped_rows, max_punches = build_daily_summary(list(punches), min_punch_columns=4)
     rows_by_date = {row["date"]: row for row in grouped_rows}
@@ -3036,12 +3108,7 @@ def mei_export(request):
     denied = _redirect_if_not_mei(request)
     if denied:
         return denied
-    contracts = Contract.objects.filter(
-        employee__user=request.user,
-        employee__is_active=True,
-        employee__user__is_active=True,
-        is_active=True,
-    ).select_related("company", "employee", "employee__user")
+    contracts = resolve_mei_context(request).contracts
     return render(request, "accounts/mei_export.html", {"contracts": contracts})
 
 
@@ -3051,11 +3118,7 @@ def mei_contract(request):
     if denied:
         return denied
 
-    all_contracts = list(
-        Contract.objects.filter(employee__user=request.user, employee__is_active=True, employee__user__is_active=True)
-        .select_related("company", "employee", "employee__user")
-        .order_by("-start_date", "-created_at")
-    )
+    all_contracts = list(mei_contracts_for_user(request.user, include_inactive_contracts=True))
     active_contracts = [contract for contract in all_contracts if contract_is_operational(contract)]
     inactive_contracts = [contract for contract in all_contracts if contract not in active_contracts]
     selected_contract_id = (request.GET.get("contract") or "").strip()
@@ -3085,34 +3148,50 @@ def mei_reports(request):
     if denied:
         return denied
 
-    employee = getattr(request.user, "employee_profile", None)
-    if not employee or not employee.company_id:
+    mei_context = resolve_mei_context(request, include_inactive_contracts=True)
+    contracts = mei_context.contracts
+    selected_contract = mei_context.selected_contract
+    selected_employee = mei_context.selected_employee
+    if not selected_employee:
         return redirect("mei_panel")
 
-    reports_qs = ServiceReport.objects.filter(employee=employee).select_related("company", "contract").order_by(
+    reports_qs = ServiceReport.objects.filter(employee=selected_employee).select_related("company", "contract").order_by(
         "-report_date", "-created_at"
     )
     requests_qs = (
-        ActivityReportRequest.objects.filter(employee=employee)
+        ActivityReportRequest.objects.filter(employee=selected_employee)
         .select_related("company", "contract", "requested_by", "response_report")
         .order_by("-requested_at")
     )
+    if selected_contract:
+        reports_qs = reports_qs.filter(contract=selected_contract)
+        requests_qs = requests_qs.filter(
+            Q(contract=selected_contract)
+            | Q(contract__isnull=True, company=selected_contract.company)
+        )
     pending_requests = [item for item in requests_qs[:300] if item.status == ActivityReportRequest.Status.PENDING]
     responded_requests = [item for item in requests_qs[:300] if item.status != ActivityReportRequest.Status.PENDING]
-    report_form = ServiceReportCreateForm(employee=employee)
+    report_form = ServiceReportCreateForm(employee=selected_employee)
+    if selected_contract:
+        report_form.fields["contract"].initial = selected_contract
 
     if request.method == "POST" and (request.POST.get("action") or "").strip().lower() == "create_report":
-        report_form = ServiceReportCreateForm(request.POST, employee=employee)
+        report_form = ServiceReportCreateForm(request.POST, employee=selected_employee)
         if report_form.is_valid():
             report_form.save()
-            return redirect(f"{reverse('mei_reports')}?event=report_created")
+            redirect_url = f"{reverse('mei_reports')}?event=report_created"
+            if selected_contract:
+                redirect_url = f"{redirect_url}&contract={selected_contract.id}"
+            return redirect(redirect_url)
 
     reports = list(reports_qs[:300])
     return render(
         request,
         "accounts/mei_reports.html",
         {
-            "employee": employee,
+            "employee": selected_employee,
+            "contracts": contracts,
+            "selected_contract": selected_contract,
             "report_form": report_form,
             "reports": reports,
             "pending_requests": pending_requests,
@@ -3127,19 +3206,22 @@ def mei_service_report_detail(request, report_id):
     if denied:
         return denied
 
-    employee = getattr(request.user, "employee_profile", None)
     report = get_object_or_404(
         ServiceReport.objects.select_related("company", "contract", "employee", "employee__user"),
         id=report_id,
-        employee=employee,
+        employee__user=request.user,
     )
+    selected_contract = getattr(report, "contract", None)
+    reports_url = reverse("mei_reports")
+    if selected_contract:
+        reports_url = f"{reports_url}?contract={selected_contract.id}"
     return render(
         request,
         "accounts/mei_service_report_detail.html",
         {
-            "employee": employee,
+            "employee": report.employee,
             "report": report,
-            "reports_url": reverse("mei_reports"),
+            "reports_url": reports_url,
         },
     )
 
@@ -3149,10 +3231,6 @@ def mei_service_report_request_detail(request, request_id):
     denied = _redirect_if_not_mei(request)
     if denied:
         return denied
-
-    employee = getattr(request.user, "employee_profile", None)
-    if not employee:
-        return redirect("mei_panel")
 
     report_request = get_object_or_404(
         ActivityReportRequest.objects.select_related(
@@ -3164,8 +3242,9 @@ def mei_service_report_request_detail(request, request_id):
             "response_report",
         ),
         id=request_id,
-        employee=employee,
+        employee__user=request.user,
     )
+    employee = report_request.employee
 
     can_respond = report_request.status == ActivityReportRequest.Status.PENDING
     initial = {
@@ -3216,7 +3295,14 @@ def mei_service_report_request_detail(request, request_id):
                         "is_answered",
                     ]
                 )
-            return redirect(f"{reverse('mei_service_report_request_detail', args=[report_request.id])}?event=request_answered")
+            redirect_url = f"{reverse('mei_service_report_request_detail', args=[report_request.id])}?event=request_answered"
+            if report_request.contract_id:
+                redirect_url = f"{redirect_url}&contract={report_request.contract_id}"
+            return redirect(redirect_url)
+
+    reports_url = reverse("mei_reports")
+    if report_request.contract_id:
+        reports_url = f"{reports_url}?contract={report_request.contract_id}"
 
     return render(
         request,
@@ -3226,7 +3312,7 @@ def mei_service_report_request_detail(request, request_id):
             "report_request": report_request,
             "report_form": report_form,
             "can_respond": can_respond,
-            "reports_url": reverse("mei_reports"),
+            "reports_url": reports_url,
         },
     )
 

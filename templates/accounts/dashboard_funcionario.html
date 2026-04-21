@@ -39,6 +39,11 @@
         Retorno enviado com sucesso para a empresa.
       </section>
     {% endif %}
+    {% if context_warning %}
+      <section class="hc-feedback hc-feedback--warn" role="status" aria-live="polite">
+        {{ context_warning }}
+      </section>
+    {% endif %}
 
     {% if pending_report_requests %}
       <section class="hc-panel hc-panel--requests">

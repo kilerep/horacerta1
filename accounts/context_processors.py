@@ -1,11 +1,18 @@
 from companies.models import Company
-from companies.feature_flags import get_feature_required_plan_badge, get_user_feature_access
+from companies.feature_flags import (
+    get_feature_required_plan_badge,
+    get_user_feature_access,
+    get_user_feature_access_for_company,
+)
 from timeclock.models import ActivityReportRequest
+from .mei_context import resolve_mei_context
 
 
-def _build_display_name(user):
+def _build_display_name(user, employee=None):
     # 1) Para funcionario/MEI, prioriza o nome salvo no perfil
     try:
+        if employee and (employee.full_name or "").strip():
+            return employee.full_name.strip()
         employee = getattr(user, "employee_profile", None)
         if employee and (employee.full_name or "").strip():
             return employee.full_name.strip()
@@ -87,10 +94,19 @@ def header_profile_media(request):
                 header_current_plan_code = reports_access.plan_code
                 header_current_plan_name = reports_access.plan_name or ""
         else:
-            employee = getattr(request.user, "employee_profile", None)
+            mei_context = resolve_mei_context(request, include_inactive_contracts=True)
+            employee = mei_context.selected_employee
+            selected_company = mei_context.selected_company
+            if selected_company and selected_company.name:
+                header_company_name = selected_company.name
             if employee and employee.profile_photo:
                 photo_url = employee.profile_photo.url
-            themes_access = get_user_feature_access(request.user, "custom_themes")
+            header_display_name = _build_display_name(request.user, employee=employee)
+            themes_access = get_user_feature_access_for_company(
+                user=request.user,
+                company=selected_company,
+                feature_code="custom_themes",
+            )
             header_feature_access["custom_themes"] = themes_access.allowed
             if themes_access.plan_code:
                 header_current_plan_code = themes_access.plan_code

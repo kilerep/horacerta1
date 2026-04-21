@@ -18,6 +18,7 @@ from reportlab.platypus import SimpleDocTemplate, Spacer, Table, TableStyle, Par
 from reportlab.lib.styles import getSampleStyleSheet
 
 from accounts.models import User
+from accounts.mei_context import resolve_mei_context
 from companies.models import CompanyAttendancePolicy, CompanyAuthorizedLocation
 from .models import ActivityReportRequest, Contract, Punch
 from .services import build_daily_summary, evaluate_punch_confidence, filter_punches_by_period, format_hhmm
@@ -64,6 +65,17 @@ def _active_contracts_for_employee_user(user):
         .select_related("company", "employee", "employee__user")
         .order_by("-start_date", "-created_at")
     )
+
+
+def _resolve_contract_for_secure_action(request):
+    """
+    Resolve contrato para acoes sensiveis (exportacoes etc.).
+    Se o usuario informar ?contract invalido, nao faz fallback silencioso.
+    """
+    mei_context = resolve_mei_context(request, operational_only=True)
+    if mei_context.requested_contract_id and mei_context.invalid_requested_contract:
+        return None, "Vinculo informado invalido ou indisponivel."
+    return mei_context.selected_contract, None
 
 
 def _resolve_selected_contract(contracts_qs, contract_id):
@@ -186,14 +198,20 @@ def employee_dashboard(request):
     if not _only_employee(request.user):
         return redirect("dashboard")
 
-    contracts = _active_contracts_for_employee_user(request.user)
-    selected_contract_id = (request.GET.get("contract") or "").strip()
-    selected_contract = _resolve_selected_contract(contracts, selected_contract_id)
+    mei_context = resolve_mei_context(request, operational_only=True)
+    contracts = mei_context.contracts
+    selected_contract = mei_context.selected_contract
 
-    pending_report_requests = ActivityReportRequest.objects.filter(
+    pending_report_requests_qs = ActivityReportRequest.objects.filter(
         employee__user=request.user,
         is_answered=False,
-    ).select_related("company", "requested_by", "employee", "employee__user")[:20]
+    ).select_related("company", "requested_by", "employee", "employee__user")
+    if selected_contract:
+        pending_report_requests_qs = pending_report_requests_qs.filter(
+            employee=selected_contract.employee,
+            company=selected_contract.company,
+        )
+    pending_report_requests = pending_report_requests_qs[:20]
 
     if request.method == "POST" and request.POST.get("action") == "respond_activity_request":
         request_id = (request.POST.get("request_id") or "").strip()
@@ -217,7 +235,7 @@ def employee_dashboard(request):
         return redirect(redirect_url)
 
     if not contracts.exists():
-        employee = getattr(request.user, "employee_profile", None)
+        employee = mei_context.selected_employee
         state_context = employee_lifecycle_summary(employee, []) if employee else None
         employee_company_name = ""
         if employee and getattr(employee, "company", None):
@@ -231,6 +249,11 @@ def employee_dashboard(request):
                 "state_context": state_context,
                 "employee_company_name": employee_company_name,
                 "pending_report_requests": pending_report_requests,
+                "context_warning": (
+                    "O vinculo selecionado anteriormente nao esta mais disponivel. Selecione um vinculo ativo."
+                    if (mei_context.invalid_requested_contract or mei_context.invalid_session_contract)
+                    else ""
+                ),
             },
         )
 
@@ -369,6 +392,11 @@ def employee_dashboard(request):
         "no_contracts": False,
         "state_context": employee_lifecycle_summary(selected_contract.employee, contracts),
         "pending_report_requests": pending_report_requests,
+        "context_warning": (
+            "O vinculo selecionado anteriormente nao esta mais disponivel. Exibindo o vinculo ativo atual."
+            if (mei_context.invalid_requested_contract or mei_context.invalid_session_contract)
+            else ""
+        ),
     }
     return render(request, "accounts/dashboard_funcionario.html", context)
 
@@ -522,15 +550,9 @@ def export_csv(request):
     if not _only_employee(request.user):
         return redirect("dashboard")
 
-    contract_id = request.GET.get("contract")
-    contract = get_object_or_404(
-        Contract.objects.select_related("company", "employee", "employee__user"),
-        id=contract_id,
-        employee__user=request.user,
-        employee__is_active=True,
-        employee__user__is_active=True,
-        is_active=True,
-    )
+    contract, error_message = _resolve_contract_for_secure_action(request)
+    if not contract:
+        return HttpResponse(error_message or "Vinculo invalido para exportacao.", status=400)
 
     base_punches = Punch.objects.filter(contract=contract).order_by("timestamp")
     punches, _start, _end = filter_punches_by_period(
@@ -574,15 +596,9 @@ def export_xlsx(request):
     if not _only_employee(request.user):
         return redirect("dashboard")
 
-    contract_id = request.GET.get("contract")
-    contract = get_object_or_404(
-        Contract.objects.select_related("company", "employee", "employee__user"),
-        id=contract_id,
-        employee__user=request.user,
-        employee__is_active=True,
-        employee__user__is_active=True,
-        is_active=True,
-    )
+    contract, error_message = _resolve_contract_for_secure_action(request)
+    if not contract:
+        return HttpResponse(error_message or "Vinculo invalido para exportacao.", status=400)
 
     base_punches = Punch.objects.filter(contract=contract).order_by("timestamp")
     punches, start_date, end_date = filter_punches_by_period(
@@ -649,15 +665,9 @@ def export_pdf(request):
     if not _only_employee(request.user):
         return redirect("dashboard")
 
-    contract_id = request.GET.get("contract")
-    contract = get_object_or_404(
-        Contract.objects.select_related("company", "employee", "employee__user"),
-        id=contract_id,
-        employee__user=request.user,
-        employee__is_active=True,
-        employee__user__is_active=True,
-        is_active=True,
-    )
+    contract, error_message = _resolve_contract_for_secure_action(request)
+    if not contract:
+        return HttpResponse(error_message or "Vinculo invalido para exportacao.", status=400)
 
     base_punches = Punch.objects.filter(contract=contract).order_by("timestamp")
     punches, start_date, end_date = filter_punches_by_period(

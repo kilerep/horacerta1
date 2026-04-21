@@ -1,12 +1,11 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AuthenticationForm
-from django.db import transaction
 from django.db.models import Q
-from django.utils import timezone
 
 from companies.models import Company, CompanyAttendancePolicy, CompanyAuthorizedLocation, Employee
 from timeclock.models import ActivityReportRequest, Contract, ServiceReport
+from .services import MeiLinkError, create_or_link_mei_by_email
 
 User = get_user_model()
 
@@ -258,10 +257,12 @@ class CompanyMEICreateForm(forms.Form):
     )
     password1 = forms.CharField(
         label="Senha",
+        required=False,
         widget=forms.PasswordInput(attrs={"placeholder": "Defina uma senha segura", "autocomplete": "new-password"}),
     )
     password2 = forms.CharField(
         label="Confirmar senha",
+        required=False,
         widget=forms.PasswordInput(attrs={"placeholder": "Repita a senha", "autocomplete": "new-password"}),
     )
     contract_hourly_rate = forms.DecimalField(
@@ -293,6 +294,16 @@ class CompanyMEICreateForm(forms.Form):
         widget=forms.Textarea(attrs={"rows": 3, "placeholder": "Informacoes complementares para a operacao"}),
     )
 
+    def __init__(self, *args, company=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.company = company
+        self.account_mode = "unknown"
+        self.account_hint = ""
+        self.account_conflict = False
+
+        self.fields["password1"].widget.attrs.update({"data-role": "mei-password"})
+        self.fields["password2"].widget.attrs.update({"data-role": "mei-password"})
+
     def _contract_requested(self, data):
         notes = (data.get("contract_notes") or "").strip()
         return any(
@@ -307,10 +318,40 @@ class CompanyMEICreateForm(forms.Form):
 
     def clean(self):
         data = super().clean()
+        mei_email = (data.get("mei_email") or "").strip().lower()
         password1 = data.get("password1")
         password2 = data.get("password2")
-        if password1 and password2 and password1 != password2:
-            self.add_error("password2", "As senhas nao conferem.")
+
+        existing_user = None
+        if mei_email:
+            existing_user = User.objects.filter(Q(email__iexact=mei_email) | Q(username__iexact=mei_email)).first()
+
+        if existing_user:
+            if existing_user.role != User.Role.FUNCIONARIO:
+                self.account_mode = "conflict"
+                self.account_conflict = True
+                self.account_hint = "Este email pertence a uma conta de empresa/admin."
+                self.add_error("mei_email", "Este email pertence a uma conta de empresa/admin. Use outro email do MEI.")
+            else:
+                self.account_mode = "existing"
+                self.account_hint = (
+                    "Este profissional ja possui conta no HoraCerta. "
+                    "Sera criado apenas um novo vinculo com sua empresa."
+                )
+                if self.company and Employee.objects.filter(user=existing_user, company=self.company).exists():
+                    self.add_error(
+                        "mei_email",
+                        "Este MEI ja possui vinculo com sua empresa. Use o gerenciamento de vinculos para continuar.",
+                    )
+        else:
+            self.account_mode = "new"
+            self.account_hint = "Novo email: sera criada a conta principal do MEI com senha."
+            if not password1:
+                self.add_error("password1", "Defina uma senha para criar a conta do MEI.")
+            if not password2:
+                self.add_error("password2", "Confirme a senha para criar a conta do MEI.")
+            if password1 and password2 and password1 != password2:
+                self.add_error("password2", "As senhas nao conferem.")
 
         contract_requested = self._contract_requested(data)
         start_date = data.get("contract_start_date")
@@ -327,8 +368,6 @@ class CompanyMEICreateForm(forms.Form):
 
     def clean_mei_email(self):
         email = (self.cleaned_data.get("mei_email") or "").strip().lower()
-        if User.objects.filter(email__iexact=email).exists() or User.objects.filter(username__iexact=email).exists():
-            raise forms.ValidationError("Ja existe um usuario com esse email.")
         return email
 
     def clean_full_name(self):
@@ -342,42 +381,43 @@ class CompanyMEICreateForm(forms.Form):
             raise forms.ValidationError("Envie um arquivo PDF (.pdf).")
         return file_obj
 
-    def create_mei_and_optional_contract(self, company):
-        if not company:
-            raise ValueError("Company is required to create MEI.")
-
-        with transaction.atomic():
-            mei_email = self.cleaned_data["mei_email"].strip().lower()
-            user = User.objects.create_user(
-                username=mei_email,
-                email=mei_email,
-                password=self.cleaned_data["password1"],
-                role=User.Role.FUNCIONARIO,
-            )
-            employee = Employee.objects.create(
-                user=user,
+    def create_or_link_mei_and_optional_contract(self, company):
+        try:
+            result = create_or_link_mei_by_email(
                 company=company,
                 full_name=self.cleaned_data["full_name"],
-                is_active=True,
+                mei_email=self.cleaned_data["mei_email"],
+                password=self.cleaned_data.get("password1"),
+                contract_payload={
+                    "hourly_rate": self.cleaned_data.get("contract_hourly_rate"),
+                    "start_date": self.cleaned_data.get("contract_start_date"),
+                    "end_date": self.cleaned_data.get("contract_end_date"),
+                    "contract_file": self.cleaned_data.get("contract_file"),
+                    "notes": self.cleaned_data.get("contract_notes"),
+                },
             )
+        except MeiLinkError as exc:
+            if exc.code in {"email_role_conflict", "already_linked_company"}:
+                self.add_error("mei_email", exc.message)
+            elif exc.code == "password_required":
+                self.add_error("password1", exc.message)
+            else:
+                self.add_error(None, exc.message)
+            return None, None, None
 
-            contract = None
-            if self._contract_requested(self.cleaned_data):
-                contract = Contract.objects.create(
-                    employee=employee,
-                    company=company,
-                    hourly_rate=self.cleaned_data["contract_hourly_rate"],
-                    start_date=self.cleaned_data.get("contract_start_date") or timezone.localdate(),
-                    end_date=self.cleaned_data.get("contract_end_date"),
-                    contract_file=self.cleaned_data.get("contract_file"),
-                    notes=(self.cleaned_data.get("contract_notes") or "").strip(),
-                    is_active=True,
-                )
-
-        return employee, contract
+        if result.linked_existing_user:
+            self.account_mode = "existing"
+            self.account_hint = (
+                "Este profissional ja possui conta no HoraCerta. "
+                "Sera criado apenas um novo vinculo com sua empresa."
+            )
+        else:
+            self.account_mode = "new"
+            self.account_hint = "Novo email: sera criada a conta principal do MEI com senha."
+        return result.employee, result.contract, result
 
     def create_mei_for_company(self, company):
-        employee, _contract = self.create_mei_and_optional_contract(company)
+        employee, _contract, _result = self.create_or_link_mei_and_optional_contract(company)
         return employee
 
 
