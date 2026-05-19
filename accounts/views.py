@@ -3082,9 +3082,9 @@ def mei_history(request):
     total_days_incomplete = sum(1 for row in history_rows if row["punches_count"] > 0 and row["is_incomplete"])
 
     if parsed_date_from and parsed_date_to:
-        period_label = f"{parsed_date_from.strftime('%d/%m/%Y')} ate {parsed_date_to.strftime('%d/%m/%Y')}"
+        period_label = f"{parsed_date_from.strftime('%d/%m/%Y')} até {parsed_date_to.strftime('%d/%m/%Y')}"
     else:
-        period_label = "Periodo completo"
+        period_label = "Período completo"
 
     context = {
         "contracts": contracts,

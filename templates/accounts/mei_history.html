@@ -1,25 +1,69 @@
 {% extends "accounts/base.html" %}
-{% block title %}Historico de horarios{% endblock %}
-{% block page_title %}Historico de horarios{% endblock %}
+{% block title %}Histórico de horários{% endblock %}
+{% block page_title %}Histórico de horários{% endblock %}
+{% block body_class %} mei-history-page{% endblock %}
 
 {% block content %}
   <style>
-    .history-wrap{display:grid;gap:14px}
-    .panel{
+    .mei-history-page,
+    .mei-history-page .wrap,
+    .mei-history-page .main,
+    .mei-history-page .content{
+      max-width:100%;
+      overflow-x:hidden;
+    }
+    .mei-history{
+      display:grid;
+      gap:14px;
+      width:100%;
+      max-width:100%;
+      min-width:0;
+    }
+    .mei-history *,
+    .mei-history *::before,
+    .mei-history *::after{box-sizing:border-box}
+    .mei-history__panel{
       border:1px solid var(--border);
       border-radius:var(--radius);
       padding:14px;
+      max-width:100%;
+      min-width:0;
       background:
         radial-gradient(circle at 14% 0, rgba(79,124,255,.24), transparent 44%),
         linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
     }
-    .panel-title{margin:0}
-    .panel-sub{margin:8px 0 0;color:var(--muted);font-size:13px}
-    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
-    .field{display:flex;flex-direction:column;gap:6px;min-width:180px;flex:1}
-    label{font-size:13px;color:var(--muted)}
-    input,select{
+    .mei-history__title{
+      margin:0;
+      font-size:20px;
+      line-height:1.2;
+      letter-spacing:0;
+    }
+    .mei-history__sub{
+      margin:8px 0 0;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.4;
+    }
+    .mei-history__filters{
+      display:grid;
+      grid-template-columns:minmax(220px,1.6fr) minmax(150px,1fr) minmax(150px,1fr) auto;
+      gap:10px;
+      align-items:end;
+      margin-top:12px;
       width:100%;
+      max-width:100%;
+    }
+    .mei-history__field{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      min-width:0;
+    }
+    .mei-history__field label{font-size:13px;color:var(--muted)}
+    .mei-history__field input,
+    .mei-history__field select{
+      width:100%;
+      max-width:100%;
       padding:11px 12px;
       border-radius:12px;
       border:1px solid var(--border);
@@ -27,41 +71,71 @@
       color:var(--text);
       outline:none;
     }
-    .summary-grid{
+    .mei-history__submit{
+      min-width:142px;
+      color:var(--text-inverse);
+      white-space:nowrap;
+    }
+    .mei-history__summary-grid{
       display:grid;
       grid-template-columns:repeat(3,minmax(0,1fr));
       gap:8px;
       margin-top:10px;
+      width:100%;
     }
-    .summary-card{
+    .mei-history__summary-card{
       border:1px solid rgba(255,255,255,.12);
       border-radius:12px;
       padding:10px;
       background:rgba(255,255,255,.03);
+      min-width:0;
     }
-    .summary-card .k{font-size:12px;color:var(--muted)}
-    .summary-card .v{margin-top:4px;font-size:22px;font-weight:900;line-height:1.1}
-    .summary-card .s{margin-top:4px;font-size:12px;color:var(--muted)}
-    .table-wrap{
+    .mei-history__summary-card .k{
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.25;
+    }
+    .mei-history__summary-card .v{
+      margin-top:4px;
+      font-size:22px;
+      font-weight:900;
+      line-height:1.1;
+      overflow-wrap:anywhere;
+    }
+    .mei-history__table-wrap{
       margin-top:10px;
       overflow-x:auto;
       border:1px solid var(--border);
       border-radius:12px;
       background:rgba(255,255,255,.02);
       -webkit-overflow-scrolling:touch;
+      max-width:100%;
     }
-    .table{width:100%;min-width:860px;border-collapse:collapse}
-    .table th,.table td{
+    .mei-history__table{
+      width:100%;
+      min-width:760px;
+      border-collapse:collapse;
+    }
+    .mei-history__table th,
+    .mei-history__table td{
       text-align:left;
       padding:10px;
       border-bottom:1px solid rgba(255,255,255,.08);
       font-size:14px;
       vertical-align:top;
+    }
+    .mei-history__table th{
+      background:#20396b;
+      color:#f3f6ff;
       white-space:nowrap;
     }
-    .table th{background:#20396b;color:#f3f6ff}
-    .table tr:last-child td{border-bottom:none}
-    .status-badge{
+    .mei-history__table tr:last-child td{border-bottom:none}
+    .mei-history__times{
+      white-space:normal;
+      overflow-wrap:anywhere;
+      line-height:1.4;
+    }
+    .mei-history__status-badge{
       display:inline-flex;
       align-items:center;
       border-radius:999px;
@@ -69,6 +143,7 @@
       font-size:12px;
       font-weight:800;
       border:1px solid transparent;
+      white-space:nowrap;
     }
     .status-complete{
       color:#2dd391;
@@ -85,7 +160,55 @@
       background:rgba(255,255,255,.08);
       border-color:rgba(255,255,255,.2);
     }
-    .empty-state{
+    .mei-history__cards{
+      display:none;
+      gap:10px;
+      margin-top:10px;
+      width:100%;
+      max-width:100%;
+    }
+    .mei-history__day-card{
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:12px;
+      padding:12px;
+      background:rgba(255,255,255,.03);
+      min-width:0;
+    }
+    .mei-history__day-head{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .mei-history__date{
+      font-size:15px;
+      font-weight:900;
+      line-height:1.2;
+    }
+    .mei-history__day-grid{
+      display:grid;
+      gap:8px;
+      margin-top:10px;
+    }
+    .mei-history__day-item{
+      display:grid;
+      gap:3px;
+      min-width:0;
+    }
+    .mei-history__day-label{
+      color:var(--muted);
+      font-size:11px;
+      font-weight:800;
+      line-height:1.25;
+      text-transform:uppercase;
+    }
+    .mei-history__day-value{
+      font-size:14px;
+      line-height:1.35;
+      color:var(--text);
+      overflow-wrap:anywhere;
+    }
+    .mei-history__empty-state{
       margin-top:12px;
       border:1px dashed var(--border);
       border-radius:12px;
@@ -95,24 +218,49 @@
       background:rgba(255,255,255,.02);
     }
     @media (max-width: 900px){
-      .summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-      .table{min-width:760px}
+      .mei-history__filters{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .mei-history__field:first-child,
+      .mei-history__submit{grid-column:1 / -1}
+      .mei-history__summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
     }
     @media (max-width: 640px){
-      .field{min-width:100%}
-      .row .btn{width:100%}
-      .summary-grid{grid-template-columns:1fr}
-      .table th,.table td{padding:9px;font-size:13px}
+      .mei-history{gap:10px}
+      .mei-history__panel{
+        padding:12px;
+        border-radius:14px;
+      }
+      .mei-history__title{font-size:17px}
+      .mei-history__sub{font-size:12px}
+      .mei-history__filters{grid-template-columns:1fr;gap:9px}
+      .mei-history__field:first-child,
+      .mei-history__submit{grid-column:auto}
+      .mei-history__submit{
+        width:100%;
+        min-width:0;
+        min-height:44px;
+      }
+      .mei-history__summary-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+      .mei-history__summary-card{
+        padding:9px;
+        border-radius:10px;
+      }
+      .mei-history__summary-card .k{font-size:11px}
+      .mei-history__summary-card .v{font-size:19px}
+      .mei-history__table-wrap{display:none}
+      .mei-history__cards{display:grid}
+    }
+    @media (max-width: 380px){
+      .mei-history__summary-grid{grid-template-columns:1fr}
     }
   </style>
 
-  <div class="history-wrap">
-    <section class="panel">
-      <h2 class="panel-title">Filtros do historico</h2>
-      <p class="panel-sub">Selecione vinculo e periodo para acompanhar sua jornada com clareza.</p>
-      <form method="get" class="row" data-submit-once="true">
-        <div class="field">
-          <label>Empresa e contrato</label>
+  <div class="mei-history">
+    <section class="mei-history__panel">
+      <h2 class="mei-history__title">Filtros do histórico</h2>
+      <p class="mei-history__sub">Selecione vínculo e período para acompanhar sua jornada com clareza.</p>
+      <form method="get" class="mei-history__filters" data-submit-once="true">
+        <div class="mei-history__field">
+          <label>Vínculo</label>
           <select name="contract" onchange="this.form.submit()">
             {% for c in contracts %}
               <option value="{{ c.id }}" {% if selected_contract and c.id == selected_contract.id %}selected{% endif %}>
@@ -121,58 +269,58 @@
             {% endfor %}
           </select>
         </div>
-        <div class="field">
+        <div class="mei-history__field">
           <label>De</label>
           <input type="date" name="date_from" value="{{ date_from }}">
         </div>
-        <div class="field">
-          <label>Ate</label>
+        <div class="mei-history__field">
+          <label>Até</label>
           <input type="date" name="date_to" value="{{ date_to }}">
         </div>
-        <button class="btn primary" type="submit" data-loading-text="Aplicando filtros...">Filtrar</button>
+        <button class="btn primary mei-history__submit" type="submit" data-loading-text="Aplicando filtros...">Aplicar filtros</button>
       </form>
     </section>
 
-    <section class="panel">
-      <h2 class="panel-title">Resumo do periodo</h2>
-      <p class="panel-sub">Intervalo selecionado: <strong>{{ period_label }}</strong></p>
-      <div class="summary-grid">
-        <article class="summary-card">
+    <section class="mei-history__panel">
+      <h2 class="mei-history__title">Resumo do período</h2>
+      <p class="mei-history__sub">Intervalo selecionado: <strong>{{ period_label }}</strong></p>
+      <div class="mei-history__summary-grid">
+        <article class="mei-history__summary-card">
           <div class="k">Dias com registro</div>
           <div class="v">{{ summary_total_days_with_records }}</div>
         </article>
-        <article class="summary-card">
-          <div class="k">Horarios no periodo</div>
+        <article class="mei-history__summary-card">
+          <div class="k">Horários no período</div>
           <div class="v">{{ summary_total_punches }}</div>
         </article>
-        <article class="summary-card">
+        <article class="mei-history__summary-card">
           <div class="k">Total de horas</div>
           <div class="v">{{ summary_total_hours }}</div>
         </article>
-        <article class="summary-card">
+        <article class="mei-history__summary-card">
           <div class="k">Dias completos</div>
           <div class="v">{{ summary_total_days_complete }}</div>
         </article>
-        <article class="summary-card">
+        <article class="mei-history__summary-card">
           <div class="k">Dias incompletos</div>
           <div class="v">{{ summary_total_days_incomplete }}</div>
         </article>
       </div>
     </section>
 
-    <section class="panel">
-      <h2 class="panel-title">Historico diario</h2>
-      <p class="panel-sub">Visao por dia para leitura rapida: horarios, total e status.</p>
+    <section class="mei-history__panel">
+      <h2 class="mei-history__title">Histórico diário</h2>
+      <p class="mei-history__sub">Visão por dia para leitura rápida: horários, total e status.</p>
       {% if history_rows %}
-        <div class="table-wrap">
-          <table class="table">
+        <div class="mei-history__table-wrap">
+          <table class="mei-history__table">
             <thead>
               <tr>
                 <th>Data</th>
-                <th>Horarios</th>
-                <th>Horarios registrados</th>
-                <th>Total do dia</th>
-                <th>Status do dia</th>
+                <th>Horários</th>
+                <th>Horários registrados</th>
+                <th>Total</th>
+                <th>Status</th>
               </tr>
             </thead>
             <tbody>
@@ -180,18 +328,42 @@
                 <tr>
                   <td>{{ row.date|date:"d/m/Y" }}</td>
                   <td>{{ row.punches_count }}</td>
-                  <td>{{ row.punch_times_label }}</td>
+                  <td class="mei-history__times">{{ row.punch_times_label }}</td>
                   <td>{{ row.total_hours_hhmm }}</td>
                   <td>
-                    <span class="status-badge status-{{ row.status_kind }}">{{ row.status_label }}</span>
+                    <span class="mei-history__status-badge status-{{ row.status_kind }}">{{ row.status_label }}</span>
                   </td>
                 </tr>
               {% endfor %}
             </tbody>
           </table>
         </div>
+        <div class="mei-history__cards" aria-label="Histórico diário em cartões">
+          {% for row in history_rows %}
+            <article class="mei-history__day-card">
+              <div class="mei-history__day-head">
+                <div class="mei-history__date">{{ row.date|date:"d/m/Y" }}</div>
+                <span class="mei-history__status-badge status-{{ row.status_kind }}">{{ row.status_label }}</span>
+              </div>
+              <div class="mei-history__day-grid">
+                <div class="mei-history__day-item">
+                  <span class="mei-history__day-label">Horários</span>
+                  <span class="mei-history__day-value">{{ row.punches_count }}</span>
+                </div>
+                <div class="mei-history__day-item">
+                  <span class="mei-history__day-label">Horários registrados</span>
+                  <span class="mei-history__day-value">{{ row.punch_times_label }}</span>
+                </div>
+                <div class="mei-history__day-item">
+                  <span class="mei-history__day-label">Total</span>
+                  <span class="mei-history__day-value">{{ row.total_hours_hhmm }}</span>
+                </div>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
       {% else %}
-        <div class="empty-state">Sem registros no periodo.</div>
+        <div class="mei-history__empty-state">Sem registros no período.</div>
       {% endif %}
     </section>
   </div>
