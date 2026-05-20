@@ -39,6 +39,7 @@ urlpatterns = [
         name="password_reset_complete",
     ),
 
+    path("interno/", views.internal_dashboard, name="internal_dashboard"),
     path("", views.dashboard),
     path("dashboard/", views.dashboard, name="dashboard"),
     path("dashboard/funcionario/", views.dashboard_employee, name="dashboard_employee"),

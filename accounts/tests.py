@@ -14,6 +14,85 @@ from .services import MeiLinkError, create_or_link_mei_by_email
 User = get_user_model()
 
 
+@override_settings(
+    ALLOWED_HOSTS=["testserver", "localhost", "127.0.0.1"],
+    SECURE_SSL_REDIRECT=False,
+)
+class InternalDashboardTests(TestCase):
+    def setUp(self):
+        self.admin_user = User.objects.create_superuser(
+            username="admin@example.com",
+            email="admin@example.com",
+            password="Admin@12345",
+            role=User.Role.EMPRESA,
+        )
+        self.company_owner = User.objects.create_user(
+            username="owner-interno@example.com",
+            email="owner-interno@example.com",
+            password="Teste@12345",
+            role=User.Role.EMPRESA,
+        )
+        self.employee_user = User.objects.create_user(
+            username="mei-interno@example.com",
+            email="mei-interno@example.com",
+            password="Teste@12345",
+            role=User.Role.FUNCIONARIO,
+        )
+        self.company = Company.objects.create(
+            name="Empresa Painel Interno",
+            owner=self.company_owner,
+            email="painel@example.com",
+        )
+        self.employee = Employee.objects.create(
+            user=self.employee_user,
+            company=self.company,
+            full_name="MEI Painel",
+            is_active=True,
+        )
+        self.contract = Contract.objects.create(
+            employee=self.employee,
+            company=self.company,
+            hourly_rate="100.00",
+            start_date=timezone.localdate() - timedelta(days=1),
+            is_active=True,
+        )
+        Punch.objects.create(contract=self.contract, timestamp=timezone.now())
+
+    def test_superuser_can_access_internal_dashboard(self):
+        self.client.force_login(self.admin_user)
+
+        response = self.client.get(reverse("internal_dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Painel interno")
+        self.assertEqual(response.context["total_users"], User.objects.count())
+        self.assertEqual(response.context["total_companies"], Company.objects.count())
+        self.assertEqual(response.context["total_employees"], Employee.objects.count())
+        self.assertEqual(response.context["total_punches"], Punch.objects.count())
+        self.assertContains(response, self.company.name)
+
+    def test_staff_user_can_access_internal_dashboard(self):
+        staff_user = User.objects.create_user(
+            username="staff@example.com",
+            email="staff@example.com",
+            password="Staff@12345",
+            role=User.Role.EMPRESA,
+            is_staff=True,
+        )
+        self.client.force_login(staff_user)
+
+        response = self.client.get(reverse("internal_dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+
+    def test_regular_user_gets_403(self):
+        self.client.force_login(self.company_owner)
+
+        response = self.client.get(reverse("internal_dashboard"))
+
+        self.assertEqual(response.status_code, 403)
+
+
 class CreateOrLinkMeiServiceTests(TestCase):
     def setUp(self):
         self.owner = User.objects.create_user(

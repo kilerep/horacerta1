@@ -1,0 +1,159 @@
+{% extends "accounts/base.html" %}
+{% block title %}HoraCerta - Painel interno{% endblock %}
+{% block page_title %}Painel interno{% endblock %}
+
+{% block content %}
+  <style>
+    .internal-dashboard{ display:grid; gap:18px; }
+    .internal-panel{
+      border:1px solid var(--color-border);
+      border-radius:var(--radius-lg);
+      background:
+        radial-gradient(circle at 18% 0%, color-mix(in oklab, var(--color-primary) 15%, transparent), transparent 42%),
+        var(--surface-raised);
+      box-shadow:var(--shadow-sm);
+      padding:18px;
+      min-width:0;
+    }
+    .internal-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; }
+    .internal-head h2,.internal-head h3{ margin:0; }
+    .internal-subtitle{ margin:6px 0 0; color:var(--color-text-muted); font-size:13px; line-height:1.45; }
+    .metric-grid{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-top:14px; }
+    .metric-card{
+      border:1px solid var(--color-border);
+      border-radius:var(--radius-md);
+      background:color-mix(in oklab, var(--surface-soft) 62%, var(--surface-raised));
+      padding:14px 12px;
+      min-width:0;
+    }
+    .metric-card .label{ color:var(--color-text-muted); font-size:12px; font-weight:700; line-height:1.25; }
+    .metric-card .value{ margin-top:6px; font-size:30px; line-height:1; font-weight:900; color:var(--color-text-strong); }
+    .metric-card .hint{ margin-top:6px; font-size:12px; color:var(--color-text-muted); line-height:1.35; }
+    .table-wrap{ margin-top:12px; border:1px solid var(--color-border); border-radius:var(--radius-md); overflow:auto; }
+    .usage-table{ width:100%; min-width:760px; border-collapse:collapse; }
+    .usage-table th,.usage-table td{ padding:12px 10px; border-bottom:1px solid var(--color-border); text-align:left; vertical-align:top; font-size:14px; }
+    .usage-table th{ color:var(--color-text-muted); font-size:12px; font-weight:800; }
+    .usage-table tr:last-child td{ border-bottom:none; }
+    .company-name{ font-weight:800; color:var(--color-text-strong); }
+    .empty-state{
+      border:1px dashed var(--color-border);
+      border-radius:var(--radius-md);
+      padding:14px;
+      color:var(--color-text-muted);
+      background:color-mix(in oklab, var(--surface-soft) 55%, transparent);
+    }
+    @media (max-width:1100px){ .metric-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
+    @media (max-width:640px){
+      .internal-panel{ padding:14px; }
+      .metric-grid{ grid-template-columns:1fr; }
+      .metric-card .value{ font-size:26px; }
+      .usage-table{ min-width:680px; }
+    }
+  </style>
+
+  <div class="internal-dashboard">
+    <section class="internal-panel">
+      <div class="internal-head">
+        <div>
+          <h2>Uso do sistema</h2>
+          <p class="internal-subtitle">Métricas internas de adoção e movimentação do HoraCerta.</p>
+        </div>
+        <span class="pill">Atualizado em {{ generated_at|date:"d/m/Y H:i" }}</span>
+      </div>
+
+      <div class="metric-grid">
+        <article class="metric-card">
+          <div class="label">Usuários cadastrados</div>
+          <div class="value">{{ total_users }}</div>
+          <div class="hint">Total de contas no sistema</div>
+        </article>
+        <article class="metric-card">
+          <div class="label">Empresas cadastradas</div>
+          <div class="value">{{ total_companies }}</div>
+          <div class="hint">Organizações criadas</div>
+        </article>
+        <article class="metric-card">
+          <div class="label">Funcionários cadastrados</div>
+          <div class="value">{{ total_employees }}</div>
+          <div class="hint">{{ total_active_employees }} ativados / {{ total_pending_employees }} pendentes</div>
+        </article>
+        <article class="metric-card">
+          <div class="label">Registros de ponto</div>
+          <div class="value">{{ total_punches }}</div>
+          <div class="hint">Volume total lançado</div>
+        </article>
+        <article class="metric-card">
+          <div class="label">Funcionários ativados</div>
+          <div class="value">{{ total_active_employees }}</div>
+          <div class="hint">Perfis liberados para operação</div>
+        </article>
+        <article class="metric-card">
+          <div class="label">Pendentes de ativação</div>
+          <div class="value">{{ total_pending_employees }}</div>
+          <div class="hint">Perfis com cadastro inativo</div>
+        </article>
+        <article class="metric-card">
+          <div class="label">Registros hoje</div>
+          <div class="value">{{ total_punches_today }}</div>
+          <div class="hint">Desde o início do dia atual</div>
+        </article>
+        <article class="metric-card">
+          <div class="label">Registros últimos 7 dias</div>
+          <div class="value">{{ total_punches_last_7_days }}</div>
+          <div class="hint">Movimentação recente</div>
+        </article>
+        <article class="metric-card">
+          <div class="label">Registros últimos 30 dias</div>
+          <div class="value">{{ total_punches_last_30_days }}</div>
+          <div class="hint">Indicador de adoção mensal</div>
+        </article>
+      </div>
+    </section>
+
+    <section class="internal-panel">
+      <div class="internal-head">
+        <div>
+          <h3>Empresas e uso</h3>
+          <p class="internal-subtitle">Quantidade de funcionários, registros de ponto e último uso por empresa.</p>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="usage-table">
+          <thead>
+            <tr>
+              <th>Empresa</th>
+              <th>Funcionários</th>
+              <th>Registros de ponto</th>
+              <th>Último registro</th>
+              <th>Status aproximado</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in company_usage_rows %}
+              <tr>
+                <td><span class="company-name">{{ row.company.name }}</span></td>
+                <td>{{ row.employee_count }}</td>
+                <td>{{ row.punch_count }}</td>
+                <td>
+                  {% if row.last_punch_at %}
+                    {{ row.last_punch_at|date:"d/m/Y H:i" }}
+                  {% else %}
+                    <span class="muted">Sem registros</span>
+                  {% endif %}
+                </td>
+                <td><span class="pill {{ row.status.tone }}">{{ row.status.label }}</span></td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="5">
+                  <div class="empty-state">Nenhuma empresa cadastrada até o momento.</div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+{% endblock %}

@@ -15,7 +15,8 @@ from django.contrib.auth import get_user_model, login, logout
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Count, Max, Q
+from django.core.exceptions import PermissionDenied
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.templatetags.static import static
@@ -184,6 +185,18 @@ def _redirect_if_not_empresa(request):
     if request.user.role != User.Role.EMPRESA:
         return redirect("dashboard")
     return None
+
+
+def _can_access_internal_dashboard(user):
+    return bool(user and user.is_authenticated and (user.is_superuser or user.is_staff))
+
+
+def _usage_status_for_company(punch_count, punch_count_last_30_days):
+    if punch_count == 0:
+        return {"label": "sem uso", "tone": "warn"}
+    if punch_count_last_30_days >= 10:
+        return {"label": "ativo", "tone": "success"}
+    return {"label": "pouco uso", "tone": "pending"}
 
 
 def _subscription_status_badge(subscription, at_time=None):
@@ -513,6 +526,71 @@ def logout_view(request):
 @login_required
 def dashboard(request):
     return _redirect_for_role(request.user)
+
+
+@login_required
+def internal_dashboard(request):
+    if not _can_access_internal_dashboard(request.user):
+        raise PermissionDenied
+
+    now = timezone.now()
+    today = timezone.localdate()
+    today_start = timezone.make_aware(datetime.combine(today, time.min), timezone.get_current_timezone())
+    tomorrow_start = today_start + timedelta(days=1)
+    last_7_days_start = now - timedelta(days=7)
+    last_30_days_start = now - timedelta(days=30)
+
+    total_users = User.objects.count()
+    total_companies = Company.objects.count()
+    total_employees = Employee.objects.count()
+    total_active_employees = Employee.objects.filter(is_active=True).count()
+    total_pending_employees = Employee.objects.filter(is_active=False).count()
+    total_punches = Punch.objects.count()
+    total_punches_today = Punch.objects.filter(timestamp__gte=today_start, timestamp__lt=tomorrow_start).count()
+    total_punches_last_7_days = Punch.objects.filter(timestamp__gte=last_7_days_start).count()
+    total_punches_last_30_days = Punch.objects.filter(timestamp__gte=last_30_days_start).count()
+
+    companies = (
+        Company.objects.annotate(
+            employee_count=Count("employees", distinct=True),
+            punch_count=Count("contracts__punches", distinct=True),
+            punch_count_last_30_days=Count(
+                "contracts__punches",
+                filter=Q(contracts__punches__timestamp__gte=last_30_days_start),
+                distinct=True,
+            ),
+            last_punch_at=Max("contracts__punches__timestamp"),
+        )
+        .order_by("-last_punch_at", "name")
+    )
+
+    company_usage_rows = []
+    for company in companies:
+        status = _usage_status_for_company(company.punch_count, company.punch_count_last_30_days)
+        company_usage_rows.append(
+            {
+                "company": company,
+                "employee_count": company.employee_count,
+                "punch_count": company.punch_count,
+                "last_punch_at": company.last_punch_at,
+                "status": status,
+            }
+        )
+
+    context = {
+        "total_users": total_users,
+        "total_companies": total_companies,
+        "total_employees": total_employees,
+        "total_active_employees": total_active_employees,
+        "total_pending_employees": total_pending_employees,
+        "total_punches": total_punches,
+        "total_punches_today": total_punches_today,
+        "total_punches_last_7_days": total_punches_last_7_days,
+        "total_punches_last_30_days": total_punches_last_30_days,
+        "company_usage_rows": company_usage_rows,
+        "generated_at": now,
+    }
+    return render(request, "accounts/internal_dashboard.html", context)
 
 
 @login_required

@@ -190,6 +190,18 @@
             {% endwith %}
           {% endif %}
 
+          {% if request.user.is_staff or request.user.is_superuser %}
+            {% with current=request.resolver_match.url_name %}
+              <div class="menu-group">
+                <div class="menu-label">Interno</div>
+                <a class="item {% if current == 'internal_dashboard' %}is-active{% endif %}" href="{% url 'internal_dashboard' %}">
+                  <div class="icon">I</div>
+                  <div><strong>Painel interno</strong><div class="muted item-sub">uso do sistema</div></div>
+                </a>
+              </div>
+            {% endwith %}
+          {% endif %}
+
           <a class="item" href="{% url 'help' %}">
             <div class="icon">?</div>
             <div><strong>Central de ajuda</strong><div class="muted" style="font-size:12px">como usar</div></div>
