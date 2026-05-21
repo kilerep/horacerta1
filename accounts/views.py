@@ -34,6 +34,7 @@ from companies.models import (
     CompanySubscription,
     Employee,
     Feature,
+    InternalAdminActionLog,
     Plan,
 )
 from companies.feature_flags import (
@@ -275,6 +276,16 @@ def _correction_request_status_tone(status):
     if status == PunchCorrectionRequest.Status.IN_REVIEW:
         return "pending"
     return ""
+
+
+def _log_internal_admin_action(*, admin_user, action, target_type, target_id, description=""):
+    return InternalAdminActionLog.objects.create(
+        admin_user=admin_user,
+        action=action,
+        target_type=target_type,
+        target_id=str(target_id),
+        description=(description or "").strip(),
+    )
 
 
 def _recent_30_day_summary_for_employee(employee):
@@ -705,6 +716,46 @@ def internal_companies(request):
 def internal_company_detail(request, company_id):
     last_30_days_start = timezone.now() - timedelta(days=30)
     company = get_object_or_404(_company_usage_queryset(last_30_days_start), id=company_id)
+    if request.method == "POST":
+        action = (request.POST.get("action") or "").strip()
+        description = (request.POST.get("description") or "").strip()
+        if action == "activate_company":
+            company.is_active = True
+            company.save(update_fields=["is_active"])
+            _log_internal_admin_action(
+                admin_user=request.user,
+                action="activate_company",
+                target_type="company",
+                target_id=company.id,
+                description=description or "Empresa ativada pelo Painel Interno.",
+            )
+            messages.success(request, "Empresa ativada.")
+        elif action == "deactivate_company":
+            company.is_active = False
+            company.save(update_fields=["is_active"])
+            _log_internal_admin_action(
+                admin_user=request.user,
+                action="deactivate_company",
+                target_type="company",
+                target_id=company.id,
+                description=description or "Empresa desativada pelo Painel Interno.",
+            )
+            messages.success(request, "Empresa desativada.")
+        elif action == "save_company_note":
+            company.internal_note = (request.POST.get("internal_note") or "").strip()
+            company.save(update_fields=["internal_note"])
+            _log_internal_admin_action(
+                admin_user=request.user,
+                action="save_company_note",
+                target_type="company",
+                target_id=company.id,
+                description=description or "Observacao interna da empresa atualizada.",
+            )
+            messages.success(request, "Observação interna salva.")
+        else:
+            messages.error(request, "Ação administrativa inválida.")
+        return redirect("internal_company_detail", company_id=company.id)
+
     company.status = _usage_status_for_company(company.punch_count, company.punch_count_last_30_days)
     employees = (
         Employee.objects.filter(company=company)
@@ -730,6 +781,20 @@ def internal_company_detail(request, company_id):
         .select_related("contract", "contract__employee", "contract__employee__user", "contract__company")
         .order_by("-timestamp")[:20]
     )
+    contracts = (
+        Contract.objects.filter(company=company)
+        .select_related("employee", "employee__user", "company")
+        .order_by("employee__full_name", "-start_date")
+    )
+    correction_requests = (
+        PunchCorrectionRequest.objects.filter(company=company)
+        .select_related("employee", "user", "punch")
+        .order_by("-created_at")[:10]
+    )
+    admin_logs = InternalAdminActionLog.objects.filter(
+        target_type="company",
+        target_id=str(company.id),
+    ).select_related("admin_user")[:10]
 
     return render(
         request,
@@ -738,6 +803,9 @@ def internal_company_detail(request, company_id):
             "company": company,
             "employee_rows": employee_rows,
             "recent_punches": recent_punches,
+            "contracts": contracts,
+            "correction_requests": correction_requests,
+            "admin_logs": admin_logs,
         },
     )
 
@@ -800,6 +868,50 @@ def internal_employees(request):
 @internal_staff_required
 def internal_employee_detail(request, employee_id):
     employee = get_object_or_404(Employee.objects.select_related("user", "company"), id=employee_id)
+    if request.method == "POST":
+        action = (request.POST.get("action") or "").strip()
+        description = (request.POST.get("description") or "").strip()
+        if action == "activate_user":
+            employee.user.is_active = True
+            employee.user.save(update_fields=["is_active"])
+            employee.is_active = True
+            employee.save(update_fields=["is_active"])
+            _log_internal_admin_action(
+                admin_user=request.user,
+                action="activate_user",
+                target_type="employee",
+                target_id=employee.id,
+                description=description or "Usuario e perfil ativados pelo Painel Interno.",
+            )
+            messages.success(request, "Usuário ativado.")
+        elif action == "deactivate_user":
+            employee.user.is_active = False
+            employee.user.save(update_fields=["is_active"])
+            employee.is_active = False
+            employee.save(update_fields=["is_active"])
+            _log_internal_admin_action(
+                admin_user=request.user,
+                action="deactivate_user",
+                target_type="employee",
+                target_id=employee.id,
+                description=description or "Usuario e perfil desativados pelo Painel Interno.",
+            )
+            messages.success(request, "Usuário desativado.")
+        elif action == "mark_pending":
+            employee.is_active = False
+            employee.save(update_fields=["is_active"])
+            _log_internal_admin_action(
+                admin_user=request.user,
+                action="mark_employee_pending",
+                target_type="employee",
+                target_id=employee.id,
+                description=description or "Perfil marcado como pendente de ativacao.",
+            )
+            messages.success(request, "Funcionário marcado como pendente.")
+        else:
+            messages.error(request, "Ação administrativa inválida.")
+        return redirect("internal_employee_detail", employee_id=employee.id)
+
     contracts = (
         Contract.objects.filter(employee=employee)
         .select_related("company", "employee", "employee__user")
@@ -811,6 +923,15 @@ def internal_employee_detail(request, employee_id):
         .order_by("-timestamp")[:30]
     )
     active_contract_count = contracts.filter(is_active=True).count()
+    correction_requests = (
+        PunchCorrectionRequest.objects.filter(employee=employee)
+        .select_related("company", "punch")
+        .order_by("-created_at")[:10]
+    )
+    admin_logs = InternalAdminActionLog.objects.filter(
+        target_type="employee",
+        target_id=str(employee.id),
+    ).select_related("admin_user")[:10]
 
     return render(
         request,
@@ -821,6 +942,8 @@ def internal_employee_detail(request, employee_id):
             "contracts": contracts,
             "recent_punches": recent_punches,
             "summary_30_days": _recent_30_day_summary_for_employee(employee),
+            "correction_requests": correction_requests,
+            "admin_logs": admin_logs,
         },
     )
 

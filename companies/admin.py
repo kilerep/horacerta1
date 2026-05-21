@@ -7,6 +7,7 @@ from .models import (
     CompanySubscription,
     Employee,
     Feature,
+    InternalAdminActionLog,
     Plan,
     PlanFeature,
 )
@@ -14,7 +15,8 @@ from .models import (
 
 @admin.register(Company)
 class CompanyAdmin(admin.ModelAdmin):
-    list_display = ("name", "email", "owner", "created_at")
+    list_display = ("name", "email", "owner", "is_active", "created_at")
+    list_filter = ("is_active",)
     search_fields = ("name", "email", "owner__email")
     ordering = ("-created_at",)
 
@@ -90,3 +92,11 @@ class CompanyAuthorizedLocationAdmin(admin.ModelAdmin):
     search_fields = ("name", "company__name", "address_or_description")
     list_filter = ("company", "is_active")
     ordering = ("company__name", "name")
+
+
+@admin.register(InternalAdminActionLog)
+class InternalAdminActionLogAdmin(admin.ModelAdmin):
+    list_display = ("action", "target_type", "target_id", "admin_user", "created_at")
+    list_filter = ("action", "target_type", "created_at")
+    search_fields = ("target_id", "description", "admin_user__email", "admin_user__username")
+    readonly_fields = ("admin_user", "action", "target_type", "target_id", "description", "created_at")

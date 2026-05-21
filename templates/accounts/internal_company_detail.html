@@ -11,15 +11,21 @@
       </div>
       <div class="internal-actions">
         <a class="btn" href="{% url 'internal_employees' %}?company={{ company.id }}">Ver funcionários</a>
-        <a class="btn" href="{% url 'internal_punches' %}?company={{ company.id }}">Ver registros dessa empresa</a>
-        <a class="btn" href="{% url 'internal_correction_requests' %}?company={{ company.id }}">Ver solicitações dessa empresa</a>
+        <a class="btn" href="{% url 'internal_punches' %}?company={{ company.id }}">Ver registros</a>
+        <a class="btn" href="{% url 'internal_correction_requests' %}?company={{ company.id }}">Ver solicitações</a>
       </div>
     </div>
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert {% if message.tags == 'error' %}warn{% endif %}" style="margin-top:12px;">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
 
     <div class="metric-grid">
       <div class="metric-card"><div class="label">Funcionários</div><div class="value">{{ company.employee_count }}</div><div class="hint">Total vinculado</div></div>
       <div class="metric-card"><div class="label">Funcionários ativos</div><div class="value">{{ company.active_employee_count }}</div><div class="hint">Perfis ativos</div></div>
-      <div class="metric-card"><div class="label">Registros totais</div><div class="value">{{ company.punch_count }}</div><div class="hint">Batidas lançadas</div></div>
+      <div class="metric-card"><div class="label">Registros totais</div><div class="value">{{ company.punch_count }}</div><div class="hint">Batidas ativas</div></div>
       <div class="metric-card"><div class="label">Registros últimos 30 dias</div><div class="value">{{ company.punch_count_last_30_days }}</div><div class="hint">Uso recente</div></div>
       <div class="metric-card"><div class="label">Último registro</div><div class="value">{% if company.last_punch_at %}{{ company.last_punch_at|date:"d/m" }}{% else %}-{% endif %}</div><div class="hint">{% if company.last_punch_at %}{{ company.last_punch_at|date:"d/m/Y H:i" }}{% else %}Sem registros{% endif %}</div></div>
     </div>
@@ -28,6 +34,46 @@
       <div class="detail-item"><div class="k">Telefone</div><div class="v">{{ company.phone|default:"-" }}</div></div>
       <div class="detail-item"><div class="k">Endereço</div><div class="v">{{ company.address|default:"-" }}</div></div>
       <div class="detail-item"><div class="k">Status aproximado</div><div class="v"><span class="pill {{ company.status.tone }}">{{ company.status.label }}</span></div></div>
+      <div class="detail-item"><div class="k">Status administrativo</div><div class="v">{% if company.is_active %}<span class="pill success">ativa</span>{% else %}<span class="pill warn">desativada</span>{% endif %}</div></div>
+      <div class="detail-item"><div class="k">Observação interna</div><div class="v">{{ company.internal_note|default:"-" }}</div></div>
+    </div>
+  </section>
+
+  <section class="internal-panel">
+    <div class="internal-head">
+      <div>
+        <h3>Ações administrativas</h3>
+        <p class="internal-subtitle">Ações administrativas ficam registradas para segurança.</p>
+      </div>
+    </div>
+    <div class="detail-grid">
+      <form method="post" class="detail-item" data-submit-once="true">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="{% if company.is_active %}deactivate_company{% else %}activate_company{% endif %}">
+        <div class="k">{% if company.is_active %}Desativar empresa{% else %}Ativar empresa{% endif %}</div>
+        <div class="field" style="margin-top:10px;">
+          <label>Descrição</label>
+          <textarea name="description" placeholder="Motivo administrativo"></textarea>
+        </div>
+        <button class="btn {% if company.is_active %}danger{% else %}primary{% endif %}" type="submit" {% if company.is_active %}onclick="return confirm('Confirmar desativação desta empresa?')"{% endif %}>
+          {% if company.is_active %}Desativar empresa{% else %}Ativar empresa{% endif %}
+        </button>
+      </form>
+
+      <form method="post" class="detail-item" data-submit-once="true">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="save_company_note">
+        <div class="k">Observação interna</div>
+        <div class="field" style="margin-top:10px;">
+          <label>Nota</label>
+          <textarea name="internal_note">{{ company.internal_note }}</textarea>
+        </div>
+        <div class="field" style="margin-top:10px;">
+          <label>Descrição do log</label>
+          <input name="description" placeholder="Ex: atualização após contato com cliente">
+        </div>
+        <button class="btn primary" type="submit">Salvar observação</button>
+      </form>
     </div>
   </section>
 
@@ -54,6 +100,56 @@
   </section>
 
   <section class="internal-panel">
+    <div class="internal-head">
+      <h3>Contratos e vínculos</h3>
+      <a class="btn" href="{% url 'internal_punches' %}?company={{ company.id }}">Ver registros da empresa</a>
+    </div>
+    <div class="table-wrap">
+      <table class="internal-table">
+        <thead><tr><th>Funcionário</th><th>Valor/h</th><th>Início</th><th>Fim</th><th>Status</th></tr></thead>
+        <tbody>
+          {% for contract in contracts %}
+            <tr>
+              <td><a class="strong-link" href="{% url 'internal_employee_detail' contract.employee.id %}">{{ contract.employee.full_name }}</a></td>
+              <td>R$ {{ contract.hourly_rate }}</td>
+              <td>{{ contract.start_date|date:"d/m/Y" }}</td>
+              <td>{% if contract.end_date %}{{ contract.end_date|date:"d/m/Y" }}{% else %}-{% endif %}</td>
+              <td>{% if contract.is_active %}<span class="pill success">ativo</span>{% else %}<span class="pill warn">inativo</span>{% endif %}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5"><div class="empty-state">Nenhum contrato encontrado.</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="internal-panel">
+    <div class="internal-head">
+      <h3>Solicitações de correção</h3>
+      <a class="btn" href="{% url 'internal_correction_requests' %}?company={{ company.id }}">Ver todas</a>
+    </div>
+    <div class="table-wrap">
+      <table class="internal-table">
+        <thead><tr><th>Data</th><th>Funcionário</th><th>Tipo</th><th>Status</th><th>Criada em</th></tr></thead>
+        <tbody>
+          {% for item in correction_requests %}
+            <tr>
+              <td><a class="strong-link" href="{% url 'internal_correction_request_detail' item.id %}">{{ item.problem_date|date:"d/m/Y" }}</a></td>
+              <td>{{ item.employee.full_name }}</td>
+              <td>{{ item.get_problem_type_display }}</td>
+              <td>{{ item.get_status_display }}</td>
+              <td>{{ item.created_at|date:"d/m/Y H:i" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5"><div class="empty-state">Nenhuma solicitação recente.</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="internal-panel">
     <h3>Últimos registros de ponto</h3>
     <div class="table-wrap">
       <table class="internal-table">
@@ -69,6 +165,27 @@
             </tr>
           {% empty %}
             <tr><td colspan="5"><div class="empty-state">Nenhum registro de ponto para esta empresa.</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="internal-panel">
+    <h3>Histórico administrativo</h3>
+    <div class="table-wrap">
+      <table class="internal-table">
+        <thead><tr><th>Quando</th><th>Admin</th><th>Ação</th><th>Descrição</th></tr></thead>
+        <tbody>
+          {% for log in admin_logs %}
+            <tr>
+              <td>{{ log.created_at|date:"d/m/Y H:i" }}</td>
+              <td>{{ log.admin_user.email|default:log.admin_user.username }}</td>
+              <td>{{ log.action }}</td>
+              <td>{{ log.description|default:"-" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4"><div class="empty-state">Nenhuma ação administrativa registrada.</div></td></tr>
           {% endfor %}
         </tbody>
       </table>

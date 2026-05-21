@@ -15,6 +15,8 @@ class Company(models.Model):
     phone = models.CharField(max_length=30, blank=True, default="")
     address = models.TextField(blank=True, default="")
     logo = models.ImageField(upload_to="company_logos/", null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    internal_note = models.TextField(blank=True, default="")
 
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -455,3 +457,26 @@ def company_has_feature(company: Company, feature_code: str, user_role: str | No
         feature=feature,
         is_enabled=True,
     ).exists()
+
+
+class InternalAdminActionLog(models.Model):
+    admin_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="internal_admin_action_logs",
+    )
+    action = models.CharField(max_length=80)
+    target_type = models.CharField(max_length=80)
+    target_id = models.CharField(max_length=80)
+    description = models.TextField(blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["target_type", "target_id", "-created_at"]),
+            models.Index(fields=["action", "-created_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.action} {self.target_type}:{self.target_id}"

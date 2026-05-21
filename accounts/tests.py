@@ -5,7 +5,7 @@ from django.utils import timezone
 from datetime import timedelta
 from uuid import uuid4
 
-from companies.models import Company, CompanyAttendancePolicy, CompanyAuthorizedLocation, Employee
+from companies.models import Company, CompanyAttendancePolicy, CompanyAuthorizedLocation, Employee, InternalAdminActionLog
 from timeclock.models import ActivityReportRequest, Contract, Punch, PunchCorrectionLog, PunchCorrectionRequest, ServiceReport
 from accounts.mei_context import MEI_SELECTED_CONTRACT_SESSION_KEY
 from .forms import CompanyAttendancePolicyForm, CompanyAuthorizedLocationForm
@@ -222,6 +222,70 @@ class InternalDashboardTests(TestCase):
         self.assertEqual(request_obj.status, PunchCorrectionRequest.Status.CORRECTED)
         self.assertEqual(request_obj.resolved_by_id, self.admin_user.id)
         self.assertTrue(request_obj.resolved_at)
+
+    def test_superuser_can_deactivate_and_activate_employee_user(self):
+        self.client.force_login(self.admin_user)
+
+        response = self.client.post(
+            reverse("internal_employee_detail", args=[self.employee.id]),
+            {"action": "deactivate_user", "description": "Bloqueio administrativo."},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.employee.refresh_from_db()
+        self.employee.user.refresh_from_db()
+        self.assertFalse(self.employee.is_active)
+        self.assertFalse(self.employee.user.is_active)
+        self.assertTrue(
+            InternalAdminActionLog.objects.filter(
+                target_type="employee",
+                target_id=str(self.employee.id),
+                action="deactivate_user",
+            ).exists()
+        )
+
+        response = self.client.post(
+            reverse("internal_employee_detail", args=[self.employee.id]),
+            {"action": "activate_user", "description": "Reativacao administrativa."},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.employee.refresh_from_db()
+        self.employee.user.refresh_from_db()
+        self.assertTrue(self.employee.is_active)
+        self.assertTrue(self.employee.user.is_active)
+
+    def test_superuser_can_deactivate_company_and_save_internal_note(self):
+        self.client.force_login(self.admin_user)
+
+        response = self.client.post(
+            reverse("internal_company_detail", args=[self.company.id]),
+            {"action": "deactivate_company", "description": "Pausa administrativa."},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.company.refresh_from_db()
+        self.assertFalse(self.company.is_active)
+
+        response = self.client.post(
+            reverse("internal_company_detail", args=[self.company.id]),
+            {
+                "action": "save_company_note",
+                "internal_note": "Cliente em acompanhamento.",
+                "description": "Nota interna atualizada.",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.company.refresh_from_db()
+        self.assertEqual(self.company.internal_note, "Cliente em acompanhamento.")
+        self.assertTrue(
+            InternalAdminActionLog.objects.filter(
+                target_type="company",
+                target_id=str(self.company.id),
+                action="save_company_note",
+            ).exists()
+        )
 
 
 class CreateOrLinkMeiServiceTests(TestCase):
