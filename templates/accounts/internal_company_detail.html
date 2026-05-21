@@ -1,0 +1,77 @@
+{% extends "accounts/internal_base.html" %}
+{% block title %}HoraCerta - Empresa interna{% endblock %}
+{% block page_title %}Detalhe da empresa{% endblock %}
+
+{% block internal_content %}
+  <section class="internal-panel">
+    <div class="internal-head">
+      <div>
+        <h2>{{ company.name }}</h2>
+        <p class="internal-subtitle">{{ company.email|default:"E-mail não informado" }}{% if company.cnpj %} | {{ company.cnpj }}{% endif %}</p>
+      </div>
+      <div class="internal-actions">
+        <a class="btn" href="{% url 'internal_employees' %}?company={{ company.id }}">Ver funcionários</a>
+        <a class="btn" href="{% url 'internal_punches' %}?company={{ company.id }}">Ver registros dessa empresa</a>
+        <a class="btn" href="{% url 'internal_correction_requests' %}?company={{ company.id }}">Ver solicitações dessa empresa</a>
+      </div>
+    </div>
+
+    <div class="metric-grid">
+      <div class="metric-card"><div class="label">Funcionários</div><div class="value">{{ company.employee_count }}</div><div class="hint">Total vinculado</div></div>
+      <div class="metric-card"><div class="label">Funcionários ativos</div><div class="value">{{ company.active_employee_count }}</div><div class="hint">Perfis ativos</div></div>
+      <div class="metric-card"><div class="label">Registros totais</div><div class="value">{{ company.punch_count }}</div><div class="hint">Batidas lançadas</div></div>
+      <div class="metric-card"><div class="label">Registros últimos 30 dias</div><div class="value">{{ company.punch_count_last_30_days }}</div><div class="hint">Uso recente</div></div>
+      <div class="metric-card"><div class="label">Último registro</div><div class="value">{% if company.last_punch_at %}{{ company.last_punch_at|date:"d/m" }}{% else %}-{% endif %}</div><div class="hint">{% if company.last_punch_at %}{{ company.last_punch_at|date:"d/m/Y H:i" }}{% else %}Sem registros{% endif %}</div></div>
+    </div>
+
+    <div class="detail-grid">
+      <div class="detail-item"><div class="k">Telefone</div><div class="v">{{ company.phone|default:"-" }}</div></div>
+      <div class="detail-item"><div class="k">Endereço</div><div class="v">{{ company.address|default:"-" }}</div></div>
+      <div class="detail-item"><div class="k">Status aproximado</div><div class="v"><span class="pill {{ company.status.tone }}">{{ company.status.label }}</span></div></div>
+    </div>
+  </section>
+
+  <section class="internal-panel">
+    <h3>Funcionários da empresa</h3>
+    <div class="table-wrap">
+      <table class="internal-table">
+        <thead><tr><th>Nome</th><th>E-mail</th><th>Status</th><th>Registros</th><th>Último registro</th></tr></thead>
+        <tbody>
+          {% for row in employee_rows %}
+            <tr>
+              <td><a class="strong-link" href="{% url 'internal_employee_detail' row.employee.id %}">{{ row.employee.full_name }}</a></td>
+              <td>{{ row.employee.user.email|default:row.employee.user.username }}</td>
+              <td><span class="pill {{ row.status.tone }}">{{ row.status.label }}</span></td>
+              <td>{{ row.punch_count }}</td>
+              <td>{% if row.last_punch_at %}{{ row.last_punch_at|date:"d/m/Y H:i" }}{% else %}<span class="muted">Sem registros</span>{% endif %}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5"><div class="empty-state">Nenhum funcionário vinculado.</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="internal-panel">
+    <h3>Últimos registros de ponto</h3>
+    <div class="table-wrap">
+      <table class="internal-table">
+        <thead><tr><th>Data/hora</th><th>Funcionário</th><th>Contrato</th><th>Status</th><th>Observação</th></tr></thead>
+        <tbody>
+          {% for punch in recent_punches %}
+            <tr>
+              <td><a class="strong-link" href="{% url 'internal_punch_detail' punch.id %}">{{ punch.timestamp|date:"d/m/Y H:i" }}</a></td>
+              <td>{{ punch.contract.employee.full_name }}</td>
+              <td>R$ {{ punch.contract.hourly_rate }}/h</td>
+              <td><span class="pill success">ativo</span></td>
+              <td>{{ punch.note|default:"-" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5"><div class="empty-state">Nenhum registro de ponto para esta empresa.</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

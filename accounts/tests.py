@@ -92,6 +92,44 @@ class InternalDashboardTests(TestCase):
 
         self.assertEqual(response.status_code, 403)
 
+    def test_superuser_can_access_internal_backoffice_routes(self):
+        self.client.force_login(self.admin_user)
+        routes = [
+            reverse("internal_dashboard"),
+            reverse("internal_companies"),
+            reverse("internal_company_detail", args=[self.company.id]),
+            reverse("internal_employees"),
+            reverse("internal_employee_detail", args=[self.employee.id]),
+            reverse("internal_punches"),
+            reverse("internal_punch_detail", args=[Punch.objects.first().id]),
+            reverse("internal_correction_requests"),
+            reverse("internal_corrections"),
+        ]
+
+        for url in routes:
+            with self.subTest(url=url):
+                response = self.client.get(url)
+                self.assertEqual(response.status_code, 200)
+
+    def test_regular_user_cannot_access_internal_backoffice_routes(self):
+        self.client.force_login(self.company_owner)
+        routes = [
+            reverse("internal_dashboard"),
+            reverse("internal_companies"),
+            reverse("internal_company_detail", args=[self.company.id]),
+            reverse("internal_employees"),
+            reverse("internal_employee_detail", args=[self.employee.id]),
+            reverse("internal_punches"),
+            reverse("internal_punch_detail", args=[Punch.objects.first().id]),
+            reverse("internal_correction_requests"),
+            reverse("internal_corrections"),
+        ]
+
+        for url in routes:
+            with self.subTest(url=url):
+                response = self.client.get(url)
+                self.assertEqual(response.status_code, 403)
+
 
 class CreateOrLinkMeiServiceTests(TestCase):
     def setUp(self):

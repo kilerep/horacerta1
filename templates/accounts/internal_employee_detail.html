@@ -1,0 +1,88 @@
+{% extends "accounts/internal_base.html" %}
+{% block title %}HoraCerta - Funcionário interno{% endblock %}
+{% block page_title %}Detalhe do funcionário{% endblock %}
+
+{% block internal_content %}
+  <section class="internal-panel">
+    <div class="internal-head">
+      <div>
+        <h2>{{ employee.full_name }}</h2>
+        <p class="internal-subtitle">{{ employee.user.email|default:employee.user.username }} | {{ employee.company.name }}</p>
+      </div>
+      <div class="internal-actions">
+        <a class="btn" href="{% url 'internal_punches' %}?employee={{ employee.id }}">Ver todos os registros</a>
+        <a class="btn" href="{% url 'internal_correction_requests' %}?employee={{ employee.id }}">Ver solicitações</a>
+        <a class="btn" href="{% url 'internal_corrections' %}?employee={{ employee.id }}">Abrir correção de ponto</a>
+      </div>
+    </div>
+
+    <div class="detail-grid">
+      <div class="detail-item"><div class="k">Status</div><div class="v"><span class="pill {{ status.tone }}">{{ status.label }}</span></div></div>
+      <div class="detail-item"><div class="k">Documento</div><div class="v">{{ employee.document|default:"-" }}</div></div>
+      <div class="detail-item"><div class="k">Telefone</div><div class="v">{{ employee.phone|default:"-" }}</div></div>
+      <div class="detail-item"><div class="k">Empresa principal</div><div class="v"><a class="strong-link" href="{% url 'internal_company_detail' employee.company.id %}">{{ employee.company.name }}</a></div></div>
+      <div class="detail-item"><div class="k">Criado em</div><div class="v">{{ employee.created_at|date:"d/m/Y H:i" }}</div></div>
+      <div class="detail-item"><div class="k">Usuário</div><div class="v">{{ employee.user.username }}</div></div>
+    </div>
+  </section>
+
+  <section class="internal-panel">
+    <div class="internal-head">
+      <div>
+        <h3>Resumo dos últimos 30 dias</h3>
+        <p class="internal-subtitle">Leitura calculada a partir das batidas existentes, sem alterar regras de ponto.</p>
+      </div>
+    </div>
+    <div class="metric-grid">
+      <div class="metric-card"><div class="label">Dias com registro</div><div class="value">{{ summary_30_days.days_with_records }}</div><div class="hint">Dias distintos</div></div>
+      <div class="metric-card"><div class="label">Registros</div><div class="value">{{ summary_30_days.punch_count }}</div><div class="hint">Batidas no período</div></div>
+      <div class="metric-card"><div class="label">Total de horas</div><div class="value">{{ summary_30_days.total_hours }}</div><div class="hint">Pares entrada/saída</div></div>
+      <div class="metric-card"><div class="label">Dias incompletos</div><div class="value">{{ summary_30_days.incomplete_days }}</div><div class="hint">Quantidade ímpar de batidas</div></div>
+    </div>
+  </section>
+
+  <section class="internal-panel">
+    <h3>Empresas, vínculos e contratos</h3>
+    <div class="table-wrap">
+      <table class="internal-table">
+        <thead><tr><th>Empresa</th><th>Valor/h</th><th>Início</th><th>Fim</th><th>Status</th><th>Observações</th></tr></thead>
+        <tbody>
+          {% for contract in contracts %}
+            <tr>
+              <td><a class="strong-link" href="{% url 'internal_company_detail' contract.company.id %}">{{ contract.company.name }}</a></td>
+              <td>R$ {{ contract.hourly_rate }}</td>
+              <td>{{ contract.start_date|date:"d/m/Y" }}</td>
+              <td>{% if contract.end_date %}{{ contract.end_date|date:"d/m/Y" }}{% else %}-{% endif %}</td>
+              <td>{% if contract.is_active %}<span class="pill success">ativo</span>{% else %}<span class="pill warn">inativo</span>{% endif %}</td>
+              <td>{{ contract.notes|default:"-" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6"><div class="empty-state">Nenhum contrato encontrado.</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="internal-panel">
+    <h3>Últimos registros de ponto</h3>
+    <div class="table-wrap">
+      <table class="internal-table">
+        <thead><tr><th>Data/hora</th><th>Empresa</th><th>Contrato</th><th>Status</th><th>Observação</th></tr></thead>
+        <tbody>
+          {% for punch in recent_punches %}
+            <tr>
+              <td><a class="strong-link" href="{% url 'internal_punch_detail' punch.id %}">{{ punch.timestamp|date:"d/m/Y H:i" }}</a></td>
+              <td>{{ punch.contract.company.name }}</td>
+              <td>R$ {{ punch.contract.hourly_rate }}/h</td>
+              <td><span class="pill success">ativo</span></td>
+              <td>{{ punch.note|default:"-" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5"><div class="empty-state">Nenhum registro de ponto para este funcionário.</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

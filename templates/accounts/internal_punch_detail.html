@@ -1,0 +1,35 @@
+{% extends "accounts/internal_base.html" %}
+{% block title %}HoraCerta - Registro interno{% endblock %}
+{% block page_title %}Detalhe do registro{% endblock %}
+
+{% block internal_content %}
+  <section class="internal-panel">
+    <div class="internal-head">
+      <div>
+        <h2>Registro de ponto</h2>
+        <p class="internal-subtitle">{{ punch.id }}</p>
+      </div>
+      <div class="internal-actions">
+        <a class="btn" href="{% url 'internal_employee_detail' punch.contract.employee.id %}">Ver funcionário</a>
+        <a class="btn" href="{% url 'internal_company_detail' punch.contract.company.id %}">Ver empresa</a>
+      </div>
+    </div>
+
+    <div class="notice">A correção administrativa será implementada em sprint próprio.</div>
+
+    <div class="detail-grid">
+      <div class="detail-item"><div class="k">Funcionário</div><div class="v">{{ punch.contract.employee.full_name }}</div></div>
+      <div class="detail-item"><div class="k">Empresa</div><div class="v">{{ punch.contract.company.name }}</div></div>
+      <div class="detail-item"><div class="k">Contrato</div><div class="v">R$ {{ punch.contract.hourly_rate }}/h</div></div>
+      <div class="detail-item"><div class="k">Data/hora</div><div class="v">{{ punch.timestamp|date:"d/m/Y H:i:s" }}</div></div>
+      <div class="detail-item"><div class="k">Criado em</div><div class="v">{{ punch.created_at|date:"d/m/Y H:i:s" }}</div></div>
+      <div class="detail-item"><div class="k">Status</div><div class="v"><span class="pill success">ativo</span></div></div>
+      <div class="detail-item"><div class="k">Observação</div><div class="v">{{ punch.note|default:"-" }}</div></div>
+      <div class="detail-item"><div class="k">Manual</div><div class="v">{% if punch.is_manual %}Sim{% else %}Não{% endif %}</div></div>
+      <div class="detail-item"><div class="k">Método</div><div class="v">{{ punch.audit_method_label }}</div></div>
+      <div class="detail-item"><div class="k">Confiança</div><div class="v">{{ punch.get_confidence_status_display }}</div></div>
+      <div class="detail-item"><div class="k">QR presencial</div><div class="v">{{ punch.get_qr_confirmation_status_display }}</div></div>
+      <div class="detail-item"><div class="k">Local validado</div><div class="v">{{ punch.validated_location.name|default:"-" }}</div></div>
+    </div>
+  </section>
+{% endblock %}

@@ -1,5 +1,6 @@
 from datetime import datetime, time, timedelta
 from decimal import Decimal
+from functools import wraps
 from io import BytesIO
 from urllib.parse import quote, urlencode, urlparse
 from xml.sax.saxutils import escape
@@ -191,12 +192,90 @@ def _can_access_internal_dashboard(user):
     return bool(user and user.is_authenticated and (user.is_superuser or user.is_staff))
 
 
+def internal_staff_required(view_func):
+    @wraps(view_func)
+    @login_required
+    def wrapped(request, *args, **kwargs):
+        if not _can_access_internal_dashboard(request.user):
+            raise PermissionDenied
+        return view_func(request, *args, **kwargs)
+
+    return wrapped
+
+
 def _usage_status_for_company(punch_count, punch_count_last_30_days):
     if punch_count == 0:
         return {"label": "sem uso", "tone": "warn"}
     if punch_count_last_30_days >= 10:
         return {"label": "ativo", "tone": "success"}
     return {"label": "pouco uso", "tone": "pending"}
+
+
+def _employee_status_for_backoffice(employee, active_contract_count=0):
+    if not employee.is_active:
+        return {"label": "pendente", "tone": "pending", "key": "pendente"}
+    if active_contract_count:
+        return {"label": "ativo", "tone": "success", "key": "ativo"}
+    return {"label": "inativo", "tone": "warn", "key": "inativo"}
+
+
+def _company_usage_queryset(last_30_days_start):
+    return Company.objects.annotate(
+        employee_count=Count("employees", distinct=True),
+        active_employee_count=Count("employees", filter=Q(employees__is_active=True), distinct=True),
+        punch_count=Count("contracts__punches", distinct=True),
+        punch_count_last_30_days=Count(
+            "contracts__punches",
+            filter=Q(contracts__punches__timestamp__gte=last_30_days_start),
+            distinct=True,
+        ),
+        last_punch_at=Max("contracts__punches__timestamp"),
+    )
+
+
+def _build_company_usage_rows(companies):
+    rows = []
+    for company in companies:
+        rows.append(
+            {
+                "company": company,
+                "employee_count": company.employee_count,
+                "active_employee_count": getattr(company, "active_employee_count", 0),
+                "punch_count": company.punch_count,
+                "punch_count_last_30_days": getattr(company, "punch_count_last_30_days", 0),
+                "last_punch_at": company.last_punch_at,
+                "status": _usage_status_for_company(company.punch_count, company.punch_count_last_30_days),
+            }
+        )
+    return rows
+
+
+def _recent_30_day_summary_for_employee(employee):
+    start = timezone.now() - timedelta(days=30)
+    punches = list(
+        Punch.objects.filter(contract__employee=employee, timestamp__gte=start)
+        .select_related("contract", "contract__company")
+        .order_by("timestamp")
+    )
+    grouped = defaultdict(list)
+    for punch in punches:
+        local_ts = timezone.localtime(punch.timestamp)
+        grouped[local_ts.date()].append(local_ts)
+
+    total_seconds = 0
+    incomplete_days = 0
+    for day_punches in grouped.values():
+        day_seconds, is_incomplete = compute_day_total(day_punches)
+        total_seconds += day_seconds
+        if is_incomplete:
+            incomplete_days += 1
+
+    return {
+        "days_with_records": len(grouped),
+        "punch_count": len(punches),
+        "total_hours": format_hhmm(total_seconds),
+        "incomplete_days": incomplete_days,
+    }
 
 
 def _subscription_status_badge(subscription, at_time=None):
@@ -528,11 +607,8 @@ def dashboard(request):
     return _redirect_for_role(request.user)
 
 
-@login_required
+@internal_staff_required
 def internal_dashboard(request):
-    if not _can_access_internal_dashboard(request.user):
-        raise PermissionDenied
-
     now = timezone.now()
     today = timezone.localdate()
     today_start = timezone.make_aware(datetime.combine(today, time.min), timezone.get_current_timezone())
@@ -550,32 +626,7 @@ def internal_dashboard(request):
     total_punches_last_7_days = Punch.objects.filter(timestamp__gte=last_7_days_start).count()
     total_punches_last_30_days = Punch.objects.filter(timestamp__gte=last_30_days_start).count()
 
-    companies = (
-        Company.objects.annotate(
-            employee_count=Count("employees", distinct=True),
-            punch_count=Count("contracts__punches", distinct=True),
-            punch_count_last_30_days=Count(
-                "contracts__punches",
-                filter=Q(contracts__punches__timestamp__gte=last_30_days_start),
-                distinct=True,
-            ),
-            last_punch_at=Max("contracts__punches__timestamp"),
-        )
-        .order_by("-last_punch_at", "name")
-    )
-
-    company_usage_rows = []
-    for company in companies:
-        status = _usage_status_for_company(company.punch_count, company.punch_count_last_30_days)
-        company_usage_rows.append(
-            {
-                "company": company,
-                "employee_count": company.employee_count,
-                "punch_count": company.punch_count,
-                "last_punch_at": company.last_punch_at,
-                "status": status,
-            }
-        )
+    companies = _company_usage_queryset(last_30_days_start).order_by("-last_punch_at", "name")
 
     context = {
         "total_users": total_users,
@@ -587,10 +638,236 @@ def internal_dashboard(request):
         "total_punches_today": total_punches_today,
         "total_punches_last_7_days": total_punches_last_7_days,
         "total_punches_last_30_days": total_punches_last_30_days,
-        "company_usage_rows": company_usage_rows,
+        "company_usage_rows": _build_company_usage_rows(companies),
         "generated_at": now,
     }
     return render(request, "accounts/internal_dashboard.html", context)
+
+
+@internal_staff_required
+def internal_companies(request):
+    last_30_days_start = timezone.now() - timedelta(days=30)
+    q = (request.GET.get("q") or "").strip()
+    status_filter = (request.GET.get("status") or "").strip()
+
+    companies = _company_usage_queryset(last_30_days_start)
+    if q:
+        companies = companies.filter(Q(name__icontains=q) | Q(email__icontains=q) | Q(cnpj__icontains=q))
+    companies = companies.order_by("-last_punch_at", "name")
+
+    rows = _build_company_usage_rows(companies)
+    if status_filter:
+        rows = [row for row in rows if row["status"]["label"] == status_filter]
+
+    return render(
+        request,
+        "accounts/internal_companies.html",
+        {
+            "rows": rows,
+            "q": q,
+            "status_filter": status_filter,
+        },
+    )
+
+
+@internal_staff_required
+def internal_company_detail(request, company_id):
+    last_30_days_start = timezone.now() - timedelta(days=30)
+    company = get_object_or_404(_company_usage_queryset(last_30_days_start), id=company_id)
+    company.status = _usage_status_for_company(company.punch_count, company.punch_count_last_30_days)
+    employees = (
+        Employee.objects.filter(company=company)
+        .select_related("user", "company")
+        .annotate(
+            punch_count=Count("contracts__punches", distinct=True),
+            last_punch_at=Max("contracts__punches__timestamp"),
+            active_contract_count=Count("contracts", filter=Q(contracts__is_active=True), distinct=True),
+        )
+        .order_by("full_name")
+    )
+    employee_rows = [
+        {
+            "employee": employee,
+            "status": _employee_status_for_backoffice(employee, employee.active_contract_count),
+            "punch_count": employee.punch_count,
+            "last_punch_at": employee.last_punch_at,
+        }
+        for employee in employees
+    ]
+    recent_punches = (
+        Punch.objects.filter(contract__company=company)
+        .select_related("contract", "contract__employee", "contract__employee__user", "contract__company")
+        .order_by("-timestamp")[:20]
+    )
+
+    return render(
+        request,
+        "accounts/internal_company_detail.html",
+        {
+            "company": company,
+            "employee_rows": employee_rows,
+            "recent_punches": recent_punches,
+        },
+    )
+
+
+@internal_staff_required
+def internal_employees(request):
+    q = (request.GET.get("q") or "").strip()
+    company_id = (request.GET.get("company") or "").strip()
+    status_filter = (request.GET.get("status") or "").strip()
+
+    employees = (
+        Employee.objects.select_related("user", "company")
+        .annotate(
+            punch_count=Count("contracts__punches", distinct=True),
+            last_punch_at=Max("contracts__punches__timestamp"),
+            active_contract_count=Count("contracts", filter=Q(contracts__is_active=True), distinct=True),
+        )
+        .order_by("full_name")
+    )
+    if q:
+        employees = employees.filter(
+            Q(full_name__icontains=q)
+            | Q(user__email__icontains=q)
+            | Q(user__username__icontains=q)
+            | Q(document__icontains=q)
+        )
+    if company_id:
+        employees = employees.filter(company_id=company_id)
+
+    rows = []
+    for employee in employees:
+        status = _employee_status_for_backoffice(employee, employee.active_contract_count)
+        if status_filter and status["key"] != status_filter:
+            continue
+        rows.append(
+            {
+                "employee": employee,
+                "status": status,
+                "punch_count": employee.punch_count,
+                "last_punch_at": employee.last_punch_at,
+            }
+        )
+
+    return render(
+        request,
+        "accounts/internal_employees.html",
+        {
+            "rows": rows,
+            "companies": [
+                {"company": company, "selected": str(company.id) == company_id}
+                for company in Company.objects.order_by("name")
+            ],
+            "q": q,
+            "company_id": company_id,
+            "status_filter": status_filter,
+        },
+    )
+
+
+@internal_staff_required
+def internal_employee_detail(request, employee_id):
+    employee = get_object_or_404(Employee.objects.select_related("user", "company"), id=employee_id)
+    contracts = (
+        Contract.objects.filter(employee=employee)
+        .select_related("company", "employee", "employee__user")
+        .order_by("-start_date", "-created_at")
+    )
+    recent_punches = (
+        Punch.objects.filter(contract__employee=employee)
+        .select_related("contract", "contract__company", "contract__employee", "contract__employee__user")
+        .order_by("-timestamp")[:30]
+    )
+    active_contract_count = contracts.filter(is_active=True).count()
+
+    return render(
+        request,
+        "accounts/internal_employee_detail.html",
+        {
+            "employee": employee,
+            "status": _employee_status_for_backoffice(employee, active_contract_count),
+            "contracts": contracts,
+            "recent_punches": recent_punches,
+            "summary_30_days": _recent_30_day_summary_for_employee(employee),
+        },
+    )
+
+
+@internal_staff_required
+def internal_punches(request):
+    company_id = (request.GET.get("company") or "").strip()
+    employee_id = (request.GET.get("employee") or "").strip()
+    status_filter = (request.GET.get("status") or "").strip()
+
+    punches = Punch.objects.select_related(
+        "contract",
+        "contract__company",
+        "contract__employee",
+        "contract__employee__user",
+    ).order_by("-timestamp")
+
+    if company_id:
+        punches = punches.filter(contract__company_id=company_id)
+    if employee_id:
+        punches = punches.filter(contract__employee_id=employee_id)
+
+    punches, date_from, date_to = filter_punches_by_period(
+        punches,
+        request.GET.get("date_from"),
+        request.GET.get("date_to"),
+    )
+    if status_filter == "cancelado":
+        punches = punches.none()
+
+    return render(
+        request,
+        "accounts/internal_punches.html",
+        {
+            "punches": punches[:200],
+            "companies": [
+                {"company": company, "selected": str(company.id) == company_id}
+                for company in Company.objects.order_by("name")
+            ],
+            "employees": [
+                {"employee": employee, "selected": str(employee.id) == employee_id}
+                for employee in Employee.objects.select_related("user", "company").order_by("full_name")
+            ],
+            "company_id": company_id,
+            "employee_id": employee_id,
+            "status_filter": status_filter,
+            "date_from": date_from,
+            "date_to": date_to,
+        },
+    )
+
+
+@internal_staff_required
+def internal_punch_detail(request, punch_id):
+    punch = get_object_or_404(
+        Punch.objects.select_related(
+            "contract",
+            "contract__company",
+            "contract__employee",
+            "contract__employee__user",
+            "validated_location",
+            "qr_confirmed_location",
+        ),
+        id=punch_id,
+    )
+    return render(request, "accounts/internal_punch_detail.html", {"punch": punch})
+
+
+@internal_staff_required
+def internal_correction_requests(request):
+    return render(
+        request,
+        "accounts/internal_correction_requests.html",
+        {
+            "company_id": (request.GET.get("company") or "").strip(),
+            "employee_id": (request.GET.get("employee") or "").strip(),
+        },
+    )
 
 
 @login_required

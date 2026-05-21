@@ -1,0 +1,35 @@
+{% extends "accounts/internal_base.html" %}
+{% block title %}HoraCerta - Solicitações internas{% endblock %}
+{% block page_title %}Solicitações{% endblock %}
+
+{% block internal_content %}
+  <section class="internal-panel">
+    <div class="internal-head">
+      <div>
+        <h2>Solicitações e correções</h2>
+        <p class="internal-subtitle">Área reservada para solicitações de correção administrativa de ponto.</p>
+      </div>
+    </div>
+
+    <div class="notice">O sistema de correção administrativa será implementado em sprint próprio.</div>
+
+    <div class="table-wrap">
+      <table class="internal-table">
+        <thead>
+          <tr>
+            <th>Solicitação</th>
+            <th>Empresa</th>
+            <th>Funcionário</th>
+            <th>Status</th>
+            <th>Criado em</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="5"><div class="empty-state">Nenhuma solicitação de correção cadastrada até o momento.</div></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

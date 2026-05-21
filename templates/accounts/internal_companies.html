@@ -1,0 +1,61 @@
+{% extends "accounts/internal_base.html" %}
+{% block title %}HoraCerta - Empresas internas{% endblock %}
+{% block page_title %}Empresas{% endblock %}
+
+{% block internal_content %}
+  <section class="internal-panel">
+    <div class="internal-head">
+      <div>
+        <h2>Empresas</h2>
+        <p class="internal-subtitle">Lista operacional de empresas cadastradas e uso aproximado do sistema.</p>
+      </div>
+    </div>
+
+    <form method="get" class="filter-grid">
+      <div class="field">
+        <label for="q">Busca por nome</label>
+        <input id="q" name="q" value="{{ q }}" placeholder="Nome, e-mail ou CNPJ">
+      </div>
+      <div class="field">
+        <label for="status">Status de uso</label>
+        <select id="status" name="status">
+          <option value="">Todos</option>
+          <option value="sem uso" {% if status_filter == "sem uso" %}selected{% endif %}>sem uso</option>
+          <option value="pouco uso" {% if status_filter == "pouco uso" %}selected{% endif %}>pouco uso</option>
+          <option value="ativo" {% if status_filter == "ativo" %}selected{% endif %}>ativo</option>
+        </select>
+      </div>
+      <button class="btn primary" type="submit">Filtrar</button>
+      <a class="btn" href="{% url 'internal_companies' %}">Limpar</a>
+    </form>
+
+    <div class="table-wrap">
+      <table class="internal-table">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Funcionários</th>
+            <th>Registros</th>
+            <th>Último registro</th>
+            <th>Status aproximado</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+            <tr>
+              <td><a class="strong-link" href="{% url 'internal_company_detail' row.company.id %}">{{ row.company.name }}</a></td>
+              <td>{{ row.employee_count }}</td>
+              <td>{{ row.punch_count }}</td>
+              <td>
+                {% if row.last_punch_at %}{{ row.last_punch_at|date:"d/m/Y H:i" }}{% else %}<span class="muted">Sem registros</span>{% endif %}
+              </td>
+              <td><span class="pill {{ row.status.tone }}">{{ row.status.label }}</span></td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5"><div class="empty-state">Nenhuma empresa encontrada.</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

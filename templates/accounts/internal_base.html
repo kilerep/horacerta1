@@ -1,0 +1,100 @@
+{% extends "accounts/base.html" %}
+
+{% block content %}
+  <style>
+    .internal-shell{ display:grid; gap:18px; }
+    .internal-actions{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+    .internal-panel{
+      border:1px solid var(--color-border);
+      border-radius:var(--radius-lg);
+      background:
+        radial-gradient(circle at 18% 0%, color-mix(in oklab, var(--color-primary) 15%, transparent), transparent 42%),
+        var(--surface-raised);
+      box-shadow:var(--shadow-sm);
+      padding:18px;
+      min-width:0;
+    }
+    .internal-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; }
+    .internal-head h2,.internal-head h3{ margin:0; }
+    .internal-subtitle{ margin:6px 0 0; color:var(--color-text-muted); font-size:13px; line-height:1.45; }
+    .metric-grid{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-top:14px; }
+    .metric-card{
+      display:block;
+      border:1px solid var(--color-border);
+      border-radius:var(--radius-md);
+      background:color-mix(in oklab, var(--surface-soft) 62%, var(--surface-raised));
+      padding:14px 12px;
+      min-width:0;
+      transition:background .14s ease, border-color .14s ease, transform .1s ease;
+    }
+    a.metric-card:hover,.internal-link-card:hover{ transform:translateY(-1px); border-color:var(--border-brand); background:var(--surface-brand-soft); }
+    .metric-card .label{ color:var(--color-text-muted); font-size:12px; font-weight:700; line-height:1.25; }
+    .metric-card .value{ margin-top:6px; font-size:30px; line-height:1; font-weight:900; color:var(--color-text-strong); }
+    .metric-card .hint{ margin-top:6px; font-size:12px; color:var(--color-text-muted); line-height:1.35; }
+    .filter-grid{ display:grid; grid-template-columns:repeat(4,minmax(160px,1fr)); gap:10px; margin-top:12px; align-items:end; }
+    .field{ display:grid; gap:6px; }
+    .field label{ color:var(--color-text-muted); font-size:12px; font-weight:800; }
+    .table-wrap{ margin-top:12px; border:1px solid var(--color-border); border-radius:var(--radius-md); overflow:auto; }
+    .internal-table{ width:100%; min-width:820px; border-collapse:collapse; }
+    .internal-table th,.internal-table td{ padding:12px 10px; border-bottom:1px solid var(--color-border); text-align:left; vertical-align:top; font-size:14px; }
+    .internal-table th{ color:var(--color-text-muted); font-size:12px; font-weight:800; }
+    .internal-table tr:last-child td{ border-bottom:none; }
+    .strong-link{ font-weight:800; color:var(--menu-active-text); }
+    .strong-link:hover{ text-decoration:underline; text-underline-offset:3px; }
+    .detail-grid{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-top:12px; }
+    .detail-item,.internal-link-card{
+      border:1px solid var(--color-border);
+      border-radius:var(--radius-md);
+      background:color-mix(in oklab, var(--surface-soft) 55%, transparent);
+      padding:12px;
+      min-width:0;
+    }
+    .detail-item .k{ color:var(--color-text-muted); font-size:12px; font-weight:800; }
+    .detail-item .v{ margin-top:5px; font-weight:800; overflow-wrap:anywhere; }
+    .empty-state{
+      border:1px dashed var(--color-border);
+      border-radius:var(--radius-md);
+      padding:14px;
+      color:var(--color-text-muted);
+      background:color-mix(in oklab, var(--surface-soft) 55%, transparent);
+    }
+    .notice{
+      border:1px solid var(--warning-border);
+      border-radius:var(--radius-md);
+      padding:12px;
+      color:var(--warning-text);
+      background:var(--warning-bg);
+      margin-top:12px;
+    }
+    @media (max-width:1100px){
+      .metric-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .filter-grid,.detail-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+    }
+    @media (max-width:640px){
+      .internal-panel{ padding:14px; }
+      .metric-grid,.filter-grid,.detail-grid{ grid-template-columns:1fr; }
+      .metric-card .value{ font-size:26px; }
+      .internal-table{ min-width:720px; }
+    }
+  </style>
+
+  <div class="internal-shell">
+    <section class="internal-panel">
+      <div class="internal-head">
+        <div>
+          <h2>Backoffice HoraCerta</h2>
+          <p class="internal-subtitle">Navegação interna para acompanhar empresas, MEIs, registros e futuras correções administrativas.</p>
+        </div>
+        <div class="internal-actions">
+          <a class="btn" href="{% url 'internal_companies' %}">Empresas</a>
+          <a class="btn" href="{% url 'internal_employees' %}">Funcionários</a>
+          <a class="btn" href="{% url 'internal_punches' %}">Registros de ponto</a>
+          <a class="btn" href="{% url 'internal_correction_requests' %}">Solicitações</a>
+          <a class="btn" href="{% url 'internal_corrections' %}">Correções</a>
+        </div>
+      </div>
+    </section>
+
+    {% block internal_content %}{% endblock %}
+  </div>
+{% endblock %}
