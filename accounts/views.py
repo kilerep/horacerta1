@@ -41,7 +41,7 @@ from companies.feature_flags import (
     humanize_feature_reason,
     require_company_feature,
 )
-from timeclock.models import ActivityReportRequest, Contract, Punch, PunchCorrectionLog, ServiceReport
+from timeclock.models import ActivityReportRequest, Contract, Punch, PunchCorrectionLog, PunchCorrectionRequest, ServiceReport
 from timeclock.services import (
     add_punch_admin_note,
     build_daily_summary,
@@ -69,6 +69,7 @@ from .forms import (
     CompanyContractForm,
     CompanyMEICreateForm,
     CompanyProfileForm,
+    PunchCorrectionRequestForm,
     EmployeeSearchForm,
     LoginForm,
     ServiceReportCreateForm,
@@ -264,6 +265,16 @@ def _punch_status_label(punch):
     if getattr(punch, "is_cancelled", False):
         return {"label": "cancelado", "tone": "warn"}
     return {"label": "ativo", "tone": "success"}
+
+
+def _correction_request_status_tone(status):
+    if status == PunchCorrectionRequest.Status.CORRECTED:
+        return "success"
+    if status == PunchCorrectionRequest.Status.REJECTED:
+        return "warn"
+    if status == PunchCorrectionRequest.Status.IN_REVIEW:
+        return "pending"
+    return ""
 
 
 def _recent_30_day_summary_for_employee(employee):
@@ -639,6 +650,7 @@ def internal_dashboard(request):
     total_pending_employees = Employee.objects.filter(is_active=False).count()
     total_punches = Punch.objects.count()
     total_cancelled_punches = Punch.all_objects.filter(is_cancelled=True).count()
+    total_open_correction_requests = PunchCorrectionRequest.objects.filter(status=PunchCorrectionRequest.Status.OPEN).count()
     total_punches_today = Punch.objects.filter(timestamp__gte=today_start, timestamp__lt=tomorrow_start).count()
     total_punches_last_7_days = Punch.objects.filter(timestamp__gte=last_7_days_start).count()
     total_punches_last_30_days = Punch.objects.filter(timestamp__gte=last_30_days_start).count()
@@ -653,6 +665,7 @@ def internal_dashboard(request):
         "total_pending_employees": total_pending_employees,
         "total_punches": total_punches,
         "total_cancelled_punches": total_cancelled_punches,
+        "total_open_correction_requests": total_open_correction_requests,
         "total_punches_today": total_punches_today,
         "total_punches_last_7_days": total_punches_last_7_days,
         "total_punches_last_30_days": total_punches_last_30_days,
@@ -918,12 +931,120 @@ def internal_punch_detail(request, punch_id):
 
 @internal_staff_required
 def internal_correction_requests(request):
+    status = (request.GET.get("status") or "").strip()
+    company_id = (request.GET.get("company") or "").strip()
+    employee_id = (request.GET.get("employee") or "").strip()
+    problem_type = (request.GET.get("problem_type") or "").strip()
+    problem_date = (request.GET.get("problem_date") or "").strip()
+
+    requests_qs = PunchCorrectionRequest.objects.select_related(
+        "employee",
+        "employee__user",
+        "company",
+        "contract",
+        "punch",
+        "resolved_by",
+    )
+    if status:
+        requests_qs = requests_qs.filter(status=status)
+    if company_id:
+        requests_qs = requests_qs.filter(company_id=company_id)
+    if employee_id:
+        requests_qs = requests_qs.filter(employee_id=employee_id)
+    if problem_type:
+        requests_qs = requests_qs.filter(problem_type=problem_type)
+    if problem_date:
+        try:
+            requests_qs = requests_qs.filter(problem_date=datetime.strptime(problem_date, "%Y-%m-%d").date())
+        except ValueError:
+            pass
+
+    rows = [
+        {
+            "request": item,
+            "status_tone": _correction_request_status_tone(item.status),
+        }
+        for item in requests_qs[:200]
+    ]
     return render(
         request,
         "accounts/internal_correction_requests.html",
         {
-            "company_id": (request.GET.get("company") or "").strip(),
-            "employee_id": (request.GET.get("employee") or "").strip(),
+            "rows": rows,
+            "companies": [
+                {"company": company, "selected": str(company.id) == company_id}
+                for company in Company.objects.order_by("name")
+            ],
+            "employees": [
+                {"employee": employee, "selected": str(employee.id) == employee_id}
+                for employee in Employee.objects.select_related("company", "user").order_by("full_name")
+            ],
+            "status": status,
+            "problem_type": problem_type,
+            "problem_date": problem_date,
+            "status_choices": PunchCorrectionRequest.Status.choices,
+            "problem_type_choices": PunchCorrectionRequest.ProblemType.choices,
+        },
+    )
+
+
+@internal_staff_required
+def internal_correction_request_detail(request, request_id):
+    correction_request = get_object_or_404(
+        PunchCorrectionRequest.objects.select_related(
+            "employee",
+            "employee__user",
+            "company",
+            "contract",
+            "punch",
+            "resolved_by",
+        ),
+        id=request_id,
+    )
+    if request.method == "POST":
+        new_status = (request.POST.get("status") or "").strip()
+        response_text = (request.POST.get("admin_response") or "").strip()
+        valid_statuses = {choice[0] for choice in PunchCorrectionRequest.Status.choices}
+        if new_status not in valid_statuses:
+            messages.error(request, "Status invalido para a solicitacao.")
+        else:
+            correction_request.status = new_status
+            correction_request.admin_response = response_text
+            if new_status in {PunchCorrectionRequest.Status.CORRECTED, PunchCorrectionRequest.Status.REJECTED}:
+                correction_request.resolved_by = request.user
+                correction_request.resolved_at = timezone.now()
+            else:
+                correction_request.resolved_by = None
+                correction_request.resolved_at = None
+            correction_request.save(
+                update_fields=["status", "admin_response", "resolved_by", "resolved_at", "updated_at"]
+            )
+            messages.success(request, "Solicitacao atualizada.")
+        return redirect("internal_correction_request_detail", request_id=correction_request.id)
+
+    day_start = timezone.make_aware(datetime.combine(correction_request.problem_date, time.min))
+    day_end = timezone.make_aware(datetime.combine(correction_request.problem_date, time.max))
+    day_punches = (
+        Punch.all_objects.filter(
+            contract__employee=correction_request.employee,
+            timestamp__range=(day_start, day_end),
+        )
+        .select_related("contract", "contract__company")
+        .order_by("timestamp")
+    )
+    records_url = (
+        f"{reverse('internal_punches')}?employee={correction_request.employee_id}"
+        f"&date_from={correction_request.problem_date:%Y-%m-%d}&date_to={correction_request.problem_date:%Y-%m-%d}"
+    )
+    return render(
+        request,
+        "accounts/internal_correction_request_detail.html",
+        {
+            "correction_request": correction_request,
+            "status_tone": _correction_request_status_tone(correction_request.status),
+            "day_punches": day_punches,
+            "records_url": records_url,
+            "status_choices": PunchCorrectionRequest.Status.choices,
         },
     )
 
@@ -3514,6 +3635,42 @@ def mei_history(request):
         "summary_total_days_incomplete": total_days_incomplete,
     }
     return render(request, "accounts/mei_history.html", context)
+
+
+@login_required
+def mei_punch_correction_request(request):
+    denied = _redirect_if_not_mei(request)
+    if denied:
+        return denied
+    mei_context = resolve_mei_context(request, include_inactive_contracts=True)
+    employee = mei_context.selected_employee
+    if not employee:
+        return render(
+            request,
+            "accounts/mei_punch_correction_request.html",
+            {"form": None, "no_employee": True},
+        )
+
+    initial = {"problem_date": timezone.localdate()}
+    if mei_context.selected_contract:
+        initial["contract"] = mei_context.selected_contract
+    form = PunchCorrectionRequestForm(
+        request.POST or None,
+        employee=employee,
+        initial=initial,
+    )
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        return redirect(f"{reverse('employee_dashboard')}?event=correction_request_sent")
+
+    return render(
+        request,
+        "accounts/mei_punch_correction_request.html",
+        {
+            "form": form,
+            "employee": employee,
+        },
+    )
 
 
 @login_required

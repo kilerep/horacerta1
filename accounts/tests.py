@@ -6,7 +6,7 @@ from datetime import timedelta
 from uuid import uuid4
 
 from companies.models import Company, CompanyAttendancePolicy, CompanyAuthorizedLocation, Employee
-from timeclock.models import ActivityReportRequest, Contract, Punch, PunchCorrectionLog, ServiceReport
+from timeclock.models import ActivityReportRequest, Contract, Punch, PunchCorrectionLog, PunchCorrectionRequest, ServiceReport
 from accounts.mei_context import MEI_SELECTED_CONTRACT_SESSION_KEY
 from .forms import CompanyAttendancePolicyForm, CompanyAuthorizedLocationForm
 from .services import MeiLinkError, create_or_link_mei_by_email
@@ -170,6 +170,58 @@ class InternalDashboardTests(TestCase):
         self.assertTrue(punch.is_cancelled)
         self.assertFalse(Punch.objects.filter(id=punch.id).exists())
         self.assertTrue(Punch.all_objects.filter(id=punch.id).exists())
+
+    def test_employee_can_submit_punch_correction_request(self):
+        punch = Punch.objects.first()
+        self.client.force_login(self.employee_user)
+
+        response = self.client.post(
+            reverse("mei_punch_correction_request"),
+            {
+                "problem_date": timezone.localdate().strftime("%Y-%m-%d"),
+                "problem_type": PunchCorrectionRequest.ProblemType.EXTRA_PUNCH,
+                "contract": str(self.contract.id),
+                "punch": str(punch.id),
+                "description": "Registrei uma batida a mais durante teste.",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        request_obj = PunchCorrectionRequest.objects.get(employee=self.employee)
+        self.assertEqual(request_obj.status, PunchCorrectionRequest.Status.OPEN)
+        self.assertEqual(request_obj.company_id, self.company.id)
+        self.assertEqual(request_obj.punch_id, punch.id)
+
+    def test_superuser_can_review_punch_correction_request(self):
+        request_obj = PunchCorrectionRequest.objects.create(
+            employee=self.employee,
+            user=self.employee_user,
+            company=self.company,
+            contract=self.contract,
+            punch=Punch.objects.first(),
+            problem_date=timezone.localdate(),
+            problem_type=PunchCorrectionRequest.ProblemType.WRONG_TIME,
+            description="Horario errado.",
+        )
+        self.client.force_login(self.admin_user)
+
+        detail_response = self.client.get(reverse("internal_correction_request_detail", args=[request_obj.id]))
+        self.assertEqual(detail_response.status_code, 200)
+        self.assertContains(detail_response, "Registros daquele dia")
+
+        response = self.client.post(
+            reverse("internal_correction_request_detail", args=[request_obj.id]),
+            {
+                "status": PunchCorrectionRequest.Status.CORRECTED,
+                "admin_response": "Corrigido pelo backoffice.",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        request_obj.refresh_from_db()
+        self.assertEqual(request_obj.status, PunchCorrectionRequest.Status.CORRECTED)
+        self.assertEqual(request_obj.resolved_by_id, self.admin_user.id)
+        self.assertTrue(request_obj.resolved_at)
 
 
 class CreateOrLinkMeiServiceTests(TestCase):

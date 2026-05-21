@@ -38,6 +38,10 @@
       <section class="hc-feedback hc-feedback--ok" role="status" aria-live="polite">
         Retorno enviado com sucesso para a empresa.
       </section>
+    {% elif request.GET.event == "correction_request_sent" %}
+      <section class="hc-feedback hc-feedback--ok" role="status" aria-live="polite">
+        Sua solicitação foi enviada para análise.
+      </section>
     {% endif %}
     {% if context_warning %}
       <section class="hc-feedback hc-feedback--warn" role="status" aria-live="polite">
@@ -192,6 +196,7 @@
               <span class="hc-punch-btn__spinner" aria-hidden="true"></span>
             </button>
             <button id="hcManualOpen" class="btn hc-manual-open-btn" type="button">Registrar horario manual</button>
+            <a class="btn" href="{% url 'mei_punch_correction_request' %}">Reportar problema no ponto</a>
           </form>
         </div>
       </section>

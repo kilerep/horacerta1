@@ -6,28 +6,83 @@
   <section class="internal-panel">
     <div class="internal-head">
       <div>
-        <h2>Solicitações e correções</h2>
-        <p class="internal-subtitle">Área reservada para solicitações de correção administrativa de ponto.</p>
+        <h2>Solicitações de correção</h2>
+        <p class="internal-subtitle">Pedidos enviados por funcionários/MEIs. A solicitação não altera cálculo automaticamente.</p>
       </div>
     </div>
 
-    <div class="notice">O sistema de correção administrativa será implementado em sprint próprio.</div>
+    <form method="get" class="filter-grid">
+      <div class="field">
+        <label for="status">Status</label>
+        <select id="status" name="status">
+          <option value="">Todos</option>
+          {% for value,label in status_choices %}
+            <option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="company">Empresa</label>
+        <select id="company" name="company">
+          <option value="">Todas</option>
+          {% for option in companies %}
+            <option value="{{ option.company.id }}" {% if option.selected %}selected{% endif %}>{{ option.company.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="employee">Funcionário</label>
+        <select id="employee" name="employee">
+          <option value="">Todos</option>
+          {% for option in employees %}
+            <option value="{{ option.employee.id }}" {% if option.selected %}selected{% endif %}>{{ option.employee.full_name }} - {{ option.employee.company.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="problem_type">Tipo</label>
+        <select id="problem_type" name="problem_type">
+          <option value="">Todos</option>
+          {% for value,label in problem_type_choices %}
+            <option value="{{ value }}" {% if problem_type == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="problem_date">Data</label>
+        <input id="problem_date" name="problem_date" type="date" value="{{ problem_date }}">
+      </div>
+      <button class="btn primary" type="submit">Filtrar</button>
+      <a class="btn" href="{% url 'internal_correction_requests' %}">Limpar</a>
+    </form>
 
     <div class="table-wrap">
       <table class="internal-table">
         <thead>
           <tr>
             <th>Solicitação</th>
-            <th>Empresa</th>
             <th>Funcionário</th>
+            <th>Empresa</th>
+            <th>Data</th>
+            <th>Tipo</th>
             <th>Status</th>
             <th>Criado em</th>
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td colspan="5"><div class="empty-state">Nenhuma solicitação de correção cadastrada até o momento.</div></td>
-          </tr>
+          {% for row in rows %}
+            <tr>
+              <td><a class="strong-link" href="{% url 'internal_correction_request_detail' row.request.id %}">{{ row.request.id }}</a></td>
+              <td>{{ row.request.employee.full_name }}</td>
+              <td>{{ row.request.company.name }}</td>
+              <td>{{ row.request.problem_date|date:"d/m/Y" }}</td>
+              <td>{{ row.request.get_problem_type_display }}</td>
+              <td><span class="pill {{ row.status_tone }}">{{ row.request.get_status_display }}</span></td>
+              <td>{{ row.request.created_at|date:"d/m/Y H:i" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="7"><div class="empty-state">Nenhuma solicitação encontrada.</div></td></tr>
+          {% endfor %}
         </tbody>
       </table>
     </div>

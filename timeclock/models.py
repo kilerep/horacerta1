@@ -264,6 +264,79 @@ class PunchCorrectionLog(models.Model):
         return f"{self.get_action_type_display()} - {self.punch_id}"
 
 
+class PunchCorrectionRequest(models.Model):
+    class ProblemType(models.TextChoices):
+        EXTRA_PUNCH = "extra_punch", "Registro a mais"
+        MISSED_PUNCH = "missed_punch", "Esqueci uma batida"
+        WRONG_TIME = "wrong_time", "Horario errado"
+        DUPLICATED_PUNCH = "duplicated_punch", "Registro duplicado"
+        OTHER = "other", "Outro"
+
+    class Status(models.TextChoices):
+        OPEN = "open", "Aberta"
+        IN_REVIEW = "in_review", "Em analise"
+        CORRECTED = "corrected", "Corrigida"
+        REJECTED = "rejected", "Recusada"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    employee = models.ForeignKey(
+        Employee,
+        on_delete=models.PROTECT,
+        related_name="punch_correction_requests",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="punch_correction_requests",
+    )
+    company = models.ForeignKey(
+        Company,
+        on_delete=models.PROTECT,
+        related_name="punch_correction_requests",
+    )
+    contract = models.ForeignKey(
+        Contract,
+        on_delete=models.PROTECT,
+        related_name="punch_correction_requests",
+        null=True,
+        blank=True,
+    )
+    punch = models.ForeignKey(
+        Punch,
+        on_delete=models.SET_NULL,
+        related_name="correction_requests",
+        null=True,
+        blank=True,
+    )
+    problem_date = models.DateField()
+    problem_type = models.CharField(max_length=30, choices=ProblemType.choices)
+    description = models.TextField()
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.OPEN)
+    admin_response = models.TextField(blank=True, default="")
+    resolved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="resolved_punch_correction_requests",
+        null=True,
+        blank=True,
+    )
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["status", "-created_at"]),
+            models.Index(fields=["company", "status"]),
+            models.Index(fields=["employee", "-created_at"]),
+            models.Index(fields=["problem_date"]),
+        ]
+
+    def __str__(self):
+        return f"{self.employee.full_name} - {self.get_problem_type_display()} ({self.get_status_display()})"
+
+
 class ActivityReportRequest(models.Model):
     class Status(models.TextChoices):
         PENDING = "PENDING", "Pendente"

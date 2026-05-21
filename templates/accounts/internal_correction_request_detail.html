@@ -1,0 +1,79 @@
+{% extends "accounts/internal_base.html" %}
+{% block title %}HoraCerta - Solicitação de correção{% endblock %}
+{% block page_title %}Solicitação de correção{% endblock %}
+
+{% block internal_content %}
+  <section class="internal-panel">
+    <div class="internal-head">
+      <div>
+        <h2>{{ correction_request.employee.full_name }}</h2>
+        <p class="internal-subtitle">{{ correction_request.company.name }} | {{ correction_request.problem_date|date:"d/m/Y" }}</p>
+      </div>
+      <div class="internal-actions">
+        <a class="btn" href="{{ records_url }}">Abrir registros do dia</a>
+        {% if correction_request.punch %}
+          <a class="btn" href="{% url 'internal_punch_detail' correction_request.punch.id %}">Abrir registro relacionado</a>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert {% if message.tags == 'error' %}warn{% endif %}" style="margin-top:12px;">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+
+    <div class="detail-grid">
+      <div class="detail-item"><div class="k">Funcionário</div><div class="v">{{ correction_request.employee.full_name }}</div></div>
+      <div class="detail-item"><div class="k">Empresa</div><div class="v">{{ correction_request.company.name }}</div></div>
+      <div class="detail-item"><div class="k">Data do problema</div><div class="v">{{ correction_request.problem_date|date:"d/m/Y" }}</div></div>
+      <div class="detail-item"><div class="k">Tipo</div><div class="v">{{ correction_request.get_problem_type_display }}</div></div>
+      <div class="detail-item"><div class="k">Status atual</div><div class="v"><span class="pill {{ status_tone }}">{{ correction_request.get_status_display }}</span></div></div>
+      <div class="detail-item"><div class="k">Criado em</div><div class="v">{{ correction_request.created_at|date:"d/m/Y H:i" }}</div></div>
+      <div class="detail-item"><div class="k">Descrição</div><div class="v">{{ correction_request.description }}</div></div>
+      <div class="detail-item"><div class="k">Resposta administrativa</div><div class="v">{{ correction_request.admin_response|default:"-" }}</div></div>
+      <div class="detail-item"><div class="k">Resolvido por</div><div class="v">{{ correction_request.resolved_by.email|default:"-" }}{% if correction_request.resolved_at %}<br>{{ correction_request.resolved_at|date:"d/m/Y H:i" }}{% endif %}</div></div>
+    </div>
+  </section>
+
+  <section class="internal-panel">
+    <h3>Atualizar análise</h3>
+    <form method="post" class="filter-grid" data-submit-once="true">
+      {% csrf_token %}
+      <div class="field">
+        <label for="status">Status</label>
+        <select id="status" name="status">
+          {% for value,label in status_choices %}
+            <option value="{{ value }}" {% if correction_request.status == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field" style="grid-column:span 2;">
+        <label for="admin_response">Resposta administrativa</label>
+        <textarea id="admin_response" name="admin_response">{{ correction_request.admin_response }}</textarea>
+      </div>
+      <button class="btn primary" type="submit">Salvar análise</button>
+    </form>
+  </section>
+
+  <section class="internal-panel">
+    <h3>Registros daquele dia</h3>
+    <div class="table-wrap">
+      <table class="internal-table">
+        <thead><tr><th>Horário</th><th>Empresa</th><th>Status</th><th>Observação</th></tr></thead>
+        <tbody>
+          {% for punch in day_punches %}
+            <tr>
+              <td><a class="strong-link" href="{% url 'internal_punch_detail' punch.id %}">{{ punch.timestamp|date:"d/m/Y H:i" }}</a></td>
+              <td>{{ punch.contract.company.name }}</td>
+              <td>{% if punch.is_cancelled %}<span class="pill warn">cancelado</span>{% else %}<span class="pill success">ativo</span>{% endif %}</td>
+              <td>{{ punch.note|default:"-" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4"><div class="empty-state">Nenhum registro encontrado para a data informada.</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

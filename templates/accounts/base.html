@@ -196,7 +196,15 @@
                 <div class="menu-label">Interno</div>
                 <a class="item {% if current == 'internal_dashboard' %}is-active{% endif %}" href="{% url 'internal_dashboard' %}">
                   <div class="icon">I</div>
-                  <div><strong>Painel interno</strong><div class="muted item-sub">uso do sistema</div></div>
+                  <div>
+                    <strong>
+                      Painel interno
+                      {% if open_punch_correction_requests_count %}
+                        <span class="badge">{{ open_punch_correction_requests_count }}</span>
+                      {% endif %}
+                    </strong>
+                    <div class="muted item-sub">uso do sistema</div>
+                  </div>
                 </a>
               </div>
             {% endwith %}

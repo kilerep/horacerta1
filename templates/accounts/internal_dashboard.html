@@ -38,6 +38,11 @@
         <div class="value">{{ total_cancelled_punches }}</div>
         <div class="hint">Mantidos para auditoria</div>
       </a>
+      <a class="metric-card" href="{% url 'internal_correction_requests' %}?status=open">
+        <div class="label">Solicitações abertas</div>
+        <div class="value">{{ total_open_correction_requests }}</div>
+        <div class="hint">Pedidos aguardando análise</div>
+      </a>
       <a class="metric-card" href="{% url 'internal_employees' %}?status=ativo">
         <div class="label">Funcionários ativados</div>
         <div class="value">{{ total_active_employees }}</div>

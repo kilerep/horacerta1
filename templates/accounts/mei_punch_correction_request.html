@@ -1,0 +1,55 @@
+{% extends "accounts/base.html" %}
+{% block title %}HoraCerta - Reportar problema no ponto{% endblock %}
+{% block page_title %}Reportar problema no ponto{% endblock %}
+
+{% block content %}
+  <style>
+    .mei-request{display:grid;gap:14px;max-width:860px}
+    .mei-request__panel{
+      border:1px solid var(--color-border);
+      border-radius:var(--radius-lg);
+      background:var(--surface-raised);
+      box-shadow:var(--shadow-sm);
+      padding:18px;
+    }
+    .mei-request__title{margin:0;font-size:20px}
+    .mei-request__sub{margin:8px 0 0;color:var(--color-text-muted);font-size:13px;line-height:1.45}
+    .mei-request__form{display:grid;gap:12px;margin-top:14px}
+    .mei-request__field{display:grid;gap:6px}
+    .mei-request__field label{color:var(--color-text-muted);font-size:13px;font-weight:800}
+    .mei-request__error{color:var(--danger-text);font-size:12px}
+    .mei-request__actions{display:flex;gap:8px;flex-wrap:wrap}
+  </style>
+
+  <div class="mei-request">
+    <section class="mei-request__panel">
+      <h2 class="mei-request__title">Reportar problema no ponto</h2>
+      <p class="mei-request__sub">
+        Use esta área para avisar um erro no registro de ponto. O horário não será alterado automaticamente; a solicitação será analisada.
+      </p>
+      {% if no_employee %}
+        <div class="alert warn" style="margin-top:12px;">Não foi possível localizar seu perfil de funcionário para abrir a solicitação.</div>
+      {% else %}
+        <form method="post" class="mei-request__form" data-submit-once="true">
+          {% csrf_token %}
+          {% for field in form %}
+            <div class="mei-request__field">
+              <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {% for error in field.errors %}
+                <div class="mei-request__error">{{ error }}</div>
+              {% endfor %}
+            </div>
+          {% endfor %}
+          {% for error in form.non_field_errors %}
+            <div class="alert warn">{{ error }}</div>
+          {% endfor %}
+          <div class="mei-request__actions">
+            <button class="btn primary" type="submit">Enviar solicitação</button>
+            <a class="btn" href="{% url 'employee_dashboard' %}">Voltar</a>
+          </div>
+        </form>
+      {% endif %}
+    </section>
+  </div>
+{% endblock %}

@@ -5,7 +5,7 @@ from django.db.models import Q
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 from companies.models import Company, CompanyAttendancePolicy, CompanyAuthorizedLocation, Employee
-from timeclock.models import ActivityReportRequest, Contract, ServiceReport
+from timeclock.models import ActivityReportRequest, Contract, Punch, PunchCorrectionRequest, ServiceReport
 from .services import MeiLinkError, create_or_link_mei_by_email
 
 User = get_user_model()
@@ -65,6 +65,105 @@ class PeriodSearchForm(forms.Form):
         required=False,
         widget=forms.DateInput(attrs={"type": "date"}),
     )
+
+
+class PunchCorrectionRequestForm(forms.ModelForm):
+    contract = forms.ModelChoiceField(
+        label="Empresa/vinculo",
+        queryset=Contract.objects.none(),
+        required=False,
+        empty_label="Selecionar vinculo",
+    )
+    punch = forms.ModelChoiceField(
+        label="Registro relacionado (opcional)",
+        queryset=Punch.all_objects.none(),
+        required=False,
+        empty_label="Nenhum registro especifico",
+    )
+
+    class Meta:
+        model = PunchCorrectionRequest
+        fields = ["problem_date", "problem_type", "contract", "punch", "description"]
+        widgets = {
+            "problem_date": forms.DateInput(attrs={"type": "date"}),
+            "description": forms.Textarea(
+                attrs={
+                    "rows": 5,
+                    "placeholder": "Descreva o que aconteceu e qual ajuste voce acredita ser necessario.",
+                }
+            ),
+        }
+        labels = {
+            "problem_date": "Data do problema",
+            "problem_type": "Tipo de problema",
+            "description": "Descricao",
+        }
+
+    def __init__(self, *args, employee=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.employee = employee
+        contracts_qs = Contract.objects.none()
+        punches_qs = Punch.all_objects.none()
+        if employee:
+            contracts_qs = (
+                Contract.objects.filter(employee=employee, company__isnull=False)
+                .select_related("company")
+                .order_by("-is_active", "company__name", "-start_date")
+            )
+            punches_qs = (
+                Punch.all_objects.filter(contract__employee=employee)
+                .select_related("contract", "contract__company")
+                .order_by("-timestamp")
+            )
+        self.fields["contract"].queryset = contracts_qs
+        self.fields["contract"].label_from_instance = (
+            lambda obj: f"{obj.company.name} | inicio {obj.start_date.strftime('%d/%m/%Y') if obj.start_date else '-'}"
+        )
+        self.fields["punch"].queryset = punches_qs
+        self.fields["punch"].label_from_instance = (
+            lambda obj: f"{obj.timestamp.strftime('%d/%m/%Y %H:%M')} | {obj.contract.company.name}"
+        )
+
+    def clean_description(self):
+        description = (self.cleaned_data.get("description") or "").strip()
+        if not description:
+            raise forms.ValidationError("Descreva o problema para enviar a solicitacao.")
+        return description
+
+    def clean(self):
+        data = super().clean()
+        contract = data.get("contract")
+        punch = data.get("punch")
+        if self.employee and contract and contract.employee_id != self.employee.id:
+            self.add_error("contract", "Selecione um vinculo do seu perfil.")
+        if self.employee and punch and punch.contract.employee_id != self.employee.id:
+            self.add_error("punch", "Selecione um registro do seu perfil.")
+        if punch and contract and punch.contract_id != contract.id:
+            self.add_error("punch", "O registro precisa pertencer ao vinculo selecionado.")
+        if punch and not contract:
+            data["contract"] = punch.contract
+        return data
+
+    def save(self, commit=True):
+        request_obj = super().save(commit=False)
+        if self.employee:
+            request_obj.employee = self.employee
+            request_obj.user = self.employee.user
+            contract = self.cleaned_data.get("contract")
+            if contract:
+                request_obj.contract = contract
+                request_obj.company = contract.company
+            else:
+                request_obj.company = self.employee.company
+            punch = self.cleaned_data.get("punch")
+            if punch:
+                request_obj.punch = punch
+                request_obj.contract = punch.contract
+                request_obj.company = punch.contract.company
+        request_obj.status = PunchCorrectionRequest.Status.OPEN
+        if commit:
+            request_obj.save()
+        return request_obj
     date_to = forms.DateField(
         label="Ate",
         required=False,

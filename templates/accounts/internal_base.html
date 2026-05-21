@@ -89,7 +89,10 @@
           <a class="btn" href="{% url 'internal_companies' %}">Empresas</a>
           <a class="btn" href="{% url 'internal_employees' %}">Funcionários</a>
           <a class="btn" href="{% url 'internal_punches' %}">Registros de ponto</a>
-          <a class="btn" href="{% url 'internal_correction_requests' %}">Solicitações</a>
+          <a class="btn" href="{% url 'internal_correction_requests' %}">
+            Solicitações
+            {% if open_punch_correction_requests_count %}<span class="badge">{{ open_punch_correction_requests_count }}</span>{% endif %}
+          </a>
           <a class="btn" href="{% url 'internal_corrections' %}">Correções</a>
         </div>
       </div>

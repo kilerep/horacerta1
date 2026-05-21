@@ -4,7 +4,7 @@ from companies.feature_flags import (
     get_user_feature_access,
     get_user_feature_access_for_company,
 )
-from timeclock.models import ActivityReportRequest
+from timeclock.models import ActivityReportRequest, PunchCorrectionRequest
 from .mei_context import resolve_mei_context
 
 
@@ -51,6 +51,7 @@ def header_profile_media(request):
     header_company_name = "Empresa"
     header_mode = "mei"
     pending_reports_count = 0
+    open_punch_correction_requests_count = 0
     header_feature_access = {}
     header_feature_required_plan = {}
     header_current_plan_code = ""
@@ -72,6 +73,11 @@ def header_profile_media(request):
                     company=company,
                     status=ActivityReportRequest.Status.PENDING,
                 ).count()
+        if request.user.is_staff or request.user.is_superuser:
+            open_punch_correction_requests_count = PunchCorrectionRequest.objects.filter(
+                status=PunchCorrectionRequest.Status.OPEN,
+            ).count()
+        if request.user.role == "EMPRESA":
             reports_access = get_user_feature_access(request.user, "advanced_reports")
             themes_access = get_user_feature_access(request.user, "custom_themes")
             incident_access = get_user_feature_access(request.user, "incident_center")
@@ -130,6 +136,7 @@ def header_profile_media(request):
         "header_company_name": header_company_name,
         "header_mode": header_mode,
         "pending_reports_count": pending_reports_count,
+        "open_punch_correction_requests_count": open_punch_correction_requests_count,
         "header_feature_access": header_feature_access,
         "header_feature_required_plan": header_feature_required_plan,
         "header_can_use_custom_themes": header_feature_access.get("custom_themes", False),
