@@ -1,6 +1,9 @@
 {% extends "accounts/internal_base.html" %}
 {% block title %}HoraCerta - Empresas internas{% endblock %}
 {% block page_title %}Empresas{% endblock %}
+{% block internal_breadcrumb %}<span class="internal-breadcrumb__sep">></span><span>Empresas</span>{% endblock %}
+{% block internal_title %}Empresas{% endblock %}
+{% block internal_subtitle %}Lista operacional de empresas cadastradas e uso aproximado do sistema.{% endblock %}
 
 {% block internal_content %}
   <section class="internal-panel">
@@ -26,7 +29,7 @@
         </select>
       </div>
       <button class="btn primary" type="submit">Filtrar</button>
-      <a class="btn" href="{% url 'internal_companies' %}">Limpar</a>
+      <a class="btn secondary" href="{% url 'internal_companies' %}">Limpar</a>
     </form>
 
     <div class="table-wrap">
@@ -43,13 +46,13 @@
         <tbody>
           {% for row in rows %}
             <tr>
-              <td><a class="strong-link" href="{% url 'internal_company_detail' row.company.id %}">{{ row.company.name }}</a></td>
-              <td>{{ row.employee_count }}</td>
-              <td>{{ row.punch_count }}</td>
-              <td>
+              <td data-label="Nome"><a class="strong-link" href="{% url 'internal_company_detail' row.company.id %}">{{ row.company.name }}</a></td>
+              <td data-label="Funcionários">{{ row.employee_count }}</td>
+              <td data-label="Registros">{{ row.punch_count }}</td>
+              <td data-label="Último registro">
                 {% if row.last_punch_at %}{{ row.last_punch_at|date:"d/m/Y H:i" }}{% else %}<span class="muted">Sem registros</span>{% endif %}
               </td>
-              <td><span class="pill {{ row.status.tone }}">{{ row.status.label }}</span></td>
+              <td data-label="Status aproximado"><span class="pill {{ row.status.tone }}">{{ row.status.label }}</span></td>
             </tr>
           {% empty %}
             <tr><td colspan="5"><div class="empty-state">Nenhuma empresa encontrada.</div></td></tr>

@@ -1,6 +1,9 @@
 {% extends "accounts/internal_base.html" %}
 {% block title %}HoraCerta - Registro interno{% endblock %}
 {% block page_title %}Detalhe do registro{% endblock %}
+{% block internal_breadcrumb %}<span class="internal-breadcrumb__sep">></span><a href="{% url 'internal_punches' %}">Registros de ponto</a><span class="internal-breadcrumb__sep">></span><span>{{ punch.id }}</span>{% endblock %}
+{% block internal_title %}Registro de ponto{% endblock %}
+{% block internal_subtitle %}{{ punch.id }}{% endblock %}
 
 {% block internal_content %}
   <section class="internal-panel">
@@ -51,7 +54,7 @@
     </div>
 
     <div class="detail-grid">
-      <form method="post" class="detail-item" data-submit-once="true">
+      <form method="post" class="detail-item danger-confirm" data-submit-once="true">
         {% csrf_token %}
         <input type="hidden" name="action" value="change_time">
         <div class="k">Corrigir horário</div>

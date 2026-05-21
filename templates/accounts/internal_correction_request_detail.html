@@ -1,6 +1,9 @@
 {% extends "accounts/internal_base.html" %}
 {% block title %}HoraCerta - Solicitação de correção{% endblock %}
 {% block page_title %}Solicitação de correção{% endblock %}
+{% block internal_breadcrumb %}<span class="internal-breadcrumb__sep">></span><a href="{% url 'internal_correction_requests' %}">Solicitações</a><span class="internal-breadcrumb__sep">></span><span>{{ correction_request.employee.full_name }}</span>{% endblock %}
+{% block internal_title %}Solicitação de correção{% endblock %}
+{% block internal_subtitle %}{{ correction_request.employee.full_name }} | {{ correction_request.problem_date|date:"d/m/Y" }}{% endblock %}
 
 {% block internal_content %}
   <section class="internal-panel">
@@ -64,10 +67,10 @@
         <tbody>
           {% for punch in day_punches %}
             <tr>
-              <td><a class="strong-link" href="{% url 'internal_punch_detail' punch.id %}">{{ punch.timestamp|date:"d/m/Y H:i" }}</a></td>
-              <td>{{ punch.contract.company.name }}</td>
-              <td>{% if punch.is_cancelled %}<span class="pill warn">cancelado</span>{% else %}<span class="pill success">ativo</span>{% endif %}</td>
-              <td>{{ punch.note|default:"-" }}</td>
+              <td data-label="Horário"><a class="strong-link" href="{% url 'internal_punch_detail' punch.id %}">{{ punch.timestamp|date:"d/m/Y H:i" }}</a></td>
+              <td data-label="Empresa">{{ punch.contract.company.name }}</td>
+              <td data-label="Status">{% if punch.is_cancelled %}<span class="pill warn">cancelado</span>{% else %}<span class="pill success">ativo</span>{% endif %}</td>
+              <td data-label="Observação">{{ punch.note|default:"-" }}</td>
             </tr>
           {% empty %}
             <tr><td colspan="4"><div class="empty-state">Nenhum registro encontrado para a data informada.</div></td></tr>

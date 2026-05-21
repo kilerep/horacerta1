@@ -1,6 +1,9 @@
 {% extends "accounts/internal_base.html" %}
 {% block title %}HoraCerta - Funcionário interno{% endblock %}
 {% block page_title %}Detalhe do funcionário{% endblock %}
+{% block internal_breadcrumb %}<span class="internal-breadcrumb__sep">></span><a href="{% url 'internal_employees' %}">Funcionários</a><span class="internal-breadcrumb__sep">></span><span>{{ employee.full_name }}</span>{% endblock %}
+{% block internal_title %}{{ employee.full_name }}{% endblock %}
+{% block internal_subtitle %}Perfil, acesso, vínculos, registros e ações administrativas.{% endblock %}
 
 {% block internal_content %}
   <section class="internal-panel">
@@ -50,7 +53,7 @@
           <label>Descrição</label>
           <textarea name="description" placeholder="Motivo administrativo"></textarea>
         </div>
-        <button class="btn {% if employee.user.is_active %}danger{% else %}primary{% endif %}" type="submit" {% if employee.user.is_active %}onclick="return confirm('Confirmar desativação deste usuário?')"{% endif %}>
+        <button class="btn {% if employee.user.is_active %}danger{% else %}success{% endif %}" type="submit" {% if employee.user.is_active %}onclick="return confirm('Confirmar desativação deste usuário?')"{% endif %}>
           {% if employee.user.is_active %}Desativar usuário{% else %}Ativar usuário{% endif %}
         </button>
       </form>

@@ -1,16 +1,12 @@
 {% extends "accounts/internal_base.html" %}
 {% block title %}HoraCerta - Solicitações internas{% endblock %}
 {% block page_title %}Solicitações{% endblock %}
+{% block internal_breadcrumb %}<span class="internal-breadcrumb__sep">></span><span>Solicitações</span>{% endblock %}
+{% block internal_title %}Solicitações de correção{% endblock %}
+{% block internal_subtitle %}Pedidos enviados por funcionários/MEIs. A solicitação não altera cálculo automaticamente.{% endblock %}
 
 {% block internal_content %}
   <section class="internal-panel">
-    <div class="internal-head">
-      <div>
-        <h2>Solicitações de correção</h2>
-        <p class="internal-subtitle">Pedidos enviados por funcionários/MEIs. A solicitação não altera cálculo automaticamente.</p>
-      </div>
-    </div>
-
     <form method="get" class="filter-grid">
       <div class="field">
         <label for="status">Status</label>
@@ -53,7 +49,7 @@
         <input id="problem_date" name="problem_date" type="date" value="{{ problem_date }}">
       </div>
       <button class="btn primary" type="submit">Filtrar</button>
-      <a class="btn" href="{% url 'internal_correction_requests' %}">Limpar</a>
+      <a class="btn secondary" href="{% url 'internal_correction_requests' %}">Limpar</a>
     </form>
 
     <div class="table-wrap">
@@ -72,16 +68,16 @@
         <tbody>
           {% for row in rows %}
             <tr>
-              <td><a class="strong-link" href="{% url 'internal_correction_request_detail' row.request.id %}">{{ row.request.id }}</a></td>
-              <td>{{ row.request.employee.full_name }}</td>
-              <td>{{ row.request.company.name }}</td>
-              <td>{{ row.request.problem_date|date:"d/m/Y" }}</td>
-              <td>{{ row.request.get_problem_type_display }}</td>
-              <td><span class="pill {{ row.status_tone }}">{{ row.request.get_status_display }}</span></td>
-              <td>{{ row.request.created_at|date:"d/m/Y H:i" }}</td>
+              <td data-label="Solicitação"><a class="strong-link" href="{% url 'internal_correction_request_detail' row.request.id %}">{{ row.request.id }}</a></td>
+              <td data-label="Funcionário">{{ row.request.employee.full_name }}</td>
+              <td data-label="Empresa">{{ row.request.company.name }}</td>
+              <td data-label="Data">{{ row.request.problem_date|date:"d/m/Y" }}</td>
+              <td data-label="Tipo">{{ row.request.get_problem_type_display }}</td>
+              <td data-label="Status"><span class="pill {{ row.status_tone }}">{{ row.request.get_status_display }}</span></td>
+              <td data-label="Criado em">{{ row.request.created_at|date:"d/m/Y H:i" }}</td>
             </tr>
           {% empty %}
-            <tr><td colspan="7"><div class="empty-state">Nenhuma solicitação encontrada.</div></td></tr>
+            <tr><td colspan="7"><div class="empty-state">Nenhuma solicitação aberta.</div></td></tr>
           {% endfor %}
         </tbody>
       </table>

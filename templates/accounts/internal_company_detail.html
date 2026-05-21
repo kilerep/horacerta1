@@ -1,6 +1,9 @@
 {% extends "accounts/internal_base.html" %}
 {% block title %}HoraCerta - Empresa interna{% endblock %}
 {% block page_title %}Detalhe da empresa{% endblock %}
+{% block internal_breadcrumb %}<span class="internal-breadcrumb__sep">></span><a href="{% url 'internal_companies' %}">Empresas</a><span class="internal-breadcrumb__sep">></span><span>{{ company.name }}</span>{% endblock %}
+{% block internal_title %}{{ company.name }}{% endblock %}
+{% block internal_subtitle %}Empresa, vínculos, uso e ações administrativas.{% endblock %}
 
 {% block internal_content %}
   <section class="internal-panel">
@@ -55,7 +58,7 @@
           <label>Descrição</label>
           <textarea name="description" placeholder="Motivo administrativo"></textarea>
         </div>
-        <button class="btn {% if company.is_active %}danger{% else %}primary{% endif %}" type="submit" {% if company.is_active %}onclick="return confirm('Confirmar desativação desta empresa?')"{% endif %}>
+        <button class="btn {% if company.is_active %}danger{% else %}success{% endif %}" type="submit" {% if company.is_active %}onclick="return confirm('Confirmar desativação desta empresa?')"{% endif %}>
           {% if company.is_active %}Desativar empresa{% else %}Ativar empresa{% endif %}
         </button>
       </form>

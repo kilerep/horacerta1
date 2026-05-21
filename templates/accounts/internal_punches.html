@@ -1,6 +1,9 @@
 {% extends "accounts/internal_base.html" %}
 {% block title %}HoraCerta - Registros internos{% endblock %}
 {% block page_title %}Registros de ponto{% endblock %}
+{% block internal_breadcrumb %}<span class="internal-breadcrumb__sep">></span><span>Registros de ponto</span>{% endblock %}
+{% block internal_title %}Registros de ponto{% endblock %}
+{% block internal_subtitle %}Busca geral de batidas. A listagem exibe até 200 registros mais recentes pelo filtro atual.{% endblock %}
 
 {% block internal_content %}
   <section class="internal-panel">
@@ -47,7 +50,7 @@
         </select>
       </div>
       <button class="btn primary" type="submit">Filtrar</button>
-      <a class="btn" href="{% url 'internal_punches' %}">Limpar</a>
+      <a class="btn secondary" href="{% url 'internal_punches' %}">Limpar</a>
     </form>
 
     <div class="table-wrap">
@@ -65,18 +68,18 @@
         <tbody>
           {% for punch in punches %}
             <tr>
-              <td><a class="strong-link" href="{% url 'internal_punch_detail' punch.id %}">{{ punch.id }}</a></td>
-              <td>{{ punch.timestamp|date:"d/m/Y H:i" }}</td>
-              <td><a class="strong-link" href="{% url 'internal_employee_detail' punch.contract.employee.id %}">{{ punch.contract.employee.full_name }}</a></td>
-              <td><a class="strong-link" href="{% url 'internal_company_detail' punch.contract.company.id %}">{{ punch.contract.company.name }}</a><br><span class="muted">R$ {{ punch.contract.hourly_rate }}/h</span></td>
-              <td>
+              <td data-label="ID"><a class="strong-link" href="{% url 'internal_punch_detail' punch.id %}">{{ punch.id }}</a></td>
+              <td data-label="Data/hora">{{ punch.timestamp|date:"d/m/Y H:i" }}</td>
+              <td data-label="Funcionário"><a class="strong-link" href="{% url 'internal_employee_detail' punch.contract.employee.id %}">{{ punch.contract.employee.full_name }}</a></td>
+              <td data-label="Empresa/contrato"><a class="strong-link" href="{% url 'internal_company_detail' punch.contract.company.id %}">{{ punch.contract.company.name }}</a><br><span class="muted">R$ {{ punch.contract.hourly_rate }}/h</span></td>
+              <td data-label="Status">
                 {% if punch.is_cancelled %}
                   <span class="pill warn">cancelado</span>
                 {% else %}
                   <span class="pill success">ativo</span>
                 {% endif %}
               </td>
-              <td>{{ punch.note|default:"-" }}</td>
+              <td data-label="Observação">{{ punch.note|default:"-" }}</td>
             </tr>
           {% empty %}
             <tr><td colspan="6"><div class="empty-state">Nenhum registro encontrado.</div></td></tr>

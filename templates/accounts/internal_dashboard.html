@@ -1,8 +1,25 @@
 {% extends "accounts/internal_base.html" %}
 {% block title %}HoraCerta - Painel interno{% endblock %}
 {% block page_title %}Painel interno{% endblock %}
+{% block internal_title %}Visão geral{% endblock %}
+{% block internal_subtitle %}Métricas, atalhos e sinais recentes do uso do HoraCerta.{% endblock %}
 
 {% block internal_content %}
+  <section class="internal-panel">
+    <div class="internal-head">
+      <div>
+        <h3>Atalhos</h3>
+        <p class="internal-subtitle">Acesse rapidamente as áreas operacionais mais usadas.</p>
+      </div>
+    </div>
+    <div class="internal-shortcuts">
+      <a class="internal-link-card" href="{% url 'internal_companies' %}"><strong>Empresas</strong><div class="muted">Base, uso e status</div></a>
+      <a class="internal-link-card" href="{% url 'internal_employees' %}"><strong>Funcionários</strong><div class="muted">Perfis, vínculos e acesso</div></a>
+      <a class="internal-link-card" href="{% url 'internal_punches' %}"><strong>Registros de ponto</strong><div class="muted">Busca e auditoria</div></a>
+      <a class="internal-link-card" href="{% url 'internal_correction_requests' %}"><strong>Solicitações</strong><div class="muted">Pedidos de correção</div></a>
+    </div>
+  </section>
+
   <section class="internal-panel">
     <div class="internal-head">
       <div>
@@ -93,17 +110,17 @@
         <tbody>
           {% for row in company_usage_rows %}
             <tr>
-              <td><a class="strong-link" href="{% url 'internal_company_detail' row.company.id %}">{{ row.company.name }}</a></td>
-              <td>{{ row.employee_count }}</td>
-              <td>{{ row.punch_count }}</td>
-              <td>
+              <td data-label="Empresa"><a class="strong-link" href="{% url 'internal_company_detail' row.company.id %}">{{ row.company.name }}</a></td>
+              <td data-label="Funcionários">{{ row.employee_count }}</td>
+              <td data-label="Registros de ponto">{{ row.punch_count }}</td>
+              <td data-label="Último registro">
                 {% if row.last_punch_at %}
                   {{ row.last_punch_at|date:"d/m/Y H:i" }}
                 {% else %}
                   <span class="muted">Sem registros</span>
                 {% endif %}
               </td>
-              <td><span class="pill {{ row.status.tone }}">{{ row.status.label }}</span></td>
+              <td data-label="Status aproximado"><span class="pill {{ row.status.tone }}">{{ row.status.label }}</span></td>
             </tr>
           {% empty %}
             <tr>
