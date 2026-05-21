@@ -1,4 +1,5 @@
-from datetime import datetime
+from datetime import datetime, timedelta
+from types import SimpleNamespace
 
 from django.contrib.auth import get_user_model
 from django.test import SimpleTestCase, TestCase, override_settings
@@ -7,7 +8,8 @@ from django.utils import timezone
 
 from companies.models import Company, CompanyAttendancePolicy, CompanyAuthorizedLocation, Employee
 from timeclock.models import Contract, Punch
-from .services import compute_day_total, format_hhmm, format_punch_time
+from .models import PunchCorrectionLog
+from .services import cancel_punch, compute_day_total, format_hhmm, format_punch_time, restore_punch, build_daily_summary
 from .services import evaluate_punch_confidence
 
 User = get_user_model()
@@ -60,6 +62,62 @@ class TimeSummaryServicesTests(SimpleTestCase):
     def test_format_punch_time_should_hide_seconds(self):
         ts = self._local_dt(2026, 2, 19, 20, 59, 25)
         self.assertEqual(format_punch_time(ts), "20:59")
+
+    def test_build_daily_summary_ignores_cancelled_punches(self):
+        day = self._local_dt(2026, 5, 19, 8, 0)
+        punches = [
+            SimpleNamespace(timestamp=day, is_cancelled=False),
+            SimpleNamespace(timestamp=day + timedelta(hours=1), is_cancelled=True),
+            SimpleNamespace(timestamp=day + timedelta(hours=2), is_cancelled=False),
+        ]
+
+        rows, _columns = build_daily_summary(punches)
+
+        self.assertEqual(rows[0]["punches_count"], 2)
+        self.assertEqual(rows[0]["total_hours_hhmm"], "02:00")
+        self.assertFalse(rows[0]["is_incomplete"])
+
+
+class PunchCorrectionServicesTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_superuser(
+            username="admin.correction@example.com",
+            email="admin.correction@example.com",
+            password="Admin@12345",
+            role=User.Role.EMPRESA,
+        )
+        self.owner = User.objects.create_user(
+            username="owner.correction@example.com",
+            email="owner.correction@example.com",
+            password="Teste@12345",
+            role=User.Role.EMPRESA,
+        )
+        self.company = Company.objects.create(name="Empresa Correcao", owner=self.owner, email="correcao@example.com")
+        self.mei_user = User.objects.create_user(
+            username="mei.correction@example.com",
+            email="mei.correction@example.com",
+            password="Teste@12345",
+            role=User.Role.FUNCIONARIO,
+        )
+        self.employee = Employee.objects.create(user=self.mei_user, company=self.company, full_name="MEI Correcao")
+        self.contract = Contract.objects.create(employee=self.employee, company=self.company, hourly_rate="100.00")
+        self.punch = Punch.objects.create(contract=self.contract, timestamp=timezone.now())
+
+    def test_cancel_and_restore_create_logs_and_toggle_active_manager(self):
+        cancel_punch(punch=self.punch, admin_user=self.admin, reason="Registro feito por engano.")
+        self.punch.refresh_from_db()
+
+        self.assertTrue(self.punch.is_cancelled)
+        self.assertFalse(Punch.objects.filter(id=self.punch.id).exists())
+        self.assertTrue(Punch.all_objects.filter(id=self.punch.id).exists())
+        self.assertEqual(PunchCorrectionLog.objects.filter(punch=self.punch).count(), 1)
+
+        restore_punch(punch=self.punch, admin_user=self.admin, reason="Revertido apos conferencia.")
+        self.punch.refresh_from_db()
+
+        self.assertFalse(self.punch.is_cancelled)
+        self.assertTrue(Punch.objects.filter(id=self.punch.id).exists())
+        self.assertEqual(PunchCorrectionLog.objects.filter(punch=self.punch).count(), 2)
 
 
 class PunchConfidenceServicesTests(TestCase):

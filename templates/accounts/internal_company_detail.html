@@ -64,7 +64,7 @@
               <td><a class="strong-link" href="{% url 'internal_punch_detail' punch.id %}">{{ punch.timestamp|date:"d/m/Y H:i" }}</a></td>
               <td>{{ punch.contract.employee.full_name }}</td>
               <td>R$ {{ punch.contract.hourly_rate }}/h</td>
-              <td><span class="pill success">ativo</span></td>
+              <td>{% if punch.is_cancelled %}<span class="pill warn">cancelado</span>{% else %}<span class="pill success">ativo</span>{% endif %}</td>
               <td>{{ punch.note|default:"-" }}</td>
             </tr>
           {% empty %}

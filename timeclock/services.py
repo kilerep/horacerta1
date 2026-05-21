@@ -61,6 +61,8 @@ def filter_punches_by_period(base_qs, date_from_raw, date_to_raw, field_name="ti
 def build_daily_summary(punches, min_punch_columns=4):
     by_day = {}
     for punch in punches:
+        if getattr(punch, "is_cancelled", False):
+            continue
         local_ts = timezone.localtime(punch.timestamp)
         day = local_ts.date()
         by_day.setdefault(day, []).append({"local_ts": local_ts})
@@ -91,6 +93,111 @@ def build_daily_summary(punches, min_punch_columns=4):
         row["punch_columns"] = row["punch_times"] + ["-"] * (max_columns - len(row["punch_times"]))
 
     return rows, max_columns
+
+
+def _punch_status(punch):
+    return "cancelled" if punch.is_cancelled else "active"
+
+
+def _require_correction_reason(reason):
+    clean_reason = (reason or "").strip()
+    if not clean_reason:
+        raise ValueError("Informe um motivo para registrar a auditoria.")
+    return clean_reason
+
+
+def change_punch_time(*, punch, admin_user, new_datetime, reason):
+    from timeclock.models import PunchCorrectionLog
+
+    reason = _require_correction_reason(reason)
+    if new_datetime is None:
+        raise ValueError("Informe o novo horario.")
+    if timezone.is_naive(new_datetime):
+        new_datetime = timezone.make_aware(new_datetime, timezone.get_current_timezone())
+
+    old_datetime = punch.timestamp
+    old_status = _punch_status(punch)
+    punch.timestamp = new_datetime
+    punch.save(update_fields=["timestamp"])
+    return PunchCorrectionLog.objects.create(
+        punch=punch,
+        admin_user=admin_user,
+        action_type=PunchCorrectionLog.ActionType.TIME_CHANGED,
+        old_datetime=old_datetime,
+        new_datetime=punch.timestamp,
+        old_status=old_status,
+        new_status=_punch_status(punch),
+        reason=reason,
+    )
+
+
+def cancel_punch(*, punch, admin_user, reason):
+    from timeclock.models import PunchCorrectionLog
+
+    reason = _require_correction_reason(reason)
+    old_status = _punch_status(punch)
+    old_datetime = punch.timestamp
+    if not punch.is_cancelled:
+        punch.is_cancelled = True
+        punch.cancelled_at = timezone.now()
+        punch.cancelled_by = admin_user
+        punch.save(update_fields=["is_cancelled", "cancelled_at", "cancelled_by"])
+    return PunchCorrectionLog.objects.create(
+        punch=punch,
+        admin_user=admin_user,
+        action_type=PunchCorrectionLog.ActionType.CANCELLED,
+        old_datetime=old_datetime,
+        new_datetime=punch.timestamp,
+        old_status=old_status,
+        new_status=_punch_status(punch),
+        reason=reason,
+    )
+
+
+def restore_punch(*, punch, admin_user, reason):
+    from timeclock.models import PunchCorrectionLog
+
+    reason = _require_correction_reason(reason)
+    old_status = _punch_status(punch)
+    old_datetime = punch.timestamp
+    if punch.is_cancelled:
+        punch.is_cancelled = False
+        punch.cancelled_at = None
+        punch.cancelled_by = None
+        punch.save(update_fields=["is_cancelled", "cancelled_at", "cancelled_by"])
+    return PunchCorrectionLog.objects.create(
+        punch=punch,
+        admin_user=admin_user,
+        action_type=PunchCorrectionLog.ActionType.RESTORED,
+        old_datetime=old_datetime,
+        new_datetime=punch.timestamp,
+        old_status=old_status,
+        new_status=_punch_status(punch),
+        reason=reason,
+    )
+
+
+def add_punch_admin_note(*, punch, admin_user, note, reason=None):
+    from timeclock.models import PunchCorrectionLog
+
+    clean_note = (note or "").strip()
+    if not clean_note:
+        raise ValueError("Informe a observacao administrativa.")
+    clean_reason = _require_correction_reason(reason or clean_note)
+    old_status = _punch_status(punch)
+    old_datetime = punch.timestamp
+    punch.admin_note = clean_note
+    punch.save(update_fields=["admin_note"])
+    return PunchCorrectionLog.objects.create(
+        punch=punch,
+        admin_user=admin_user,
+        action_type=PunchCorrectionLog.ActionType.ADMIN_NOTE_ADDED,
+        old_datetime=old_datetime,
+        new_datetime=punch.timestamp,
+        old_status=old_status,
+        new_status=_punch_status(punch),
+        reason=clean_reason,
+    )
 
 
 def haversine_distance_meters(lat1, lon1, lat2, lon2):

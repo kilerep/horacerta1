@@ -6,7 +6,7 @@ from datetime import timedelta
 from uuid import uuid4
 
 from companies.models import Company, CompanyAttendancePolicy, CompanyAuthorizedLocation, Employee
-from timeclock.models import ActivityReportRequest, Contract, Punch, ServiceReport
+from timeclock.models import ActivityReportRequest, Contract, Punch, PunchCorrectionLog, ServiceReport
 from accounts.mei_context import MEI_SELECTED_CONTRACT_SESSION_KEY
 from .forms import CompanyAttendancePolicyForm, CompanyAuthorizedLocationForm
 from .services import MeiLinkError, create_or_link_mei_by_email
@@ -129,6 +129,47 @@ class InternalDashboardTests(TestCase):
             with self.subTest(url=url):
                 response = self.client.get(url)
                 self.assertEqual(response.status_code, 403)
+
+    def test_superuser_can_correct_punch_time_from_internal_detail(self):
+        punch = Punch.objects.first()
+        self.client.force_login(self.admin_user)
+
+        response = self.client.post(
+            reverse("internal_punch_detail", args=[punch.id]),
+            {
+                "action": "change_time",
+                "new_datetime": "2026-05-19T06:50",
+                "reason": "Correção solicitada pelo usuário.",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        punch.refresh_from_db()
+        self.assertEqual(timezone.localtime(punch.timestamp).strftime("%Y-%m-%d %H:%M"), "2026-05-19 06:50")
+        self.assertTrue(
+            PunchCorrectionLog.objects.filter(
+                punch=punch,
+                action_type=PunchCorrectionLog.ActionType.TIME_CHANGED,
+            ).exists()
+        )
+
+    def test_superuser_can_cancel_punch_from_internal_detail(self):
+        punch = Punch.objects.first()
+        self.client.force_login(self.admin_user)
+
+        response = self.client.post(
+            reverse("internal_punch_detail", args=[punch.id]),
+            {
+                "action": "cancel",
+                "reason": "Registro feito por engano.",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        punch.refresh_from_db()
+        self.assertTrue(punch.is_cancelled)
+        self.assertFalse(Punch.objects.filter(id=punch.id).exists())
+        self.assertTrue(Punch.all_objects.filter(id=punch.id).exists())
 
 
 class CreateOrLinkMeiServiceTests(TestCase):

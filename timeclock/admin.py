@@ -1,5 +1,5 @@
 ﻿from django.contrib import admin
-from .models import Contract, Punch
+from .models import Contract, Punch, PunchCorrectionLog
 
 
 @admin.register(Contract)
@@ -11,7 +11,15 @@ class ContractAdmin(admin.ModelAdmin):
 
 @admin.register(Punch)
 class PunchAdmin(admin.ModelAdmin):
-    list_display = ("contract", "timestamp", "created_at")
-    list_filter = ("contract__company",)
+    list_display = ("contract", "timestamp", "is_cancelled", "cancelled_at", "created_at")
+    list_filter = ("is_cancelled", "contract__company")
     search_fields = ("contract__company__name", "contract__employee__user__email")
-    readonly_fields = ("timestamp", "created_at")
+    readonly_fields = ("timestamp", "created_at", "cancelled_at", "cancelled_by")
+
+
+@admin.register(PunchCorrectionLog)
+class PunchCorrectionLogAdmin(admin.ModelAdmin):
+    list_display = ("punch", "admin_user", "action_type", "old_status", "new_status", "created_at")
+    list_filter = ("action_type", "created_at")
+    search_fields = ("punch__id", "admin_user__email", "reason")
+    readonly_fields = ("punch", "admin_user", "action_type", "old_datetime", "new_datetime", "old_status", "new_status", "reason", "created_at")

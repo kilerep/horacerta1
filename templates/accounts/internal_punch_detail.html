@@ -15,7 +15,13 @@
       </div>
     </div>
 
-    <div class="notice">A correção administrativa será implementada em sprint próprio.</div>
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert {% if message.tags == 'error' %}warn{% endif %}" style="margin-top:12px;">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+
+    <div class="notice">Correções administrativas alteram o cálculo de horas e ficam registradas em auditoria.</div>
 
     <div class="detail-grid">
       <div class="detail-item"><div class="k">Funcionário</div><div class="v">{{ punch.contract.employee.full_name }}</div></div>
@@ -23,13 +29,102 @@
       <div class="detail-item"><div class="k">Contrato</div><div class="v">R$ {{ punch.contract.hourly_rate }}/h</div></div>
       <div class="detail-item"><div class="k">Data/hora</div><div class="v">{{ punch.timestamp|date:"d/m/Y H:i:s" }}</div></div>
       <div class="detail-item"><div class="k">Criado em</div><div class="v">{{ punch.created_at|date:"d/m/Y H:i:s" }}</div></div>
-      <div class="detail-item"><div class="k">Status</div><div class="v"><span class="pill success">ativo</span></div></div>
-      <div class="detail-item"><div class="k">Observação</div><div class="v">{{ punch.note|default:"-" }}</div></div>
+      <div class="detail-item"><div class="k">Status</div><div class="v"><span class="pill {{ punch_status.tone }}">{{ punch_status.label }}</span></div></div>
+      <div class="detail-item"><div class="k">Cancelado em</div><div class="v">{% if punch.cancelled_at %}{{ punch.cancelled_at|date:"d/m/Y H:i:s" }}{% else %}-{% endif %}</div></div>
+      <div class="detail-item"><div class="k">Cancelado por</div><div class="v">{{ punch.cancelled_by.email|default:"-" }}</div></div>
       <div class="detail-item"><div class="k">Manual</div><div class="v">{% if punch.is_manual %}Sim{% else %}Não{% endif %}</div></div>
       <div class="detail-item"><div class="k">Método</div><div class="v">{{ punch.audit_method_label }}</div></div>
       <div class="detail-item"><div class="k">Confiança</div><div class="v">{{ punch.get_confidence_status_display }}</div></div>
       <div class="detail-item"><div class="k">QR presencial</div><div class="v">{{ punch.get_qr_confirmation_status_display }}</div></div>
+      <div class="detail-item"><div class="k">Observação</div><div class="v">{{ punch.note|default:"-" }}</div></div>
+      <div class="detail-item"><div class="k">Observação administrativa</div><div class="v">{{ punch.admin_note|default:"-" }}</div></div>
       <div class="detail-item"><div class="k">Local validado</div><div class="v">{{ punch.validated_location.name|default:"-" }}</div></div>
+    </div>
+  </section>
+
+  <section class="internal-panel">
+    <div class="internal-head">
+      <div>
+        <h3>Ações administrativas</h3>
+        <p class="internal-subtitle">Toda ação exige motivo e registra log de auditoria.</p>
+      </div>
+    </div>
+
+    <div class="detail-grid">
+      <form method="post" class="detail-item" data-submit-once="true">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="change_time">
+        <div class="k">Corrigir horário</div>
+        <div class="field" style="margin-top:10px;">
+          <label for="new_datetime">Novo horário/data</label>
+          <input id="new_datetime" name="new_datetime" type="datetime-local" required value="{{ punch.timestamp|date:'Y-m-d\\TH:i' }}">
+        </div>
+        <div class="field" style="margin-top:10px;">
+          <label for="reason_time">Motivo obrigatório</label>
+          <textarea id="reason_time" name="reason" required placeholder="Ex: Correção solicitada pelo usuário."></textarea>
+        </div>
+        <button class="btn primary" type="submit" onclick="return confirm('Confirmar correção de horário?')">Corrigir horário</button>
+      </form>
+
+      <form method="post" class="detail-item" data-submit-once="true">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="cancel">
+        <div class="k">Cancelar registro</div>
+        <div class="field" style="margin-top:10px;">
+          <label for="reason_cancel">Motivo obrigatório</label>
+          <textarea id="reason_cancel" name="reason" required placeholder="Ex: Registro feito por engano."></textarea>
+        </div>
+        <button class="btn danger" type="submit" onclick="return confirm('Confirmar cancelamento deste registro?')">Cancelar registro</button>
+      </form>
+
+      <form method="post" class="detail-item" data-submit-once="true">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="restore">
+        <div class="k">Restaurar registro cancelado</div>
+        <div class="field" style="margin-top:10px;">
+          <label for="reason_restore">Motivo obrigatório</label>
+          <textarea id="reason_restore" name="reason" required placeholder="Ex: Cancelamento revertido após conferência."></textarea>
+        </div>
+        <button class="btn primary" type="submit" onclick="return confirm('Confirmar restauração deste registro?')">Restaurar registro</button>
+      </form>
+
+      <form method="post" class="detail-item" data-submit-once="true">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="admin_note">
+        <div class="k">Observação administrativa</div>
+        <div class="field" style="margin-top:10px;">
+          <label for="admin_note">Texto</label>
+          <textarea id="admin_note" name="admin_note" required>{{ punch.admin_note }}</textarea>
+        </div>
+        <div class="field" style="margin-top:10px;">
+          <label for="reason_note">Motivo ou observação</label>
+          <textarea id="reason_note" name="reason" placeholder="Opcional se o texto acima já explicar a alteração."></textarea>
+        </div>
+        <button class="btn primary" type="submit">Salvar observação</button>
+      </form>
+    </div>
+  </section>
+
+  <section class="internal-panel">
+    <h3>Histórico de correções</h3>
+    <div class="table-wrap">
+      <table class="internal-table">
+        <thead><tr><th>Quando</th><th>Quem</th><th>Ação</th><th>Antes</th><th>Depois</th><th>Motivo</th></tr></thead>
+        <tbody>
+          {% for log in correction_logs %}
+            <tr>
+              <td>{{ log.created_at|date:"d/m/Y H:i:s" }}</td>
+              <td>{{ log.admin_user.email|default:log.admin_user.username }}</td>
+              <td>{{ log.get_action_type_display }}</td>
+              <td>{{ log.old_status }}{% if log.old_datetime %}<br><span class="muted">{{ log.old_datetime|date:"d/m/Y H:i" }}</span>{% endif %}</td>
+              <td>{{ log.new_status }}{% if log.new_datetime %}<br><span class="muted">{{ log.new_datetime|date:"d/m/Y H:i" }}</span>{% endif %}</td>
+              <td>{{ log.reason }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6"><div class="empty-state">Nenhuma correção registrada para esta batida.</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
   </section>
 {% endblock %}

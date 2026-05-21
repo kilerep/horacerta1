@@ -83,6 +83,11 @@ class Contract(models.Model):
             super().save(*args, **kwargs)
 
 
+class ActivePunchManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(is_cancelled=False)
+
+
 class Punch(models.Model):
     class ValidationMethod(models.TextChoices):
         FREE_POLICY = "FREE_POLICY", "Politica livre"
@@ -149,8 +154,21 @@ class Punch(models.Model):
     qr_confirmed_at = models.DateTimeField(null=True, blank=True)
     confidence_checked_at = models.DateTimeField(null=True, blank=True)
     audit_payload = models.JSONField(default=dict, blank=True)
+    is_cancelled = models.BooleanField(default=False)
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+    cancelled_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="cancelled_punches",
+        null=True,
+        blank=True,
+    )
+    admin_note = models.TextField(blank=True, default="")
 
     created_at = models.DateTimeField(auto_now_add=True)
+
+    objects = ActivePunchManager()
+    all_objects = models.Manager()
 
     class Meta:
         ordering = ["-timestamp"]
@@ -207,6 +225,43 @@ class Punch(models.Model):
         if self.validation_method == self.ValidationMethod.PRESENTIAL_QR_PENDING:
             return "QR presencial (pendente)"
         return "Livre"
+
+
+class PunchCorrectionLog(models.Model):
+    class ActionType(models.TextChoices):
+        TIME_CHANGED = "time_changed", "Horario corrigido"
+        CANCELLED = "cancelled", "Cancelado"
+        RESTORED = "restored", "Restaurado"
+        ADMIN_NOTE_ADDED = "admin_note_added", "Observacao administrativa"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    punch = models.ForeignKey(
+        Punch,
+        on_delete=models.PROTECT,
+        related_name="correction_logs",
+    )
+    admin_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="punch_correction_logs",
+    )
+    action_type = models.CharField(max_length=30, choices=ActionType.choices)
+    old_datetime = models.DateTimeField(null=True, blank=True)
+    new_datetime = models.DateTimeField(null=True, blank=True)
+    old_status = models.CharField(max_length=30, blank=True, default="")
+    new_status = models.CharField(max_length=30, blank=True, default="")
+    reason = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["punch", "-created_at"]),
+            models.Index(fields=["action_type", "-created_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.get_action_type_display()} - {self.punch_id}"
 
 
 class ActivityReportRequest(models.Model):

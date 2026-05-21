@@ -31,7 +31,12 @@
       <a class="metric-card" href="{% url 'internal_punches' %}">
         <div class="label">Registros de ponto</div>
         <div class="value">{{ total_punches }}</div>
-        <div class="hint">Abrir busca geral de registros</div>
+        <div class="hint">Ativos para cálculo de horas</div>
+      </a>
+      <a class="metric-card" href="{% url 'internal_punches' %}?status=cancelado">
+        <div class="label">Registros cancelados</div>
+        <div class="value">{{ total_cancelled_punches }}</div>
+        <div class="hint">Mantidos para auditoria</div>
       </a>
       <a class="metric-card" href="{% url 'internal_employees' %}?status=ativo">
         <div class="label">Funcionários ativados</div>

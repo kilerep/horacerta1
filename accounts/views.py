@@ -12,6 +12,7 @@ import json
 from uuid import UUID
 
 from django.conf import settings
+from django.contrib import messages
 from django.contrib.auth import get_user_model, login, logout
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required
@@ -40,8 +41,17 @@ from companies.feature_flags import (
     humanize_feature_reason,
     require_company_feature,
 )
-from timeclock.models import ActivityReportRequest, Contract, Punch, ServiceReport
-from timeclock.services import build_daily_summary, compute_day_total, filter_punches_by_period, format_hhmm
+from timeclock.models import ActivityReportRequest, Contract, Punch, PunchCorrectionLog, ServiceReport
+from timeclock.services import (
+    add_punch_admin_note,
+    build_daily_summary,
+    cancel_punch,
+    change_punch_time,
+    compute_day_total,
+    filter_punches_by_period,
+    format_hhmm,
+    restore_punch,
+)
 from timeclock.state import (
     contract_is_operational,
     contract_operational_q,
@@ -223,13 +233,13 @@ def _company_usage_queryset(last_30_days_start):
     return Company.objects.annotate(
         employee_count=Count("employees", distinct=True),
         active_employee_count=Count("employees", filter=Q(employees__is_active=True), distinct=True),
-        punch_count=Count("contracts__punches", distinct=True),
+        punch_count=Count("contracts__punches", filter=Q(contracts__punches__is_cancelled=False), distinct=True),
         punch_count_last_30_days=Count(
             "contracts__punches",
-            filter=Q(contracts__punches__timestamp__gte=last_30_days_start),
+            filter=Q(contracts__punches__timestamp__gte=last_30_days_start, contracts__punches__is_cancelled=False),
             distinct=True,
         ),
-        last_punch_at=Max("contracts__punches__timestamp"),
+        last_punch_at=Max("contracts__punches__timestamp", filter=Q(contracts__punches__is_cancelled=False)),
     )
 
 
@@ -248,6 +258,12 @@ def _build_company_usage_rows(companies):
             }
         )
     return rows
+
+
+def _punch_status_label(punch):
+    if getattr(punch, "is_cancelled", False):
+        return {"label": "cancelado", "tone": "warn"}
+    return {"label": "ativo", "tone": "success"}
 
 
 def _recent_30_day_summary_for_employee(employee):
@@ -622,6 +638,7 @@ def internal_dashboard(request):
     total_active_employees = Employee.objects.filter(is_active=True).count()
     total_pending_employees = Employee.objects.filter(is_active=False).count()
     total_punches = Punch.objects.count()
+    total_cancelled_punches = Punch.all_objects.filter(is_cancelled=True).count()
     total_punches_today = Punch.objects.filter(timestamp__gte=today_start, timestamp__lt=tomorrow_start).count()
     total_punches_last_7_days = Punch.objects.filter(timestamp__gte=last_7_days_start).count()
     total_punches_last_30_days = Punch.objects.filter(timestamp__gte=last_30_days_start).count()
@@ -635,6 +652,7 @@ def internal_dashboard(request):
         "total_active_employees": total_active_employees,
         "total_pending_employees": total_pending_employees,
         "total_punches": total_punches,
+        "total_cancelled_punches": total_cancelled_punches,
         "total_punches_today": total_punches_today,
         "total_punches_last_7_days": total_punches_last_7_days,
         "total_punches_last_30_days": total_punches_last_30_days,
@@ -679,8 +697,8 @@ def internal_company_detail(request, company_id):
         Employee.objects.filter(company=company)
         .select_related("user", "company")
         .annotate(
-            punch_count=Count("contracts__punches", distinct=True),
-            last_punch_at=Max("contracts__punches__timestamp"),
+            punch_count=Count("contracts__punches", filter=Q(contracts__punches__is_cancelled=False), distinct=True),
+            last_punch_at=Max("contracts__punches__timestamp", filter=Q(contracts__punches__is_cancelled=False)),
             active_contract_count=Count("contracts", filter=Q(contracts__is_active=True), distinct=True),
         )
         .order_by("full_name")
@@ -695,7 +713,7 @@ def internal_company_detail(request, company_id):
         for employee in employees
     ]
     recent_punches = (
-        Punch.objects.filter(contract__company=company)
+        Punch.all_objects.filter(contract__company=company)
         .select_related("contract", "contract__employee", "contract__employee__user", "contract__company")
         .order_by("-timestamp")[:20]
     )
@@ -720,8 +738,8 @@ def internal_employees(request):
     employees = (
         Employee.objects.select_related("user", "company")
         .annotate(
-            punch_count=Count("contracts__punches", distinct=True),
-            last_punch_at=Max("contracts__punches__timestamp"),
+            punch_count=Count("contracts__punches", filter=Q(contracts__punches__is_cancelled=False), distinct=True),
+            last_punch_at=Max("contracts__punches__timestamp", filter=Q(contracts__punches__is_cancelled=False)),
             active_contract_count=Count("contracts", filter=Q(contracts__is_active=True), distinct=True),
         )
         .order_by("full_name")
@@ -775,7 +793,7 @@ def internal_employee_detail(request, employee_id):
         .order_by("-start_date", "-created_at")
     )
     recent_punches = (
-        Punch.objects.filter(contract__employee=employee)
+        Punch.all_objects.filter(contract__employee=employee)
         .select_related("contract", "contract__company", "contract__employee", "contract__employee__user")
         .order_by("-timestamp")[:30]
     )
@@ -800,7 +818,7 @@ def internal_punches(request):
     employee_id = (request.GET.get("employee") or "").strip()
     status_filter = (request.GET.get("status") or "").strip()
 
-    punches = Punch.objects.select_related(
+    punches = Punch.all_objects.select_related(
         "contract",
         "contract__company",
         "contract__employee",
@@ -818,7 +836,9 @@ def internal_punches(request):
         request.GET.get("date_to"),
     )
     if status_filter == "cancelado":
-        punches = punches.none()
+        punches = punches.filter(is_cancelled=True)
+    elif status_filter == "ativo":
+        punches = punches.filter(is_cancelled=False)
 
     return render(
         request,
@@ -845,7 +865,7 @@ def internal_punches(request):
 @internal_staff_required
 def internal_punch_detail(request, punch_id):
     punch = get_object_or_404(
-        Punch.objects.select_related(
+        Punch.all_objects.select_related(
             "contract",
             "contract__company",
             "contract__employee",
@@ -855,7 +875,45 @@ def internal_punch_detail(request, punch_id):
         ),
         id=punch_id,
     )
-    return render(request, "accounts/internal_punch_detail.html", {"punch": punch})
+    if request.method == "POST":
+        action = (request.POST.get("action") or "").strip()
+        reason = (request.POST.get("reason") or "").strip()
+        try:
+            if action == "change_time":
+                raw_new_datetime = (request.POST.get("new_datetime") or "").strip()
+                new_datetime = datetime.strptime(raw_new_datetime, "%Y-%m-%dT%H:%M")
+                change_punch_time(punch=punch, admin_user=request.user, new_datetime=new_datetime, reason=reason)
+                messages.success(request, "Horario corrigido com auditoria registrada.")
+            elif action == "cancel":
+                cancel_punch(punch=punch, admin_user=request.user, reason=reason)
+                messages.success(request, "Registro cancelado com auditoria registrada.")
+            elif action == "restore":
+                restore_punch(punch=punch, admin_user=request.user, reason=reason)
+                messages.success(request, "Registro restaurado com auditoria registrada.")
+            elif action == "admin_note":
+                add_punch_admin_note(
+                    punch=punch,
+                    admin_user=request.user,
+                    note=request.POST.get("admin_note"),
+                    reason=reason or request.POST.get("admin_note"),
+                )
+                messages.success(request, "Observacao administrativa salva com auditoria registrada.")
+            else:
+                messages.error(request, "Acao administrativa invalida.")
+        except ValueError as exc:
+            messages.error(request, str(exc))
+        return redirect("internal_punch_detail", punch_id=punch.id)
+
+    correction_logs = PunchCorrectionLog.objects.filter(punch=punch).select_related("admin_user")
+    return render(
+        request,
+        "accounts/internal_punch_detail.html",
+        {
+            "punch": punch,
+            "punch_status": _punch_status_label(punch),
+            "correction_logs": correction_logs,
+        },
+    )
 
 
 @internal_staff_required
