@@ -17,6 +17,7 @@
       <a class="internal-link-card" href="{% url 'internal_employees' %}"><strong>Funcionários</strong><div class="muted">Perfis, vínculos e acesso</div></a>
       <a class="internal-link-card" href="{% url 'internal_punches' %}"><strong>Registros de ponto</strong><div class="muted">Busca e auditoria</div></a>
       <a class="internal-link-card" href="{% url 'internal_correction_requests' %}"><strong>Solicitações</strong><div class="muted">Pedidos de correção</div></a>
+      <a class="internal-link-card" href="{% url 'internal_notifications' %}"><strong>Notificacoes</strong><div class="muted">Fila global e ciencia</div></a>
     </div>
   </section>
 
@@ -59,6 +60,16 @@
         <div class="label">Solicitações abertas</div>
         <div class="value">{{ total_open_correction_requests }}</div>
         <div class="hint">Pedidos aguardando análise</div>
+      </a>
+      <a class="metric-card" href="{% url 'internal_notifications' %}">
+        <div class="label">Notificacoes</div>
+        <div class="value">{{ total_notifications }}</div>
+        <div class="hint">{{ total_unread_notifications }} nao lidas</div>
+      </a>
+      <a class="metric-card" href="{% url 'internal_notifications' %}?ack=pending">
+        <div class="label">Ciencia pendente</div>
+        <div class="value">{{ total_unacknowledged_company_notifications }}</div>
+        <div class="hint">Avisos de empresa sem ciencia</div>
       </a>
       <a class="metric-card" href="{% url 'internal_employees' %}?status=ativo">
         <div class="label">Funcionários ativados</div>

@@ -4,7 +4,7 @@ from companies.feature_flags import (
     get_user_feature_access,
     get_user_feature_access_for_company,
 )
-from timeclock.models import ActivityReportRequest, PunchCorrectionRequest
+from timeclock.models import ActivityReportRequest, InternalNotification, PunchCorrectionRequest
 from .mei_context import resolve_mei_context
 
 
@@ -52,6 +52,8 @@ def header_profile_media(request):
     header_mode = "mei"
     pending_reports_count = 0
     open_punch_correction_requests_count = 0
+    unread_notifications_count = 0
+    unread_internal_notifications_count = 0
     header_feature_access = {}
     header_feature_required_plan = {}
     header_current_plan_code = ""
@@ -73,10 +75,15 @@ def header_profile_media(request):
                     company=company,
                     status=ActivityReportRequest.Status.PENDING,
                 ).count()
+                unread_notifications_count = InternalNotification.objects.filter(
+                    recipient_company=company,
+                    is_read=False,
+                ).count()
         if request.user.is_staff or request.user.is_superuser:
             open_punch_correction_requests_count = PunchCorrectionRequest.objects.filter(
                 status=PunchCorrectionRequest.Status.OPEN,
             ).count()
+            unread_internal_notifications_count = InternalNotification.objects.filter(is_read=False).count()
         if request.user.role == "EMPRESA":
             reports_access = get_user_feature_access(request.user, "advanced_reports")
             themes_access = get_user_feature_access(request.user, "custom_themes")
@@ -108,6 +115,10 @@ def header_profile_media(request):
             if employee and employee.profile_photo:
                 photo_url = employee.profile_photo.url
             header_display_name = _build_display_name(request.user, employee=employee)
+            unread_notifications_count = InternalNotification.objects.filter(
+                recipient_user=request.user,
+                is_read=False,
+            ).count()
             themes_access = get_user_feature_access_for_company(
                 user=request.user,
                 company=selected_company,
@@ -137,6 +148,8 @@ def header_profile_media(request):
         "header_mode": header_mode,
         "pending_reports_count": pending_reports_count,
         "open_punch_correction_requests_count": open_punch_correction_requests_count,
+        "unread_notifications_count": unread_notifications_count,
+        "unread_internal_notifications_count": unread_internal_notifications_count,
         "header_feature_access": header_feature_access,
         "header_feature_required_plan": header_feature_required_plan,
         "header_can_use_custom_themes": header_feature_access.get("custom_themes", False),

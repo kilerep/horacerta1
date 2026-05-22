@@ -337,6 +337,69 @@ class PunchCorrectionRequest(models.Model):
         return f"{self.employee.full_name} - {self.get_problem_type_display()} ({self.get_status_display()})"
 
 
+class InternalNotification(models.Model):
+    class NotificationType(models.TextChoices):
+        CORRECTION_REQUEST_CREATED = "correction_request_created", "Solicitacao de correcao criada"
+        CORRECTION_REQUEST_STATUS_CHANGED = "correction_request_status_changed", "Status de solicitacao alterado"
+        PUNCH_CORRECTED = "punch_corrected", "Horario corrigido"
+        PUNCH_CANCELLED = "punch_cancelled", "Registro cancelado"
+        PUNCH_RESTORED = "punch_restored", "Registro restaurado"
+        ADMIN_NOTE_ADDED = "admin_note_added", "Observacao administrativa adicionada"
+        COMPANY_ACKNOWLEDGED = "company_acknowledged", "Ciencia da empresa registrada"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    recipient_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="internal_notifications",
+        null=True,
+        blank=True,
+    )
+    recipient_company = models.ForeignKey(
+        Company,
+        on_delete=models.CASCADE,
+        related_name="internal_notifications",
+        null=True,
+        blank=True,
+    )
+    actor_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="created_internal_notifications",
+        null=True,
+        blank=True,
+    )
+    notification_type = models.CharField(max_length=50, choices=NotificationType.choices)
+    title = models.CharField(max_length=180)
+    message = models.TextField()
+    target_url = models.CharField(max_length=500, blank=True, default="")
+    is_read = models.BooleanField(default=False)
+    read_at = models.DateTimeField(null=True, blank=True)
+    company_acknowledged = models.BooleanField(default=False)
+    company_acknowledged_at = models.DateTimeField(null=True, blank=True)
+    company_acknowledged_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="company_acknowledged_notifications",
+        null=True,
+        blank=True,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["recipient_user", "is_read", "-created_at"]),
+            models.Index(fields=["recipient_company", "is_read", "-created_at"]),
+            models.Index(fields=["notification_type", "-created_at"]),
+            models.Index(fields=["company_acknowledged", "-created_at"]),
+            models.Index(fields=["created_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.get_notification_type_display()} - {self.title}"
+
+
 class ActivityReportRequest(models.Model):
     class Status(models.TextChoices):
         PENDING = "PENDING", "Pendente"

@@ -1,0 +1,115 @@
+{% extends "accounts/internal_base.html" %}
+{% block title %}HoraCerta - Notificacoes internas{% endblock %}
+{% block internal_title %}Notificacoes{% endblock %}
+{% block internal_subtitle %}Fila global de avisos, leituras e ciencias registradas pelas empresas.{% endblock %}
+
+{% block internal_content %}
+  <section class="internal-panel">
+    <form method="get" class="filter-grid">
+      <label>
+        Tipo
+        <select name="type">
+          <option value="">Todos</option>
+          {% for value,label in notification_type_choices %}
+            <option value="{{ value }}" {% if type_filter == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>
+        Empresa
+        <select name="company">
+          <option value="">Todas</option>
+          {% for item in companies %}
+            <option value="{{ item.company.id }}" {% if item.selected %}selected{% endif %}>{{ item.company.name }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>
+        Usuario
+        <select name="user">
+          <option value="">Todos</option>
+          {% for item in users %}
+            <option value="{{ item.user.id }}" {% if item.selected %}selected{% endif %}>{{ item.user.email|default:item.user.username }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>
+        Leitura
+        <select name="read">
+          <option value="">Todas</option>
+          <option value="unread" {% if read_filter == "unread" %}selected{% endif %}>Nao lidas</option>
+          <option value="read" {% if read_filter == "read" %}selected{% endif %}>Lidas</option>
+        </select>
+      </label>
+      <label>
+        Ciencia
+        <select name="ack">
+          <option value="">Todas</option>
+          <option value="pending" {% if ack_filter == "pending" %}selected{% endif %}>Nao marcada</option>
+          <option value="acknowledged" {% if ack_filter == "acknowledged" %}selected{% endif %}>Marcada</option>
+        </select>
+      </label>
+      <label>
+        De
+        <input type="date" name="date_from" value="{{ date_from|date:'Y-m-d' }}">
+      </label>
+      <label>
+        Ate
+        <input type="date" name="date_to" value="{{ date_to|date:'Y-m-d' }}">
+      </label>
+      <button class="btn primary" type="submit">Filtrar</button>
+      <a class="btn secondary" href="{% url 'internal_notifications' %}">Limpar</a>
+    </form>
+  </section>
+
+  <section class="internal-panel">
+    <div class="table-wrap">
+      <table class="internal-table">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Tipo</th>
+            <th>Destino</th>
+            <th>Mensagem</th>
+            <th>Leitura</th>
+            <th>Ciencia</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+            {% with item=row.notification %}
+              <tr>
+                <td data-label="Data">{{ item.created_at|date:"d/m/Y H:i" }}</td>
+                <td data-label="Tipo"><span class="pill {{ row.tone }}">{{ item.get_notification_type_display }}</span></td>
+                <td data-label="Destino">
+                  {% if item.recipient_company %}{{ item.recipient_company.name }}{% endif %}
+                  {% if item.recipient_user %}<div class="muted">{{ item.recipient_user.email|default:item.recipient_user.username }}</div>{% endif %}
+                </td>
+                <td data-label="Mensagem">
+                  <strong>{{ item.title }}</strong><br>
+                  {{ item.message }}
+                  {% if item.target_url %}<br><a class="strong-link" href="{{ item.target_url }}">Abrir relacionado</a>{% endif %}
+                </td>
+                <td data-label="Leitura">{% if item.is_read %}{{ item.read_at|date:"d/m/Y H:i" }}{% else %}<span class="pill warn">Nao lida</span>{% endif %}</td>
+                <td data-label="Ciencia">
+                  {% if item.recipient_company %}
+                    {% if item.company_acknowledged %}
+                      {{ item.company_acknowledged_at|date:"d/m/Y H:i" }}<br>
+                      <span class="muted">{{ item.company_acknowledged_by.email|default:"-" }}</span>
+                    {% else %}
+                      <span class="pill warn">Nao marcada</span>
+                    {% endif %}
+                  {% else %}
+                    <span class="muted">-</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endwith %}
+          {% empty %}
+            <tr><td colspan="6"><div class="empty-state">Nenhuma notificacao encontrada.</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

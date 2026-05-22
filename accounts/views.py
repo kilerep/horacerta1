@@ -25,7 +25,7 @@ from django.templatetags.static import static
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils import timezone
-from django.views.decorators.http import require_GET
+from django.views.decorators.http import require_GET, require_POST
 
 from companies.models import (
     Company,
@@ -42,7 +42,21 @@ from companies.feature_flags import (
     humanize_feature_reason,
     require_company_feature,
 )
-from timeclock.models import ActivityReportRequest, Contract, Punch, PunchCorrectionLog, PunchCorrectionRequest, ServiceReport
+from timeclock.models import (
+    ActivityReportRequest,
+    Contract,
+    InternalNotification,
+    Punch,
+    PunchCorrectionLog,
+    PunchCorrectionRequest,
+    ServiceReport,
+)
+from timeclock.notifications import (
+    acknowledge_company_notification,
+    notify_correction_request_created,
+    notify_correction_request_status_changed,
+    notify_punch_admin_action,
+)
 from timeclock.services import (
     add_punch_admin_note,
     build_daily_summary,
@@ -276,6 +290,32 @@ def _correction_request_status_tone(status):
     if status == PunchCorrectionRequest.Status.IN_REVIEW:
         return "pending"
     return ""
+
+
+def _notification_tone(notification):
+    if notification.company_acknowledged:
+        return "success"
+    if not notification.is_read:
+        return "warn"
+    return "neutral"
+
+
+def _mark_notification_read(notification):
+    if not notification.is_read:
+        notification.is_read = True
+        notification.read_at = timezone.now()
+        notification.save(update_fields=["is_read", "read_at"])
+
+
+def _company_ack_allowed(notification):
+    return notification.notification_type in {
+        InternalNotification.NotificationType.CORRECTION_REQUEST_CREATED,
+        InternalNotification.NotificationType.CORRECTION_REQUEST_STATUS_CHANGED,
+        InternalNotification.NotificationType.PUNCH_CORRECTED,
+        InternalNotification.NotificationType.PUNCH_CANCELLED,
+        InternalNotification.NotificationType.PUNCH_RESTORED,
+        InternalNotification.NotificationType.ADMIN_NOTE_ADDED,
+    }
 
 
 def _log_internal_admin_action(*, admin_user, action, target_type, target_id, description=""):
@@ -662,6 +702,20 @@ def internal_dashboard(request):
     total_punches = Punch.objects.count()
     total_cancelled_punches = Punch.all_objects.filter(is_cancelled=True).count()
     total_open_correction_requests = PunchCorrectionRequest.objects.filter(status=PunchCorrectionRequest.Status.OPEN).count()
+    total_notifications = InternalNotification.objects.count()
+    total_unread_notifications = InternalNotification.objects.filter(is_read=False).count()
+    total_unacknowledged_company_notifications = InternalNotification.objects.filter(
+        recipient_company__isnull=False,
+        company_acknowledged=False,
+        notification_type__in=[
+            InternalNotification.NotificationType.CORRECTION_REQUEST_CREATED,
+            InternalNotification.NotificationType.CORRECTION_REQUEST_STATUS_CHANGED,
+            InternalNotification.NotificationType.PUNCH_CORRECTED,
+            InternalNotification.NotificationType.PUNCH_CANCELLED,
+            InternalNotification.NotificationType.PUNCH_RESTORED,
+            InternalNotification.NotificationType.ADMIN_NOTE_ADDED,
+        ],
+    ).count()
     total_punches_today = Punch.objects.filter(timestamp__gte=today_start, timestamp__lt=tomorrow_start).count()
     total_punches_last_7_days = Punch.objects.filter(timestamp__gte=last_7_days_start).count()
     total_punches_last_30_days = Punch.objects.filter(timestamp__gte=last_30_days_start).count()
@@ -677,6 +731,9 @@ def internal_dashboard(request):
         "total_punches": total_punches,
         "total_cancelled_punches": total_cancelled_punches,
         "total_open_correction_requests": total_open_correction_requests,
+        "total_notifications": total_notifications,
+        "total_unread_notifications": total_unread_notifications,
+        "total_unacknowledged_company_notifications": total_unacknowledged_company_notifications,
         "total_punches_today": total_punches_today,
         "total_punches_last_7_days": total_punches_last_7_days,
         "total_punches_last_30_days": total_punches_last_30_days,
@@ -1019,12 +1076,27 @@ def internal_punch_detail(request, punch_id):
                 raw_new_datetime = (request.POST.get("new_datetime") or "").strip()
                 new_datetime = datetime.strptime(raw_new_datetime, "%Y-%m-%dT%H:%M")
                 change_punch_time(punch=punch, admin_user=request.user, new_datetime=new_datetime, reason=reason)
+                notify_punch_admin_action(
+                    punch,
+                    actor_user=request.user,
+                    action_type=PunchCorrectionLog.ActionType.TIME_CHANGED,
+                )
                 messages.success(request, "Horario corrigido com auditoria registrada.")
             elif action == "cancel":
                 cancel_punch(punch=punch, admin_user=request.user, reason=reason)
+                notify_punch_admin_action(
+                    punch,
+                    actor_user=request.user,
+                    action_type=PunchCorrectionLog.ActionType.CANCELLED,
+                )
                 messages.success(request, "Registro cancelado com auditoria registrada.")
             elif action == "restore":
                 restore_punch(punch=punch, admin_user=request.user, reason=reason)
+                notify_punch_admin_action(
+                    punch,
+                    actor_user=request.user,
+                    action_type=PunchCorrectionLog.ActionType.RESTORED,
+                )
                 messages.success(request, "Registro restaurado com auditoria registrada.")
             elif action == "admin_note":
                 add_punch_admin_note(
@@ -1032,6 +1104,11 @@ def internal_punch_detail(request, punch_id):
                     admin_user=request.user,
                     note=request.POST.get("admin_note"),
                     reason=reason or request.POST.get("admin_note"),
+                )
+                notify_punch_admin_action(
+                    punch,
+                    actor_user=request.user,
+                    action_type=PunchCorrectionLog.ActionType.ADMIN_NOTE_ADDED,
                 )
                 messages.success(request, "Observacao administrativa salva com auditoria registrada.")
             else:
@@ -1131,6 +1208,7 @@ def internal_correction_request_detail(request, request_id):
         if new_status not in valid_statuses:
             messages.error(request, "Status invalido para a solicitacao.")
         else:
+            old_status = correction_request.status
             correction_request.status = new_status
             correction_request.admin_response = response_text
             if new_status in {PunchCorrectionRequest.Status.CORRECTED, PunchCorrectionRequest.Status.REJECTED}:
@@ -1141,6 +1219,11 @@ def internal_correction_request_detail(request, request_id):
                 correction_request.resolved_at = None
             correction_request.save(
                 update_fields=["status", "admin_response", "resolved_by", "resolved_at", "updated_at"]
+            )
+            notify_correction_request_status_changed(
+                correction_request,
+                actor_user=request.user,
+                old_status=old_status,
             )
             messages.success(request, "Solicitacao atualizada.")
         return redirect("internal_correction_request_detail", request_id=correction_request.id)
@@ -1168,6 +1251,69 @@ def internal_correction_request_detail(request, request_id):
             "day_punches": day_punches,
             "records_url": records_url,
             "status_choices": PunchCorrectionRequest.Status.choices,
+        },
+    )
+
+
+@internal_staff_required
+def internal_notifications(request):
+    type_filter = (request.GET.get("type") or "").strip()
+    company_id = (request.GET.get("company") or "").strip()
+    user_id = (request.GET.get("user") or "").strip()
+    read_filter = (request.GET.get("read") or "").strip()
+    ack_filter = (request.GET.get("ack") or "").strip()
+
+    notifications = InternalNotification.objects.select_related(
+        "recipient_user",
+        "recipient_company",
+        "actor_user",
+        "company_acknowledged_by",
+    )
+    if type_filter:
+        notifications = notifications.filter(notification_type=type_filter)
+    if company_id:
+        notifications = notifications.filter(recipient_company_id=company_id)
+    if user_id:
+        notifications = notifications.filter(recipient_user_id=user_id)
+    notifications, date_from, date_to = filter_punches_by_period(
+        notifications,
+        request.GET.get("date_from"),
+        request.GET.get("date_to"),
+        field_name="created_at",
+    )
+    if read_filter == "unread":
+        notifications = notifications.filter(is_read=False)
+    elif read_filter == "read":
+        notifications = notifications.filter(is_read=True)
+    if ack_filter == "acknowledged":
+        notifications = notifications.filter(company_acknowledged=True)
+    elif ack_filter == "pending":
+        notifications = notifications.filter(recipient_company__isnull=False, company_acknowledged=False)
+
+    return render(
+        request,
+        "accounts/internal_notifications.html",
+        {
+            "rows": [
+                {"notification": notification, "tone": _notification_tone(notification)}
+                for notification in notifications[:300]
+            ],
+            "type_filter": type_filter,
+            "company_id": company_id,
+            "user_id": user_id,
+            "read_filter": read_filter,
+            "ack_filter": ack_filter,
+            "date_from": date_from,
+            "date_to": date_to,
+            "notification_type_choices": InternalNotification.NotificationType.choices,
+            "companies": [
+                {"company": company, "selected": str(company.id) == company_id}
+                for company in Company.objects.order_by("name")
+            ],
+            "users": [
+                {"user": user, "selected": str(user.id) == user_id}
+                for user in User.objects.order_by("email", "username")
+            ],
         },
     )
 
@@ -3428,6 +3574,60 @@ def company_record_review_detail(request, punch_id):
 
 
 @login_required
+def company_notifications(request):
+    denied = _redirect_if_not_empresa(request)
+    if denied:
+        return denied
+    company = _company_for_user(request.user)
+    if not company:
+        return redirect("dashboard_empresa")
+
+    notifications = InternalNotification.objects.filter(recipient_company=company).select_related(
+        "actor_user",
+        "company_acknowledged_by",
+    )
+    return render(
+        request,
+        "accounts/company_notifications.html",
+        {
+            "company": company,
+            "rows": [
+                {
+                    "notification": notification,
+                    "tone": _notification_tone(notification),
+                    "can_acknowledge": _company_ack_allowed(notification),
+                }
+                for notification in notifications[:200]
+            ],
+        },
+    )
+
+
+@login_required
+@require_POST
+def company_notification_action(request, notification_id):
+    denied = _redirect_if_not_empresa(request)
+    if denied:
+        return denied
+    company = _company_for_user(request.user)
+    notification = get_object_or_404(
+        InternalNotification.objects.select_related("recipient_company"),
+        id=notification_id,
+        recipient_company=company,
+    )
+    action = (request.POST.get("action") or "").strip()
+    if action == "read":
+        _mark_notification_read(notification)
+        messages.success(request, "Notificacao marcada como lida.")
+    elif action == "acknowledge" and _company_ack_allowed(notification):
+        acknowledge_company_notification(notification, actor_user=request.user)
+        messages.success(request, "Ciencia registrada para a empresa.")
+    else:
+        messages.error(request, "Acao invalida para esta notificacao.")
+    return redirect("company_notifications")
+
+
+@login_required
 def company_service_reports(request):
     denied = _redirect_if_not_empresa(request)
     if denied:
@@ -3783,7 +3983,8 @@ def mei_punch_correction_request(request):
         initial=initial,
     )
     if request.method == "POST" and form.is_valid():
-        form.save()
+        correction_request = form.save()
+        notify_correction_request_created(correction_request)
         return redirect(f"{reverse('employee_dashboard')}?event=correction_request_sent")
 
     return render(
@@ -3794,6 +3995,43 @@ def mei_punch_correction_request(request):
             "employee": employee,
         },
     )
+
+
+@login_required
+def mei_notifications(request):
+    denied = _redirect_if_not_mei(request)
+    if denied:
+        return denied
+    notifications = InternalNotification.objects.filter(recipient_user=request.user).select_related(
+        "actor_user",
+        "recipient_company",
+    )
+    return render(
+        request,
+        "accounts/mei_notifications.html",
+        {
+            "rows": [
+                {"notification": notification, "tone": _notification_tone(notification)}
+                for notification in notifications[:200]
+            ],
+        },
+    )
+
+
+@login_required
+@require_POST
+def mei_notification_action(request, notification_id):
+    denied = _redirect_if_not_mei(request)
+    if denied:
+        return denied
+    notification = get_object_or_404(InternalNotification, id=notification_id, recipient_user=request.user)
+    action = (request.POST.get("action") or "").strip()
+    if action == "read":
+        _mark_notification_read(notification)
+        messages.success(request, "Notificacao marcada como lida.")
+    else:
+        messages.error(request, "Acao invalida para esta notificacao.")
+    return redirect("mei_notifications")
 
 
 @login_required

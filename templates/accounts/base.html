@@ -130,6 +130,16 @@
                   <div class="icon">O</div>
                   <div><strong>Resumo Operacional</strong><div class="muted item-sub">conferencia por profissional</div></div>
                 </a>
+                <a class="item {% if current == 'company_notifications' %}is-active{% endif %}" href="{% url 'company_notifications' %}">
+                  <div class="icon">N</div>
+                  <div>
+                    <strong>
+                      Notificacoes
+                      {% if unread_notifications_count %}<span class="badge">{{ unread_notifications_count }}</span>{% endif %}
+                    </strong>
+                    <div class="muted item-sub">avisos e ciencia</div>
+                  </div>
+                </a>
               </div>
               <div class="menu-group">
                 <div class="menu-label">Conta</div>
@@ -171,6 +181,16 @@
                   <div class="icon">H</div>
                   <div><strong>Historico</strong><div class="muted item-sub">por periodo</div></div>
                 </a>
+                <a class="item {% if current == 'mei_notifications' %}is-active{% endif %}" href="{% url 'mei_notifications' %}">
+                  <div class="icon">N</div>
+                  <div>
+                    <strong>
+                      Notificacoes
+                      {% if unread_notifications_count %}<span class="badge">{{ unread_notifications_count }}</span>{% endif %}
+                    </strong>
+                    <div class="muted item-sub">avisos internos</div>
+                  </div>
+                </a>
               </div>
               <div class="menu-group">
                 <div class="menu-label">Conta</div>
@@ -185,6 +205,16 @@
                 <a class="item {% if current == 'mei_reports' or current == 'mei_service_report_detail' or current == 'mei_service_report_request_detail' %}is-active{% endif %}" href="{% url 'mei_reports' %}">
                   <div class="icon">R</div>
                   <div><strong>Relatorios de Servico</strong><div class="muted item-sub">envio e consulta pessoal</div></div>
+                </a>
+                <a class="item {% if current == 'internal_notifications' %}is-active{% endif %}" href="{% url 'internal_notifications' %}">
+                  <div class="icon">N</div>
+                  <div>
+                    <strong>
+                      Notificacoes internas
+                      {% if unread_internal_notifications_count %}<span class="badge">{{ unread_internal_notifications_count }}</span>{% endif %}
+                    </strong>
+                    <div class="muted item-sub">fila global</div>
+                  </div>
                 </a>
               </div>
             {% endwith %}

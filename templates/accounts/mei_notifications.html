@@ -1,0 +1,55 @@
+{% extends "accounts/base.html" %}
+{% block title %}HoraCerta - Minhas notificacoes{% endblock %}
+{% block page_title %}Minhas notificacoes{% endblock %}
+
+{% block content %}
+<style>
+  .nt-wrap{ display:grid; gap:14px; }
+  .nt-panel{ border:1px solid var(--border); border-radius:var(--radius); padding:16px; background:var(--surface-raised); }
+  .nt-title{ margin:0; font-size:22px; }
+  .nt-sub{ margin:6px 0 0; color:var(--muted); font-size:13px; }
+  .nt-list{ display:grid; gap:10px; margin-top:14px; }
+  .nt-item{ border:1px solid var(--border); border-radius:12px; padding:12px; background:rgba(255,255,255,.03); display:grid; gap:10px; }
+  .nt-item.warn{ border-color:rgba(255,176,32,.36); }
+  .nt-row{ display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+  .nt-name{ margin:0; font-weight:800; }
+  .nt-meta{ color:var(--muted); font-size:12px; }
+</style>
+
+<div class="nt-wrap">
+  <section class="nt-panel">
+    <h2 class="nt-title">Minhas notificacoes</h2>
+    <p class="nt-sub">Avisos sobre solicitacoes e alteracoes em seus horarios.</p>
+
+    <div class="nt-list">
+      {% for row in rows %}
+        {% with item=row.notification %}
+          <article class="nt-item {{ row.tone }}">
+            <div class="nt-row">
+              <div>
+                <p class="nt-name">{{ item.title }}</p>
+                <div class="nt-meta">{{ item.get_notification_type_display }} | {{ item.created_at|date:"d/m/Y H:i" }}</div>
+              </div>
+              {% if not item.is_read %}
+                <form method="post" action="{% url 'mei_notification_action' item.id %}" data-submit-once="true">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="read">
+                  <button class="btn secondary" type="submit">Marcar lida</button>
+                </form>
+              {% else %}
+                <span class="pill neutral">Lida</span>
+              {% endif %}
+            </div>
+            <div>{{ item.message }}</div>
+            {% if item.target_url %}
+              <div><a class="strong-link" href="{{ item.target_url }}">Abrir relacionado</a></div>
+            {% endif %}
+          </article>
+        {% endwith %}
+      {% empty %}
+        <div class="empty-state">Voce ainda nao tem notificacoes.</div>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}
