@@ -1,0 +1,154 @@
+{% extends "accounts/internal_base.html" %}
+{% block title %}HoraCerta - Auditoria interna{% endblock %}
+{% block internal_breadcrumb %}<span class="internal-breadcrumb__sep">></span><span>Auditoria</span>{% endblock %}
+{% block internal_title %}Auditoria{% endblock %}
+{% block internal_subtitle %}Linha do tempo centralizada de acoes sensiveis realizadas no HoraCerta.{% endblock %}
+
+{% block internal_content %}
+  <style>
+    .audit-table{ min-width:1180px; }
+    .audit-action{ display:grid; gap:6px; min-width:170px; }
+    .audit-main{ font-weight:850; color:var(--color-text-strong); }
+    .audit-muted{ color:var(--color-text-muted); font-size:12px; line-height:1.35; }
+    .audit-values{ display:grid; gap:6px; min-width:180px; }
+    .audit-value{ border:1px solid var(--color-border); border-radius:8px; padding:8px; background:color-mix(in oklab, var(--surface-soft) 60%, transparent); }
+    .audit-value b{ display:block; color:var(--color-text-muted); font-size:11px; margin-bottom:3px; }
+    .audit-reason{ max-width:320px; overflow-wrap:anywhere; }
+  </style>
+
+  <section class="internal-panel">
+    <div class="internal-head">
+      <div>
+        <h3>Filtros</h3>
+        <p class="internal-subtitle">Refine por periodo, empresa, prestador, tipo de acao ou executor.</p>
+      </div>
+    </div>
+    <form method="get" class="filter-grid">
+      <div class="field">
+        <label for="date_from">Data inicial</label>
+        <input id="date_from" name="date_from" type="date" value="{{ date_from|date:'Y-m-d' }}">
+      </div>
+      <div class="field">
+        <label for="date_to">Data final</label>
+        <input id="date_to" name="date_to" type="date" value="{{ date_to|date:'Y-m-d' }}">
+      </div>
+      <div class="field">
+        <label for="company">Empresa</label>
+        <select id="company" name="company">
+          <option value="">Todas</option>
+          {% for option in companies %}
+            <option value="{{ option.company.id }}" {% if option.selected %}selected{% endif %}>{{ option.company.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="employee">Funcionario/prestador</label>
+        <select id="employee" name="employee">
+          <option value="">Todos</option>
+          {% for option in employees %}
+            <option value="{{ option.employee.id }}" {% if option.selected %}selected{% endif %}>{{ option.employee.full_name }} | {{ option.employee.company.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="action_type">Tipo de acao</label>
+        <select id="action_type" name="action_type">
+          <option value="">Todos</option>
+          {% for value,label in action_choices %}
+            <option value="{{ value }}" {% if action_filter == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="actor">Usuario executor</label>
+        <select id="actor" name="actor">
+          <option value="">Todos</option>
+          {% for option in actors %}
+            <option value="{{ option.user.id }}" {% if option.selected %}selected{% endif %}>{{ option.user.email|default:option.user.username }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button class="btn primary" type="submit">Filtrar</button>
+      <a class="btn secondary" href="{% url 'internal_audit' %}">Limpar</a>
+    </form>
+  </section>
+
+  <section class="internal-panel">
+    <div class="internal-head">
+      <div>
+        <h3>Eventos sensiveis</h3>
+        <p class="internal-subtitle">Registros somente leitura. Edicao e exclusao nao estao disponiveis nesta tela.</p>
+      </div>
+      <span class="pill neutral">{{ rows|length }} itens</span>
+    </div>
+
+    <div class="table-wrap">
+      <table class="internal-table audit-table">
+        <thead>
+          <tr>
+            <th>Data/hora</th>
+            <th>Executor</th>
+            <th>Tipo</th>
+            <th>Empresa</th>
+            <th>Prestador</th>
+            <th>Valores</th>
+            <th>Motivo/detalhe</th>
+            <th>Link</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+            <tr>
+              <td data-label="Data/hora">{{ row.created_at|date:"d/m/Y H:i:s" }}</td>
+              <td data-label="Executor">
+                {% if row.actor %}
+                  <div class="audit-main">{{ row.actor.get_full_name|default:row.actor.email|default:row.actor.username }}</div>
+                  <div class="audit-muted">{{ row.actor.email|default:row.actor.username }}</div>
+                {% else %}
+                  <span class="muted">-</span>
+                {% endif %}
+              </td>
+              <td data-label="Tipo">
+                <div class="audit-action">
+                  <span class="pill {{ row.tone }}">{{ row.action_label }}</span>
+                  <span class="audit-muted">{{ row.action_type }}</span>
+                </div>
+              </td>
+              <td data-label="Empresa">
+                {% if row.company %}
+                  <a class="strong-link" href="{% url 'internal_company_detail' row.company.id %}">{{ row.company.name }}</a>
+                {% else %}
+                  <span class="muted">-</span>
+                {% endif %}
+              </td>
+              <td data-label="Prestador">
+                {% if row.employee %}
+                  <a class="strong-link" href="{% url 'internal_employee_detail' row.employee.id %}">{{ row.employee.full_name }}</a>
+                  <div class="audit-muted">{{ row.employee.user.email|default:row.employee.user.username }}</div>
+                {% else %}
+                  <span class="muted">-</span>
+                {% endif %}
+              </td>
+              <td data-label="Valores">
+                <div class="audit-values">
+                  <div class="audit-value"><b>Antigo</b>{{ row.old_value }}</div>
+                  <div class="audit-value"><b>Novo</b>{{ row.new_value }}</div>
+                </div>
+              </td>
+              <td data-label="Motivo/detalhe"><div class="audit-reason">{{ row.reason }}</div></td>
+              <td data-label="Link">
+                {% if row.target_url %}
+                  <a class="btn secondary" href="{{ row.target_url }}">Abrir</a>
+                {% else %}
+                  <span class="muted">-</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="8"><div class="empty-state">Nenhum evento de auditoria encontrado para os filtros selecionados.</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

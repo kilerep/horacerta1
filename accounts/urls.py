@@ -48,6 +48,7 @@ urlpatterns = [
     path("interno/registros/<uuid:punch_id>/", views.internal_punch_detail, name="internal_punch_detail"),
     path("interno/solicitacoes/", views.internal_correction_requests, name="internal_correction_requests"),
     path("interno/solicitacoes/<uuid:request_id>/", views.internal_correction_request_detail, name="internal_correction_request_detail"),
+    path("interno/auditoria/", views.internal_audit, name="internal_audit"),
     path("interno/notificacoes/", views.internal_notifications, name="internal_notifications"),
     path("interno/correcoes/", views.internal_correction_requests, name="internal_corrections"),
     path("", views.dashboard),

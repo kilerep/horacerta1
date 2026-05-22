@@ -321,6 +321,66 @@ def _company_ack_allowed(notification):
     }
 
 
+AUDIT_ACTION_CHOICES = [
+    ("time_changed", "Correcao de horario"),
+    ("cancelled", "Cancelamento de registro"),
+    ("restored", "Restauracao de registro"),
+    ("admin_note_added", "Observacao administrativa"),
+    ("relationship_ended", "Encerramento de vinculo"),
+    ("deactivate_company", "Desativacao de empresa"),
+    ("activate_company", "Reativacao de empresa"),
+    ("deactivate_user", "Desativacao de usuario"),
+    ("activate_user", "Reativacao de usuario"),
+    ("company_acknowledged", "Ciencia marcada pela empresa"),
+]
+
+
+def _audit_badge_tone(action_type):
+    if action_type in {"time_changed", "restored", "activate_company", "activate_user", "company_acknowledged"}:
+        return "success"
+    if action_type in {"cancelled", "deactivate_company", "deactivate_user", "relationship_ended"}:
+        return "warn"
+    return "pending"
+
+
+def _audit_action_label(action_type):
+    return dict(AUDIT_ACTION_CHOICES).get(action_type, action_type)
+
+
+def _audit_date_bounds(request):
+    date_from = _parse_iso_date(request.GET.get("date_from"))
+    date_to = _parse_iso_date(request.GET.get("date_to"))
+    if date_from and date_to and date_from > date_to:
+        date_from, date_to = date_to, date_from
+    start_dt = timezone.make_aware(datetime.combine(date_from, time.min)) if date_from else None
+    end_dt = timezone.make_aware(datetime.combine(date_to, time.max)) if date_to else None
+    return date_from, date_to, start_dt, end_dt
+
+
+def _apply_datetime_bounds(queryset, field_name, start_dt, end_dt):
+    if start_dt:
+        queryset = queryset.filter(**{f"{field_name}__gte": start_dt})
+    if end_dt:
+        queryset = queryset.filter(**{f"{field_name}__lte": end_dt})
+    return queryset
+
+
+def _audit_row(*, created_at, actor, action_type, company=None, employee=None, old_value="", new_value="", reason="", target_url=""):
+    return {
+        "created_at": created_at,
+        "actor": actor,
+        "action_type": action_type,
+        "action_label": _audit_action_label(action_type),
+        "tone": _audit_badge_tone(action_type),
+        "company": company,
+        "employee": employee,
+        "old_value": old_value or "-",
+        "new_value": new_value or "-",
+        "reason": reason or "-",
+        "target_url": target_url or "",
+    }
+
+
 def _log_internal_admin_action(*, admin_user, action, target_type, target_id, description=""):
     return InternalAdminActionLog.objects.create(
         admin_user=admin_user,
@@ -1360,6 +1420,204 @@ def internal_correction_request_detail(request, request_id):
             "day_punches": day_punches,
             "records_url": records_url,
             "status_choices": PunchCorrectionRequest.Status.choices,
+        },
+    )
+
+
+@internal_staff_required
+def internal_audit(request):
+    company_id = (request.GET.get("company") or "").strip()
+    employee_id = (request.GET.get("employee") or "").strip()
+    action_filter = (request.GET.get("action_type") or "").strip()
+    actor_id = (request.GET.get("actor") or "").strip()
+    date_from, date_to, start_dt, end_dt = _audit_date_bounds(request)
+    rows = []
+
+    punch_action_values = {
+        PunchCorrectionLog.ActionType.TIME_CHANGED,
+        PunchCorrectionLog.ActionType.CANCELLED,
+        PunchCorrectionLog.ActionType.RESTORED,
+        PunchCorrectionLog.ActionType.ADMIN_NOTE_ADDED,
+    }
+    if not action_filter or action_filter in punch_action_values:
+        punch_logs = PunchCorrectionLog.objects.select_related(
+            "admin_user",
+            "punch",
+            "punch__contract",
+            "punch__contract__company",
+            "punch__contract__employee",
+            "punch__contract__employee__user",
+        )
+        punch_logs = _apply_datetime_bounds(punch_logs, "created_at", start_dt, end_dt)
+        if action_filter:
+            punch_logs = punch_logs.filter(action_type=action_filter)
+        if company_id:
+            punch_logs = punch_logs.filter(punch__contract__company_id=company_id)
+        if employee_id:
+            punch_logs = punch_logs.filter(punch__contract__employee_id=employee_id)
+        if actor_id:
+            punch_logs = punch_logs.filter(admin_user_id=actor_id)
+        for log in punch_logs[:300]:
+            if log.action_type == PunchCorrectionLog.ActionType.TIME_CHANGED:
+                old_value = timezone.localtime(log.old_datetime).strftime("%d/%m/%Y %H:%M") if log.old_datetime else ""
+                new_value = timezone.localtime(log.new_datetime).strftime("%d/%m/%Y %H:%M") if log.new_datetime else ""
+            elif log.action_type in {PunchCorrectionLog.ActionType.CANCELLED, PunchCorrectionLog.ActionType.RESTORED}:
+                old_value = log.old_status
+                new_value = log.new_status
+            else:
+                old_value = "-"
+                new_value = "Observacao administrativa atualizada"
+            rows.append(
+                _audit_row(
+                    created_at=log.created_at,
+                    actor=log.admin_user,
+                    action_type=log.action_type,
+                    company=log.punch.contract.company,
+                    employee=log.punch.contract.employee,
+                    old_value=old_value,
+                    new_value=new_value,
+                    reason=log.reason,
+                    target_url=reverse("internal_punch_detail", args=[log.punch_id]),
+                )
+            )
+
+    if not action_filter or action_filter == "relationship_ended":
+        relationship_logs = EmployeeRelationshipAuditLog.objects.select_related(
+            "admin_user",
+            "employee",
+            "employee__user",
+            "company",
+        )
+        relationship_logs = _apply_datetime_bounds(relationship_logs, "created_at", start_dt, end_dt)
+        if company_id:
+            relationship_logs = relationship_logs.filter(company_id=company_id)
+        if employee_id:
+            relationship_logs = relationship_logs.filter(employee_id=employee_id)
+        if actor_id:
+            relationship_logs = relationship_logs.filter(admin_user_id=actor_id)
+        for log in relationship_logs[:300]:
+            rows.append(
+                _audit_row(
+                    created_at=log.created_at,
+                    actor=log.admin_user,
+                    action_type=log.action_type,
+                    company=log.company,
+                    employee=log.employee,
+                    old_value="Vinculo ativo",
+                    new_value="Vinculo encerrado",
+                    reason=log.reason,
+                    target_url=reverse("internal_employee_detail", args=[log.employee_id]),
+                )
+            )
+
+    admin_action_values = {"deactivate_company", "activate_company", "deactivate_user", "activate_user"}
+    if not action_filter or action_filter in admin_action_values:
+        admin_logs = InternalAdminActionLog.objects.select_related("admin_user").filter(action__in=admin_action_values)
+        admin_logs = _apply_datetime_bounds(admin_logs, "created_at", start_dt, end_dt)
+        if action_filter:
+            admin_logs = admin_logs.filter(action=action_filter)
+        if actor_id:
+            admin_logs = admin_logs.filter(admin_user_id=actor_id)
+        if company_id:
+            company_employee_ids = [str(item.id) for item in Employee.objects.filter(company_id=company_id).only("id")]
+            admin_logs = admin_logs.filter(
+                Q(target_type="company", target_id=str(company_id))
+                | Q(target_type="employee", target_id__in=company_employee_ids)
+            )
+        if employee_id:
+            admin_logs = admin_logs.filter(target_type="employee", target_id=str(employee_id))
+        admin_logs = list(admin_logs[:300])
+        company_targets = {
+            log.target_id for log in admin_logs
+            if log.target_type == "company"
+        }
+        employee_targets = {
+            log.target_id for log in admin_logs
+            if log.target_type == "employee"
+        }
+        companies_by_id = {
+            str(company.id): company
+            for company in Company.objects.filter(id__in=company_targets)
+        }
+        employees_by_id = {
+            str(employee.id): employee
+            for employee in Employee.objects.select_related("company", "user").filter(id__in=employee_targets)
+        }
+        for log in admin_logs:
+            company = companies_by_id.get(log.target_id) if log.target_type == "company" else None
+            employee = employees_by_id.get(log.target_id) if log.target_type == "employee" else None
+            if employee and not company:
+                company = employee.company
+            rows.append(
+                _audit_row(
+                    created_at=log.created_at,
+                    actor=log.admin_user,
+                    action_type=log.action,
+                    company=company,
+                    employee=employee,
+                    old_value="ativo" if log.action.startswith("deactivate") else "inativo",
+                    new_value="inativo" if log.action.startswith("deactivate") else "ativo",
+                    reason=log.description,
+                    target_url=(
+                        reverse("internal_company_detail", args=[company.id]) if company and not employee
+                        else reverse("internal_employee_detail", args=[employee.id]) if employee
+                        else ""
+                    ),
+                )
+            )
+
+    if not action_filter or action_filter == "company_acknowledged":
+        acknowledgements = InternalNotification.objects.filter(
+            recipient_company__isnull=False,
+            company_acknowledged=True,
+            company_acknowledged_at__isnull=False,
+        ).select_related("recipient_company", "company_acknowledged_by")
+        acknowledgements = _apply_datetime_bounds(acknowledgements, "company_acknowledged_at", start_dt, end_dt)
+        if company_id:
+            acknowledgements = acknowledgements.filter(recipient_company_id=company_id)
+        if employee_id:
+            acknowledgements = acknowledgements.none()
+        if actor_id:
+            acknowledgements = acknowledgements.filter(company_acknowledged_by_id=actor_id)
+        for notification in acknowledgements[:300]:
+            rows.append(
+                _audit_row(
+                    created_at=notification.company_acknowledged_at,
+                    actor=notification.company_acknowledged_by,
+                    action_type="company_acknowledged",
+                    company=notification.recipient_company,
+                    old_value="Ciencia pendente",
+                    new_value="Ciencia marcada",
+                    reason=notification.title,
+                    target_url=notification.target_url,
+                )
+            )
+
+    rows.sort(key=lambda item: item["created_at"] or datetime.min.replace(tzinfo=timezone.get_current_timezone()), reverse=True)
+    return render(
+        request,
+        "accounts/internal_audit.html",
+        {
+            "rows": rows[:500],
+            "date_from": date_from,
+            "date_to": date_to,
+            "company_id": company_id,
+            "employee_id": employee_id,
+            "action_filter": action_filter,
+            "actor_id": actor_id,
+            "action_choices": AUDIT_ACTION_CHOICES,
+            "companies": [
+                {"company": company, "selected": str(company.id) == company_id}
+                for company in Company.objects.order_by("name")
+            ],
+            "employees": [
+                {"employee": employee, "selected": str(employee.id) == employee_id}
+                for employee in Employee.objects.select_related("company", "user").order_by("full_name")
+            ],
+            "actors": [
+                {"user": user, "selected": str(user.id) == actor_id}
+                for user in User.objects.order_by("email", "username")
+            ],
         },
     )
 
