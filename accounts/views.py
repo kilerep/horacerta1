@@ -33,6 +33,7 @@ from companies.models import (
     CompanyAuthorizedLocation,
     CompanySubscription,
     Employee,
+    EmployeeRelationshipAuditLog,
     Feature,
     InternalAdminActionLog,
     Plan,
@@ -239,6 +240,8 @@ def _usage_status_for_company(punch_count, punch_count_last_30_days):
 
 def _employee_status_for_backoffice(employee, active_contract_count=0):
     if not employee.is_active:
+        if getattr(employee, "ended_at", None):
+            return {"label": "encerrado", "tone": "warn", "key": "encerrado"}
         return {"label": "pendente", "tone": "pending", "key": "pendente"}
     if active_contract_count:
         return {"label": "ativo", "tone": "success", "key": "ativo"}
@@ -326,6 +329,45 @@ def _log_internal_admin_action(*, admin_user, action, target_type, target_id, de
         target_id=str(target_id),
         description=(description or "").strip(),
     )
+
+
+def _end_employee_company_relationship(*, employee, admin_user, reason):
+    clean_reason = (reason or "").strip()
+    if not clean_reason:
+        raise ValueError("Informe o motivo para encerrar o vinculo.")
+    now = timezone.now()
+    today = timezone.localdate()
+    with transaction.atomic():
+        employee.is_active = False
+        employee.ended_at = now
+        employee.ended_by = admin_user
+        employee.end_reason = clean_reason
+        employee.save(update_fields=["is_active", "ended_at", "ended_by", "end_reason"])
+        Contract.objects.filter(employee=employee, company=employee.company, is_active=True).update(
+            is_active=False,
+            end_date=today,
+        )
+        EmployeeRelationshipAuditLog.objects.create(
+            admin_user=admin_user,
+            employee=employee,
+            company=employee.company,
+            action_type=EmployeeRelationshipAuditLog.ActionType.RELATIONSHIP_ENDED,
+            reason=clean_reason,
+        )
+        _log_internal_admin_action(
+            admin_user=admin_user,
+            action="relationship_ended",
+            target_type="employee",
+            target_id=employee.id,
+            description=f"Vinculo encerrado com {employee.company.name}. Motivo: {clean_reason}",
+        )
+        _log_internal_admin_action(
+            admin_user=admin_user,
+            action="relationship_ended",
+            target_type="company",
+            target_id=employee.company_id,
+            description=f"Vinculo encerrado com {employee.full_name}. Motivo: {clean_reason}",
+        )
 
 
 def _recent_30_day_summary_for_employee(employee):
@@ -809,6 +851,23 @@ def internal_company_detail(request, company_id):
                 description=description or "Observacao interna da empresa atualizada.",
             )
             messages.success(request, "Observação interna salva.")
+        elif action == "end_relationship":
+            relationship_id = (request.POST.get("relationship_id") or "").strip()
+            relationship = Employee.objects.select_related("company", "user").filter(id=relationship_id, company=company).first()
+            if not relationship:
+                messages.error(request, "Vinculo invalido para esta empresa.")
+            elif not relationship.is_active and relationship.ended_at:
+                messages.error(request, "Este vinculo ja esta encerrado.")
+            else:
+                try:
+                    _end_employee_company_relationship(
+                        employee=relationship,
+                        admin_user=request.user,
+                        reason=description,
+                    )
+                    messages.success(request, "Vinculo encerrado sem apagar login ou historico.")
+                except ValueError as exc:
+                    messages.error(request, str(exc))
         else:
             messages.error(request, "Ação administrativa inválida.")
         return redirect("internal_company_detail", company_id=company.id)
@@ -816,7 +875,7 @@ def internal_company_detail(request, company_id):
     company.status = _usage_status_for_company(company.punch_count, company.punch_count_last_30_days)
     employees = (
         Employee.objects.filter(company=company)
-        .select_related("user", "company")
+        .select_related("user", "company", "ended_by")
         .annotate(
             punch_count=Count("contracts__punches", filter=Q(contracts__punches__is_cancelled=False), distinct=True),
             last_punch_at=Max("contracts__punches__timestamp", filter=Q(contracts__punches__is_cancelled=False)),
@@ -833,6 +892,9 @@ def internal_company_detail(request, company_id):
         }
         for employee in employees
     ]
+    active_employee_rows = [row for row in employee_rows if row["employee"].is_active]
+    ended_employee_rows = [row for row in employee_rows if not row["employee"].is_active and row["employee"].ended_at]
+    inactive_employee_rows = [row for row in employee_rows if not row["employee"].is_active and not row["employee"].ended_at]
     recent_punches = (
         Punch.all_objects.filter(contract__company=company)
         .select_related("contract", "contract__employee", "contract__employee__user", "contract__company")
@@ -859,6 +921,9 @@ def internal_company_detail(request, company_id):
         {
             "company": company,
             "employee_rows": employee_rows,
+            "active_employee_rows": active_employee_rows,
+            "ended_employee_rows": ended_employee_rows,
+            "inactive_employee_rows": inactive_employee_rows,
             "recent_punches": recent_punches,
             "contracts": contracts,
             "correction_requests": correction_requests,
@@ -928,11 +993,35 @@ def internal_employee_detail(request, employee_id):
     if request.method == "POST":
         action = (request.POST.get("action") or "").strip()
         description = (request.POST.get("description") or "").strip()
-        if action == "activate_user":
+        if action == "end_relationship":
+            relationship_id = (request.POST.get("relationship_id") or "").strip()
+            relationship = (
+                Employee.objects.select_related("user", "company")
+                .filter(id=relationship_id, user=employee.user)
+                .first()
+            )
+            if not relationship:
+                messages.error(request, "Vinculo invalido para este prestador.")
+            elif not relationship.is_active and relationship.ended_at:
+                messages.error(request, "Este vinculo ja esta encerrado.")
+            else:
+                try:
+                    _end_employee_company_relationship(
+                        employee=relationship,
+                        admin_user=request.user,
+                        reason=description,
+                    )
+                    messages.success(request, "Vinculo encerrado sem apagar login ou historico.")
+                except ValueError as exc:
+                    messages.error(request, str(exc))
+        elif action == "activate_user":
             employee.user.is_active = True
             employee.user.save(update_fields=["is_active"])
             employee.is_active = True
-            employee.save(update_fields=["is_active"])
+            employee.ended_at = None
+            employee.ended_by = None
+            employee.end_reason = ""
+            employee.save(update_fields=["is_active", "ended_at", "ended_by", "end_reason"])
             _log_internal_admin_action(
                 admin_user=request.user,
                 action="activate_user",
@@ -974,6 +1063,25 @@ def internal_employee_detail(request, employee_id):
         .select_related("company", "employee", "employee__user")
         .order_by("-start_date", "-created_at")
     )
+    related_relationships = (
+        Employee.objects.filter(user=employee.user)
+        .select_related("company", "user", "ended_by")
+        .annotate(
+            active_contract_count=Count("contracts", filter=Q(contracts__is_active=True), distinct=True),
+            punch_count=Count("contracts__punches", distinct=True),
+            last_punch_at=Max("contracts__punches__timestamp"),
+        )
+        .order_by("-is_active", "company__name")
+    )
+    relationship_rows = [
+        {
+            "employee": relationship,
+            "status": _employee_status_for_backoffice(relationship, relationship.active_contract_count),
+            "punch_count": relationship.punch_count,
+            "last_punch_at": relationship.last_punch_at,
+        }
+        for relationship in related_relationships
+    ]
     recent_punches = (
         Punch.all_objects.filter(contract__employee=employee)
         .select_related("contract", "contract__company", "contract__employee", "contract__employee__user")
@@ -997,6 +1105,7 @@ def internal_employee_detail(request, employee_id):
             "employee": employee,
             "status": _employee_status_for_backoffice(employee, active_contract_count),
             "contracts": contracts,
+            "relationship_rows": relationship_rows,
             "recent_punches": recent_punches,
             "summary_30_days": _recent_30_day_summary_for_employee(employee),
             "correction_requests": correction_requests,
@@ -1583,6 +1692,8 @@ def company_meis(request):
                 return redirect(f"{reverse('company_meis')}?status=invalid_employee")
 
             should_activate = action == "reactivate_access"
+            if should_activate and employee.ended_at:
+                return redirect(f"{reverse('company_meis')}?status=relationship_ended&highlight_employee={employee.id}")
             if employee.is_active != should_activate:
                 employee.is_active = should_activate
                 employee.save(update_fields=["is_active"])

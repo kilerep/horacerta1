@@ -33,6 +33,7 @@
         <select id="status" name="status">
           <option value="">Todos</option>
           <option value="ativo" {% if status_filter == "ativo" %}selected{% endif %}>ativo</option>
+          <option value="encerrado" {% if status_filter == "encerrado" %}selected{% endif %}>encerrado</option>
           <option value="pendente" {% if status_filter == "pendente" %}selected{% endif %}>pendente</option>
           <option value="inativo" {% if status_filter == "inativo" %}selected{% endif %}>inativo</option>
         </select>

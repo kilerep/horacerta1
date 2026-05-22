@@ -81,21 +81,63 @@
   </section>
 
   <section class="internal-panel">
-    <h3>Funcionários da empresa</h3>
+    <div class="internal-head">
+      <div>
+        <h3>Funcionarios ativos</h3>
+        <p class="internal-subtitle">Vinculos ativos desta empresa. Encerrar vinculo nao apaga login nem historico.</p>
+      </div>
+    </div>
     <div class="table-wrap">
       <table class="internal-table">
-        <thead><tr><th>Nome</th><th>E-mail</th><th>Status</th><th>Registros</th><th>Último registro</th></tr></thead>
+        <thead><tr><th>Nome</th><th>E-mail</th><th>Status</th><th>Registros</th><th>Ultimo registro</th><th>Acao</th></tr></thead>
         <tbody>
-          {% for row in employee_rows %}
+          {% for row in active_employee_rows %}
             <tr>
               <td><a class="strong-link" href="{% url 'internal_employee_detail' row.employee.id %}">{{ row.employee.full_name }}</a></td>
               <td>{{ row.employee.user.email|default:row.employee.user.username }}</td>
               <td><span class="pill {{ row.status.tone }}">{{ row.status.label }}</span></td>
               <td>{{ row.punch_count }}</td>
               <td>{% if row.last_punch_at %}{{ row.last_punch_at|date:"d/m/Y H:i" }}{% else %}<span class="muted">Sem registros</span>{% endif %}</td>
+              <td>
+                <form method="post" data-submit-once="true">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="end_relationship">
+                  <input type="hidden" name="relationship_id" value="{{ row.employee.id }}">
+                  <input name="description" required placeholder="Motivo obrigatorio">
+                  <button class="btn danger" type="submit" onclick="return confirm('Encerrar somente este vinculo com a empresa?')">Encerrar vinculo</button>
+                </form>
+              </td>
             </tr>
           {% empty %}
-            <tr><td colspan="5"><div class="empty-state">Nenhum funcionário vinculado.</div></td></tr>
+            <tr><td colspan="6"><div class="empty-state">Nenhum funcionario ativo.</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="internal-panel">
+    <div class="internal-head">
+      <div>
+        <h3>Vinculos encerrados</h3>
+        <p class="internal-subtitle">Historico preservado em modo consulta.</p>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="internal-table">
+        <thead><tr><th>Nome</th><th>E-mail</th><th>Encerrado em</th><th>Encerrado por</th><th>Motivo</th><th>Registros</th></tr></thead>
+        <tbody>
+          {% for row in ended_employee_rows %}
+            <tr>
+              <td><a class="strong-link" href="{% url 'internal_employee_detail' row.employee.id %}">{{ row.employee.full_name }}</a></td>
+              <td>{{ row.employee.user.email|default:row.employee.user.username }}</td>
+              <td>{% if row.employee.ended_at %}{{ row.employee.ended_at|date:"d/m/Y H:i" }}{% else %}-{% endif %}</td>
+              <td>{{ row.employee.ended_by.email|default:"-" }}</td>
+              <td>{{ row.employee.end_reason|default:"-" }}</td>
+              <td>{{ row.punch_count }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6"><div class="empty-state">Nenhum vinculo encerrado.</div></td></tr>
           {% endfor %}
         </tbody>
       </table>

@@ -72,6 +72,16 @@ class Employee(models.Model):
     address = models.TextField(blank=True, default="")
     profile_photo = models.ImageField(upload_to="employee_photos/", null=True, blank=True)
     is_active = models.BooleanField(default=True)
+    ended_at = models.DateTimeField(null=True, blank=True)
+    ended_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="ended_employee_relationships",
+        null=True,
+        blank=True,
+    )
+    end_reason = models.TextField(blank=True, default="")
+    internal_note = models.TextField(blank=True, default="")
 
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -107,6 +117,41 @@ class Employee(models.Model):
         if getattr(self, "company", None):
             company_label = self.company.name or "-"
         return f"Employee<{self.id}> {self.full_name} [{user_label}] - {company_label}"
+
+
+class EmployeeRelationshipAuditLog(models.Model):
+    class ActionType(models.TextChoices):
+        RELATIONSHIP_ENDED = "relationship_ended", "Vinculo encerrado"
+
+    admin_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="employee_relationship_audit_logs",
+    )
+    employee = models.ForeignKey(
+        Employee,
+        on_delete=models.PROTECT,
+        related_name="relationship_audit_logs",
+    )
+    company = models.ForeignKey(
+        Company,
+        on_delete=models.PROTECT,
+        related_name="employee_relationship_audit_logs",
+    )
+    action_type = models.CharField(max_length=50, choices=ActionType.choices)
+    reason = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["employee", "-created_at"]),
+            models.Index(fields=["company", "-created_at"]),
+            models.Index(fields=["action_type", "-created_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.action_type} {self.employee_id} {self.company_id}"
 
 
 class Plan(models.Model):

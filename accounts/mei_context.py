@@ -28,7 +28,6 @@ def mei_contracts_for_user(
     qs = (
         Contract.objects.filter(
             employee__user=user,
-            employee__is_active=True,
             employee__user__is_active=True,
             employee__isnull=False,
             employee__user__isnull=False,
@@ -37,7 +36,7 @@ def mei_contracts_for_user(
         .order_by("-start_date", "-created_at")
     )
     if not include_inactive_contracts:
-        qs = qs.filter(is_active=True)
+        qs = qs.filter(is_active=True, employee__is_active=True)
     if operational_only:
         qs = qs.filter(contract_operational_q())
     return qs

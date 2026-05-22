@@ -87,6 +87,48 @@
   </section>
 
   <section class="internal-panel">
+    <h3>Vinculos com empresas</h3>
+    <div class="table-wrap">
+      <table class="internal-table">
+        <thead><tr><th>Empresa</th><th>Status</th><th>Registros</th><th>Ultimo registro</th><th>Encerramento</th><th>Acao</th></tr></thead>
+        <tbody>
+          {% for row in relationship_rows %}
+            <tr>
+              <td><a class="strong-link" href="{% url 'internal_company_detail' row.employee.company.id %}">{{ row.employee.company.name }}</a></td>
+              <td><span class="pill {{ row.status.tone }}">{{ row.status.label }}</span></td>
+              <td>{{ row.punch_count }}</td>
+              <td>{% if row.last_punch_at %}{{ row.last_punch_at|date:"d/m/Y H:i" }}{% else %}<span class="muted">Sem registros</span>{% endif %}</td>
+              <td>
+                {% if row.employee.ended_at %}
+                  {{ row.employee.ended_at|date:"d/m/Y H:i" }}<br>
+                  <span class="muted">{{ row.employee.end_reason|default:"-" }}</span>
+                {% else %}
+                  <span class="muted">-</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if row.employee.is_active %}
+                  <form method="post" data-submit-once="true">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="end_relationship">
+                    <input type="hidden" name="relationship_id" value="{{ row.employee.id }}">
+                    <input name="description" required placeholder="Motivo obrigatorio">
+                    <button class="btn danger" type="submit" onclick="return confirm('Encerrar somente este vinculo com a empresa?')">Encerrar vinculo</button>
+                  </form>
+                {% else %}
+                  <span class="pill warn">sem acao</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6"><div class="empty-state">Nenhum vinculo encontrado.</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="internal-panel">
     <h3>Empresas, vínculos e contratos</h3>
     <div class="table-wrap">
       <table class="internal-table">
