@@ -30,7 +30,7 @@ def create_internal_notification(
 
 def notify_internal_staff(*, notification_type, title, message, actor_user=None, target_url=""):
     User = get_user_model()
-    staff_users = User.objects.filter(is_active=True).filter(is_staff=True) | User.objects.filter(
+    staff_users = User.objects.filter(
         is_active=True,
         is_superuser=True,
     )

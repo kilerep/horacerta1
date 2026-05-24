@@ -6,6 +6,7 @@ from companies.feature_flags import (
 )
 from timeclock.models import ActivityReportRequest, InternalNotification, PunchCorrectionRequest
 from .mei_context import resolve_mei_context
+from .permissions import can_access_internal_dashboard
 
 
 def _build_display_name(user, employee=None):
@@ -59,6 +60,7 @@ def header_profile_media(request):
     header_current_plan_code = ""
     header_current_plan_name = ""
     header_current_plan_tone = "premium"
+    header_can_access_internal_dashboard = can_access_internal_dashboard(request.user)
 
     try:
         if request.user.role == "EMPRESA":
@@ -79,7 +81,7 @@ def header_profile_media(request):
                     recipient_company=company,
                     is_read=False,
                 ).count()
-        if request.user.is_staff or request.user.is_superuser:
+        if header_can_access_internal_dashboard:
             open_punch_correction_requests_count = PunchCorrectionRequest.objects.filter(
                 status=PunchCorrectionRequest.Status.OPEN,
             ).count()
@@ -164,4 +166,5 @@ def header_profile_media(request):
         "header_current_plan_code": header_current_plan_code,
         "header_current_plan_name": header_current_plan_name,
         "header_current_plan_tone": header_current_plan_tone,
+        "header_can_access_internal_dashboard": header_can_access_internal_dashboard,
     }

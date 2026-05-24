@@ -94,6 +94,7 @@ from .forms import (
     UnifiedSignupForm,
 )
 from .mei_context import mei_contracts_for_user, resolve_mei_context
+from .permissions import can_access_internal_dashboard
 
 User = get_user_model()
 REVIEW_CONFIDENCE_STATUSES = {
@@ -216,7 +217,7 @@ def _redirect_if_not_empresa(request):
 
 
 def _can_access_internal_dashboard(user):
-    return bool(user and user.is_authenticated and (user.is_superuser or user.is_staff))
+    return can_access_internal_dashboard(user)
 
 
 def internal_staff_required(view_func):

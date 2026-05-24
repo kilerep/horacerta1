@@ -206,21 +206,11 @@
                   <div class="icon">R</div>
                   <div><strong>Relatorios de Servico</strong><div class="muted item-sub">envio e consulta pessoal</div></div>
                 </a>
-                <a class="item {% if current == 'internal_notifications' %}is-active{% endif %}" href="{% url 'internal_notifications' %}">
-                  <div class="icon">N</div>
-                  <div>
-                    <strong>
-                      Notificacoes internas
-                      {% if unread_internal_notifications_count %}<span class="badge">{{ unread_internal_notifications_count }}</span>{% endif %}
-                    </strong>
-                    <div class="muted item-sub">fila global</div>
-                  </div>
-                </a>
               </div>
             {% endwith %}
           {% endif %}
 
-          {% if request.user.is_staff or request.user.is_superuser %}
+          {% if header_can_access_internal_dashboard %}
             {% with current=request.resolver_match.url_name %}
               <div class="menu-group">
                 <div class="menu-label">Interno</div>

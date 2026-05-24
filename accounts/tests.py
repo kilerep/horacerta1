@@ -71,7 +71,7 @@ class InternalDashboardTests(TestCase):
         self.assertEqual(response.context["total_punches"], Punch.objects.count())
         self.assertContains(response, self.company.name)
 
-    def test_staff_user_can_access_internal_dashboard(self):
+    def test_staff_user_cannot_access_internal_dashboard(self):
         staff_user = User.objects.create_user(
             username="staff@example.com",
             email="staff@example.com",
@@ -83,7 +83,7 @@ class InternalDashboardTests(TestCase):
 
         response = self.client.get(reverse("internal_dashboard"))
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 403)
 
     def test_regular_user_gets_403(self):
         self.client.force_login(self.company_owner)
@@ -104,6 +104,8 @@ class InternalDashboardTests(TestCase):
             reverse("internal_punch_detail", args=[Punch.objects.first().id]),
             reverse("internal_correction_requests"),
             reverse("internal_corrections"),
+            reverse("internal_notifications"),
+            reverse("internal_audit"),
         ]
 
         for url in routes:
@@ -123,12 +125,60 @@ class InternalDashboardTests(TestCase):
             reverse("internal_punch_detail", args=[Punch.objects.first().id]),
             reverse("internal_correction_requests"),
             reverse("internal_corrections"),
+            reverse("internal_notifications"),
+            reverse("internal_audit"),
         ]
 
         for url in routes:
             with self.subTest(url=url):
                 response = self.client.get(url)
                 self.assertEqual(response.status_code, 403)
+
+    def test_staff_user_cannot_access_internal_backoffice_routes(self):
+        staff_user = User.objects.create_user(
+            username="staff-routes@example.com",
+            email="staff-routes@example.com",
+            password="Staff@12345",
+            role=User.Role.EMPRESA,
+            is_staff=True,
+        )
+        self.client.force_login(staff_user)
+        routes = [
+            reverse("internal_dashboard"),
+            reverse("internal_companies"),
+            reverse("internal_company_detail", args=[self.company.id]),
+            reverse("internal_employees"),
+            reverse("internal_employee_detail", args=[self.employee.id]),
+            reverse("internal_punches"),
+            reverse("internal_punch_detail", args=[Punch.objects.first().id]),
+            reverse("internal_correction_requests"),
+            reverse("internal_corrections"),
+            reverse("internal_notifications"),
+            reverse("internal_audit"),
+        ]
+
+        for url in routes:
+            with self.subTest(url=url):
+                response = self.client.get(url)
+                self.assertEqual(response.status_code, 403)
+
+    def test_company_sidebar_does_not_show_internal_links(self):
+        self.client.force_login(self.company_owner)
+
+        response = self.client.get(reverse("dashboard_empresa"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Painel interno")
+        self.assertNotContains(response, "Notificacoes internas")
+
+    def test_mei_sidebar_does_not_show_internal_links(self):
+        self.client.force_login(self.employee_user)
+
+        response = self.client.get(reverse("employee_dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Painel interno")
+        self.assertNotContains(response, "Notificacoes internas")
 
     def test_superuser_can_correct_punch_time_from_internal_detail(self):
         punch = Punch.objects.first()
