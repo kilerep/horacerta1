@@ -813,10 +813,16 @@ def internal_dashboard(request):
     total_punches = Punch.objects.count()
     total_cancelled_punches = Punch.all_objects.filter(is_cancelled=True).count()
     total_open_correction_requests = PunchCorrectionRequest.objects.filter(status=PunchCorrectionRequest.Status.OPEN).count()
-    total_notifications = InternalNotification.objects.count()
-    total_unread_notifications = InternalNotification.objects.filter(is_read=False).count()
+    total_notifications = InternalNotification.objects.filter(
+        audience=InternalNotification.Audience.INTERNAL_ADMIN,
+    ).count()
+    total_unread_notifications = InternalNotification.objects.filter(
+        audience=InternalNotification.Audience.INTERNAL_ADMIN,
+        is_read=False,
+    ).count()
     total_unacknowledged_company_notifications = InternalNotification.objects.filter(
         recipient_company__isnull=False,
+        audience=InternalNotification.Audience.COMPANY,
         company_acknowledged=False,
         notification_type__in=[
             InternalNotification.NotificationType.CORRECTION_REQUEST_CREATED,
@@ -1710,6 +1716,8 @@ def internal_notifications(request):
         "actor_user",
         "company_acknowledged_by",
     )
+    if not audience_filter:
+        notifications = notifications.filter(audience=InternalNotification.Audience.INTERNAL_ADMIN)
     if type_filter:
         notifications = notifications.filter(notification_type=type_filter)
     if audience_filter:

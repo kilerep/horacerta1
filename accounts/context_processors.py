@@ -79,13 +79,17 @@ def header_profile_media(request):
                 ).count()
                 unread_notifications_count = InternalNotification.objects.filter(
                     recipient_company=company,
+                    audience=InternalNotification.Audience.COMPANY,
                     is_read=False,
                 ).count()
         if header_can_access_internal_dashboard:
             open_punch_correction_requests_count = PunchCorrectionRequest.objects.filter(
                 status=PunchCorrectionRequest.Status.OPEN,
             ).count()
-            unread_internal_notifications_count = InternalNotification.objects.filter(is_read=False).count()
+            unread_internal_notifications_count = InternalNotification.objects.filter(
+                audience=InternalNotification.Audience.INTERNAL_ADMIN,
+                is_read=False,
+            ).count()
         if request.user.role == "EMPRESA":
             reports_access = get_user_feature_access(request.user, "advanced_reports")
             themes_access = get_user_feature_access(request.user, "custom_themes")
@@ -119,6 +123,7 @@ def header_profile_media(request):
             header_display_name = _build_display_name(request.user, employee=employee)
             unread_notifications_count = InternalNotification.objects.filter(
                 recipient_user=request.user,
+                audience=InternalNotification.Audience.MEI,
                 is_read=False,
             ).count()
             themes_access = get_user_feature_access_for_company(

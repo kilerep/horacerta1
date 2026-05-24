@@ -142,6 +142,27 @@ class InternalDashboardTests(TestCase):
                 response = self.client.get(url)
                 self.assertEqual(response.status_code, 403)
 
+    def test_mei_user_cannot_access_internal_backoffice_routes(self):
+        self.client.force_login(self.employee_user)
+        routes = [
+            reverse("internal_dashboard"),
+            reverse("internal_companies"),
+            reverse("internal_company_detail", args=[self.company.id]),
+            reverse("internal_employees"),
+            reverse("internal_employee_detail", args=[self.employee.id]),
+            reverse("internal_punches"),
+            reverse("internal_punch_detail", args=[Punch.objects.first().id]),
+            reverse("internal_correction_requests"),
+            reverse("internal_corrections"),
+            reverse("internal_notifications"),
+            reverse("internal_audit"),
+        ]
+
+        for url in routes:
+            with self.subTest(url=url):
+                response = self.client.get(url)
+                self.assertEqual(response.status_code, 403)
+
     def test_staff_user_cannot_access_internal_backoffice_routes(self):
         staff_user = User.objects.create_user(
             username="staff-routes@example.com",
@@ -178,6 +199,7 @@ class InternalDashboardTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, "Painel interno")
         self.assertNotContains(response, "Notificacoes internas")
+        self.assertNotContains(response, reverse("internal_dashboard"))
 
     def test_mei_sidebar_does_not_show_internal_links(self):
         self.client.force_login(self.employee_user)
@@ -187,6 +209,7 @@ class InternalDashboardTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, "Painel interno")
         self.assertNotContains(response, "Notificacoes internas")
+        self.assertNotContains(response, reverse("internal_dashboard"))
 
     def test_superuser_can_correct_punch_time_from_internal_detail(self):
         punch = Punch.objects.first()
