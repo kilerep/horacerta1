@@ -1,6 +1,6 @@
 {% extends "accounts/base.html" %}
-{% block title %}HoraCerta - Dashboard da Empresa{% endblock %}
-{% block page_title %}Dashboard da empresa{% endblock %}
+{% block title %}HoraCerta - Início da Empresa{% endblock %}
+{% block page_title %}Início{% endblock %}
 
 {% block content %}
   <style>
@@ -106,6 +106,18 @@
     }
     .quick-link strong{ display:block; font-size:14px; }
     .quick-link span{ color:var(--muted); font-size:12px; }
+    .flow-grid{ margin-top:12px; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+    .flow-card{
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:12px;
+      padding:12px;
+      background:rgba(255,255,255,.025);
+      display:grid;
+      gap:6px;
+      min-width:0;
+    }
+    .flow-card strong{ font-size:14px; }
+    .flow-card span{ color:var(--muted); font-size:12px; line-height:1.35; }
     .data-subsection{ margin-top:14px; }
     .empty-panel{
       display:grid; justify-items:start; gap:10px; border:1px dashed rgba(255,255,255,.18);
@@ -113,8 +125,8 @@
     }
     .empty-panel strong{ font-size:15px; }
     .empty-panel p{ margin:0; color:var(--muted); font-size:13px; }
-    @media (max-width:1150px){ .exec-kpis{ grid-template-columns:repeat(2,minmax(0,1fr)); } .layout{ grid-template-columns:1fr; } .support-strip{ grid-template-columns:1fr; } }
-    @media (max-width:760px){ .exec-kpis{ grid-template-columns:1fr; } }
+    @media (max-width:1150px){ .exec-kpis,.flow-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); } .layout{ grid-template-columns:1fr; } .support-strip{ grid-template-columns:1fr; } }
+    @media (max-width:760px){ .exec-kpis,.flow-grid{ grid-template-columns:1fr; } }
   </style>
 
   {% if not company %}
@@ -129,9 +141,9 @@
       <section class="company-panel">
         <div class="company-hero">
           <div>
-            <h2 class="company-title">Visao executiva da operacao</h2>
+            <h2 class="company-title">Visão executiva da operação</h2>
             <p class="company-subtitle">
-              Painel executivo para acompanhar base ativa, jornada e prioridades da operacao.
+              Visão geral da empresa para acompanhar base ativa, jornada e prioridades da operação.
             </p>
             {% if header_current_plan_name %}
               <div style="margin-top:8px;">
@@ -143,15 +155,33 @@
           </div>
         </div>
         <section class="exec-kpis" style="margin-top:12px;">
-          <article class="kpi exec"><div class="label">MEIs ativos</div><div class="value">{{ total_active_professionals }}</div><div class="hint">Com vinculo operacional vigente</div></article>
-          <article class="kpi exec"><div class="label">MEIs sem vinculo</div><div class="value">{{ total_pending_contract }}</div><div class="hint">Precisam de configuracao</div></article>
-          <article class="kpi exec"><div class="label">Horas no periodo</div><div class="value">{{ total_hours_period }}</div><div class="hint">{{ period_result.date_from|default:"-" }} ate {{ period_result.date_to|default:"-" }}</div></article>
-          <article class="kpi exec"><div class="label">Dias com pendencia</div><div class="value">{{ inconsistency_days_period }}</div><div class="hint">Dias com registros incompletos</div></article>
+          <article class="kpi exec"><div class="label">Prestadores ativos</div><div class="value">{{ total_active_professionals }}</div><div class="hint">Com vínculo operacional vigente</div></article>
+          <article class="kpi exec"><div class="label">Prestadores sem vínculo</div><div class="value">{{ total_pending_contract }}</div><div class="hint">Precisam de configuração</div></article>
+          <article class="kpi exec"><div class="label">Horas no período</div><div class="value">{{ total_hours_period }}</div><div class="hint">{{ period_result.date_from|default:"-" }} até {{ period_result.date_to|default:"-" }}</div></article>
+          <article class="kpi exec"><div class="label">Dias com pendência</div><div class="value">{{ inconsistency_days_period }}</div><div class="hint">Dias com registros incompletos</div></article>
         </section>
         <section class="support-strip">
-          <article class="support-item"><div class="k">MEIs cadastrados</div><div class="v">{{ total_registered_professionals }}</div></article>
-          <article class="support-item"><div class="k">Vinculos operacionais</div><div class="v">{{ total_active_contracts }}</div></article>
-          <article class="support-item"><div class="k">Registros no periodo</div><div class="v">{{ total_punches_period }}</div></article>
+          <article class="support-item"><div class="k">Prestadores cadastrados</div><div class="v">{{ total_registered_professionals }}</div></article>
+          <article class="support-item"><div class="k">Vínculos operacionais</div><div class="v">{{ total_active_contracts }}</div></article>
+          <article class="support-item"><div class="k">Registros no período</div><div class="v">{{ total_punches_period }}</div></article>
+        </section>
+        <section class="flow-grid">
+          <a class="flow-card" href="{% url 'company_operational_summary' %}">
+            <strong>Resumo operacional</strong>
+            <span>Conferência por prestador no período atual.</span>
+          </a>
+          <a class="flow-card" href="{% url 'company_history' %}">
+            <strong>Registros</strong>
+            <span>Histórico, conferência diária e exportações rápidas.</span>
+          </a>
+          <a class="flow-card" href="{% url 'company_incident_center' %}">
+            <strong>Pendências</strong>
+            <span>Dias incompletos e problemas reportados.</span>
+          </a>
+          <a class="flow-card" href="{% url 'company_records_review_center' %}">
+            <strong>Revisão</strong>
+            <span>Confiabilidade, localização e QR dos registros.</span>
+          </a>
         </section>
       </section>
 
@@ -159,7 +189,7 @@
         <section class="company-panel">
           <div class="section-head">
             <div>
-              <h3>Base de profissionais (MEIs)</h3>
+              <h3>Base de prestadores</h3>
               <p class="section-subtitle">Use os filtros para revisar a base e abrir a proxima acao certa de cada profissional.</p>
             </div>
           </div>
@@ -188,7 +218,7 @@
                     </td>
                   </tr>
                 {% empty %}
-                  <tr><td colspan="4"><div class="empty-panel"><strong>Nenhum profissional encontrado.</strong><p>Ajuste os filtros ou inicie um novo cadastro de MEI para continuar a operacao.</p><a class="btn primary" href="{% url 'company_meis' %}">Cadastrar MEI</a></div></td></tr>
+                  <tr><td colspan="4"><div class="empty-panel"><strong>Nenhum prestador encontrado.</strong><p>Ajuste os filtros ou inicie um novo cadastro para continuar a operação.</p><a class="btn primary" href="{% url 'company_meis' %}">Cadastrar prestador</a></div></td></tr>
                 {% endfor %}
               </tbody>
             </table>
@@ -205,7 +235,7 @@
 
           <div class="table-wrap" style="margin-top:10px;">
             <table class="table">
-              <thead><tr><th>Registro recente</th><th>Profissional</th><th>Empresa</th><th>Vinculo</th><th>Selo de confianca</th><th>QR presencial</th></tr></thead>
+              <thead><tr><th>Registro recente</th><th>Profissional</th><th>Empresa</th><th>Vínculo</th><th>Selo de confiança</th><th>QR presencial</th></tr></thead>
               <tbody>
                 {% for row in punches_period %}
                   <tr>
@@ -228,7 +258,7 @@
                     </td>
                   </tr>
                 {% empty %}
-                  <tr><td colspan="6"><div class="empty-panel"><strong>Sem movimentacao no periodo.</strong><p>Ajuste as datas para ampliar a consulta ou acompanhe novos lancamentos em tempo real.</p></div></td></tr>
+                  <tr><td colspan="6"><div class="empty-panel"><strong>Sem movimentação no período.</strong><p>Ajuste as datas para ampliar a consulta ou acompanhe novos lançamentos em tempo real.</p></div></td></tr>
                 {% endfor %}
               </tbody>
             </table>
@@ -238,7 +268,7 @@
         <section class="company-panel">
           <div class="sidebar-stack">
             <div class="sidebar-block">
-              <h3 style="margin:0;">Pendencias prioritarias</h3>
+              <h3 style="margin:0;">Pendências prioritárias</h3>
               <p class="section-subtitle">Itens que exigem acao imediata da equipe.</p>
               {% if pending_professionals %}
                 <div class="pending-list">
@@ -261,7 +291,7 @@
             </div>
 
             <div class="sidebar-block">
-              <h3 style="margin:0;">Atalhos de operacao</h3>
+              <h3 style="margin:0;">Atalhos da operação</h3>
               <p class="section-subtitle">Acesso rapido para tarefas recorrentes.</p>
               <div class="quick-links">
                 {% for link in quick_links %}

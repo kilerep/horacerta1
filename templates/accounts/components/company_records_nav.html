@@ -1,0 +1,49 @@
+<style>
+  .records-nav-panel{
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:14px;
+    background:linear-gradient(140deg, rgba(79,124,255,.10), transparent 42%), rgba(255,255,255,.025);
+    display:grid;
+    gap:12px;
+  }
+  .records-nav-head h2{ margin:0; font-size:20px; }
+  .records-nav-head p{ margin:6px 0 0; color:var(--muted); font-size:13px; max-width:760px; }
+  .records-tabs{ display:flex; gap:8px; flex-wrap:wrap; }
+  .records-tab{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-height:38px;
+    padding:8px 12px;
+    border:1px solid var(--border);
+    border-radius:999px;
+    color:var(--text);
+    background:rgba(255,255,255,.035);
+    font-size:13px;
+    font-weight:800;
+  }
+  .records-tab.is-active{
+    border-color:rgba(79,124,255,.55);
+    background:rgba(79,124,255,.18);
+  }
+  @media (max-width:760px){
+    .records-tabs{ display:grid; grid-template-columns:1fr; }
+    .records-tab{ width:100%; }
+  }
+</style>
+<section class="records-nav-panel">
+  <div class="records-nav-head">
+    <div>
+      <h2>Registros</h2>
+      <p>Histórico, conferência, pendências e revisão de confiabilidade em um único fluxo.</p>
+    </div>
+  </div>
+  <nav class="records-tabs" aria-label="Seções de registros">
+    {% with current=request.resolver_match.url_name %}
+      <a class="records-tab {% if current == 'company_history' or current == 'company_history_legacy' %}is-active{% endif %}" href="{% url 'company_history' %}">Histórico</a>
+      <a class="records-tab {% if current == 'company_incident_center' %}is-active{% endif %}" href="{% url 'company_incident_center' %}">Pendências</a>
+      <a class="records-tab {% if current == 'company_records_review_center' or current == 'company_record_review_detail' %}is-active{% endif %}" href="{% url 'company_records_review_center' %}">Revisão de registros</a>
+    {% endwith %}
+  </nav>
+</section>

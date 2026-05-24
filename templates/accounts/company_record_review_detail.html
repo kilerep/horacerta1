@@ -1,6 +1,6 @@
 {% extends "accounts/base.html" %}
-{% block title %}Detalhe do registro{% endblock %}
-{% block page_title %}Detalhe do registro revisado{% endblock %}
+{% block title %}Registros - Detalhe{% endblock %}
+{% block page_title %}Registros{% endblock %}
 
 {% block content %}
 <style>
@@ -33,6 +33,8 @@
 </style>
 
 <div class="rd-wrap">
+  {% include "accounts/components/company_records_nav.html" %}
+
   <section class="rd-panel">
     <div style="display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; align-items:flex-start;">
       <div>
@@ -44,7 +46,7 @@
 
     <div class="rd-grid">
       <article class="rd-item">
-        <div class="k">Status de confianca</div>
+        <div class="k">Status de confiança</div>
         <div class="v"><span class="rd-badge {{ punch.confidence_tone }}">{{ punch.get_confidence_status_display }}</span></div>
       </article>
       <article class="rd-item">
@@ -77,7 +79,7 @@
           {% if punch.geo_latitude and punch.geo_longitude %}
             lat {{ punch.geo_latitude }} | lon {{ punch.geo_longitude }}
           {% else %}
-            Sem localizacao
+            Sem localização
           {% endif %}
         </div>
       </article>
@@ -98,7 +100,7 @@
         <div class="v">{{ punch.created_at|date:"d/m/Y H:i:s" }}</div>
       </article>
       <article class="rd-item">
-        <div class="k">Timestamp tecnico (validacao de confianca)</div>
+        <div class="k">Timestamp técnico (validação de confiança)</div>
         <div class="v">{{ punch.confidence_checked_at|date:"d/m/Y H:i:s"|default:"-" }}</div>
       </article>
       <article class="rd-item">

@@ -1,6 +1,6 @@
 {% extends "accounts/base.html" %}
-{% block title %}Central de revisao de registros{% endblock %}
-{% block page_title %}Central de revisao de registros{% endblock %}
+{% block title %}Registros - Revisão{% endblock %}
+{% block page_title %}Registros{% endblock %}
 
 {% block content %}
 <style>
@@ -54,10 +54,12 @@
 </style>
 
 <div class="rv-wrap">
+  {% include "accounts/components/company_records_nav.html" %}
+
   <section class="rv-panel">
-    <h2 class="rv-title">Filtros de revisao</h2>
+    <h2 class="rv-title">Filtros de revisão</h2>
     <p class="rv-sub">
-      Revise registros com selo de confianca e localizacao. Foco em visibilidade operacional sem gerar burocracia para o profissional.
+      Revise registros com selo de confiança e localização. Foco em visibilidade operacional sem gerar burocracia para o profissional.
     </p>
     <form method="get" class="rv-filters" data-submit-once="true">
       <div class="rv-field">
@@ -80,7 +82,7 @@
         </select>
       </div>
       <div class="rv-field">
-        <label for="rv-status">Status de confianca</label>
+        <label for="rv-status">Status de confiança</label>
         <select id="rv-status" name="status">
           {% for value, label in status_choices %}
             <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
@@ -99,7 +101,7 @@
         </select>
       </div>
       <div class="rv-actions">
-        <button class="btn primary" type="submit" data-loading-text="Atualizando revisao...">Atualizar</button>
+        <button class="btn primary" type="submit" data-loading-text="Atualizando revisão...">Atualizar</button>
         <a class="btn" href="{% url 'company_records_review_center' %}">Limpar</a>
       </div>
     </form>
@@ -108,13 +110,13 @@
   <section class="rv-cards">
     <article class="rv-stat"><div class="k">Total no resultado</div><div class="v">{{ summary_total }}</div></article>
     <article class="rv-stat"><div class="k">Fora do raio</div><div class="v">{{ summary_out_of_radius }}</div></article>
-    <article class="rv-stat"><div class="k">Sem localizacao</div><div class="v">{{ summary_no_location }}</div></article>
+    <article class="rv-stat"><div class="k">Sem localização</div><div class="v">{{ summary_no_location }}</div></article>
     <article class="rv-stat"><div class="k">Localizacao imprecisa</div><div class="v">{{ summary_imprecise }}</div></article>
     <article class="rv-stat"><div class="k">QR exigido nao confirmado</div><div class="v">{{ summary_qr_missing }}</div></article>
   </section>
 
   <section class="rv-panel">
-    <h2 class="rv-title">Lista de revisao</h2>
+    <h2 class="rv-title">Lista de revisão</h2>
     <div class="rv-table-wrap">
       <table class="rv-table">
         <thead>
@@ -124,7 +126,7 @@
             <th>Local esperado</th>
             <th>Distancia calculada</th>
             <th>Precisao</th>
-            <th>Status de confianca</th>
+            <th>Status de confiança</th>
             <th>QR presencial</th>
             <th>Metodo</th>
             <th>Timestamp tecnico</th>

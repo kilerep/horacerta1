@@ -1,6 +1,6 @@
 {% extends "accounts/base.html" %}
-{% block title %}Historico de horarios{% endblock %}
-{% block page_title %}Historico de horarios{% endblock %}
+{% block title %}Registros{% endblock %}
+{% block page_title %}Registros{% endblock %}
 
 {% block content %}
   <style>
@@ -244,11 +244,13 @@
   </style>
 
   <div class="history-wrap">
+    {% include "accounts/components/company_records_nav.html" %}
+
     <section class="panel">
       <header class="panel-head">
         <div>
-          <h2 class="panel-title">Filtros de historico</h2>
-          <p class="panel-subtitle">Selecione profissional e periodo para conferencia operacional diaria.</p>
+          <h2 class="panel-title">Filtros de histórico</h2>
+          <p class="panel-subtitle">Selecione profissional e período para conferência operacional diária.</p>
         </div>
       </header>
       <form method="get" class="row" data-submit-once="true">
@@ -356,8 +358,8 @@
     {% endif %}
 
     <section class="panel">
-      <h2 class="table-title">Historico diario de conferencia</h2>
-      <p class="table-subtitle">Visualizacao tabular em estilo planilha para leitura rapida da operacao.</p>
+        <h2 class="table-title">Histórico diário de conferência</h2>
+      <p class="table-subtitle">Visualização tabular em estilo planilha para leitura rápida da operação.</p>
       <div class="meta">
         <div>
           {% if selected_employee_obj %}
@@ -378,7 +380,7 @@
           <article class="summary-item">
             <div class="k">Total de horarios</div>
             <div class="v">{{ summary_total_punches }}</div>
-            <div class="h">Marcacoes no periodo filtrado</div>
+            <div class="h">Marcações no período filtrado</div>
           </article>
           <article class="summary-item">
             <div class="k">Total de horas</div>
@@ -428,8 +430,8 @@
                 <td colspan="5">
                   <div class="history-empty">
                     {% if selected_employee_obj %}
-                      <strong>Nenhum horario encontrado no periodo.</strong>
-                      <p>Ajuste o periodo selecionado para carregar os dias de registro.</p>
+                      <strong>Nenhum horário encontrado no período.</strong>
+                      <p>Ajuste o período selecionado para carregar os dias de registro.</p>
                     {% else %}
                       <strong>Selecione um profissional para iniciar a conferencia.</strong>
                       <p>A tabela diaria e as exportacoes ficam disponiveis apos escolher o profissional.</p>

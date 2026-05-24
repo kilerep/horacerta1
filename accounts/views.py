@@ -1955,18 +1955,18 @@ def dashboard_empresa(request):
         {
             "label": "Resumo operacional",
             "url": reverse("company_operational_summary"),
-            "hint": "Visao por profissional no periodo",
+            "hint": "Visão por profissional no período",
         },
-        {"label": "Central de hoje", "url": reverse("company_today_center"), "hint": "Acompanhamento operacional diario"},
+        {"label": "Hoje", "url": reverse("company_today_center"), "hint": "Acompanhamento diário"},
         {
-            "label": "Central de revisao",
+            "label": "Revisão de registros",
             "url": reverse("company_records_review_center"),
-            "hint": "Registros com confianca para auditoria",
+            "hint": "Selo de confiança e auditoria",
         },
-        {"label": "Gerenciar profissionais", "url": reverse("company_meis"), "hint": "Cadastro e status dos MEIs"},
-        {"label": "Ver vinculos", "url": reverse("company_contracts"), "hint": "Lista, status e edicao"},
-        {"label": "Abrir historico", "url": reverse("company_history"), "hint": "Conferencia por periodo"},
-        {"label": "Relatorios de servico", "url": reverse("company_service_reports"), "hint": "Consulta de atividades enviadas"},
+        {"label": "Prestadores", "url": reverse("company_meis"), "hint": "Cadastro, vínculos e status"},
+        {"label": "Registros", "url": reverse("company_history"), "hint": "Histórico, conferência e pendências"},
+        {"label": "Relatórios", "url": reverse("company_reports"), "hint": "Fechamento e exportações"},
+        {"label": "Atividades", "url": reverse("company_service_reports"), "hint": "Relatórios enviados pelos prestadores"},
     ]
 
     context = {

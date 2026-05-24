@@ -1,6 +1,6 @@
 {% extends "accounts/base.html" %}
-{% block title %}Centro de Pendencias{% endblock %}
-{% block page_title %}Centro de Pendencias{% endblock %}
+{% block title %}Registros - Pendências{% endblock %}
+{% block page_title %}Registros{% endblock %}
 
 {% block content %}
   <style>
@@ -170,10 +170,12 @@
   </style>
 
   <section class="incident-page">
+    {% include "accounts/components/company_records_nav.html" %}
+
     <article class="incident-hero">
       <h2 class="incident-title">Painel Pro de pendencias e ocorrencias</h2>
       <p class="incident-subtitle">
-        Visao operacional para RH monitorar dias incompletos e solicitacoes pendentes de relatorio de servico no periodo.
+        Visão operacional para RH monitorar dias incompletos e solicitações pendentes de relatório de serviço no período.
       </p>
       <div class="incident-kpis">
         <div class="incident-kpi"><div class="k">Total de pendencias</div><div class="v">{{ summary_total_pending }}</div></div>

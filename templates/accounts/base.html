@@ -38,7 +38,7 @@
         <div class="brand">
           <div class="name">HoraCerta</div>
           <div class="sub">
-            <span>Plataforma de Gestao de Jornada</span>
+            <span>Plataforma de Gestão de Jornada</span>
             <span class="sub-badge">v1.0 Beta</span>
             {% if request.user.role == "EMPRESA" and header_current_plan_name %}
               <span class="sub-plan">
@@ -54,124 +54,65 @@
           {% if request.user.role == "EMPRESA" %}
             {% with current=request.resolver_match.url_name %}
               <div class="menu-group">
-                <div class="menu-label">Operacao</div>
-                <a class="item {% if current == 'dashboard_empresa' %}is-active{% endif %}" href="{% url 'dashboard_empresa' %}">
-                  <div class="icon">D</div>
-                  <div><strong>Dashboard</strong><div class="muted item-sub">visao executiva</div></div>
+                <div class="menu-label">Operação</div>
+                <a class="item {% if current == 'dashboard_empresa' or current == 'company_operational_summary' %}is-active{% endif %}" href="{% url 'dashboard_empresa' %}">
+                  <div class="icon">I</div>
+                  <div><strong>Início</strong><div class="muted item-sub">visão geral da empresa</div></div>
                 </a>
                 <a class="item {% if current == 'company_today_center' %}is-active{% endif %}" href="{% url 'company_today_center' %}">
                   <div class="icon">H</div>
-                  <div><strong>Central de Hoje</strong><div class="muted item-sub">acompanhamento diario</div></div>
+                  <div><strong>Hoje</strong><div class="muted item-sub">acompanhamento diário</div></div>
                 </a>
-                <a class="item {% if current == 'company_meis' or current == 'company_mei_profile' %}is-active{% endif %}" href="{% url 'company_meis' %}">
-                  <div class="icon">M</div>
-                  <div><strong>MEIs</strong><div class="muted item-sub">cadastro e gestao de profissionais</div></div>
+                <a class="item {% if current == 'company_meis' or current == 'company_mei_profile' or current == 'company_contracts' or current == 'company_mei_closure' %}is-active{% endif %}" href="{% url 'company_meis' %}">
+                  <div class="icon">P</div>
+                  <div><strong>Prestadores</strong><div class="muted item-sub">cadastro, vínculos e status</div></div>
                 </a>
-                <a class="item {% if current == 'company_contracts' %}is-active{% endif %}" href="{% url 'company_contracts' %}">
-                  <div class="icon">C</div>
-                  <div><strong>Vinculos</strong><div class="muted item-sub">acompanhamento e edicao operacional</div></div>
+                <a class="item {% if current == 'company_history' or current == 'company_history_legacy' or current == 'company_incident_center' or current == 'company_records_review_center' or current == 'company_record_review_detail' %}is-active{% endif %}" href="{% url 'company_history' %}">
+                  <div class="icon">R</div>
+                  <div><strong>Registros</strong><div class="muted item-sub">histórico, conferência e pendências</div></div>
+                </a>
+                <a class="item {% if current == 'company_reports' %}is-active{% endif %}" href="{% url 'company_reports' %}">
+                  <div class="icon">F</div>
+                  <div><strong>Relatórios</strong><div class="muted item-sub">fechamento e exportações</div></div>
                 </a>
                 <a class="item {% if current == 'company_docs' %}is-active{% endif %}" href="{% url 'company_docs' %}">
-                  <div class="icon">A</div>
-                  <div><strong>Documentos</strong><div class="muted item-sub">anexos e arquivos</div></div>
+                  <div class="icon">D</div>
+                  <div><strong>Documentos</strong><div class="muted item-sub">contratos e anexos</div></div>
                 </a>
                 <a class="item {% if current == 'company_service_reports' or current == 'company_service_report_detail' %}is-active{% endif %}" href="{% url 'company_service_reports' %}">
-                  <div class="icon">S</div>
-                  <div><strong>Relatorios de Servico</strong><div class="muted item-sub">envios dos profissionais</div></div>
-                </a>
-                <a class="item {% if current == 'company_reports' %}is-active{% endif %} {% if not header_can_use_advanced_reports %}is-locked-premium{% endif %}" href="{% url 'company_reports' %}">
-                  <div class="icon">R</div>
-                  <div>
-                    <strong>
-                      Relatorios
-                      {% if pending_reports_count %}
-                        <span class="badge">{{ pending_reports_count }}</span>
-                      {% endif %}
-                      {% if not header_can_use_advanced_reports %}
-                        <span class="premium-badge premium-badge--{{ header_reports_required_plan_tone }}">{{ header_reports_required_plan_label }}</span>
-                      {% endif %}
-                    </strong>
-                    <div class="muted item-sub">
-                      {% if header_can_use_advanced_reports %}
-                        servico e atividades
-                      {% else %}
-                        recurso disponivel a partir de {{ header_reports_required_plan_name|default:"plano premium" }}
-                      {% endif %}
-                    </div>
-                  </div>
-                </a>
-                <a class="item {% if current == 'company_incident_center' %}is-active{% endif %} {% if not header_can_use_incident_center %}is-locked-premium{% endif %}" href="{% url 'company_incident_center' %}">
-                  <div class="icon">I</div>
-                  <div>
-                    <strong>
-                      Centro de Pendencias
-                      {% if not header_can_use_incident_center %}
-                        <span class="premium-badge premium-badge--{{ header_incident_required_plan_tone }}">{{ header_incident_required_plan_label }}</span>
-                      {% endif %}
-                    </strong>
-                    <div class="muted item-sub">
-                      {% if header_can_use_incident_center %}
-                        revisao de ocorrencias do periodo
-                      {% else %}
-                        recurso disponivel a partir de {{ header_incident_required_plan_name|default:"plano premium" }}
-                      {% endif %}
-                    </div>
-                  </div>
-                </a>
-                <a class="item {% if current == 'company_records_review_center' or current == 'company_record_review_detail' %}is-active{% endif %}" href="{% url 'company_records_review_center' %}">
-                  <div class="icon">V</div>
-                  <div><strong>Revisao de Registros</strong><div class="muted item-sub">selo de confianca e auditoria</div></div>
-                </a>
-                <a class="item {% if current == 'company_history' or current == 'company_history_legacy' %}is-active{% endif %}" href="{% url 'company_history' %}">
-                  <div class="icon">H</div>
-                  <div><strong>Historico</strong><div class="muted item-sub">lancamentos e consulta por periodo</div></div>
-                </a>
-                <a class="item {% if current == 'company_operational_summary' %}is-active{% endif %}" href="{% url 'company_operational_summary' %}">
-                  <div class="icon">O</div>
-                  <div><strong>Resumo Operacional</strong><div class="muted item-sub">conferencia por profissional</div></div>
-                </a>
-                <a class="item {% if current == 'company_notifications' %}is-active{% endif %}" href="{% url 'company_notifications' %}">
-                  <div class="icon">N</div>
-                  <div>
-                    <strong>
-                      Notificacoes
-                      {% if unread_notifications_count %}<span class="badge">{{ unread_notifications_count }}</span>{% endif %}
-                    </strong>
-                    <div class="muted item-sub">avisos e ciencia</div>
-                  </div>
+                  <div class="icon">A</div>
+                  <div><strong>Atividades</strong><div class="muted item-sub">relatórios dos prestadores</div></div>
                 </a>
               </div>
               <div class="menu-group">
                 <div class="menu-label">Conta</div>
-                <a class="item {% if current == 'company_plan' %}is-active{% endif %}" href="{% url 'company_plan' %}">
-                  <div class="icon">P</div>
-                  <div><strong>Meu Plano</strong><div class="muted item-sub">assinatura e recursos</div></div>
+                <a class="item {% if current == 'company_notifications' %}is-active{% endif %}" href="{% url 'company_notifications' %}">
+                  <div class="icon">N</div>
+                  <div>
+                    <strong>
+                      Notificações
+                      {% if unread_notifications_count %}<span class="badge">{{ unread_notifications_count }}</span>{% endif %}
+                    </strong>
+                    <div class="muted item-sub">avisos e ciência</div>
+                  </div>
                 </a>
-                <a class="item {% if current == 'company_settings' %}is-active{% endif %}" href="{% url 'company_settings' %}">
+                <a class="item {% if current == 'company_settings' or current == 'company_profile' or current == 'company_plan' or current == 'company_attendance_reliability' or current == 'company_location_qr_panel' %}is-active{% endif %}" href="{% url 'company_settings' %}">
                   <div class="icon">S</div>
-                  <div><strong>Configuracoes</strong><div class="muted item-sub">organizacao e operacao</div></div>
-                </a>
-                <a class="item {% if current == 'company_attendance_reliability' %}is-active{% endif %}" href="{% url 'company_attendance_reliability' %}">
-                  <div class="icon">L</div>
-                  <div><strong>Confiabilidade</strong><div class="muted item-sub">politica e locais autorizados</div></div>
-                </a>
-                <a class="item {% if current == 'company_profile' %}is-active{% endif %}" href="{% url 'company_profile' %}">
-                  <div class="icon">P</div>
-                  <div><strong>Perfil</strong><div class="muted item-sub">dados da empresa</div></div>
+                  <div><strong>Configurações</strong><div class="muted item-sub">empresa, usuários e plano</div></div>
                 </a>
               </div>
             {% endwith %}
           {% else %}
             {% with current=request.resolver_match.url_name %}
               <div class="menu-group">
-                <div class="menu-label">Operacao</div>
+                <div class="menu-label">Operação</div>
                 <a class="item {% if current == 'employee_dashboard' %}is-active{% endif %}" href="{% url 'employee_dashboard' %}">
                   <div class="icon">R</div>
                   <div><strong>Registrar horario</strong><div class="muted item-sub">acao principal</div></div>
                 </a>
                 <a class="item {% if current == 'mei_panel' %}is-active{% endif %}" href="{% url 'mei_panel' %}">
                   <div class="icon">P</div>
-                  <div><strong>Meu resumo</strong><div class="muted item-sub">visao geral</div></div>
+                  <div><strong>Meu resumo</strong><div class="muted item-sub">visão geral</div></div>
                 </a>
                 <a class="item {% if current == 'mei_contract' %}is-active{% endif %}" href="{% url 'mei_contract' %}">
                   <div class="icon">C</div>
@@ -179,13 +120,13 @@
                 </a>
                 <a class="item {% if current == 'mei_history' %}is-active{% endif %}" href="{% url 'mei_history' %}">
                   <div class="icon">H</div>
-                  <div><strong>Historico</strong><div class="muted item-sub">por periodo</div></div>
+                  <div><strong>Histórico</strong><div class="muted item-sub">por período</div></div>
                 </a>
                 <a class="item {% if current == 'mei_notifications' %}is-active{% endif %}" href="{% url 'mei_notifications' %}">
                   <div class="icon">N</div>
                   <div>
                     <strong>
-                      Notificacoes
+                      Notificações
                       {% if unread_notifications_count %}<span class="badge">{{ unread_notifications_count }}</span>{% endif %}
                     </strong>
                     <div class="muted item-sub">avisos da conta</div>
@@ -204,7 +145,7 @@
                 </a>
                 <a class="item {% if current == 'mei_reports' or current == 'mei_service_report_detail' or current == 'mei_service_report_request_detail' %}is-active{% endif %}" href="{% url 'mei_reports' %}">
                   <div class="icon">R</div>
-                  <div><strong>Relatorios de Servico</strong><div class="muted item-sub">envio e consulta pessoal</div></div>
+                  <div><strong>Relatórios de Serviço</strong><div class="muted item-sub">envio e consulta pessoal</div></div>
                 </a>
               </div>
             {% endwith %}
@@ -236,7 +177,7 @@
           </a>
           <a class="item" href="{% url 'terms' %}">
             <div class="icon">T</div>
-            <div><strong>Termos de uso</strong><div class="muted" style="font-size:12px">condicoes da plataforma</div></div>
+            <div><strong>Termos de uso</strong><div class="muted" style="font-size:12px">condições da plataforma</div></div>
           </a>
           <a class="item" href="{% url 'logout' %}">
             <div class="icon">X</div>
@@ -313,7 +254,7 @@
         <section class="content">
           <div class="card">
             <h2 style="margin-top:0;">Area restrita</h2>
-            <p class="muted">Faca login para acessar este conteudo.</p>
+            <p class="muted">Faça login para acessar este conteúdo.</p>
           </div>
         </section>
       </main>
