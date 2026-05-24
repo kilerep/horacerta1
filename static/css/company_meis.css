@@ -284,6 +284,51 @@
   background: rgba(255, 255, 255, 0.04);
 }
 
+.company-meis__tabs {
+  margin-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.company-meis__tab {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  padding: 8px 12px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.035);
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.company-meis__tab span {
+  min-width: 24px;
+  min-height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.company-meis__tab.is-active {
+  border-color: rgba(79, 124, 255, 0.58);
+  background: rgba(79, 124, 255, 0.18);
+}
+
+.company-meis__tab.is-active span {
+  background: rgba(79, 124, 255, 0.24);
+  color: rgba(232, 240, 255, 0.96);
+}
+
 .company-meis__search {
   display: flex;
   gap: 10px;
@@ -333,7 +378,7 @@
 .company-meis__table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 940px;
+  min-width: 1180px;
 }
 
 .company-meis__table th,
@@ -502,8 +547,19 @@
   }
 
   .company-meis__actions .btn,
-  .company-meis__actions-cell .btn {
+  .company-meis__actions-cell .btn,
+  .company-meis__actions-cell .company-meis__inline-form,
+  .company-meis__actions-cell .company-meis__inline-form button {
     width: 100%;
     justify-content: center;
+  }
+
+  .company-meis__tabs {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .company-meis__tab {
+    width: 100%;
   }
 }

@@ -1,7 +1,7 @@
 {% extends "accounts/base.html" %}
 {% load static %}
-{% block title %}Profissionais MEI{% endblock %}
-{% block page_title %}Profissionais da empresa{% endblock %}
+{% block title %}Prestadores{% endblock %}
+{% block page_title %}Prestadores{% endblock %}
 
 {% block extra_head %}
   <link rel="stylesheet" href="{% static 'css/company_meis.css' %}">
@@ -11,41 +11,45 @@
   <div id="topo-cadastro-mei" class="company-meis card">
     <header class="company-meis__hero">
       <div>
-        <h2 class="company-meis__title">Cadastro operacional de MEIs</h2>
+        <h2 class="company-meis__title">Prestadores</h2>
         <p class="company-meis__subtitle">
-          Tela principal para cadastrar e gerenciar profissionais MEI da empresa.
+          Área única para acompanhar cadastro, vínculo e status operacional dos prestadores da empresa.
         </p>
       </div>
-      <div class="company-meis__hero-badge">Fluxo principal: empresa cadastra, MEI registra, empresa acompanha</div>
+      <div class="company-meis__hero-badge">Empresa cadastra, prestador registra, empresa acompanha</div>
     </header>
 
     {% if request.GET.status == "created_mei" %}
       <div class="company-meis__alert">
-        Profissional cadastrado com sucesso. Se necessario, use o bloco abaixo para configurar o primeiro vinculo.
+        Profissional cadastrado com sucesso. Se necessário, use o bloco abaixo para configurar o primeiro vínculo.
       </div>
     {% elif request.GET.status == "created_with_contract" %}
-      <div class="company-meis__alert">Profissional e vinculo inicial criados com sucesso.</div>
+      <div class="company-meis__alert">Profissional e vínculo inicial criados com sucesso.</div>
     {% elif request.GET.status == "linked_existing_with_contract" %}
-      <div class="company-meis__alert">Conta existente localizada. Novo vinculo criado com sucesso para esta empresa.</div>
+      <div class="company-meis__alert">Conta existente localizada. Novo vínculo criado com sucesso para esta empresa.</div>
     {% elif request.GET.status == "linked_existing" %}
       <div class="company-meis__alert">Conta existente localizada. Cadastro vinculado a esta empresa com sucesso.</div>
     {% elif request.GET.status == "link_created" %}
-      <div class="company-meis__alert">Primeiro vinculo configurado com sucesso para o profissional selecionado.</div>
+      <div class="company-meis__alert">Primeiro vínculo configurado com sucesso para o profissional selecionado.</div>
+    {% elif request.GET.status == "contract_ended" %}
+      <div class="company-meis__alert">Vínculo encerrado com histórico preservado.</div>
     {% elif request.GET.status == "access_deactivated" %}
       <div class="company-meis__alert">Acesso do profissional desativado com sucesso.</div>
     {% elif request.GET.status == "access_reactivated" %}
       <div class="company-meis__alert">Acesso do profissional reativado com sucesso.</div>
     {% elif request.GET.status == "invalid_employee" %}
       <div class="company-meis__error company-meis__error--wide">Profissional invalido para esta empresa.</div>
+    {% elif request.GET.status == "invalid_contract" %}
+      <div class="company-meis__error company-meis__error--wide">Vínculo inválido para esta empresa.</div>
     {% endif %}
     {% if show_flow_notice %}
       <div class="company-meis__alert">
-        O fluxo principal foi simplificado: cadastre o MEI e, se quiser, ja configure o primeiro vinculo neste mesmo formulario.
+        O fluxo principal foi simplificado: cadastre o prestador e, se quiser, já configure o primeiro vínculo neste mesmo formulário.
       </div>
     {% endif %}
     <div class="company-meis__flow-note">
-      Nao ha convite dedicado por token neste ciclo. Para ativacao segura, use o link de redefinicao de senha.
-      <button type="button" class="btn" data-copy-text="{{ activation_link }}">Copiar link de ativacao geral</button>
+      Não há convite dedicado por token neste ciclo. Para ativação segura, use o link de redefinição de senha.
+      <button type="button" class="btn" data-copy-text="{{ activation_link }}">Copiar link de ativação geral</button>
     </div>
 
     <form method="post" enctype="multipart/form-data" class="company-meis__create-form" data-email-status-url="{% url 'company_mei_email_status' %}">
@@ -53,8 +57,8 @@
       <input type="hidden" name="action" value="create_mei">
       <section class="company-meis__section">
         <header class="company-meis__section-head">
-          <h3>Dados do MEI</h3>
-          <p>Informacoes principais para identificar o profissional na operacao da empresa.</p>
+          <h3>Dados do prestador</h3>
+          <p>Informações principais para identificar o profissional na operação da empresa.</p>
         </header>
         <div class="company-meis__grid company-meis__grid--two">
           <div class="company-meis__field">
@@ -68,7 +72,7 @@
       <section class="company-meis__section">
         <header class="company-meis__section-head">
           <h3>Dados de acesso</h3>
-          <p>Credenciais do MEI para acesso ao sistema e registro de horas no ambiente correto.</p>
+          <p>Credenciais do prestador para acesso ao sistema e registro de horas no ambiente correto.</p>
         </header>
         <div class="company-meis__grid">
           <div class="company-meis__field">
@@ -94,8 +98,8 @@
 
       <section class="company-meis__section company-meis__section--optional">
         <header class="company-meis__section-head">
-          <h3>Primeiro vinculo <span class="company-meis__badge">Opcional</span></h3>
-          <p>Configuracao opcional para liberar o registro de horas sem sair desta tela.</p>
+          <h3>Primeiro vínculo <span class="company-meis__badge">Opcional</span></h3>
+          <p>Configuração opcional para liberar o registro de horas sem sair desta tela.</p>
         </header>
         <div class="company-meis__grid">
           <div class="company-meis__field">
@@ -143,20 +147,20 @@
       <input type="hidden" name="action" value="create_link">
       <section class="company-meis__section company-meis__section--optional">
         <header class="company-meis__section-head">
-          <h3>Configurar primeiro vinculo para MEI ja cadastrado</h3>
-          <p>Use este bloco apenas quando o MEI ja estiver cadastrado e faltar configuracao operacional.</p>
+          <h3>Configurar primeiro vínculo para prestador já cadastrado</h3>
+          <p>Use este bloco apenas quando o prestador já estiver cadastrado e faltar configuração operacional.</p>
         </header>
         <div class="company-meis__grid">
           <div class="company-meis__field">
             <label for="{{ create_link_form.employee.id_for_label }}">{{ create_link_form.employee.label }}</label>
             {{ create_link_form.employee }}
-            <div class="company-meis__hint">Selecione um MEI sem vinculo ativo para liberar a operacao.</div>
+            <div class="company-meis__hint">Selecione um prestador sem vínculo ativo para liberar a operação.</div>
             {% if create_link_form.employee.errors %}<div class="company-meis__error">{{ create_link_form.employee.errors }}</div>{% endif %}
           </div>
           <div class="company-meis__field">
             <label for="{{ create_link_form.hourly_rate.id_for_label }}">{{ create_link_form.hourly_rate.label }}</label>
             {{ create_link_form.hourly_rate }}
-            <div class="company-meis__hint">Defina o valor/hora que sera aplicado neste vinculo.</div>
+            <div class="company-meis__hint">Defina o valor/hora que será aplicado neste vínculo.</div>
             {% if create_link_form.hourly_rate.errors %}<div class="company-meis__error">{{ create_link_form.hourly_rate.errors }}</div>{% endif %}
           </div>
           <div class="company-meis__field">
@@ -187,92 +191,112 @@
         {% endif %}
       </section>
       <div class="company-meis__actions">
-        <button class="btn primary company-meis__submit" type="submit">Salvar primeiro vinculo</button>
+        <button class="btn primary company-meis__submit" type="submit">Salvar primeiro vínculo</button>
       </div>
     </form>
 
-    <section class="company-meis__list-block">
+    <section id="lista-prestadores" class="company-meis__list-block">
       <header class="company-meis__list-header">
         <div>
-          <h2 class="company-meis__title">Base de MEIs cadastrados</h2>
-          <p class="company-meis__list-subtitle">Acompanhe situacao dos profissionais e acesse as proximas acoes de cada MEI.</p>
+          <h2 class="company-meis__title">Base de prestadores</h2>
+          <p class="company-meis__list-subtitle">Acompanhe conta, vínculo, último registro e próximas ações em um único lugar.</p>
           <div class="company-meis__list-meta">
             <span class="company-meis__meta-pill">Resultados: {{ employees|length }}</span>
-            <span class="company-meis__meta-pill">Pendentes: {{ activation_counts.pending }}</span>
-            <span class="company-meis__meta-pill">Ativos: {{ activation_counts.active }}</span>
-            <span class="company-meis__meta-pill">Inativos: {{ activation_counts.inactive }}</span>
+            <span class="company-meis__meta-pill">Ativos: {{ tab_counts.ativos }}</span>
+            <span class="company-meis__meta-pill">Pendentes: {{ tab_counts.pendentes }}</span>
+            <span class="company-meis__meta-pill">Encerrados: {{ tab_counts.encerrados }}</span>
             <span class="company-meis__meta-pill">Consulta operacional em tempo real</span>
           </div>
         </div>
         <form method="get" class="company-meis__search">
           <div class="company-meis__search-field">{{ employee_search_form.q }}</div>
-          <div class="company-meis__search-filter">
-            <label for="activation-filter">Ativacao</label>
-            <select id="activation-filter" name="activation">
-              <option value="all" {% if activation_filter == "all" %}selected{% endif %}>Todos</option>
-              <option value="pending" {% if activation_filter == "pending" %}selected{% endif %}>Pendente de ativacao</option>
-              <option value="active" {% if activation_filter == "active" %}selected{% endif %}>Ativo</option>
-              <option value="inactive" {% if activation_filter == "inactive" %}selected{% endif %}>Inativo/desativado</option>
-            </select>
-          </div>
+          <input type="hidden" name="tab" value="{{ tab_filter }}">
           <button class="btn primary" type="submit">Atualizar lista</button>
         </form>
       </header>
+
+      <nav class="company-meis__tabs" aria-label="Filtro de prestadores">
+        <a class="company-meis__tab {% if tab_filter == 'todos' %}is-active{% endif %}" href="?tab=todos#lista-prestadores">Todos <span>{{ tab_counts.todos }}</span></a>
+        <a class="company-meis__tab {% if tab_filter == 'ativos' %}is-active{% endif %}" href="?tab=ativos#lista-prestadores">Ativos <span>{{ tab_counts.ativos }}</span></a>
+        <a class="company-meis__tab {% if tab_filter == 'pendentes' %}is-active{% endif %}" href="?tab=pendentes#lista-prestadores">Pendentes <span>{{ tab_counts.pendentes }}</span></a>
+        <a class="company-meis__tab {% if tab_filter == 'encerrados' %}is-active{% endif %}" href="?tab=encerrados#lista-prestadores">Encerrados <span>{{ tab_counts.encerrados }}</span></a>
+      </nav>
 
       <div class="company-meis__table-wrap">
         <table class="company-meis__table">
           <thead>
             <tr>
-              <th>Profissional</th>
-              <th>Status de ativacao</th>
-              <th>Estado operacional</th>
-              <th>Vinculos</th>
-              <th>Acoes</th>
+              <th>Prestador</th>
+              <th>Conta</th>
+              <th>Vínculo</th>
+              <th>Contrato atual</th>
+              <th>Último registro</th>
+              <th>Ações</th>
             </tr>
           </thead>
           <tbody>
             {% for row in employees %}
               <tr class="{% if highlight_employee_id and highlight_employee_id == row.employee.id|stringformat:'s' %}company-meis__row--highlight{% endif %}">
-                <td data-label="Profissional">
+                <td data-label="Prestador">
                   <strong>{{ row.employee.full_name }}</strong><br>
                   <span class="company-meis__muted">{{ row.employee.user.email|default:row.employee.user.username }}</span>
                 </td>
-                <td data-label="Status de ativacao">
+                <td data-label="Conta">
                   <span class="company-meis__pill company-meis__pill--{{ row.activation.tone }}">{{ row.activation.label }}</span>
                   <div class="company-meis__state-hint">{{ row.activation.hint }}</div>
                 </td>
-                <td data-label="Estado operacional">
-                  <span class="company-meis__pill company-meis__pill--{{ row.state.tone }}">{{ row.state.label }}</span>
-                  <div class="company-meis__state-hint">{{ row.state.hint }}</div>
+                <td data-label="Vínculo">
+                  <span class="company-meis__pill company-meis__pill--{{ row.contract_status.tone }}">{{ row.contract_status.label }}</span>
+                  <div class="company-meis__state-hint">{{ row.contract_status.hint }}</div>
                 </td>
-                <td data-label="Vinculos">
-                  <span class="company-meis__number">{{ row.total_contracts }}</span>
-                  <span class="company-meis__muted">({{ row.active_contracts }} ativo{% if row.active_contracts != 1 %}s{% endif %})</span>
+                <td data-label="Contrato atual">
+                  {% if row.display_contract %}
+                    <strong>R$ {{ row.display_contract.hourly_rate }}/h</strong><br>
+                    <span class="company-meis__muted">
+                      {{ row.display_contract.start_date|date:"d/m/Y" }} até {{ row.display_contract.end_date|date:"d/m/Y"|default:"sem fim" }}
+                    </span>
+                    <div class="company-meis__state-hint">{{ row.total_contracts }} vínculo(s) no histórico</div>
+                  {% else %}
+                    <span class="company-meis__muted">Nenhum vínculo configurado</span>
+                  {% endif %}
                 </td>
-                <td data-label="Acoes" class="company-meis__actions-cell">
-                  <a class="btn" href="{{ row.profile_url }}">Abrir perfil</a>
-                  <a class="btn" href="{{ row.situation_url }}">Ver situacao</a>
+                <td data-label="Último registro">
+                  {% if row.latest_punch %}
+                    <strong>{{ row.latest_punch.timestamp|date:"d/m/Y H:i" }}</strong><br>
+                    {% if row.latest_punch.is_cancelled %}
+                      <span class="company-meis__pill company-meis__pill--warn">Cancelado</span>
+                    {% else %}
+                      <span class="company-meis__muted">Registro ativo</span>
+                    {% endif %}
+                  {% else %}
+                    <span class="company-meis__muted">Sem registros</span>
+                  {% endif %}
+                </td>
+                <td data-label="Ações" class="company-meis__actions-cell">
+                  <a class="btn" href="{{ row.profile_url }}">Ver detalhes</a>
                   {% if row.activation.key == "pending" %}
-                    <button type="button" class="btn" data-copy-text="{{ row.activation_copy_text }}">Copiar link de ativacao</button>
+                    <a class="btn" href="{{ row.activation_mailto_url }}">Reenviar ativação</a>
+                    <button type="button" class="btn" data-copy-text="{{ row.activation_copy_text }}">Copiar link</button>
                   {% endif %}
                   {% if row.total_contracts == 0 %}
-                    <a class="btn primary" href="{{ row.setup_first_link_url }}">Configurar vinculo inicial</a>
+                    <a class="btn primary" href="{{ row.setup_first_link_url }}">Criar vínculo</a>
                   {% else %}
-                    <a class="btn primary" href="{{ row.manage_contracts_url }}">Gerenciar vinculos</a>
+                    <a class="btn primary" href="{{ row.manage_contracts_url }}">Gerenciar vínculo</a>
                   {% endif %}
-                  {% if row.activation.key == "inactive" %}
+                  {% if row.current_contract %}
+                    <form method="post" class="company-meis__inline-form">
+                      {% csrf_token %}
+                      <input type="hidden" name="action" value="end_contract">
+                      <input type="hidden" name="contract_id" value="{{ row.current_contract.id }}">
+                      <button type="submit" class="btn" onclick="return confirm('Encerrar o vínculo ativo deste prestador? O histórico será preservado.');">Encerrar vínculo</button>
+                    </form>
+                  {% endif %}
+                  {% if row.activation.key == "inactive" and not row.employee.ended_at %}
                     <form method="post" class="company-meis__inline-form">
                       {% csrf_token %}
                       <input type="hidden" name="action" value="reactivate_access">
                       <input type="hidden" name="employee_id" value="{{ row.employee.id }}">
                       <button type="submit" class="btn primary">Reativar acesso</button>
-                    </form>
-                  {% else %}
-                    <form method="post" class="company-meis__inline-form">
-                      {% csrf_token %}
-                      <input type="hidden" name="action" value="deactivate_access">
-                      <input type="hidden" name="employee_id" value="{{ row.employee.id }}">
-                      <button type="submit" class="btn" onclick="return confirm('Deseja desativar o acesso deste profissional?');">Desativar acesso</button>
                     </form>
                   {% endif %}
                 </td>
@@ -281,9 +305,9 @@
               <tr>
                 <td colspan="5">
                   <div class="company-meis__empty">
-                    <strong>Nenhum MEI encontrado.</strong>
-                    <p>Revise os filtros aplicados ou cadastre um novo profissional para iniciar a operacao.</p>
-                    <a class="btn primary" href="#topo-cadastro-mei">Cadastrar MEI agora</a>
+                    <strong>Nenhum prestador encontrado.</strong>
+                    <p>Revise os filtros aplicados ou cadastre um novo profissional para iniciar a operação.</p>
+                    <a class="btn primary" href="#topo-cadastro-mei">Cadastrar prestador agora</a>
                   </div>
                 </td>
               </tr>
@@ -351,7 +375,7 @@
           })
           .catch(function () {
             if (currentId !== emailStatusRequestId) return;
-            setEmailStatus('Nao foi possivel validar o email agora. O backend validara no envio.', 'neutral');
+            setEmailStatus('Não foi possível validar o email agora. O backend validará no envio.', 'neutral');
             setPasswordVisibility(true);
           });
       }
@@ -365,7 +389,7 @@
         if (!value) return;
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(value).then(function () {
-            window.alert("Conteudo copiado para a area de transferencia.");
+            window.alert("Conteúdo copiado para a área de transferência.");
           }).catch(function () {
             window.prompt("Copie o conteudo abaixo:", value);
           });

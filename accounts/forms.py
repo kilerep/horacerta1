@@ -532,7 +532,7 @@ class EmployeeChoiceField(forms.ModelChoiceField):
 
 class CompanyContractForm(forms.ModelForm):
     employee = EmployeeChoiceField(
-        label="MEI",
+        label="Prestador",
         queryset=Employee.objects.none(),
     )
 
@@ -584,8 +584,8 @@ class CompanyContractForm(forms.ModelForm):
             employee_queryset = employee_queryset.select_related("user").order_by("full_name")
 
         self.fields["employee"].queryset = employee_queryset
-        self.fields["employee"].empty_label = "Selecione um MEI"
-        self.fields["employee"].widget.attrs.update({"title": "Selecione o MEI do vinculo"})
+        self.fields["employee"].empty_label = "Selecione um prestador"
+        self.fields["employee"].widget.attrs.update({"title": "Selecione o prestador do vinculo"})
 
         if self.instance and self.instance.pk and self.instance.employee_id:
             initial_employee = self.fields["employee"].queryset.filter(id=self.instance.employee_id).first()
@@ -599,17 +599,17 @@ class CompanyContractForm(forms.ModelForm):
         employee = data.get("employee")
 
         if not employee:
-            self.add_error("employee", "Selecione um MEI valido.")
+            self.add_error("employee", "Selecione um prestador valido.")
 
         if start_date and end_date and end_date < start_date:
             self.add_error("end_date", "A data final nao pode ser anterior a data inicial.")
 
         if self.company and employee and employee.company_id != self.company.id:
-            self.add_error("employee", "Selecione um MEI da sua empresa.")
+            self.add_error("employee", "Selecione um prestador da sua empresa.")
         if employee and not employee.user_id:
-            self.add_error("employee", "MEI selecionado sem usuario valido.")
+            self.add_error("employee", "Prestador selecionado sem usuario valido.")
         if employee and not employee.company_id:
-            self.add_error("employee", "MEI selecionado sem empresa valida.")
+            self.add_error("employee", "Prestador selecionado sem empresa valida.")
         return data
 
     def clean_contract_file(self):

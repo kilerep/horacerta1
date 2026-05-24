@@ -2014,13 +2014,44 @@ def company_meis(request):
     if link_for_employee:
         link_initial["employee"] = link_for_employee
     create_link_form = CompanyContractForm(company=company, request=request, prefix="link", initial=link_initial)
-    activation_filter = (request.GET.get("activation") or "all").strip().lower()
-    if activation_filter not in {"all", "pending", "active", "inactive"}:
-        activation_filter = "all"
+    tab_filter = (request.GET.get("tab") or "").strip().lower()
+    legacy_activation_filter = (request.GET.get("activation") or "").strip().lower()
+    if not tab_filter and legacy_activation_filter:
+        tab_filter = {
+            "all": "todos",
+            "active": "ativos",
+            "pending": "pendentes",
+            "inactive": "encerrados",
+        }.get(legacy_activation_filter, "todos")
+    if tab_filter not in {"todos", "ativos", "pendentes", "encerrados"}:
+        tab_filter = "todos"
     activation_link = request.build_absolute_uri(reverse("password_reset"))
 
     if request.method == "POST":
         action = (request.POST.get("action") or "create_mei").strip().lower()
+        if action == "end_contract":
+            contract_id = (request.POST.get("contract_id") or "").strip()
+            contract = (
+                Contract.objects.select_related("employee", "employee__user", "company")
+                .filter(
+                    id=contract_id,
+                    company=company,
+                    employee__company=company,
+                    employee__user__role=User.Role.FUNCIONARIO,
+                )
+                .first()
+            )
+            if not contract:
+                return redirect(f"{reverse('company_meis')}?status=invalid_contract")
+            if contract.is_active:
+                contract.is_active = False
+                contract.end_date = timezone.localdate()
+                contract.save(update_fields=["is_active", "end_date"])
+            redirect_target = _safe_redirect_target(
+                request,
+                f"{reverse('company_meis')}?tab=encerrados&status=contract_ended&highlight_employee={contract.employee_id}",
+            )
+            return redirect(redirect_target)
         if action in {"deactivate_access", "reactivate_access"}:
             employee_id = (request.POST.get("employee_id") or "").strip()
             employee = (
@@ -2098,31 +2129,103 @@ def company_meis(request):
 
     employees_list = list(qs.order_by("full_name")[:300])
     contracts_by_employee = _contracts_by_employee(company, employees_list)
+    employee_ids = [employee.id for employee in employees_list]
+    latest_punch_by_employee = {}
+    if employee_ids:
+        latest_punches = (
+            Punch.all_objects.filter(contract__company=company, contract__employee_id__in=employee_ids)
+            .select_related("contract", "contract__employee")
+            .order_by("contract__employee_id", "-timestamp")
+        )
+        for punch in latest_punches:
+            latest_punch_by_employee.setdefault(punch.contract.employee_id, punch)
+
+    def _contract_status_for_row(current_contract, latest_contract, operational_count):
+        if current_contract:
+            return {
+                "key": "active",
+                "label": "Vínculo ativo",
+                "hint": f"Contrato vigente desde {current_contract.start_date:%d/%m/%Y}.",
+                "tone": "success",
+            }
+        if latest_contract:
+            if latest_contract.end_date and latest_contract.end_date < timezone.localdate():
+                label = "Vínculo encerrado"
+                hint = f"Encerrado em {latest_contract.end_date:%d/%m/%Y}."
+                key = "ended"
+            elif not latest_contract.is_active:
+                label = "Vínculo encerrado"
+                hint = "Contrato inativo. Histórico preservado para consulta."
+                key = "ended"
+            else:
+                label = "Vínculo pendente"
+                hint = "Contrato cadastrado, mas ainda sem vigência operacional."
+                key = "pending"
+            return {"key": key, "label": label, "hint": hint, "tone": "warn" if key == "ended" else "pending"}
+        return {
+            "key": "missing",
+            "label": "Sem vínculo",
+            "hint": "Configure um vínculo para liberar o registro de ponto.",
+            "tone": "pending",
+        }
+
+    def _prestador_tab_key(employee, activation, current_contract, latest_contract, contract_status):
+        if getattr(employee, "ended_at", None) or contract_status["key"] == "ended":
+            return "encerrados"
+        if activation["key"] == "pending" or contract_status["key"] in {"missing", "pending"}:
+            return "pendentes"
+        if activation["key"] == "inactive":
+            return "pendentes"
+        if current_contract:
+            return "ativos"
+        return "pendentes"
+
     employee_rows = []
-    activation_counts = {"pending": 0, "active": 0, "inactive": 0}
+    tab_counts = {"todos": 0, "ativos": 0, "pendentes": 0, "encerrados": 0}
     for employee in employees_list:
         employee_contracts = contracts_by_employee.get(employee.id, [])
         lifecycle = employee_lifecycle_summary(employee, employee_contracts)
         activation = _employee_activation_summary(employee)
-        activation_counts[activation["key"]] += 1
-        if activation_filter != "all" and activation["key"] != activation_filter:
-            continue
         latest_contract = employee_contracts[0] if employee_contracts else None
+        current_contract = next((contract for contract in employee_contracts if contract_is_operational(contract)), None)
         operational_count = sum(1 for contract in employee_contracts if contract_is_operational(contract))
+        contract_status = _contract_status_for_row(current_contract, latest_contract, operational_count)
+        row_tab_key = _prestador_tab_key(employee, activation, current_contract, latest_contract, contract_status)
+        tab_counts["todos"] += 1
+        tab_counts[row_tab_key] += 1
+        if tab_filter != "todos" and row_tab_key != tab_filter:
+            continue
+        display_contract = current_contract or latest_contract
+        latest_punch = latest_punch_by_employee.get(employee.id)
         manage_contracts_url = (
             f"{reverse('company_contracts')}?edit={latest_contract.id}"
             if latest_contract
             else reverse("company_contracts")
         )
         setup_first_link_url = f"{reverse('company_meis')}?link_for={employee.id}#vinculo-existente"
+        activation_copy_text = (
+            "Ative seu acesso no HoraCerta em "
+            f"{activation_link} usando o email {employee.user.email or employee.user.username}."
+        )
+        activation_mailto_url = (
+            "mailto:"
+            f"{quote(employee.user.email or employee.user.username)}"
+            "?subject=Ativacao%20do%20acesso%20HoraCerta"
+            f"&body={quote(activation_copy_text)}"
+        )
         employee_rows.append(
             {
                 "employee": employee,
                 "state": lifecycle,
                 "activation": activation,
+                "tab_key": row_tab_key,
+                "contract_status": contract_status,
                 "total_contracts": len(employee_contracts),
                 "active_contracts": operational_count,
                 "latest_contract": latest_contract,
+                "current_contract": current_contract,
+                "display_contract": display_contract,
+                "latest_punch": latest_punch,
                 "profile_url": reverse("company_mei_profile", args=[employee.id]),
                 "situation_url": reverse("company_mei_profile", args=[employee.id]),
                 "manage_contracts_url": manage_contracts_url,
@@ -2130,10 +2233,8 @@ def company_meis(request):
                 "action_url": setup_first_link_url if not latest_contract else manage_contracts_url,
                 "action_label": "Configurar primeiro vinculo" if not latest_contract else "Gerenciar vinculos",
                 "activation_link": activation_link,
-                "activation_copy_text": (
-                    "Ative seu acesso no HoraCerta em "
-                    f"{activation_link} usando o email {employee.user.email or employee.user.username}."
-                ),
+                "activation_copy_text": activation_copy_text,
+                "activation_mailto_url": activation_mailto_url,
             }
         )
 
@@ -2146,8 +2247,8 @@ def company_meis(request):
         "link_for_employee": link_for_employee,
         "highlight_employee_id": (request.GET.get("highlight_employee") or "").strip(),
         "show_flow_notice": (request.GET.get("flow") or "").strip() == "principal",
-        "activation_filter": activation_filter,
-        "activation_counts": activation_counts,
+        "tab_filter": tab_filter,
+        "tab_counts": tab_counts,
         "activation_link": activation_link,
         "pending_reports_count": _pending_reports_count_for_company(company),
     }

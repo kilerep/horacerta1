@@ -364,6 +364,29 @@ class InternalDashboardTests(TestCase):
         self.assertNotContains(response, "Corrigir horario")
         self.assertNotContains(response, "Cancelar registro")
 
+    def test_company_can_end_contract_from_prestadores_without_deleting_history(self):
+        punch = Punch.objects.first()
+        self.client.force_login(self.company_owner)
+
+        response = self.client.post(
+            reverse("company_meis"),
+            {
+                "action": "end_contract",
+                "contract_id": str(self.contract.id),
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.contract.refresh_from_db()
+        self.assertFalse(self.contract.is_active)
+        self.assertEqual(self.contract.end_date, timezone.localdate())
+        self.assertTrue(Punch.all_objects.filter(id=punch.id).exists())
+
+        ended_response = self.client.get(reverse("company_meis") + "?tab=encerrados")
+        self.assertEqual(ended_response.status_code, 200)
+        self.assertContains(ended_response, self.employee.full_name)
+        self.assertContains(ended_response, "Vínculo encerrado")
+
     def test_common_users_do_not_see_internal_admin_notifications(self):
         InternalNotification.objects.create(
             recipient_user=self.employee_user,
