@@ -44,24 +44,24 @@
   <div class="settings-grid" style="margin-top:12px;">
     <article class="settings-item">
       <h3>Meu plano</h3>
-      <p>Consulte assinatura atual, recursos disponiveis e pontos de upgrade do produto.</p>
+      <p>Consulte plano atual, limite de prestadores, renovação e benefícios incluídos.</p>
       <div><a class="btn primary" href="{% url 'company_plan' %}">Abrir meu plano</a></div>
     </article>
 
     <article class="settings-item">
       {% if header_can_use_advanced_reports %}
-        <h3>Relatorios premium</h3>
-        <p>Analise avancada e exportacao de dados operacionais.</p>
-        <div><a class="btn" href="{% url 'company_reports' %}">Abrir relatorios</a></div>
+        <h3>Relatórios</h3>
+        <p>Análise e exportação de dados operacionais.</p>
+        <div><a class="btn" href="{% url 'company_reports' %}">Abrir relatórios</a></div>
       {% else %}
         {% include "accounts/components/premium_lock_card.html" with
-          premium_title="Relatorios premium"
-          premium_description="Analise avancada, exportacao e consolidacao de indicadores para decisao."
+          premium_title="Relatórios"
+          premium_description="Análise, exportação e consolidação de indicadores para decisão."
           premium_badge_label=header_reports_required_plan_label
           premium_tone=header_reports_required_plan_tone
           premium_required_plan_name=header_reports_required_plan_name
           premium_current_plan_name=header_current_plan_name|default:"Sem plano ativo"
-          premium_reason="Recurso premium ainda nao liberado para a assinatura atual."
+          premium_reason="Recurso ainda não liberado para a assinatura atual."
           premium_upgrade_url=company_plan_url
         %}
       {% endif %}
@@ -69,18 +69,18 @@
 
     <article class="settings-item">
       {% if header_can_use_incident_center %}
-        <h3>Centro de pendencias</h3>
-        <p>Acompanhe dias incompletos, observacoes e itens de revisao por funcionario.</p>
-        <div><a class="btn" href="{% url 'company_incident_center' %}">Abrir painel Pro</a></div>
+        <h3>Centro de pendências</h3>
+        <p>Acompanhe dias incompletos, observações e itens de revisão por prestador.</p>
+        <div><a class="btn" href="{% url 'company_incident_center' %}">Abrir painel</a></div>
       {% else %}
         {% include "accounts/components/premium_lock_card.html" with
-          premium_title="Centro de pendencias"
-          premium_description="Painel operacional para RH tratar ocorrencias e inconsistencias no periodo."
+          premium_title="Centro de pendências"
+          premium_description="Painel operacional para RH tratar ocorrências e inconsistências no período."
           premium_badge_label=header_incident_required_plan_label
           premium_tone=header_incident_required_plan_tone
           premium_required_plan_name=header_incident_required_plan_name
           premium_current_plan_name=header_current_plan_name|default:"Sem plano ativo"
-          premium_reason="Recurso premium ainda nao liberado para a assinatura atual."
+          premium_reason="Recurso ainda não liberado para a assinatura atual."
           premium_upgrade_url=company_plan_url
         %}
       {% endif %}
@@ -88,25 +88,25 @@
 
     <article class="settings-item">
       <h3>Perfil da empresa</h3>
-      <p>Atualize razao social, contato, endereco e logo usados no sistema.</p>
+      <p>Atualize razão social, contato, endereço e logo usados no sistema.</p>
       <div><a class="btn primary" href="{% url 'company_profile' %}">Abrir perfil</a></div>
     </article>
 
     <article class="settings-item">
       <h3>Confiabilidade do registro</h3>
-      <p>Cadastre locais autorizados e defina a politica de validacao de horarios da empresa.</p>
-      <div><a class="btn primary" href="{% url 'company_attendance_reliability' %}">Abrir configuracao</a></div>
+      <p>Cadastre locais autorizados e defina a política de validação de horários da empresa.</p>
+      <div><a class="btn primary" href="{% url 'company_attendance_reliability' %}">Abrir configuração</a></div>
     </article>
 
     <article class="settings-item">
-      <h3>Vinculos</h3>
-      <p>Acompanhe e edite os vinculos operacionais ja criados para os profissionais.</p>
-      <div><a class="btn" href="{% url 'company_contracts' %}">Ir para vinculos</a></div>
+      <h3>Vínculos</h3>
+      <p>Acompanhe e edite os vínculos operacionais já criados para os prestadores.</p>
+      <div><a class="btn" href="{% url 'company_contracts' %}">Ir para vínculos</a></div>
     </article>
 
     <article class="settings-item">
       <h3>Documentos</h3>
-      <p>Acesse a central de anexos e orientacoes de arquivos da operacao.</p>
+      <p>Acesse a central de anexos e orientações de arquivos da operação.</p>
       <div><a class="btn" href="{% url 'company_docs' %}">Abrir documentos</a></div>
     </article>
 

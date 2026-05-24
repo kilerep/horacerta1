@@ -34,13 +34,9 @@ from companies.models import (
     CompanySubscription,
     Employee,
     EmployeeRelationshipAuditLog,
-    Feature,
     InternalAdminActionLog,
-    Plan,
 )
 from companies.feature_flags import (
-    get_company_feature_access,
-    humanize_feature_reason,
     require_company_feature,
 )
 from timeclock.models import (
@@ -472,7 +468,7 @@ def _subscription_status_badge(subscription, at_time=None):
         return {
             "label": "Sem assinatura ativa",
             "tone": "warn",
-            "hint": "A empresa ainda nao possui plano atual definido.",
+            "hint": "A empresa ainda não possui plano atual definido.",
         }
 
     at = at_time or timezone.now()
@@ -481,27 +477,60 @@ def _subscription_status_badge(subscription, at_time=None):
 
     if status == CompanySubscription.Status.TRIAL:
         tone = "pending" if is_access_active else "warn"
-        hint = "Periodo de avaliacao em andamento." if is_access_active else "Trial encerrado."
+        label = "Teste grátis"
+        hint = "Período de avaliação em andamento." if is_access_active else "Teste grátis encerrado."
     elif status == CompanySubscription.Status.ACTIVE:
         tone = "success" if is_access_active else "warn"
-        hint = "Assinatura ativa e apta para uso." if is_access_active else "Assinatura ativa sem acesso no periodo atual."
+        label = "Ativo"
+        hint = "Plano ativo e apto para uso." if is_access_active else "Plano ativo sem acesso no período atual."
     elif status == CompanySubscription.Status.PAST_DUE:
+        label = "Pendente"
         tone = "warn"
-        hint = "Pagamento pendente. A regularizacao pode ser necessaria."
+        hint = "Regularização comercial pendente."
     elif status == CompanySubscription.Status.CANCELED:
+        label = "Cancelado"
         tone = "warn"
         hint = "Assinatura cancelada."
     elif status == CompanySubscription.Status.EXPIRED:
+        label = "Expirado"
         tone = "warn"
         hint = "Assinatura expirada."
     else:
+        label = "Status não mapeado"
         tone = "warn"
-        hint = "Status de assinatura nao mapeado."
+        hint = "Status de assinatura não mapeado."
 
     return {
-        "label": subscription.get_status_display(),
+        "label": label,
         "tone": tone,
         "hint": hint,
+    }
+
+
+def _commercial_plan_snapshot(subscription):
+    plan_code = ((subscription.plan.code if subscription else "") or "").strip().lower()
+    raw_plan_name = (subscription.plan.name if subscription else "") or "Essencial"
+    plan_name = raw_plan_name if raw_plan_name.lower().startswith("horacerta") else f"HoraCerta {raw_plan_name}"
+
+    defaults = {
+        "essencial": {
+            "monthly_price": "R$ 79,00",
+            "active_provider_limit": 10,
+            "description": "Plano mensal para acompanhamento de prestadores, vínculos, registros de horário e relatórios.",
+        },
+    }
+    fallback = {
+        "monthly_price": "Sob configuração comercial",
+        "active_provider_limit": 10,
+        "description": "Plano configurado para a operação atual da empresa no HoraCerta.",
+    }
+    commercial = defaults.get(plan_code, fallback)
+
+    return {
+        "name": plan_name,
+        "monthly_price": commercial["monthly_price"],
+        "active_provider_limit": commercial["active_provider_limit"],
+        "description": commercial["description"],
     }
 
 
@@ -3688,95 +3717,27 @@ def company_plan(request):
     now = timezone.now()
     subscription = company.current_subscription()
     status_badge = _subscription_status_badge(subscription, at_time=now)
-
-    plans = list(Plan.objects.filter(is_active=True).prefetch_related("plan_features__feature").order_by("tier"))
-    current_plan_id = subscription.plan_id if subscription else None
     current_plan = subscription.plan if subscription else None
+    commercial_plan = _commercial_plan_snapshot(subscription)
+    active_provider_count = (
+        Contract.objects.filter(company=company, is_active=True, employee__is_active=True)
+        .values("employee_id")
+        .distinct()
+        .count()
+    )
+    provider_limit = commercial_plan["active_provider_limit"]
+    provider_usage_percent = min(100, round((active_provider_count / provider_limit) * 100)) if provider_limit else 0
 
-    features = list(Feature.objects.filter(is_active=True).order_by("category", "name"))
-
-    enabled_codes_by_plan = {}
-    enabled_features_by_plan = {}
-    for plan in plans:
-        enabled_features = [
-            plan_feature.feature
-            for plan_feature in plan.plan_features.all()
-            if plan_feature.is_enabled and plan_feature.feature.is_active
-        ]
-        enabled_features_by_plan[plan.code] = enabled_features
-        enabled_codes_by_plan[plan.code] = {feature.code for feature in enabled_features}
-
-    plan_cards = []
-    for plan in plans:
-        plan_codes = enabled_codes_by_plan.get(plan.code, set())
-        exclusive_count = 0
-        for feature in features:
-            if feature.code not in plan_codes:
-                continue
-            lower_tier_has = any(
-                feature.code in enabled_codes_by_plan.get(lower_plan.code, set())
-                for lower_plan in plans
-                if lower_plan.tier < plan.tier
-            )
-            if not lower_tier_has:
-                exclusive_count += 1
-        plan_cards.append(
-            {
-                "plan": plan,
-                "is_current": plan.id == current_plan_id,
-                "feature_count": len(plan_codes),
-                "exclusive_count": exclusive_count,
-                "feature_preview": enabled_features_by_plan.get(plan.code, [])[:6],
-            }
-        )
-
-    current_plan_tier = current_plan.tier if current_plan else 0
-    suggested_upgrade = next((plan for plan in plans if plan.tier > current_plan_tier), None)
-
-    def _first_plan_for_feature(feature_code):
-        for plan in plans:
-            if feature_code in enabled_codes_by_plan.get(plan.code, set()):
-                return plan
-        return None
-
-    available_features = []
-    blocked_features = []
-    for feature in features:
-        access = get_company_feature_access(
-            company=company,
-            feature_code=feature.code,
-            user_role=None,
-            at_time=now,
-        )
-        first_plan = _first_plan_for_feature(feature.code)
-        item = {
-            "feature": feature,
-            "allowed": access.allowed,
-            "reason": access.reason,
-            "reason_label": humanize_feature_reason(access.reason),
-            "audience_label": feature.get_required_role_display(),
-            "available_from_plan": first_plan,
-            "available_from_label": first_plan.name if first_plan else "Nao disponivel",
-        }
-        if access.allowed:
-            available_features.append(item)
-        else:
-            blocked_features.append(item)
-
-    comparison_rows = []
-    for feature in features:
-        comparison_rows.append(
-            {
-                "feature": feature,
-                "plan_availability": [
-                    {
-                        "plan": plan,
-                        "enabled": feature.code in enabled_codes_by_plan.get(plan.code, set()),
-                    }
-                    for plan in plans
-                ],
-            }
-        )
+    included_benefits = [
+        "Acompanhamento diário dos registros de horário.",
+        "Gestão de prestadores, vínculos e status operacional.",
+        "Histórico de registros para consulta e conferência.",
+        "Relatórios por período para apoio ao fechamento.",
+        "Documentos e anexos vinculados à operação.",
+        "Notificações para empresa e prestadores.",
+        "Registro de problemas de horário pelo prestador.",
+        "Correções administrativas com auditoria interna.",
+    ]
 
     date_format = "%d/%m/%Y"
 
@@ -3790,14 +3751,14 @@ def company_plan(request):
         "subscription": subscription,
         "subscription_status_badge": status_badge,
         "current_plan": current_plan,
-        "plan_cards": plan_cards,
-        "available_features": available_features,
-        "blocked_features": blocked_features,
-        "comparison_rows": comparison_rows,
-        "comparison_plans": plans,
-        "current_plan_name": subscription.plan.name if subscription else "Sem plano",
+        "current_plan_name": commercial_plan["name"],
         "current_plan_code": subscription.plan.code if subscription else "",
-        "current_plan_description": subscription.plan.description if subscription else "Sem assinatura ativa no momento.",
+        "current_plan_description": commercial_plan["description"],
+        "monthly_price_label": commercial_plan["monthly_price"],
+        "active_provider_limit": provider_limit,
+        "active_provider_count": active_provider_count,
+        "provider_usage_percent": provider_usage_percent,
+        "included_benefits": included_benefits,
         "starts_at_label": _fmt_dt(subscription.starts_at) if subscription else "-",
         "period_start_label": _fmt_dt(subscription.current_period_start) if subscription else "-",
         "period_end_label": _fmt_dt(subscription.current_period_end) if subscription else "-",
@@ -3808,7 +3769,7 @@ def company_plan(request):
         ),
         "expires_at_label": _fmt_dt(subscription.ends_at) if subscription else "-",
         "trial_end_label": _fmt_dt(subscription.trial_ends_at) if subscription else "-",
-        "suggested_upgrade": suggested_upgrade,
+        "support_message": "Para ajustar limite de prestadores, renovação ou dados comerciais, entre em contato com o suporte do HoraCerta.",
     }
     return render(request, "accounts/company_plan.html", context)
 

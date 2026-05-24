@@ -1,6 +1,6 @@
 {% extends "accounts/base.html" %}
-{% block title %}Meu Plano{% endblock %}
-{% block page_title %}Meu Plano{% endblock %}
+{% block title %}Meu plano{% endblock %}
+{% block page_title %}Meu plano{% endblock %}
 
 {% block content %}
   <style>
@@ -12,7 +12,7 @@
       border: 1px solid var(--color-border);
       border-radius: var(--radius-lg);
       background:
-        radial-gradient(circle at 92% 0%, color-mix(in oklab, var(--color-primary) 16%, transparent), transparent 44%),
+        linear-gradient(135deg, color-mix(in oklab, var(--surface-brand-soft) 42%, transparent), transparent 62%),
         var(--surface-raised);
       box-shadow: var(--shadow-sm);
       padding: 18px;
@@ -20,23 +20,11 @@
     .plan-hero__top {
       display: flex;
       justify-content: space-between;
-      gap: 12px;
+      gap: 14px;
       flex-wrap: wrap;
       align-items: flex-start;
     }
-    .plan-title {
-      margin: 0;
-      font-size: clamp(1.34rem, 3.2vw, 1.85rem);
-      letter-spacing: -0.02em;
-      line-height: 1.16;
-    }
-    .plan-subtitle {
-      margin: 7px 0 0;
-      color: var(--color-text-muted);
-      line-height: 1.42;
-      max-width: 780px;
-    }
-    .plan-current-pill {
+    .plan-eyebrow {
       display: inline-flex;
       align-items: center;
       border: 1px solid var(--border-brand);
@@ -46,7 +34,17 @@
       font-size: 12px;
       font-weight: 800;
       padding: 4px 10px;
-      letter-spacing: 0.01em;
+    }
+    .plan-title {
+      margin: 8px 0 0;
+      font-size: 1.75rem;
+      line-height: 1.15;
+    }
+    .plan-subtitle {
+      margin: 8px 0 0;
+      color: var(--color-text-muted);
+      line-height: 1.45;
+      max-width: 780px;
     }
     .plan-status-pill {
       display: inline-flex;
@@ -55,10 +53,9 @@
       border: 1px solid var(--badge-border);
       background: var(--badge-bg);
       color: var(--badge-text);
-      padding: 4px 10px;
+      padding: 5px 11px;
       font-size: 12px;
-      font-weight: 700;
-      margin-top: 8px;
+      font-weight: 800;
     }
     .plan-status-pill.success {
       border-color: var(--success-border);
@@ -76,232 +73,147 @@
       color: var(--danger-text);
     }
     .plan-status-hint {
-      margin-top: 6px;
+      margin-top: 7px;
       color: var(--color-text-muted);
       font-size: 12px;
+      max-width: 260px;
     }
-    .plan-meta {
+    .plan-summary {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: 1.2fr .8fr;
+    }
+    .plan-panel {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      background: var(--surface-raised);
+      box-shadow: var(--shadow-xs);
+      padding: 14px;
+    }
+    .plan-panel h3 {
+      margin: 0;
+      font-size: 16px;
+    }
+    .plan-panel p {
+      margin: 6px 0 0;
+      color: var(--color-text-muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .plan-metrics {
       margin-top: 14px;
       display: grid;
+      gap: 10px;
       grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 10px;
     }
-    .plan-meta__item {
+    .plan-metric {
       border: 1px solid var(--color-border);
-      border-radius: 12px;
+      border-radius: var(--radius-md);
       background: var(--surface-subtle);
-      padding: 10px;
+      padding: 11px;
+      min-width: 0;
     }
-    .plan-meta__k {
-      font-size: 12px;
+    .plan-metric__label {
       color: var(--color-text-muted);
+      font-size: 12px;
     }
-    .plan-meta__v {
-      margin-top: 4px;
-      font-size: 14px;
-      font-weight: 800;
-    }
-    .plan-grid {
-      display: grid;
-      gap: 12px;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-    .plan-card {
-      border: 1px solid var(--color-border);
-      border-radius: 14px;
-      background: var(--surface-raised);
-      box-shadow: var(--shadow-xs);
-      padding: 14px;
-      display: grid;
-      gap: 10px;
-    }
-    .plan-card.current {
-      border-color: var(--border-brand);
-      box-shadow: var(--shadow-sm);
-      background: color-mix(in oklab, var(--surface-brand-soft) 42%, var(--surface-raised));
-    }
-    .plan-card__name {
-      margin: 0;
-      font-size: 18px;
+    .plan-metric__value {
+      margin-top: 5px;
+      font-size: 16px;
       font-weight: 900;
+      overflow-wrap: anywhere;
     }
-    .plan-card__desc {
-      margin: 0;
+    .usage-card {
+      display: grid;
+      gap: 10px;
+    }
+    .usage-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: baseline;
+    }
+    .usage-number {
+      font-size: 30px;
+      font-weight: 950;
+      line-height: 1;
+    }
+    .usage-limit {
       color: var(--color-text-muted);
       font-size: 13px;
-      line-height: 1.4;
+      font-weight: 700;
     }
-    .plan-mini-badges {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-    .plan-mini-badge {
-      display: inline-flex;
-      align-items: center;
+    .usage-bar {
+      height: 9px;
       border-radius: 999px;
-      border: 1px solid var(--badge-border);
-      background: var(--badge-bg);
-      color: var(--badge-text);
-      padding: 3px 9px;
-      font-size: 11px;
-      font-weight: 700;
+      overflow: hidden;
+      background: var(--surface-subtle);
+      border: 1px solid var(--color-border);
     }
-    .plan-mini-badge.current {
-      border-color: var(--border-brand);
+    .usage-bar span {
+      display: block;
+      height: 100%;
+      width: var(--usage-width);
+      background: var(--menu-active-text);
+    }
+    .benefit-list {
+      margin: 14px 0 0;
+      padding: 0;
+      display: grid;
+      gap: 8px;
+      list-style: none;
+    }
+    .benefit-list li {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: var(--surface-subtle);
+      padding: 10px 11px;
+      font-size: 13px;
+      color: var(--color-text);
+    }
+    .support-box {
+      border: 1px solid var(--border-brand);
+      border-radius: var(--radius-lg);
       background: var(--surface-brand-soft);
-      color: var(--menu-active-text);
-    }
-    .feature-columns {
-      display: grid;
-      gap: 12px;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-    .feature-block {
-      border: 1px solid var(--color-border);
-      border-radius: 14px;
-      background: var(--surface-raised);
-      box-shadow: var(--shadow-xs);
-      padding: 14px;
-    }
-    .feature-block h3 {
-      margin: 0;
-      font-size: 16px;
-    }
-    .feature-block p {
-      margin: 6px 0 0;
-      color: var(--color-text-muted);
-      font-size: 13px;
-    }
-    .feature-list {
-      margin-top: 12px;
-      display: grid;
-      gap: 8px;
-    }
-    .feature-item {
-      border: 1px solid var(--color-border);
-      border-radius: 12px;
-      background: var(--surface-subtle);
-      padding: 10px;
-      display: grid;
-      gap: 5px;
-    }
-    .feature-item.locked {
-      border-style: dashed;
-      border-color: var(--warning-border);
-      background: color-mix(in oklab, var(--warning-bg) 70%, var(--surface-subtle));
-    }
-    .feature-item__title {
-      display: flex;
-      justify-content: space-between;
-      gap: 8px;
-      align-items: flex-start;
-      flex-wrap: wrap;
-      font-size: 14px;
-      font-weight: 700;
-    }
-    .feature-item__desc {
-      font-size: 12px;
-      color: var(--color-text-muted);
-      line-height: 1.35;
-    }
-    .comparison-wrap {
-      border: 1px solid var(--color-border);
-      border-radius: 14px;
-      background: var(--surface-raised);
-      box-shadow: var(--shadow-xs);
-      padding: 14px;
-    }
-    .comparison-wrap h3 {
-      margin: 0;
-      font-size: 16px;
-    }
-    .comparison-wrap p {
-      margin: 6px 0 0;
-      color: var(--color-text-muted);
-      font-size: 13px;
-    }
-    .comparison-table-wrap {
-      margin-top: 12px;
-      width: 100%;
-      overflow-x: auto;
-      border: 1px solid var(--color-border);
-      border-radius: 12px;
-      background: var(--surface-subtle);
-    }
-    .comparison-table {
-      width: 100%;
-      min-width: 860px;
-      border-collapse: collapse;
-    }
-    .comparison-table th,
-    .comparison-table td {
-      padding: 10px;
-      border-bottom: 1px solid var(--color-border);
-      text-align: left;
-      vertical-align: top;
-      font-size: 13px;
-    }
-    .comparison-table th {
-      color: var(--color-text-muted);
-      font-weight: 700;
-      font-size: 12px;
-    }
-    .comparison-table tr:last-child td {
-      border-bottom: none;
-    }
-    .comparison-table .current-col {
-      background: color-mix(in oklab, var(--surface-brand-soft) 34%, transparent);
-    }
-    .availability-yes {
-      color: var(--success-text);
-      font-weight: 700;
-    }
-    .availability-no {
-      color: var(--color-text-muted);
-      font-weight: 700;
-    }
-    .plan-cta {
-      border: 1px solid var(--color-border);
-      border-radius: 14px;
-      background: var(--surface-raised);
-      box-shadow: var(--shadow-xs);
       padding: 14px;
       display: flex;
       justify-content: space-between;
       gap: 12px;
-      flex-wrap: wrap;
       align-items: center;
+      flex-wrap: wrap;
     }
-    .plan-cta h3 {
+    .support-box h3 {
       margin: 0;
       font-size: 16px;
     }
-    .plan-cta p {
-      margin: 6px 0 0;
+    .support-box p {
+      margin: 5px 0 0;
       color: var(--color-text-muted);
       font-size: 13px;
-      line-height: 1.4;
-      max-width: 760px;
+      line-height: 1.45;
+      max-width: 780px;
     }
-    @media (max-width: 1120px) {
-      .plan-grid {
-        grid-template-columns: 1fr;
-      }
-      .feature-columns {
-        grid-template-columns: 1fr;
-      }
-      .plan-meta {
+    @media (max-width: 1080px) {
+      .plan-summary,
+      .plan-metrics {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
     }
     @media (max-width: 720px) {
-      .plan-meta {
+      .plan-hero,
+      .plan-panel,
+      .support-box {
+        padding: 13px;
+      }
+      .plan-title {
+        font-size: 1.45rem;
+      }
+      .plan-summary,
+      .plan-metrics {
         grid-template-columns: 1fr;
       }
-      .plan-hero {
-        padding: 14px;
+      .usage-number {
+        font-size: 26px;
       }
     }
   </style>
@@ -310,10 +222,11 @@
     <article class="plan-hero">
       <div class="plan-hero__top">
         <div>
-          <span class="plan-current-pill">Plano atual: {{ current_plan_name }}</span>
-          <h2 class="plan-title">Camada comercial e assinatura da empresa {{ company.name }}</h2>
+          <span class="plan-eyebrow">Plano atual</span>
+          <h2 class="plan-title">{{ current_plan_name }}</h2>
           <p class="plan-subtitle">
-            Visao central para empresa/RH acompanhar assinatura, recursos liberados e oportunidades de upgrade do HoraCerta.
+            Sua empresa possui acesso aos recursos principais para acompanhar prestadores, vínculos,
+            registros de horário, histórico, conferência e relatórios do HoraCerta.
           </p>
         </div>
         <div>
@@ -322,161 +235,59 @@
         </div>
       </div>
 
-      <div class="plan-meta">
-        <div class="plan-meta__item">
-          <div class="plan-meta__k">Descricao do plano</div>
-          <div class="plan-meta__v">{{ current_plan_description }}</div>
+      <div class="plan-metrics">
+        <div class="plan-metric">
+          <div class="plan-metric__label">Valor mensal</div>
+          <div class="plan-metric__value">{{ monthly_price_label }}</div>
         </div>
-        <div class="plan-meta__item">
-          <div class="plan-meta__k">Inicio da assinatura</div>
-          <div class="plan-meta__v">{{ starts_at_label }}</div>
+        <div class="plan-metric">
+          <div class="plan-metric__label">Prestadores ativos</div>
+          <div class="plan-metric__value">{{ active_provider_count }} de {{ active_provider_limit }}</div>
         </div>
-        <div class="plan-meta__item">
-          <div class="plan-meta__k">Inicio do periodo atual</div>
-          <div class="plan-meta__v">{{ period_start_label }}</div>
+        <div class="plan-metric">
+          <div class="plan-metric__label">Próxima renovação</div>
+          <div class="plan-metric__value">{{ renewal_or_end_label }}</div>
         </div>
-        <div class="plan-meta__item">
-          <div class="plan-meta__k">Renovacao/Vencimento</div>
-          <div class="plan-meta__v">{{ renewal_or_end_label }}</div>
+        <div class="plan-metric">
+          <div class="plan-metric__label">Início do plano</div>
+          <div class="plan-metric__value">{{ starts_at_label }}</div>
         </div>
       </div>
     </article>
 
-    <section class="plan-grid">
-      {% for card in plan_cards %}
-        <article class="plan-card {% if card.is_current %}current{% endif %}">
-          <div class="plan-mini-badges">
-            <span class="plan-mini-badge">Tier {{ card.plan.tier }}</span>
-            <span class="plan-mini-badge">{{ card.feature_count }} features</span>
-            {% if card.is_current %}
-              <span class="plan-mini-badge current">Plano atual</span>
-            {% endif %}
-          </div>
-          <h3 class="plan-card__name">{{ card.plan.name }}</h3>
-          <p class="plan-card__desc">{{ card.plan.description }}</p>
-          <div class="feature-item__desc">Entrada de valor neste tier: {{ card.exclusive_count }} recurso(s).</div>
-          <div class="feature-list">
-            {% for feature in card.feature_preview %}
-              <div class="feature-item">
-                <div class="feature-item__title">{{ feature.name }}</div>
-                <div class="feature-item__desc">{{ feature.description|default:"Recurso disponivel neste plano." }}</div>
-              </div>
-            {% empty %}
-              <div class="feature-item">
-                <div class="feature-item__desc">Sem recursos configurados para este plano.</div>
-              </div>
-            {% endfor %}
-          </div>
-        </article>
-      {% endfor %}
-    </section>
-
-    <section class="feature-columns">
-      <article class="feature-block">
-        <h3>Recursos liberados</h3>
-        <p>Features ativas para a assinatura atual da empresa.</p>
-        <div class="feature-list">
-          {% for item in available_features %}
-            <div class="feature-item">
-              <div class="feature-item__title">
-                <span>{{ item.feature.name }}</span>
-                <span class="plan-mini-badge">Liberado</span>
-              </div>
-              <div class="feature-item__desc">{{ item.feature.description|default:"Recurso ativo no plano atual." }}</div>
-              <div class="feature-item__desc">Publico: {{ item.audience_label }}</div>
-            </div>
-          {% empty %}
-            <div class="feature-item">
-              <div class="feature-item__desc">Nenhum recurso liberado no momento.</div>
-            </div>
+    <section class="plan-summary">
+      <article class="plan-panel">
+        <h3>Benefícios incluídos</h3>
+        <p>{{ current_plan_description }}</p>
+        <ul class="benefit-list">
+          {% for benefit in included_benefits %}
+            <li>{{ benefit }}</li>
           {% endfor %}
-        </div>
+        </ul>
       </article>
 
-      <article class="feature-block">
-        <h3>Recursos bloqueados</h3>
-        <p>Itens que podem ser habilitados em upgrade de plano.</p>
-        <div class="feature-list">
-          {% for item in blocked_features %}
-            <div class="feature-item locked">
-              <div class="feature-item__title">
-                <span>{{ item.feature.name }}</span>
-                <span class="plan-mini-badge">Bloqueado</span>
-              </div>
-              <div class="feature-item__desc">{{ item.feature.description|default:"Recurso indisponivel no plano atual." }}</div>
-              <div class="feature-item__desc">Disponivel a partir de: <strong>{{ item.available_from_label }}</strong></div>
-              <div class="feature-item__desc">{{ item.reason_label }}</div>
-            </div>
-          {% empty %}
-            <div class="feature-item">
-              <div class="feature-item__desc">Nenhum bloqueio encontrado.</div>
-            </div>
-          {% endfor %}
+      <article class="plan-panel usage-card">
+        <div>
+          <h3>Uso do limite</h3>
+          <p>Prestadores com vínculo encerrado permanecem disponíveis no histórico e não contam no limite do plano.</p>
         </div>
+        <div class="usage-row">
+          <span class="usage-number">{{ active_provider_count }}</span>
+          <span class="usage-limit">de {{ active_provider_limit }} ativos</span>
+        </div>
+        <div class="usage-bar" aria-label="Uso de prestadores ativos">
+          <span style="--usage-width: {{ provider_usage_percent }}%;"></span>
+        </div>
+        <p>{{ provider_usage_percent }}% do limite atual utilizado.</p>
       </article>
     </section>
 
-    <section class="comparison-wrap">
-      <h3>Comparativo entre Essencial, Pro e Business</h3>
-      <p>Tabela de recursos por plano para apoiar decisao de upgrade.</p>
-      <div class="comparison-table-wrap">
-        <table class="comparison-table">
-          <thead>
-            <tr>
-              <th>Recurso</th>
-              {% for plan in comparison_plans %}
-                <th class="{% if current_plan and current_plan.id == plan.id %}current-col{% endif %}">
-                  {{ plan.name }}
-                  {% if current_plan and current_plan.id == plan.id %}
-                    <span class="plan-mini-badge current">Atual</span>
-                  {% endif %}
-                </th>
-              {% endfor %}
-            </tr>
-          </thead>
-          <tbody>
-            {% for row in comparison_rows %}
-              <tr>
-                <td>
-                  <strong>{{ row.feature.name }}</strong><br>
-                  <span class="feature-item__desc">{{ row.feature.description|default:"Recurso do produto." }}</span>
-                </td>
-                {% for availability in row.plan_availability %}
-                  <td class="{% if current_plan and current_plan.id == availability.plan.id %}current-col{% endif %}">
-                    {% if availability.enabled %}
-                      <span class="availability-yes">Disponivel</span>
-                    {% else %}
-                      <span class="availability-no">Nao incluso</span>
-                    {% endif %}
-                  </td>
-                {% endfor %}
-              </tr>
-            {% empty %}
-              <tr>
-                <td colspan="4">Sem dados de comparacao no momento.</td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <article class="plan-cta">
+    <article class="support-box">
       <div>
-        <h3>Upgrade de plano</h3>
-        {% if suggested_upgrade %}
-          <p>
-            Proximo passo recomendado: <strong>{{ suggested_upgrade.name }}</strong>.
-            Nesta fase, a migracao permanece manual, com estrutura pronta para evoluir para cobranca automatizada no futuro.
-          </p>
-        {% else %}
-          <p>Sua empresa ja utiliza o plano mais avancado disponivel neste momento.</p>
-        {% endif %}
+        <h3>Suporte comercial</h3>
+        <p>{{ support_message }}</p>
       </div>
-      <div style="display:flex; gap:8px; flex-wrap:wrap;">
-        <a class="btn primary" href="{% url 'help' %}">Solicitar upgrade</a>
-        <a class="btn" href="{% url 'company_settings' %}">Voltar para configuracoes</a>
-      </div>
+      <a class="btn primary" href="{% url 'help' %}">Falar com suporte</a>
     </article>
   </section>
 {% endblock %}
