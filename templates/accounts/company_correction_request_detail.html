@@ -1,0 +1,73 @@
+{% extends "accounts/base.html" %}
+{% block title %}HoraCerta - Problema de horario{% endblock %}
+{% block page_title %}Problema de horario{% endblock %}
+
+{% block content %}
+<style>
+  .cr-wrap{ display:grid; gap:14px; }
+  .cr-panel{ border:1px solid var(--border); border-radius:var(--radius); padding:16px; background:var(--surface-raised); }
+  .cr-head{ display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:flex-start; }
+  .cr-title{ margin:0; font-size:22px; }
+  .cr-sub{ margin:6px 0 0; color:var(--muted); font-size:13px; }
+  .cr-grid{ margin-top:12px; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+  .cr-item{ border:1px solid var(--border); border-radius:12px; padding:12px; background:rgba(255,255,255,.03); }
+  .cr-item .k{ color:var(--muted); font-size:12px; }
+  .cr-item .v{ margin-top:4px; font-weight:700; }
+  .cr-table-wrap{ margin-top:12px; border:1px solid var(--border); border-radius:14px; overflow:auto; }
+  .cr-table{ width:100%; border-collapse:collapse; min-width:720px; }
+  .cr-table th,.cr-table td{ text-align:left; padding:12px 10px; border-bottom:1px solid rgba(255,255,255,.07); vertical-align:top; }
+  .cr-table th{ color:var(--muted); font-size:13px; }
+  .cr-table tr:last-child td{ border-bottom:none; }
+  @media (max-width:900px){ .cr-grid{ grid-template-columns:1fr; } }
+</style>
+
+<div class="cr-wrap">
+  <section class="cr-panel">
+    <div class="cr-head">
+      <div>
+        <h2 class="cr-title">{{ correction_request.employee.full_name }}</h2>
+        <p class="cr-sub">{{ correction_request.company.name }} | {{ correction_request.problem_date|date:"d/m/Y" }}</p>
+      </div>
+      <a class="btn" href="{% url 'company_correction_requests' %}">Voltar</a>
+    </div>
+
+    <div class="cr-grid">
+      <article class="cr-item"><div class="k">Tipo</div><div class="v">{{ correction_request.get_problem_type_display }}</div></article>
+      <article class="cr-item"><div class="k">Status</div><div class="v"><span class="pill {{ status_tone }}">{{ correction_request.get_status_display }}</span></div></article>
+      <article class="cr-item"><div class="k">Recebido em</div><div class="v">{{ correction_request.created_at|date:"d/m/Y H:i" }}</div></article>
+      <article class="cr-item"><div class="k">Registro relacionado</div><div class="v">{% if correction_request.punch %}{{ correction_request.punch.timestamp|date:"d/m/Y H:i" }}{% else %}-{% endif %}</div></article>
+      <article class="cr-item" style="grid-column:1/-1;"><div class="k">Descricao do MEI</div><div class="v">{{ correction_request.description|linebreaksbr }}</div></article>
+      <article class="cr-item" style="grid-column:1/-1;"><div class="k">Resposta administrativa</div><div class="v">{{ correction_request.admin_response|default:"-"|linebreaksbr }}</div></article>
+    </div>
+  </section>
+
+  <section class="cr-panel">
+    <h3 style="margin:0;">Registros do dia</h3>
+    <p class="cr-sub">Consulta somente leitura. A empresa pode acompanhar o problema, sem editar horario.</p>
+    <div class="cr-table-wrap">
+      <table class="cr-table">
+        <thead>
+          <tr>
+            <th>Horario</th>
+            <th>Status</th>
+            <th>Tipo</th>
+            <th>Observacao</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for punch in day_punches %}
+            <tr>
+              <td>{{ punch.timestamp|date:"d/m/Y H:i" }}</td>
+              <td>{% if punch.is_cancelled %}<span class="pill warn">cancelado</span>{% else %}<span class="pill success">ativo</span>{% endif %}</td>
+              <td>{% if punch.is_manual %}Manual{% else %}Normal{% endif %}</td>
+              <td>{{ punch.note|default:"-" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4"><div class="empty-state">Nenhum registro encontrado para a data informada.</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}

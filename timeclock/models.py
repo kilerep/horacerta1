@@ -338,6 +338,11 @@ class PunchCorrectionRequest(models.Model):
 
 
 class InternalNotification(models.Model):
+    class Audience(models.TextChoices):
+        INTERNAL_ADMIN = "internal_admin", "Admin interno"
+        COMPANY = "company", "Empresa"
+        MEI = "mei", "Prestador/MEI"
+
     class NotificationType(models.TextChoices):
         CORRECTION_REQUEST_CREATED = "correction_request_created", "Solicitacao de correcao criada"
         CORRECTION_REQUEST_STATUS_CHANGED = "correction_request_status_changed", "Status de solicitacao alterado"
@@ -368,6 +373,12 @@ class InternalNotification(models.Model):
         related_name="created_internal_notifications",
         null=True,
         blank=True,
+    )
+    audience = models.CharField(
+        max_length=30,
+        choices=Audience.choices,
+        default=Audience.INTERNAL_ADMIN,
+        db_index=True,
     )
     notification_type = models.CharField(max_length=50, choices=NotificationType.choices)
     title = models.CharField(max_length=180)

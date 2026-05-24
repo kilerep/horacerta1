@@ -55,6 +55,10 @@
         <label for="admin_response">Resposta administrativa</label>
         <textarea id="admin_response" name="admin_response">{{ correction_request.admin_response }}</textarea>
       </div>
+      <div class="field" style="grid-column:span 2;">
+        <label for="reason">Justificativa obrigatoria para auditoria</label>
+        <textarea id="reason" name="reason" required placeholder="Explique por que este status esta sendo alterado."></textarea>
+      </div>
       <button class="btn primary" type="submit">Salvar análise</button>
     </form>
   </section>

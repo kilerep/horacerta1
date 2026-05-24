@@ -16,6 +16,15 @@
         </select>
       </label>
       <label>
+        Publico
+        <select name="audience">
+          <option value="">Todos</option>
+          {% for value,label in notification_audience_choices %}
+            <option value="{{ value }}" {% if audience_filter == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>
         Empresa
         <select name="company">
           <option value="">Todas</option>
@@ -69,6 +78,7 @@
           <tr>
             <th>Data</th>
             <th>Tipo</th>
+            <th>Publico</th>
             <th>Destino</th>
             <th>Mensagem</th>
             <th>Leitura</th>
@@ -81,6 +91,7 @@
               <tr>
                 <td data-label="Data">{{ item.created_at|date:"d/m/Y H:i" }}</td>
                 <td data-label="Tipo"><span class="pill {{ row.tone }}">{{ item.get_notification_type_display }}</span></td>
+                <td data-label="Publico">{{ item.get_audience_display }}</td>
                 <td data-label="Destino">
                   {% if item.recipient_company %}{{ item.recipient_company.name }}{% endif %}
                   {% if item.recipient_user %}<div class="muted">{{ item.recipient_user.email|default:item.recipient_user.username }}</div>{% endif %}
@@ -106,7 +117,7 @@
               </tr>
             {% endwith %}
           {% empty %}
-            <tr><td colspan="6"><div class="empty-state">Nenhuma notificacao encontrada.</div></td></tr>
+            <tr><td colspan="7"><div class="empty-state">Nenhuma notificacao encontrada.</div></td></tr>
           {% endfor %}
         </tbody>
       </table>

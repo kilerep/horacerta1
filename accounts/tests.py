@@ -6,7 +6,15 @@ from datetime import timedelta
 from uuid import uuid4
 
 from companies.models import Company, CompanyAttendancePolicy, CompanyAuthorizedLocation, Employee, InternalAdminActionLog
-from timeclock.models import ActivityReportRequest, Contract, Punch, PunchCorrectionLog, PunchCorrectionRequest, ServiceReport
+from timeclock.models import (
+    ActivityReportRequest,
+    Contract,
+    InternalNotification,
+    Punch,
+    PunchCorrectionLog,
+    PunchCorrectionRequest,
+    ServiceReport,
+)
 from accounts.mei_context import MEI_SELECTED_CONTRACT_SESSION_KEY
 from .forms import CompanyAttendancePolicyForm, CompanyAuthorizedLocationForm
 from .services import MeiLinkError, create_or_link_mei_by_email
@@ -264,6 +272,7 @@ class InternalDashboardTests(TestCase):
             {
                 "status": PunchCorrectionRequest.Status.CORRECTED,
                 "admin_response": "Corrigido pelo backoffice.",
+                "reason": "Analise interna concluida.",
             },
         )
 
@@ -272,6 +281,97 @@ class InternalDashboardTests(TestCase):
         self.assertEqual(request_obj.status, PunchCorrectionRequest.Status.CORRECTED)
         self.assertEqual(request_obj.resolved_by_id, self.admin_user.id)
         self.assertTrue(request_obj.resolved_at)
+        self.assertTrue(
+            InternalAdminActionLog.objects.filter(
+                action="correction_request_status_changed",
+                target_type="punch_correction_request",
+                target_id=str(request_obj.id),
+            ).exists()
+        )
+
+    def test_superuser_must_justify_correction_request_status_change(self):
+        request_obj = PunchCorrectionRequest.objects.create(
+            employee=self.employee,
+            user=self.employee_user,
+            company=self.company,
+            contract=self.contract,
+            punch=Punch.objects.first(),
+            problem_date=timezone.localdate(),
+            problem_type=PunchCorrectionRequest.ProblemType.WRONG_TIME,
+            description="Horario errado.",
+        )
+        self.client.force_login(self.admin_user)
+
+        response = self.client.post(
+            reverse("internal_correction_request_detail", args=[request_obj.id]),
+            {
+                "status": PunchCorrectionRequest.Status.REJECTED,
+                "admin_response": "Sem evidencias.",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        request_obj.refresh_from_db()
+        self.assertEqual(request_obj.status, PunchCorrectionRequest.Status.OPEN)
+        self.assertFalse(
+            InternalAdminActionLog.objects.filter(
+                action="correction_request_status_changed",
+                target_id=str(request_obj.id),
+            ).exists()
+        )
+
+    def test_company_can_view_problem_but_not_edit_punch(self):
+        request_obj = PunchCorrectionRequest.objects.create(
+            employee=self.employee,
+            user=self.employee_user,
+            company=self.company,
+            contract=self.contract,
+            punch=Punch.objects.first(),
+            problem_date=timezone.localdate(),
+            problem_type=PunchCorrectionRequest.ProblemType.WRONG_TIME,
+            description="Horario errado.",
+        )
+        self.client.force_login(self.company_owner)
+
+        response = self.client.get(reverse("company_correction_request_detail", args=[request_obj.id]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Horario errado.")
+        self.assertContains(response, "Consulta somente leitura")
+        self.assertNotContains(response, "Corrigir horario")
+        self.assertNotContains(response, "Cancelar registro")
+
+    def test_common_users_do_not_see_internal_admin_notifications(self):
+        InternalNotification.objects.create(
+            recipient_user=self.employee_user,
+            audience=InternalNotification.Audience.INTERNAL_ADMIN,
+            notification_type=InternalNotification.NotificationType.PUNCH_CORRECTED,
+            title="Aviso interno",
+            message="Nao deve aparecer ao MEI.",
+        )
+        InternalNotification.objects.create(
+            recipient_company=self.company,
+            audience=InternalNotification.Audience.INTERNAL_ADMIN,
+            notification_type=InternalNotification.NotificationType.PUNCH_CORRECTED,
+            title="Aviso interno empresa",
+            message="Nao deve aparecer a empresa.",
+        )
+        InternalNotification.objects.create(
+            recipient_user=self.employee_user,
+            audience=InternalNotification.Audience.MEI,
+            notification_type=InternalNotification.NotificationType.PUNCH_CORRECTED,
+            title="Aviso MEI",
+            message="Deve aparecer ao MEI.",
+        )
+
+        self.client.force_login(self.employee_user)
+        mei_response = self.client.get(reverse("mei_notifications"))
+        self.assertContains(mei_response, "Aviso MEI")
+        self.assertNotContains(mei_response, "Aviso interno")
+
+        self.client.force_login(self.company_owner)
+        company_response = self.client.get(reverse("company_notifications"))
+        self.assertNotContains(company_response, "Aviso interno empresa")
 
     def test_superuser_can_deactivate_and_activate_employee_user(self):
         self.client.force_login(self.admin_user)

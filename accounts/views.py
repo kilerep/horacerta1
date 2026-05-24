@@ -322,6 +322,13 @@ def _company_ack_allowed(notification):
     }
 
 
+def _require_admin_reason(raw_reason):
+    reason = (raw_reason or "").strip()
+    if not reason:
+        raise ValueError("Informe uma justificativa para registrar a auditoria.")
+    return reason
+
+
 AUDIT_ACTION_CHOICES = [
     ("time_changed", "Correcao de horario"),
     ("cancelled", "Cancelamento de registro"),
@@ -333,6 +340,7 @@ AUDIT_ACTION_CHOICES = [
     ("deactivate_user", "Desativacao de usuario"),
     ("activate_user", "Reativacao de usuario"),
     ("company_acknowledged", "Ciencia marcada pela empresa"),
+    ("correction_request_status_changed", "Status de solicitacao alterado"),
 ]
 
 
@@ -1273,7 +1281,7 @@ def internal_punch_detail(request, punch_id):
                     punch=punch,
                     admin_user=request.user,
                     note=request.POST.get("admin_note"),
-                    reason=reason or request.POST.get("admin_note"),
+                    reason=reason,
                 )
                 notify_punch_admin_action(
                     punch,
@@ -1374,28 +1382,45 @@ def internal_correction_request_detail(request, request_id):
     if request.method == "POST":
         new_status = (request.POST.get("status") or "").strip()
         response_text = (request.POST.get("admin_response") or "").strip()
+        reason = (request.POST.get("reason") or "").strip()
         valid_statuses = {choice[0] for choice in PunchCorrectionRequest.Status.choices}
         if new_status not in valid_statuses:
             messages.error(request, "Status invalido para a solicitacao.")
         else:
-            old_status = correction_request.status
-            correction_request.status = new_status
-            correction_request.admin_response = response_text
-            if new_status in {PunchCorrectionRequest.Status.CORRECTED, PunchCorrectionRequest.Status.REJECTED}:
-                correction_request.resolved_by = request.user
-                correction_request.resolved_at = timezone.now()
-            else:
-                correction_request.resolved_by = None
-                correction_request.resolved_at = None
-            correction_request.save(
-                update_fields=["status", "admin_response", "resolved_by", "resolved_at", "updated_at"]
-            )
-            notify_correction_request_status_changed(
-                correction_request,
-                actor_user=request.user,
-                old_status=old_status,
-            )
-            messages.success(request, "Solicitacao atualizada.")
+            try:
+                reason = _require_admin_reason(reason)
+                old_status = correction_request.status
+                old_response = correction_request.admin_response
+                correction_request.status = new_status
+                correction_request.admin_response = response_text
+                if new_status in {PunchCorrectionRequest.Status.CORRECTED, PunchCorrectionRequest.Status.REJECTED}:
+                    correction_request.resolved_by = request.user
+                    correction_request.resolved_at = timezone.now()
+                else:
+                    correction_request.resolved_by = None
+                    correction_request.resolved_at = None
+                correction_request.save(
+                    update_fields=["status", "admin_response", "resolved_by", "resolved_at", "updated_at"]
+                )
+                InternalAdminActionLog.objects.create(
+                    admin_user=request.user,
+                    action="correction_request_status_changed",
+                    target_type="punch_correction_request",
+                    target_id=str(correction_request.id),
+                    description=(
+                        f"Status: {old_status} -> {new_status}. "
+                        f"Resposta anterior: {old_response or '-'}. "
+                        f"Justificativa: {reason}"
+                    ),
+                )
+                notify_correction_request_status_changed(
+                    correction_request,
+                    actor_user=request.user,
+                    old_status=old_status,
+                )
+                messages.success(request, "Solicitacao atualizada com auditoria registrada.")
+            except ValueError as exc:
+                messages.error(request, str(exc))
         return redirect("internal_correction_request_detail", request_id=correction_request.id)
 
     day_start = timezone.make_aware(datetime.combine(correction_request.problem_date, time.min))
@@ -1511,7 +1536,13 @@ def internal_audit(request):
                 )
             )
 
-    admin_action_values = {"deactivate_company", "activate_company", "deactivate_user", "activate_user"}
+    admin_action_values = {
+        "deactivate_company",
+        "activate_company",
+        "deactivate_user",
+        "activate_user",
+        "correction_request_status_changed",
+    }
     if not action_filter or action_filter in admin_action_values:
         admin_logs = InternalAdminActionLog.objects.select_related("admin_user").filter(action__in=admin_action_values)
         admin_logs = _apply_datetime_bounds(admin_logs, "created_at", start_dt, end_dt)
@@ -1521,12 +1552,22 @@ def internal_audit(request):
             admin_logs = admin_logs.filter(admin_user_id=actor_id)
         if company_id:
             company_employee_ids = [str(item.id) for item in Employee.objects.filter(company_id=company_id).only("id")]
+            company_correction_request_ids = [
+                str(item.id) for item in PunchCorrectionRequest.objects.filter(company_id=company_id).only("id")
+            ]
             admin_logs = admin_logs.filter(
                 Q(target_type="company", target_id=str(company_id))
                 | Q(target_type="employee", target_id__in=company_employee_ids)
+                | Q(target_type="punch_correction_request", target_id__in=company_correction_request_ids)
             )
         if employee_id:
-            admin_logs = admin_logs.filter(target_type="employee", target_id=str(employee_id))
+            employee_correction_request_ids = [
+                str(item.id) for item in PunchCorrectionRequest.objects.filter(employee_id=employee_id).only("id")
+            ]
+            admin_logs = admin_logs.filter(
+                Q(target_type="employee", target_id=str(employee_id))
+                | Q(target_type="punch_correction_request", target_id__in=employee_correction_request_ids)
+            )
         admin_logs = list(admin_logs[:300])
         company_targets = {
             log.target_id for log in admin_logs
@@ -1536,6 +1577,10 @@ def internal_audit(request):
             log.target_id for log in admin_logs
             if log.target_type == "employee"
         }
+        correction_request_targets = {
+            log.target_id for log in admin_logs
+            if log.target_type == "punch_correction_request"
+        }
         companies_by_id = {
             str(company.id): company
             for company in Company.objects.filter(id__in=company_targets)
@@ -1544,11 +1589,29 @@ def internal_audit(request):
             str(employee.id): employee
             for employee in Employee.objects.select_related("company", "user").filter(id__in=employee_targets)
         }
+        correction_requests_by_id = {
+            str(item.id): item
+            for item in PunchCorrectionRequest.objects.select_related("company", "employee", "employee__user").filter(
+                id__in=correction_request_targets
+            )
+        }
         for log in admin_logs:
             company = companies_by_id.get(log.target_id) if log.target_type == "company" else None
             employee = employees_by_id.get(log.target_id) if log.target_type == "employee" else None
+            correction_request = (
+                correction_requests_by_id.get(log.target_id)
+                if log.target_type == "punch_correction_request"
+                else None
+            )
+            if correction_request:
+                company = correction_request.company
+                employee = correction_request.employee
             if employee and not company:
                 company = employee.company
+            if company_id and correction_request and str(company.id) != str(company_id):
+                continue
+            if employee_id and correction_request and str(employee.id) != str(employee_id):
+                continue
             rows.append(
                 _audit_row(
                     created_at=log.created_at,
@@ -1556,11 +1619,20 @@ def internal_audit(request):
                     action_type=log.action,
                     company=company,
                     employee=employee,
-                    old_value="ativo" if log.action.startswith("deactivate") else "inativo",
-                    new_value="inativo" if log.action.startswith("deactivate") else "ativo",
+                    old_value=(
+                        "Status anterior"
+                        if log.action == "correction_request_status_changed"
+                        else "ativo" if log.action.startswith("deactivate") else "inativo"
+                    ),
+                    new_value=(
+                        "Status atualizado"
+                        if log.action == "correction_request_status_changed"
+                        else "inativo" if log.action.startswith("deactivate") else "ativo"
+                    ),
                     reason=log.description,
                     target_url=(
-                        reverse("internal_company_detail", args=[company.id]) if company and not employee
+                        reverse("internal_correction_request_detail", args=[correction_request.id]) if correction_request
+                        else reverse("internal_company_detail", args=[company.id]) if company and not employee
                         else reverse("internal_employee_detail", args=[employee.id]) if employee
                         else ""
                     ),
@@ -1626,6 +1698,7 @@ def internal_audit(request):
 @internal_staff_required
 def internal_notifications(request):
     type_filter = (request.GET.get("type") or "").strip()
+    audience_filter = (request.GET.get("audience") or "").strip()
     company_id = (request.GET.get("company") or "").strip()
     user_id = (request.GET.get("user") or "").strip()
     read_filter = (request.GET.get("read") or "").strip()
@@ -1639,6 +1712,8 @@ def internal_notifications(request):
     )
     if type_filter:
         notifications = notifications.filter(notification_type=type_filter)
+    if audience_filter:
+        notifications = notifications.filter(audience=audience_filter)
     if company_id:
         notifications = notifications.filter(recipient_company_id=company_id)
     if user_id:
@@ -1667,6 +1742,7 @@ def internal_notifications(request):
                 for notification in notifications[:300]
             ],
             "type_filter": type_filter,
+            "audience_filter": audience_filter,
             "company_id": company_id,
             "user_id": user_id,
             "read_filter": read_filter,
@@ -1674,6 +1750,7 @@ def internal_notifications(request):
             "date_from": date_from,
             "date_to": date_to,
             "notification_type_choices": InternalNotification.NotificationType.choices,
+            "notification_audience_choices": InternalNotification.Audience.choices,
             "companies": [
                 {"company": company, "selected": str(company.id) == company_id}
                 for company in Company.objects.order_by("name")
@@ -3952,7 +4029,10 @@ def company_notifications(request):
     if not company:
         return redirect("dashboard_empresa")
 
-    notifications = InternalNotification.objects.filter(recipient_company=company).select_related(
+    notifications = InternalNotification.objects.filter(
+        recipient_company=company,
+        audience=InternalNotification.Audience.COMPANY,
+    ).select_related(
         "actor_user",
         "company_acknowledged_by",
     )
@@ -3984,6 +4064,7 @@ def company_notification_action(request, notification_id):
         InternalNotification.objects.select_related("recipient_company"),
         id=notification_id,
         recipient_company=company,
+        audience=InternalNotification.Audience.COMPANY,
     )
     action = (request.POST.get("action") or "").strip()
     if action == "read":
@@ -3995,6 +4076,82 @@ def company_notification_action(request, notification_id):
     else:
         messages.error(request, "Acao invalida para esta notificacao.")
     return redirect("company_notifications")
+
+
+@login_required
+def company_correction_requests(request):
+    denied = _redirect_if_not_empresa(request)
+    if denied:
+        return denied
+    company = _company_for_user(request.user)
+    if not company:
+        return redirect("dashboard_empresa")
+
+    requests_qs = PunchCorrectionRequest.objects.filter(company=company).select_related(
+        "employee",
+        "employee__user",
+        "contract",
+        "punch",
+        "resolved_by",
+    )
+    return render(
+        request,
+        "accounts/company_correction_requests.html",
+        {
+            "company": company,
+            "rows": [
+                {
+                    "request": item,
+                    "status_tone": _correction_request_status_tone(item.status),
+                }
+                for item in requests_qs[:200]
+            ],
+        },
+    )
+
+
+@login_required
+def company_correction_request_detail(request, request_id):
+    denied = _redirect_if_not_empresa(request)
+    if denied:
+        return denied
+    company = _company_for_user(request.user)
+    if not company:
+        return redirect("dashboard_empresa")
+
+    correction_request = get_object_or_404(
+        PunchCorrectionRequest.objects.select_related(
+            "employee",
+            "employee__user",
+            "company",
+            "contract",
+            "punch",
+            "resolved_by",
+        ),
+        id=request_id,
+        company=company,
+    )
+    day_start = timezone.make_aware(datetime.combine(correction_request.problem_date, time.min))
+    day_end = timezone.make_aware(datetime.combine(correction_request.problem_date, time.max))
+    day_punches = (
+        Punch.all_objects.filter(
+            contract__employee=correction_request.employee,
+            contract__company=company,
+            timestamp__range=(day_start, day_end),
+        )
+        .select_related("contract", "contract__company", "contract__employee")
+        .order_by("timestamp")
+    )
+    return render(
+        request,
+        "accounts/company_correction_request_detail.html",
+        {
+            "company": company,
+            "correction_request": correction_request,
+            "status_tone": _correction_request_status_tone(correction_request.status),
+            "day_punches": day_punches,
+        },
+    )
 
 
 @login_required
@@ -4372,7 +4529,10 @@ def mei_notifications(request):
     denied = _redirect_if_not_mei(request)
     if denied:
         return denied
-    notifications = InternalNotification.objects.filter(recipient_user=request.user).select_related(
+    notifications = InternalNotification.objects.filter(
+        recipient_user=request.user,
+        audience=InternalNotification.Audience.MEI,
+    ).select_related(
         "actor_user",
         "recipient_company",
     )
@@ -4394,7 +4554,12 @@ def mei_notification_action(request, notification_id):
     denied = _redirect_if_not_mei(request)
     if denied:
         return denied
-    notification = get_object_or_404(InternalNotification, id=notification_id, recipient_user=request.user)
+    notification = get_object_or_404(
+        InternalNotification,
+        id=notification_id,
+        recipient_user=request.user,
+        audience=InternalNotification.Audience.MEI,
+    )
     action = (request.POST.get("action") or "").strip()
     if action == "read":
         _mark_notification_read(notification)

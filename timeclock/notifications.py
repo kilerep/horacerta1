@@ -14,13 +14,22 @@ def create_internal_notification(
     recipient_user=None,
     recipient_company=None,
     target_url="",
+    audience=None,
 ):
     if not recipient_user and not recipient_company:
         return None
+    if audience is None:
+        if recipient_company:
+            audience = InternalNotification.Audience.COMPANY
+        elif recipient_user and getattr(recipient_user, "is_superuser", False):
+            audience = InternalNotification.Audience.INTERNAL_ADMIN
+        else:
+            audience = InternalNotification.Audience.MEI
     return InternalNotification.objects.create(
         recipient_user=recipient_user,
         recipient_company=recipient_company,
         actor_user=actor_user,
+        audience=audience,
         notification_type=notification_type,
         title=title,
         message=message,
@@ -38,6 +47,7 @@ def notify_internal_staff(*, notification_type, title, message, actor_user=None,
         create_internal_notification(
             recipient_user=user,
             actor_user=actor_user,
+            audience=InternalNotification.Audience.INTERNAL_ADMIN,
             notification_type=notification_type,
             title=title,
             message=message,
@@ -68,14 +78,16 @@ def notify_correction_request_created(correction_request):
     create_internal_notification(
         recipient_company=correction_request.company,
         actor_user=correction_request.user,
+        audience=InternalNotification.Audience.COMPANY,
         notification_type=InternalNotification.NotificationType.CORRECTION_REQUEST_CREATED,
         title=title,
         message=message,
-        target_url=reverse("company_notifications"),
+        target_url=reverse("company_correction_request_detail", args=[correction_request.id]),
     )
     create_internal_notification(
         recipient_user=correction_request.user,
         actor_user=correction_request.user,
+        audience=InternalNotification.Audience.MEI,
         notification_type=InternalNotification.NotificationType.CORRECTION_REQUEST_CREATED,
         title="Solicitacao enviada",
         message=f"Sua solicitacao sobre {problem_date} foi registrada para analise interna.",
@@ -100,6 +112,7 @@ def notify_correction_request_status_changed(correction_request, *, actor_user, 
     create_internal_notification(
         recipient_user=correction_request.user,
         actor_user=actor_user,
+        audience=InternalNotification.Audience.MEI,
         notification_type=InternalNotification.NotificationType.CORRECTION_REQUEST_STATUS_CHANGED,
         title=title,
         message=message,
@@ -108,10 +121,11 @@ def notify_correction_request_status_changed(correction_request, *, actor_user, 
     create_internal_notification(
         recipient_company=correction_request.company,
         actor_user=actor_user,
+        audience=InternalNotification.Audience.COMPANY,
         notification_type=InternalNotification.NotificationType.CORRECTION_REQUEST_STATUS_CHANGED,
         title=title,
         message=f"{correction_request.employee.full_name}: {message}",
-        target_url=reverse("company_notifications"),
+        target_url=reverse("company_correction_request_detail", args=[correction_request.id]),
     )
     notify_internal_staff(
         actor_user=actor_user,
@@ -152,6 +166,7 @@ def notify_punch_admin_action(punch, *, actor_user, action_type):
     create_internal_notification(
         recipient_user=employee_user,
         actor_user=actor_user,
+        audience=InternalNotification.Audience.MEI,
         notification_type=notification_type,
         title=title,
         message=message,
@@ -160,6 +175,7 @@ def notify_punch_admin_action(punch, *, actor_user, action_type):
     create_internal_notification(
         recipient_company=punch.contract.company,
         actor_user=actor_user,
+        audience=InternalNotification.Audience.COMPANY,
         notification_type=notification_type,
         title=title,
         message=f"{punch.contract.employee.full_name}: {message}",

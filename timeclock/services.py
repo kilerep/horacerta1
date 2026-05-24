@@ -183,7 +183,7 @@ def add_punch_admin_note(*, punch, admin_user, note, reason=None):
     clean_note = (note or "").strip()
     if not clean_note:
         raise ValueError("Informe a observacao administrativa.")
-    clean_reason = _require_correction_reason(reason or clean_note)
+    clean_reason = _require_correction_reason(reason)
     old_status = _punch_status(punch)
     old_datetime = punch.timestamp
     punch.admin_note = clean_note

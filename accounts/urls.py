@@ -89,6 +89,12 @@ urlpatterns = [
         views.company_notification_action,
         name="company_notification_action",
     ),
+    path("empresa/problemas-horario/", views.company_correction_requests, name="company_correction_requests"),
+    path(
+        "empresa/problemas-horario/<uuid:request_id>/",
+        views.company_correction_request_detail,
+        name="company_correction_request_detail",
+    ),
     path("dashboard/history/", views.company_history, name="company_history"),
     path("empresa/historico/", views.company_history, name="company_history_legacy"),
     path("empresa/docs/", views.company_docs, name="company_docs"),

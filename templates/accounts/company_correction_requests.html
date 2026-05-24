@@ -1,0 +1,61 @@
+{% extends "accounts/base.html" %}
+{% block title %}HoraCerta - Problemas de horario{% endblock %}
+{% block page_title %}Problemas de horario{% endblock %}
+
+{% block content %}
+<style>
+  .cr-wrap{ display:grid; gap:14px; }
+  .cr-panel{ border:1px solid var(--border); border-radius:var(--radius); padding:16px; background:var(--surface-raised); }
+  .cr-head{ display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:flex-start; }
+  .cr-title{ margin:0; font-size:22px; }
+  .cr-sub{ margin:6px 0 0; color:var(--muted); font-size:13px; }
+  .cr-table-wrap{ margin-top:12px; border:1px solid var(--border); border-radius:14px; overflow:auto; }
+  .cr-table{ width:100%; border-collapse:collapse; min-width:860px; }
+  .cr-table th,.cr-table td{ text-align:left; padding:12px 10px; border-bottom:1px solid rgba(255,255,255,.07); vertical-align:top; }
+  .cr-table th{ color:var(--muted); font-size:13px; }
+  .cr-table tr:last-child td{ border-bottom:none; }
+</style>
+
+<div class="cr-wrap">
+  <section class="cr-panel">
+    <div class="cr-head">
+      <div>
+        <h2 class="cr-title">Problemas reportados</h2>
+        <p class="cr-sub">Leitura da empresa. Correcoes de horario sao feitas apenas pelo admin interno.</p>
+      </div>
+      <a class="btn" href="{% url 'company_notifications' %}">Notificacoes</a>
+    </div>
+
+    <div class="cr-table-wrap">
+      <table class="cr-table">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Profissional</th>
+            <th>Tipo</th>
+            <th>Status</th>
+            <th>Recebido em</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+            {% with item=row.request %}
+              <tr>
+                <td>{{ item.problem_date|date:"d/m/Y" }}</td>
+                <td>{{ item.employee.full_name }}</td>
+                <td>{{ item.get_problem_type_display }}</td>
+                <td><span class="pill {{ row.status_tone }}">{{ item.get_status_display }}</span></td>
+                <td>{{ item.created_at|date:"d/m/Y H:i" }}</td>
+                <td><a class="btn" href="{% url 'company_correction_request_detail' item.id %}">Abrir</a></td>
+              </tr>
+            {% endwith %}
+          {% empty %}
+            <tr><td colspan="6"><div class="empty-state">Nenhum problema de horario reportado.</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}
