@@ -3,7 +3,6 @@
 {% block page_title %}Configurações{% endblock %}
 
 {% block content %}
-{% url 'company_plan' as company_plan_url %}
 <style>
   .settings-grid{
     display:grid;
@@ -49,41 +48,15 @@
     </article>
 
     <article class="settings-item">
-      {% if header_can_use_advanced_reports %}
-        <h3>Relatórios</h3>
-        <p>Análise e exportação de dados operacionais.</p>
-        <div><a class="btn" href="{% url 'company_reports' %}">Abrir relatórios</a></div>
-      {% else %}
-        {% include "accounts/components/premium_lock_card.html" with
-          premium_title="Relatórios"
-          premium_description="Análise, exportação e consolidação de indicadores para decisão."
-          premium_badge_label=header_reports_required_plan_label
-          premium_tone=header_reports_required_plan_tone
-          premium_required_plan_name=header_reports_required_plan_name
-          premium_current_plan_name=header_current_plan_name|default:"Sem plano ativo"
-          premium_reason="Recurso ainda não liberado para a assinatura atual."
-          premium_upgrade_url=company_plan_url
-        %}
-      {% endif %}
+      <h3>Relatórios</h3>
+      <p>Análise e exportação de dados operacionais.</p>
+      <div><a class="btn" href="{% url 'company_reports' %}">Abrir relatórios</a></div>
     </article>
 
     <article class="settings-item">
-      {% if header_can_use_incident_center %}
-        <h3>Centro de pendências</h3>
-        <p>Acompanhe dias incompletos, observações e itens de revisão por prestador.</p>
-        <div><a class="btn" href="{% url 'company_incident_center' %}">Abrir painel</a></div>
-      {% else %}
-        {% include "accounts/components/premium_lock_card.html" with
-          premium_title="Centro de pendências"
-          premium_description="Painel operacional para RH tratar ocorrências e inconsistências no período."
-          premium_badge_label=header_incident_required_plan_label
-          premium_tone=header_incident_required_plan_tone
-          premium_required_plan_name=header_incident_required_plan_name
-          premium_current_plan_name=header_current_plan_name|default:"Sem plano ativo"
-          premium_reason="Recurso ainda não liberado para a assinatura atual."
-          premium_upgrade_url=company_plan_url
-        %}
-      {% endif %}
+      <h3>Centro de pendências</h3>
+      <p>Acompanhe dias incompletos, observações e itens de revisão por prestador.</p>
+      <div><a class="btn" href="{% url 'company_incident_center' %}">Abrir painel</a></div>
     </article>
 
     <article class="settings-item">

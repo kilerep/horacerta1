@@ -5,7 +5,15 @@ from django.utils import timezone
 from datetime import timedelta
 from uuid import uuid4
 
-from companies.models import Company, CompanyAttendancePolicy, CompanyAuthorizedLocation, Employee, InternalAdminActionLog
+from companies.models import (
+    Company,
+    CompanyAttendancePolicy,
+    CompanyAuthorizedLocation,
+    CompanySubscription,
+    Employee,
+    InternalAdminActionLog,
+    Plan,
+)
 from timeclock.models import (
     ActivityReportRequest,
     Contract,
@@ -386,6 +394,118 @@ class InternalDashboardTests(TestCase):
         self.assertEqual(ended_response.status_code, 200)
         self.assertContains(ended_response, self.employee.full_name)
         self.assertContains(ended_response, "Vínculo encerrado")
+
+    def _ensure_essential_plan(self):
+        return Plan.objects.update_or_create(
+            code="essencial",
+            defaults={
+                "name": "Essencial",
+                "tier": 1,
+                "description": "Plano base",
+                "is_active": True,
+            },
+        )[0]
+
+    def _create_subscription(self, status=CompanySubscription.Status.ACTIVE, **overrides):
+        plan = self._ensure_essential_plan()
+        defaults = {
+            "company": self.company,
+            "plan": plan,
+            "status": status,
+            "is_current": True,
+            "starts_at": timezone.now() - timedelta(days=1),
+            "current_period_start": timezone.now() - timedelta(days=1),
+            "current_period_end": timezone.now() + timedelta(days=29),
+        }
+        defaults.update(overrides)
+        return CompanySubscription.objects.create(**defaults)
+
+    def test_company_plan_page_shows_active_essential_plan(self):
+        self._create_subscription()
+        self.client.force_login(self.company_owner)
+
+        response = self.client.get(reverse("company_plan"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "HoraCerta Essencial")
+        self.assertContains(response, "Ativo")
+        self.assertContains(response, "Valor mensal: R$ 79,00")
+        self.assertContains(response, "Prestadores ativos inclu")
+        self.assertContains(response, "Prestadores ativos em uso:")
+        self.assertContains(response, "1 de 10")
+        self.assertContains(response, "Prestadores com v")
+        self.assertNotContains(response, "Plano Pro")
+        self.assertNotContains(response, "Upgrade")
+
+    def test_company_plan_page_shows_trial_message(self):
+        trial_end = timezone.now() + timedelta(days=14)
+        self._create_subscription(
+            status=CompanySubscription.Status.TRIAL,
+            trial_ends_at=trial_end,
+        )
+        self.client.force_login(self.company_owner)
+
+        response = self.client.get(reverse("company_plan"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Em teste")
+        self.assertContains(response, "Sua empresa est")
+        self.assertContains(response, "avaliando o HoraCerta Essencial")
+        self.assertContains(response, "Durante o per")
+        self.assertContains(response, trial_end.strftime("%d/%m/%Y"))
+
+    def test_company_plan_limit_counts_only_active_contracts(self):
+        self._create_subscription()
+        for index in range(2, 11):
+            user = User.objects.create_user(
+                username=f"mei-limite-{index}@example.com",
+                email=f"mei-limite-{index}@example.com",
+                password="Teste@12345",
+                role=User.Role.FUNCIONARIO,
+            )
+            employee = Employee.objects.create(
+                user=user,
+                company=self.company,
+                full_name=f"MEI Limite {index}",
+                is_active=True,
+            )
+            Contract.objects.create(
+                employee=employee,
+                company=self.company,
+                hourly_rate="100.00",
+                start_date=timezone.localdate(),
+                is_active=True,
+            )
+
+        ended_user = User.objects.create_user(
+            username="mei-encerrado-limite@example.com",
+            email="mei-encerrado-limite@example.com",
+            password="Teste@12345",
+            role=User.Role.FUNCIONARIO,
+        )
+        ended_employee = Employee.objects.create(
+            user=ended_user,
+            company=self.company,
+            full_name="MEI Encerrado Limite",
+            is_active=True,
+        )
+        Contract.objects.create(
+            employee=ended_employee,
+            company=self.company,
+            hourly_rate="100.00",
+            start_date=timezone.localdate(),
+            end_date=timezone.localdate(),
+            is_active=False,
+        )
+
+        self.client.force_login(self.company_owner)
+        response = self.client.get(reverse("company_plan"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["active_provider_count"], 10)
+        self.assertContains(response, "10 de 10")
+        self.assertContains(response, "atingiu o limite de 10 prestadores ativos")
+        self.assertContains(response, "encerrar v")
 
     def test_common_users_do_not_see_internal_admin_notifications(self):
         InternalNotification.objects.create(

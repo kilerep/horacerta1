@@ -36,9 +36,6 @@ from companies.models import (
     EmployeeRelationshipAuditLog,
     InternalAdminActionLog,
 )
-from companies.feature_flags import (
-    require_company_feature,
-)
 from timeclock.models import (
     ActivityReportRequest,
     Contract,
@@ -464,27 +461,38 @@ def _recent_30_day_summary_for_employee(employee):
 
 
 def _subscription_status_badge(subscription, at_time=None):
+    at = at_time or timezone.now()
     if not subscription:
         return {
-            "label": "Sem assinatura ativa",
+            "label": "Suspenso",
             "tone": "warn",
-            "hint": "A empresa ainda não possui plano atual definido.",
+            "hint": "Plano ainda não configurado para esta empresa.",
         }
 
-    at = at_time or timezone.now()
     status = subscription.status
     is_access_active = subscription.is_access_active(at)
+    trial_has_ended = bool(subscription.trial_ends_at and at > subscription.trial_ends_at)
 
     if status == CompanySubscription.Status.TRIAL:
-        tone = "pending" if is_access_active else "warn"
-        label = "Teste grátis"
-        hint = "Período de avaliação em andamento." if is_access_active else "Teste grátis encerrado."
+        if trial_has_ended or not is_access_active:
+            label = "Vencido"
+            tone = "warn"
+            hint = "Teste grátis encerrado."
+        else:
+            label = "Em teste"
+            tone = "pending"
+            hint = "Período de teste grátis ativo."
     elif status == CompanySubscription.Status.ACTIVE:
-        tone = "success" if is_access_active else "warn"
-        label = "Ativo"
-        hint = "Plano ativo e apto para uso." if is_access_active else "Plano ativo sem acesso no período atual."
+        if is_access_active:
+            label = "Ativo"
+            tone = "success"
+            hint = "Plano ativo e apto para uso."
+        else:
+            label = "Vencido"
+            tone = "warn"
+            hint = "Plano vencido para o período atual."
     elif status == CompanySubscription.Status.PAST_DUE:
-        label = "Pendente"
+        label = "Suspenso"
         tone = "warn"
         hint = "Regularização comercial pendente."
     elif status == CompanySubscription.Status.CANCELED:
@@ -492,9 +500,9 @@ def _subscription_status_badge(subscription, at_time=None):
         tone = "warn"
         hint = "Assinatura cancelada."
     elif status == CompanySubscription.Status.EXPIRED:
-        label = "Expirado"
+        label = "Vencido"
         tone = "warn"
-        hint = "Assinatura expirada."
+        hint = "Plano vencido."
     else:
         label = "Status não mapeado"
         tone = "warn"
@@ -508,29 +516,14 @@ def _subscription_status_badge(subscription, at_time=None):
 
 
 def _commercial_plan_snapshot(subscription):
-    plan_code = ((subscription.plan.code if subscription else "") or "").strip().lower()
-    raw_plan_name = (subscription.plan.name if subscription else "") or "Essencial"
-    plan_name = raw_plan_name if raw_plan_name.lower().startswith("horacerta") else f"HoraCerta {raw_plan_name}"
-
-    defaults = {
-        "essencial": {
-            "monthly_price": "R$ 79,00",
-            "active_provider_limit": 10,
-            "description": "Plano mensal para acompanhamento de prestadores, vínculos, registros de horário e relatórios.",
-        },
-    }
-    fallback = {
-        "monthly_price": "Sob configuração comercial",
-        "active_provider_limit": 10,
-        "description": "Plano configurado para a operação atual da empresa no HoraCerta.",
-    }
-    commercial = defaults.get(plan_code, fallback)
-
     return {
-        "name": plan_name,
-        "monthly_price": commercial["monthly_price"],
-        "active_provider_limit": commercial["active_provider_limit"],
-        "description": commercial["description"],
+        "name": "HoraCerta Essencial",
+        "monthly_price": "R$ 79,00",
+        "active_provider_limit": 10,
+        "description": (
+            "Sua empresa possui acesso aos recursos essenciais para acompanhar prestadores, vínculos, "
+            "registros de horário, histórico, conferência, notificações e relatórios."
+        ),
     }
 
 
@@ -3290,7 +3283,6 @@ def company_operational_summary(request):
 
 
 @login_required
-@require_company_feature("advanced_reports")
 def company_reports(request):
     denied = _redirect_if_not_empresa(request)
     if denied:
@@ -3475,7 +3467,6 @@ def company_reports(request):
 
 
 @login_required
-@require_company_feature("incident_center")
 def company_incident_center(request):
     denied = _redirect_if_not_empresa(request)
     if denied:
@@ -3727,6 +3718,13 @@ def company_plan(request):
     )
     provider_limit = commercial_plan["active_provider_limit"]
     provider_usage_percent = min(100, round((active_provider_count / provider_limit) * 100)) if provider_limit else 0
+    limit_reached = bool(provider_limit and active_provider_count >= provider_limit)
+    is_trial_active = bool(
+        subscription
+        and subscription.status == CompanySubscription.Status.TRIAL
+        and not (subscription.trial_ends_at and now > subscription.trial_ends_at)
+        and subscription.is_access_active(now)
+    )
 
     included_benefits = [
         "Acompanhamento diário dos registros de horário.",
@@ -3758,6 +3756,8 @@ def company_plan(request):
         "active_provider_limit": provider_limit,
         "active_provider_count": active_provider_count,
         "provider_usage_percent": provider_usage_percent,
+        "limit_reached": limit_reached,
+        "is_trial_active": is_trial_active,
         "included_benefits": included_benefits,
         "starts_at_label": _fmt_dt(subscription.starts_at) if subscription else "-",
         "period_start_label": _fmt_dt(subscription.current_period_start) if subscription else "-",
@@ -3769,7 +3769,11 @@ def company_plan(request):
         ),
         "expires_at_label": _fmt_dt(subscription.ends_at) if subscription else "-",
         "trial_end_label": _fmt_dt(subscription.trial_ends_at) if subscription else "-",
-        "support_message": "Para ajustar limite de prestadores, renovação ou dados comerciais, entre em contato com o suporte do HoraCerta.",
+        "support_message": "Para ampliar o limite de prestadores ativos, entre em contato com o suporte.",
+        "trial_message": (
+            "Durante o período de teste, os recursos essenciais ficam disponíveis para cadastro de prestadores, "
+            "registro de horários, histórico, conferência e relatórios."
+        ),
     }
     return render(request, "accounts/company_plan.html", context)
 

@@ -193,6 +193,27 @@
       line-height: 1.45;
       max-width: 780px;
     }
+    .plan-message {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      background: var(--surface-raised);
+      box-shadow: var(--shadow-xs);
+      padding: 14px;
+    }
+    .plan-message.is-warning {
+      border-color: var(--warning-border);
+      background: color-mix(in oklab, var(--warning-bg) 72%, var(--surface-raised));
+    }
+    .plan-message h3 {
+      margin: 0;
+      font-size: 16px;
+    }
+    .plan-message p {
+      margin: 6px 0 0;
+      color: var(--color-text-muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
     @media (max-width: 1080px) {
       .plan-summary,
       .plan-metrics {
@@ -202,7 +223,8 @@
     @media (max-width: 720px) {
       .plan-hero,
       .plan-panel,
-      .support-box {
+      .support-box,
+      .plan-message {
         padding: 13px;
       }
       .plan-title {
@@ -225,8 +247,8 @@
           <span class="plan-eyebrow">Plano atual</span>
           <h2 class="plan-title">{{ current_plan_name }}</h2>
           <p class="plan-subtitle">
-            Sua empresa possui acesso aos recursos principais para acompanhar prestadores, vínculos,
-            registros de horário, histórico, conferência e relatórios do HoraCerta.
+            Sua empresa possui acesso aos recursos essenciais para acompanhar prestadores, vínculos,
+            registros de horário, histórico, conferência, notificações e relatórios.
           </p>
         </div>
         <div>
@@ -238,27 +260,44 @@
       <div class="plan-metrics">
         <div class="plan-metric">
           <div class="plan-metric__label">Valor mensal</div>
-          <div class="plan-metric__value">{{ monthly_price_label }}</div>
+          <div class="plan-metric__value">Valor mensal: {{ monthly_price_label }}</div>
         </div>
         <div class="plan-metric">
-          <div class="plan-metric__label">Prestadores ativos</div>
+          <div class="plan-metric__label">Limite de prestadores</div>
+          <div class="plan-metric__value">até {{ active_provider_limit }}</div>
+        </div>
+        <div class="plan-metric">
+          <div class="plan-metric__label">Prestadores em uso</div>
           <div class="plan-metric__value">{{ active_provider_count }} de {{ active_provider_limit }}</div>
         </div>
         <div class="plan-metric">
           <div class="plan-metric__label">Próxima renovação</div>
           <div class="plan-metric__value">{{ renewal_or_end_label }}</div>
         </div>
-        <div class="plan-metric">
-          <div class="plan-metric__label">Início do plano</div>
-          <div class="plan-metric__value">{{ starts_at_label }}</div>
-        </div>
       </div>
     </article>
+
+    {% if is_trial_active %}
+      <article class="plan-message">
+        <h3>Sua empresa está avaliando o HoraCerta Essencial.</h3>
+        <p>{{ trial_message }}</p>
+        <p><strong>Término do teste:</strong> {{ trial_end_label }}</p>
+      </article>
+    {% endif %}
+
+    {% if limit_reached %}
+      <article class="plan-message is-warning">
+        <h3>Sua empresa atingiu o limite de {{ active_provider_limit }} prestadores ativos do plano atual.</h3>
+        <p>Você pode encerrar vínculos que não estão mais em operação ou solicitar a ampliação do limite.</p>
+      </article>
+    {% endif %}
 
     <section class="plan-summary">
       <article class="plan-panel">
         <h3>Benefícios incluídos</h3>
         <p>{{ current_plan_description }}</p>
+        <p><strong>Prestadores ativos incluídos:</strong> até {{ active_provider_limit }}</p>
+        <p><strong>Prestadores ativos em uso:</strong> {{ active_provider_count }} de {{ active_provider_limit }}</p>
         <ul class="benefit-list">
           {% for benefit in included_benefits %}
             <li>{{ benefit }}</li>
