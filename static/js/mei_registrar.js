@@ -10,6 +10,15 @@
   var punchBtn = document.getElementById("hcPunchBtn");
   var punchLabel = punchBtn ? punchBtn.querySelector(".hc-punch-btn__label") : null;
   var defaultPunchLabel = punchLabel ? punchLabel.textContent : "Registrar horario";
+  var selectedContractInput = document.getElementById("hcSelectedContract");
+  var clientCarousel = document.getElementById("hcClientCarousel");
+  var clientCards = clientCarousel ? Array.prototype.slice.call(clientCarousel.querySelectorAll(".client-card")) : [];
+  var clientPickerOpen = document.getElementById("hcClientPickerOpen");
+  var clientPickerModal = document.getElementById("hcClientPickerModal");
+  var clientPickerOverlay = document.getElementById("hcClientPickerOverlay");
+  var clientPickerClose = document.getElementById("hcClientPickerClose");
+  var clientPickerItems = clientPickerModal ? Array.prototype.slice.call(clientPickerModal.querySelectorAll(".hc-client-picker__item")) : [];
+  var locationNote = document.getElementById("hcLocationNote");
   var geoLatitudeInput = document.getElementById("hcGeoLatitude");
   var geoLongitudeInput = document.getElementById("hcGeoLongitude");
   var geoAccuracyInput = document.getElementById("hcGeoAccuracy");
@@ -23,6 +32,7 @@
   var manualSaveBtn = document.getElementById("hcManualSave");
   var manualErrors = document.getElementById("hcManualErrors");
   var manualContract = document.getElementById("hcManualContract");
+  var manualClientName = document.getElementById("hcManualClientName");
   var manualDate = document.getElementById("hcManualDate");
   var timesList = document.getElementById("hcTimesList");
   var addTimeBtn = document.getElementById("hcAddTimeBtn");
@@ -101,6 +111,119 @@
     punchBtn.classList.remove("is-loading");
     punchBtn.removeAttribute("aria-busy");
     punchLabel.textContent = defaultPunchLabel;
+  }
+
+  function setActiveClient(contractId, clientName, shouldScroll) {
+    if (!contractId) return;
+    var selectedName = clientName || "";
+
+    clientCards.forEach(function (card) {
+      var isActive = card.getAttribute("data-contract-id") === contractId;
+      card.classList.toggle("active", isActive);
+      card.classList.toggle("is-selected", isActive);
+      card.setAttribute("aria-pressed", isActive ? "true" : "false");
+      if (isActive) {
+        selectedName = selectedName || card.getAttribute("data-client-name") || "";
+        if (shouldScroll && typeof card.scrollIntoView === "function") {
+          card.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+        }
+      }
+    });
+
+    var activeCard = clientCards.find(function (card) {
+      return card.getAttribute("data-contract-id") === contractId;
+    });
+    if (locationNote && activeCard) {
+      locationNote.hidden = activeCard.getAttribute("data-requires-location") !== "1";
+    }
+
+    clientPickerItems.forEach(function (item) {
+      item.classList.toggle("is-selected", item.getAttribute("data-contract-id") === contractId);
+    });
+
+    if (selectedContractInput) selectedContractInput.value = contractId;
+    if (manualContract) manualContract.value = contractId;
+    if (manualClientName && selectedName) manualClientName.textContent = selectedName;
+
+    if (selectedName) {
+      defaultPunchLabel = "Registrar horário na " + selectedName;
+      if (punchLabel && (!punchBtn || !punchBtn.classList.contains("is-loading"))) {
+        punchLabel.textContent = defaultPunchLabel;
+      }
+    }
+  }
+
+  function getNearestClientCard() {
+    if (!clientCarousel || !clientCards.length) return null;
+    var carouselRect = clientCarousel.getBoundingClientRect();
+    var carouselCenter = carouselRect.left + carouselRect.width / 2;
+    var nearest = null;
+    var nearestDistance = Infinity;
+    clientCards.forEach(function (card) {
+      var rect = card.getBoundingClientRect();
+      var cardCenter = rect.left + rect.width / 2;
+      var distance = Math.abs(cardCenter - carouselCenter);
+      if (distance < nearestDistance) {
+        nearest = card;
+        nearestDistance = distance;
+      }
+    });
+    return nearest;
+  }
+
+  function closeClientPicker() {
+    if (!clientPickerModal) return;
+    clientPickerModal.classList.remove("is-open");
+    clientPickerModal.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("hc-modal-open");
+  }
+
+  function openClientPicker() {
+    if (!clientPickerModal) return;
+    clientPickerModal.classList.add("is-open");
+    clientPickerModal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("hc-modal-open");
+  }
+
+  function bindClientCarousel() {
+    if (!clientCards.length) return;
+    var initialCard =
+      clientCards.find(function (card) {
+        return card.classList.contains("is-selected");
+      }) || clientCards[0];
+    setActiveClient(
+      initialCard.getAttribute("data-contract-id"),
+      initialCard.getAttribute("data-client-name"),
+      false
+    );
+
+    clientCards.forEach(function (card) {
+      card.addEventListener("click", function () {
+        setActiveClient(card.getAttribute("data-contract-id"), card.getAttribute("data-client-name"), true);
+      });
+    });
+
+    if (clientCarousel) {
+      var scrollTimer = null;
+      clientCarousel.addEventListener("scroll", function () {
+        window.clearTimeout(scrollTimer);
+        scrollTimer = window.setTimeout(function () {
+          var nearest = getNearestClientCard();
+          if (!nearest) return;
+          setActiveClient(nearest.getAttribute("data-contract-id"), nearest.getAttribute("data-client-name"), false);
+        }, 90);
+      });
+    }
+
+    if (clientPickerOpen) clientPickerOpen.addEventListener("click", openClientPicker);
+    if (clientPickerOverlay) clientPickerOverlay.addEventListener("click", closeClientPicker);
+    if (clientPickerClose) clientPickerClose.addEventListener("click", closeClientPicker);
+    clientPickerItems.forEach(function (item) {
+      item.addEventListener("click", function () {
+        setActiveClient(item.getAttribute("data-contract-id"), item.getAttribute("data-client-name"), true);
+        closeClientPicker();
+      });
+    });
   }
 
   function bindPunchSubmit() {
@@ -297,6 +420,9 @@
       if (event.key === "Escape" && manualModal.classList.contains("is-open")) {
         closeManualModal();
       }
+      if (event.key === "Escape" && clientPickerModal && clientPickerModal.classList.contains("is-open")) {
+        closeClientPicker();
+      }
     });
 
     if (addTimeBtn) {
@@ -401,6 +527,7 @@
   applyDayBadge();
   applyGreetingAndDate(new Date());
   renderClock();
+  bindClientCarousel();
   bindPunchSubmit();
   bindManualModal();
 
