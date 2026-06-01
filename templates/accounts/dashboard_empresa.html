@@ -155,14 +155,14 @@
           </div>
         </div>
         <section class="exec-kpis" style="margin-top:12px;">
-          <article class="kpi exec"><div class="label">Prestadores ativos</div><div class="value">{{ total_active_professionals }}</div><div class="hint">Com vínculo operacional vigente</div></article>
-          <article class="kpi exec"><div class="label">Prestadores sem vínculo</div><div class="value">{{ total_pending_contract }}</div><div class="hint">Precisam de configuração</div></article>
+          <article class="kpi exec"><div class="label">Prestadores ativos</div><div class="value">{{ total_active_professionals }}</div><div class="hint">Com contrato operacional vigente</div></article>
+          <article class="kpi exec"><div class="label">Prestadores sem contrato</div><div class="value">{{ total_pending_contract }}</div><div class="hint">Precisam de configuração</div></article>
           <article class="kpi exec"><div class="label">Horas no período</div><div class="value">{{ total_hours_period }}</div><div class="hint">{{ period_result.date_from|default:"-" }} até {{ period_result.date_to|default:"-" }}</div></article>
           <article class="kpi exec"><div class="label">Dias com pendência</div><div class="value">{{ inconsistency_days_period }}</div><div class="hint">Dias com registros incompletos</div></article>
         </section>
         <section class="support-strip">
           <article class="support-item"><div class="k">Prestadores cadastrados</div><div class="v">{{ total_registered_professionals }}</div></article>
-          <article class="support-item"><div class="k">Vínculos operacionais</div><div class="v">{{ total_active_contracts }}</div></article>
+          <article class="support-item"><div class="k">Contratos operacionais</div><div class="v">{{ total_active_contracts }}</div></article>
           <article class="support-item"><div class="k">Registros no período</div><div class="v">{{ total_punches_period }}</div></article>
         </section>
         <section class="flow-grid">
@@ -211,7 +211,7 @@
                       <span class="pill {% if row.state.tone == 'success' %}success{% elif row.state.tone == 'pending' %}pending{% elif row.state.tone == 'warn' %}warn{% endif %}">{{ row.state.label }}</span>
                       <div class="muted" style="margin-top:4px;font-size:12px;">{{ row.state.hint }}</div>
                     </td>
-                    <td>{{ row.total_contracts }} vinculo(s) / {{ row.active_contracts }} ativo(s)</td>
+                    <td>{{ row.total_contracts }} contrato(s) / {{ row.active_contracts }} ativo(s)</td>
                     <td>
                       <a class="btn" href="{{ row.profile_url }}">Ver perfil</a>
                       <a class="btn primary" href="{{ row.action_url }}">{{ row.action_label }}</a>
@@ -235,7 +235,7 @@
 
           <div class="table-wrap" style="margin-top:10px;">
             <table class="table">
-              <thead><tr><th>Registro recente</th><th>Profissional</th><th>Empresa</th><th>Vínculo</th><th>Selo de confiança</th><th>QR presencial</th></tr></thead>
+              <thead><tr><th>Registro recente</th><th>Profissional</th><th>Cliente</th><th>Contrato</th><th>Selo de confiança</th><th>QR presencial</th></tr></thead>
               <tbody>
                 {% for row in punches_period %}
                   <tr>
@@ -309,8 +309,8 @@
       <section class="company-panel">
         <div class="section-head">
               <div>
-                <h3>Resumo de vinculos ativos</h3>
-                <p class="section-subtitle">Visao objetiva de valor/hora e status dos vinculos da base.</p>
+                <h3>Resumo de contratos ativos</h3>
+                <p class="section-subtitle">Visao objetiva de valor/hora e status dos contratos da base.</p>
               </div>
         </div>
         <div class="table-wrap">
@@ -330,7 +330,7 @@
                   </td>
                 </tr>
               {% empty %}
-                <tr><td colspan="3"><div class="empty-panel"><strong>Sem vinculos ativos.</strong><p>Configure o primeiro vinculo para iniciar os registros operacionais.</p><a class="btn primary" href="{% url 'company_meis' %}#vinculo-existente">Configurar vinculo</a></div></td></tr>
+                <tr><td colspan="3"><div class="empty-panel"><strong>Sem contratos ativos.</strong><p>Configure o primeiro contrato para iniciar os registros operacionais.</p><a class="btn primary" href="{% url 'company_meis' %}#vinculo-existente">Configurar contrato</a></div></td></tr>
               {% endfor %}
             </tbody>
           </table>

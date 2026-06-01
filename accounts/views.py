@@ -327,7 +327,7 @@ AUDIT_ACTION_CHOICES = [
     ("cancelled", "Cancelamento de registro"),
     ("restored", "Restauracao de registro"),
     ("admin_note_added", "Observacao administrativa"),
-    ("relationship_ended", "Encerramento de vinculo"),
+    ("relationship_ended", "Encerramento de contrato"),
     ("deactivate_company", "Desativacao de empresa"),
     ("activate_company", "Reativacao de empresa"),
     ("deactivate_user", "Desativacao de usuario"),
@@ -396,7 +396,7 @@ def _log_internal_admin_action(*, admin_user, action, target_type, target_id, de
 def _end_employee_company_relationship(*, employee, admin_user, reason):
     clean_reason = (reason or "").strip()
     if not clean_reason:
-        raise ValueError("Informe o motivo para encerrar o vinculo.")
+        raise ValueError("Informe o motivo para encerrar o contrato.")
     now = timezone.now()
     today = timezone.localdate()
     with transaction.atomic():
@@ -421,14 +421,14 @@ def _end_employee_company_relationship(*, employee, admin_user, reason):
             action="relationship_ended",
             target_type="employee",
             target_id=employee.id,
-            description=f"Vinculo encerrado com {employee.company.name}. Motivo: {clean_reason}",
+            description=f"Contrato encerrado com {employee.company.name}. Motivo: {clean_reason}",
         )
         _log_internal_admin_action(
             admin_user=admin_user,
             action="relationship_ended",
             target_type="company",
             target_id=employee.company_id,
-            description=f"Vinculo encerrado com {employee.full_name}. Motivo: {clean_reason}",
+            description=f"Contrato encerrado com {employee.full_name}. Motivo: {clean_reason}",
         )
 
 
@@ -521,7 +521,7 @@ def _commercial_plan_snapshot(subscription):
         "monthly_price": "R$ 79,00",
         "active_provider_limit": 10,
         "description": (
-            "Sua empresa possui acesso aos recursos essenciais para acompanhar prestadores, vínculos, "
+            "Sua empresa possui acesso aos recursos essenciais para acompanhar prestadores, contratos, "
             "registros de horário, histórico, conferência, notificações e relatórios."
         ),
     }
@@ -952,9 +952,9 @@ def internal_company_detail(request, company_id):
             relationship_id = (request.POST.get("relationship_id") or "").strip()
             relationship = Employee.objects.select_related("company", "user").filter(id=relationship_id, company=company).first()
             if not relationship:
-                messages.error(request, "Vinculo invalido para esta empresa.")
+                messages.error(request, "Contrato invalido para este cliente.")
             elif not relationship.is_active and relationship.ended_at:
-                messages.error(request, "Este vinculo ja esta encerrado.")
+                messages.error(request, "Este contrato ja esta encerrado.")
             else:
                 try:
                     _end_employee_company_relationship(
@@ -962,7 +962,7 @@ def internal_company_detail(request, company_id):
                         admin_user=request.user,
                         reason=description,
                     )
-                    messages.success(request, "Vinculo encerrado sem apagar login ou historico.")
+                    messages.success(request, "Contrato encerrado sem apagar login ou historico.")
                 except ValueError as exc:
                     messages.error(request, str(exc))
         else:
@@ -1098,9 +1098,9 @@ def internal_employee_detail(request, employee_id):
                 .first()
             )
             if not relationship:
-                messages.error(request, "Vinculo invalido para este prestador.")
+                messages.error(request, "Contrato invalido para este prestador.")
             elif not relationship.is_active and relationship.ended_at:
-                messages.error(request, "Este vinculo ja esta encerrado.")
+                messages.error(request, "Este contrato ja esta encerrado.")
             else:
                 try:
                     _end_employee_company_relationship(
@@ -1108,7 +1108,7 @@ def internal_employee_detail(request, employee_id):
                         admin_user=request.user,
                         reason=description,
                     )
-                    messages.success(request, "Vinculo encerrado sem apagar login ou historico.")
+                    messages.success(request, "Contrato encerrado sem apagar login ou historico.")
                 except ValueError as exc:
                     messages.error(request, str(exc))
         elif action == "activate_user":
@@ -1150,7 +1150,7 @@ def internal_employee_detail(request, employee_id):
                 target_id=employee.id,
                 description=description or "Perfil marcado como pendente de ativacao.",
             )
-            messages.success(request, "Funcionário marcado como pendente.")
+            messages.success(request, "Profissional marcado como pendente.")
         else:
             messages.error(request, "Ação administrativa inválida.")
         return redirect("internal_employee_detail", employee_id=employee.id)
@@ -1557,8 +1557,8 @@ def internal_audit(request):
                     action_type=log.action_type,
                     company=log.company,
                     employee=log.employee,
-                    old_value="Vinculo ativo",
-                    new_value="Vinculo encerrado",
+                    old_value="Contrato ativo",
+                    new_value="Contrato encerrado",
                     reason=log.reason,
                     target_url=reverse("internal_employee_detail", args=[log.employee_id]),
                 )
@@ -1880,7 +1880,7 @@ def dashboard_empresa(request):
                             if not latest_contract
                             else f"{reverse('company_contracts')}?edit={latest_contract.id}"
                         ),
-                        "action_label": "Revisar no cadastro MEI" if not latest_contract else "Editar vinculo",
+                        "action_label": "Revisar no cadastro MEI" if not latest_contract else "Editar contrato",
                     }
                 )
 
@@ -1941,7 +1941,7 @@ def dashboard_empresa(request):
                 "state": employee_lifecycle_summary(employee, employee_contracts),
                 "profile_url": reverse("company_mei_profile", args=[employee.id]),
                 "action_url": action_url,
-                "action_label": "Revisar no cadastro MEI" if not latest_contract else "Editar vinculo",
+                "action_label": "Revisar no cadastro MEI" if not latest_contract else "Editar contrato",
             }
         )
 
@@ -1985,7 +1985,7 @@ def dashboard_empresa(request):
             "url": reverse("company_records_review_center"),
             "hint": "Selo de confiança e auditoria",
         },
-        {"label": "Prestadores", "url": reverse("company_meis"), "hint": "Cadastro, vínculos e status"},
+        {"label": "Prestadores", "url": reverse("company_meis"), "hint": "Cadastro, contratos e status"},
         {"label": "Registros", "url": reverse("company_history"), "hint": "Histórico, conferência e pendências"},
         {"label": "Relatórios", "url": reverse("company_reports"), "hint": "Fechamento e exportações"},
         {"label": "Atividades", "url": reverse("company_service_reports"), "hint": "Relatórios enviados pelos prestadores"},
@@ -2114,7 +2114,7 @@ def company_meis(request):
                 prefix="link",
             )
             if not company:
-                create_link_form.add_error(None, "Empresa nao encontrada para criar vinculo.")
+                create_link_form.add_error(None, "Cliente nao encontrado para criar contrato.")
             elif create_link_form.is_valid():
                 employee = create_link_form.cleaned_data.get("employee")
                 if not employee or not Employee.objects.filter(id=employee.id, company=company).exists():
@@ -2166,28 +2166,28 @@ def company_meis(request):
         if current_contract:
             return {
                 "key": "active",
-                "label": "Vínculo ativo",
+                "label": "Contrato ativo",
                 "hint": f"Contrato vigente desde {current_contract.start_date:%d/%m/%Y}.",
                 "tone": "success",
             }
         if latest_contract:
             if latest_contract.end_date and latest_contract.end_date < timezone.localdate():
-                label = "Vínculo encerrado"
+                label = "Contrato encerrado"
                 hint = f"Encerrado em {latest_contract.end_date:%d/%m/%Y}."
                 key = "ended"
             elif not latest_contract.is_active:
-                label = "Vínculo encerrado"
+                label = "Contrato encerrado"
                 hint = "Contrato inativo. Histórico preservado para consulta."
                 key = "ended"
             else:
-                label = "Vínculo pendente"
+                label = "Contrato pendente"
                 hint = "Contrato cadastrado, mas ainda sem vigência operacional."
                 key = "pending"
             return {"key": key, "label": label, "hint": hint, "tone": "warn" if key == "ended" else "pending"}
         return {
             "key": "missing",
-            "label": "Sem vínculo",
-            "hint": "Configure um vínculo para liberar o registro de ponto.",
+            "label": "Sem contrato",
+            "hint": "Configure um contrato para liberar o registro de ponto.",
             "tone": "pending",
         }
 
@@ -2253,7 +2253,7 @@ def company_meis(request):
                 "manage_contracts_url": manage_contracts_url,
                 "setup_first_link_url": setup_first_link_url,
                 "action_url": setup_first_link_url if not latest_contract else manage_contracts_url,
-                "action_label": "Configurar primeiro vinculo" if not latest_contract else "Gerenciar vinculos",
+                "action_label": "Configurar primeiro contrato" if not latest_contract else "Gerenciar contratos",
                 "activation_link": activation_link,
                 "activation_copy_text": activation_copy_text,
                 "activation_mailto_url": activation_mailto_url,
@@ -2313,7 +2313,7 @@ def company_mei_email_status(request):
             {
                 "ok": True,
                 "status": "already_linked",
-                "message": "Este MEI ja possui vinculo com sua empresa. Use o gerenciamento de vinculos.",
+                "message": "Este MEI ja possui contrato com este cliente. Use o gerenciamento de contratos.",
             }
         )
 
@@ -2323,7 +2323,7 @@ def company_mei_email_status(request):
             "status": "existing",
             "message": (
                 "Este profissional ja possui conta no HoraCerta. "
-                "Sera criado apenas um novo vinculo com sua empresa."
+                "Sera criado apenas um novo contrato com este cliente."
             ),
         }
     )
@@ -2398,9 +2398,9 @@ def company_contracts(request):
         needs_contract = not has_contract
 
         if needs_contract:
-            status_label = "Aguardando vinculo"
+            status_label = "Aguardando contrato"
             status_tone = "pending"
-            status_hint = "Profissional cadastrado sem vinculo operacional. Use a tela de MEIs como fluxo principal."
+            status_hint = "Profissional cadastrado sem contrato operacional. Use a tela de MEIs como fluxo principal."
             action_url = f"{reverse('company_meis')}?link_for={employee.id}#vinculo-existente"
             pending_without_contracts.append(
                 {
@@ -2630,7 +2630,7 @@ def company_mei_closure(request, employee_id):
     for row in grouped_rows:
         day_rates = rates_by_day.get(row["date"], {})
         if day_rates:
-            # Reaproveita a logica simples: usa taxa media dos vinculos registrados no dia.
+            # Reaproveita a logica simples: usa taxa media dos contratos registrados no dia.
             avg_rate = sum(day_rates.values(), Decimal("0")) / Decimal(len(day_rates))
             estimated_value += (Decimal(row["total_seconds"]) / Decimal("3600")) * avg_rate
 
@@ -2675,7 +2675,7 @@ def company_mei_closure(request, employee_id):
             )
         if service_reports:
             lines.append("")
-            lines.append("Relatorios de servico no periodo (maximo 10 linhas):")
+            lines.append("Relatorios no periodo (maximo 10 linhas):")
             for report in service_reports[:10]:
                 lines.append(f"{report.report_date.strftime('%d/%m/%Y')} | {report.title}")
         return _build_pdf_response("horacerta_fechamento_individual.pdf", lines)
@@ -3728,7 +3728,7 @@ def company_plan(request):
 
     included_benefits = [
         "Acompanhamento diário dos registros de horário.",
-        "Gestão de prestadores, vínculos e status operacional.",
+        "Gestão de prestadores, contratos e status operacional.",
         "Histórico de registros para consulta e conferência.",
         "Relatórios por período para apoio ao fechamento.",
         "Documentos e anexos vinculados à operação.",

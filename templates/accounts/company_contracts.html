@@ -1,6 +1,6 @@
 {% extends "accounts/base.html" %}
-{% block title %}Vinculos{% endblock %}
-{% block page_title %}Vinculos{% endblock %}
+{% block title %}Contratos{% endblock %}
+{% block page_title %}Contratos{% endblock %}
 
 {% block content %}
   <style>
@@ -133,29 +133,29 @@
 
   <div class="contracts-wrap">
     <section class="contracts-panel">
-      <h2 class="contracts-title">Vinculos operacionais</h2>
-      <p class="contracts-subtitle">Tela de acompanhamento e edicao dos vinculos ja criados para a base de profissionais.</p>
+      <h2 class="contracts-title">Contratos operacionais</h2>
+      <p class="contracts-subtitle">Tela de acompanhamento e edicao dos contratos ja criados para a base de profissionais.</p>
       <div class="contracts-meta">
-        <span class="contracts-meta-pill">Vinculos listados: {{ contracts|length }}</span>
+        <span class="contracts-meta-pill">Contratos listados: {{ contracts|length }}</span>
         <span class="contracts-meta-pill">Fluxo: acompanhamento e edicao</span>
       </div>
 
       {% if request.GET.status == "updated" %}
-        <div class="contracts-alert">Vinculo atualizado com sucesso.</div>
+        <div class="contracts-alert">Contrato atualizado com sucesso.</div>
       {% endif %}
       {% if show_creation_redirect_notice %}
         <div class="contracts-warning">
           A criacao principal permanece na tela de MEIs para manter um fluxo unico e sem retrabalho.
-          Use <strong>MEIs</strong> para cadastrar profissionais e configurar o vinculo inicial.
+          Use <strong>MEIs</strong> para cadastrar profissionais e configurar o contrato inicial.
         </div>
       {% endif %}
       {% if show_only_edit_notice %}
         <div class="contracts-warning">
-          Esta tela e exclusiva para listagem, acompanhamento e edicao de vinculos existentes.
+          Esta tela e exclusiva para listagem, acompanhamento e edicao de contratos existentes.
         </div>
       {% endif %}
       {% if invalid_edit_contract %}
-        <div class="contracts-error">Nao foi possivel localizar o vinculo solicitado para edicao.</div>
+        <div class="contracts-error">Nao foi possivel localizar o contrato solicitado para edicao.</div>
       {% endif %}
       {% if inconsistent_contracts_count %}
         <div class="contracts-warning">
@@ -166,7 +166,7 @@
 
       {% if pending_without_contracts %}
         <div class="contracts-warning">
-          Existem MEIs sem vinculo operacional ativo. Finalize a configuracao para liberar registro de horas.
+          Existem MEIs sem contrato operacional ativo. Finalize a configuracao para liberar registro de horas.
         </div>
         <div class="pending-list">
           {% for row in pending_without_contracts %}
@@ -186,8 +186,8 @@
       <section class="contracts-panel">
         <div class="contracts-edit-head">
           <div>
-            <h3 style="margin:0;">Editar vinculo</h3>
-            <p class="contracts-edit-subtitle">Atualize condicoes operacionais do vinculo com clareza e rastreabilidade.</p>
+            <h3 style="margin:0;">Editar contrato</h3>
+            <p class="contracts-edit-subtitle">Atualize condicoes operacionais do contrato com clareza e rastreabilidade.</p>
           </div>
           <a class="btn" href="{% url 'company_contracts' %}">Fechar edicao</a>
         </div>
@@ -206,7 +206,7 @@
             <div class="contracts-field">
               <label>{{ edit_form.hourly_rate.label }}</label>
               {{ edit_form.hourly_rate }}
-              <div class="contracts-hint">Atualize o valor/hora vigente do vinculo.</div>
+              <div class="contracts-hint">Atualize o valor/hora vigente do contrato.</div>
               {% if edit_form.hourly_rate.errors %}<div class="contracts-error">{{ edit_form.hourly_rate.errors }}</div>{% endif %}
             </div>
             <div class="contracts-field">
@@ -233,13 +233,13 @@
             </div>
           </div>
           {% if edit_form.non_field_errors %}<div class="contracts-error">{{ edit_form.non_field_errors }}</div>{% endif %}
-          <div style="margin-top:10px;"><button class="btn primary" type="submit">Salvar atualizacao do vinculo</button></div>
+          <div style="margin-top:10px;"><button class="btn primary" type="submit">Salvar atualizacao do contrato</button></div>
         </form>
       </section>
     {% endif %}
 
     <section class="contracts-panel">
-      <h3 class="contracts-table-title">Lista de vinculos ativos e inativos</h3>
+      <h3 class="contracts-table-title">Lista de contratos ativos e inativos</h3>
       <p class="contracts-table-subtitle">Consulta rapida da base operacional e acesso direto para edicao.</p>
       <div class="contracts-table-wrap">
         <table class="contracts-table">
@@ -302,7 +302,7 @@
                   <td data-label="Acoes">
                     <div class="contracts-actions">
                       <a class="btn" href="{{ row.profile_url }}">Abrir profissional</a>
-                      <a class="btn primary" href="{{ row.edit_url }}">Editar vinculo</a>
+                      <a class="btn primary" href="{{ row.edit_url }}">Editar contrato</a>
                     </div>
                   </td>
                 </tr>
@@ -311,8 +311,8 @@
               <tr>
                 <td colspan="7">
                   <div class="contracts-empty">
-                    <strong>Nenhum vinculo encontrado.</strong>
-                    <p>Cadastre um MEI na tela principal para iniciar a operacao e configurar o primeiro vinculo.</p>
+                    <strong>Nenhum contrato encontrado.</strong>
+                    <p>Cadastre um MEI na tela principal para iniciar a operacao e configurar o primeiro contrato.</p>
                     <a class="btn primary" href="{% url 'company_meis' %}">Ir para MEIs</a>
                   </div>
                 </td>

@@ -14,7 +14,7 @@
     </div>
     <div class="internal-shortcuts">
       <a class="internal-link-card" href="{% url 'internal_companies' %}"><strong>Empresas</strong><div class="muted">Base, uso e status</div></a>
-      <a class="internal-link-card" href="{% url 'internal_employees' %}"><strong>Funcionários</strong><div class="muted">Perfis, vínculos e acesso</div></a>
+      <a class="internal-link-card" href="{% url 'internal_employees' %}"><strong>Profissionais</strong><div class="muted">Perfis, contratos e acesso</div></a>
       <a class="internal-link-card" href="{% url 'internal_punches' %}"><strong>Registros de ponto</strong><div class="muted">Busca e auditoria</div></a>
       <a class="internal-link-card" href="{% url 'internal_correction_requests' %}"><strong>Solicitações</strong><div class="muted">Pedidos de correção</div></a>
       <a class="internal-link-card" href="{% url 'internal_notifications' %}"><strong>Notificacoes</strong><div class="muted">Fila global e ciencia</div></a>
@@ -35,7 +35,7 @@
       <a class="metric-card" href="{% url 'internal_employees' %}">
         <div class="label">Usuários cadastrados</div>
         <div class="value">{{ total_users }}</div>
-        <div class="hint">Abrir base de funcionários e MEIs</div>
+        <div class="hint">Abrir base de profissionais e MEIs</div>
       </a>
       <a class="metric-card" href="{% url 'internal_companies' %}">
         <div class="label">Empresas cadastradas</div>
@@ -43,7 +43,7 @@
         <div class="hint">Abrir empresas</div>
       </a>
       <a class="metric-card" href="{% url 'internal_employees' %}">
-        <div class="label">Funcionários cadastrados</div>
+        <div class="label">Profissionais cadastrados</div>
         <div class="value">{{ total_employees }}</div>
         <div class="hint">{{ total_active_employees }} ativados / {{ total_pending_employees }} pendentes</div>
       </a>
@@ -73,7 +73,7 @@
         <div class="hint">Avisos de empresa sem ciencia</div>
       </a>
       <a class="metric-card" href="{% url 'internal_employees' %}?status=ativo">
-        <div class="label">Funcionários ativados</div>
+        <div class="label">Profissionais ativados</div>
         <div class="value">{{ total_active_employees }}</div>
         <div class="hint">Perfis liberados para operação</div>
       </a>
@@ -104,7 +104,7 @@
     <div class="internal-head">
       <div>
         <h3>Empresas e uso</h3>
-        <p class="internal-subtitle">Quantidade de funcionários, registros de ponto e último uso por empresa.</p>
+        <p class="internal-subtitle">Quantidade de profissionais, registros de ponto e último uso por cliente.</p>
       </div>
     </div>
 
@@ -113,7 +113,7 @@
         <thead>
           <tr>
             <th>Empresa</th>
-            <th>Funcionários</th>
+            <th>Profissionais</th>
             <th>Registros de ponto</th>
             <th>Último registro</th>
             <th>Status aproximado</th>
@@ -123,7 +123,7 @@
           {% for row in company_usage_rows %}
             <tr>
               <td data-label="Empresa"><a class="strong-link" href="{% url 'internal_company_detail' row.company.id %}">{{ row.company.name }}</a></td>
-              <td data-label="Funcionários">{{ row.employee_count }}</td>
+              <td data-label="Profissionais">{{ row.employee_count }}</td>
               <td data-label="Registros de ponto">{{ row.punch_count }}</td>
               <td data-label="Último registro">
                 {% if row.last_punch_at %}

@@ -37,7 +37,7 @@
         <thead>
           <tr>
             <th>Nome</th>
-            <th>Funcionários</th>
+            <th>Profissionais</th>
             <th>Registros</th>
             <th>Último registro</th>
             <th>Status aproximado</th>
@@ -47,7 +47,7 @@
           {% for row in rows %}
             <tr>
               <td data-label="Nome"><a class="strong-link" href="{% url 'internal_company_detail' row.company.id %}">{{ row.company.name }}</a></td>
-              <td data-label="Funcionários">{{ row.employee_count }}</td>
+              <td data-label="Profissionais">{{ row.employee_count }}</td>
               <td data-label="Registros">{{ row.punch_count }}</td>
               <td data-label="Último registro">
                 {% if row.last_punch_at %}{{ row.last_punch_at|date:"d/m/Y H:i" }}{% else %}<span class="muted">Sem registros</span>{% endif %}

@@ -69,10 +69,10 @@ class PeriodSearchForm(forms.Form):
 
 class PunchCorrectionRequestForm(forms.ModelForm):
     contract = forms.ModelChoiceField(
-        label="Empresa/vinculo",
+        label="Cliente/contrato",
         queryset=Contract.objects.none(),
         required=False,
-        empty_label="Selecionar vinculo",
+        empty_label="Selecionar contrato",
     )
     punch = forms.ModelChoiceField(
         label="Registro relacionado (opcional)",
@@ -135,11 +135,11 @@ class PunchCorrectionRequestForm(forms.ModelForm):
         contract = data.get("contract")
         punch = data.get("punch")
         if self.employee and contract and contract.employee_id != self.employee.id:
-            self.add_error("contract", "Selecione um vinculo do seu perfil.")
+            self.add_error("contract", "Selecione um contrato do seu perfil.")
         if self.employee and punch and punch.contract.employee_id != self.employee.id:
             self.add_error("punch", "Selecione um registro do seu perfil.")
         if punch and contract and punch.contract_id != contract.id:
-            self.add_error("punch", "O registro precisa pertencer ao vinculo selecionado.")
+            self.add_error("punch", "O registro precisa pertencer ao contrato selecionado.")
         if punch and not contract:
             data["contract"] = punch.contract
         return data
@@ -173,9 +173,9 @@ class PunchCorrectionRequestForm(forms.ModelForm):
 
 class ServiceReportCreateForm(forms.ModelForm):
     contract = forms.ModelChoiceField(
-        label="Vinculo/empresa",
+        label="Cliente/contrato",
         queryset=Contract.objects.none(),
-        empty_label="Selecione um vinculo",
+        empty_label="Selecione um contrato",
     )
 
     class Meta:
@@ -221,7 +221,7 @@ class ServiceReportCreateForm(forms.ModelForm):
         if not contract:
             return contract
         if self.employee and contract.employee_id != self.employee.id:
-            raise forms.ValidationError("Selecione um vinculo valido do seu perfil.")
+            raise forms.ValidationError("Selecione um contrato valido do seu perfil.")
         return contract
 
     def save(self, commit=True):
@@ -245,7 +245,7 @@ class CompanyActivityReportRequestForm(forms.ModelForm):
         queryset=Employee.objects.none(),
     )
     contract = forms.ModelChoiceField(
-        label="Vinculo (opcional)",
+        label="Contrato (opcional)",
         queryset=Contract.objects.none(),
         required=False,
         empty_label="Selecionar depois",
@@ -324,9 +324,9 @@ class CompanyActivityReportRequestForm(forms.ModelForm):
         if self.company and employee and employee.company_id != self.company.id:
             self.add_error("employee", "Selecione um profissional da sua empresa.")
         if contract and employee and contract.employee_id != employee.id:
-            self.add_error("contract", "O vinculo selecionado deve pertencer ao profissional escolhido.")
+            self.add_error("contract", "O contrato selecionado deve pertencer ao profissional escolhido.")
         if self.company and contract and contract.company_id != self.company.id:
-            self.add_error("contract", "Selecione um vinculo da sua empresa.")
+            self.add_error("contract", "Selecione um contrato deste cliente.")
 
         data["subject"] = subject
         data["instruction"] = instruction
@@ -374,17 +374,17 @@ class CompanyMEICreateForm(forms.Form):
         widget=forms.NumberInput(attrs={"step": "0.01", "placeholder": "Ex.: 95.00"}),
     )
     contract_start_date = forms.DateField(
-        label="Inicio do vinculo (opcional)",
+        label="Inicio do contrato (opcional)",
         required=False,
         widget=forms.DateInput(attrs={"type": "date"}),
     )
     contract_end_date = forms.DateField(
-        label="Fim do vinculo (opcional)",
+        label="Fim do contrato (opcional)",
         required=False,
         widget=forms.DateInput(attrs={"type": "date"}),
     )
     contract_file = forms.FileField(
-        label="PDF do vinculo (opcional)",
+        label="PDF do contrato (opcional)",
         required=False,
         widget=forms.ClearableFileInput(attrs={"accept": ".pdf,application/pdf"}),
     )
@@ -436,12 +436,12 @@ class CompanyMEICreateForm(forms.Form):
                 self.account_mode = "existing"
                 self.account_hint = (
                     "Este profissional ja possui conta no HoraCerta. "
-                    "Sera criado apenas um novo vinculo com sua empresa."
+                    "Sera criado apenas um novo contrato com este cliente."
                 )
                 if self.company and Employee.objects.filter(user=existing_user, company=self.company).exists():
                     self.add_error(
                         "mei_email",
-                        "Este MEI ja possui vinculo com sua empresa. Use o gerenciamento de vinculos para continuar.",
+                        "Este MEI ja possui contrato com este cliente. Use o gerenciamento de contratos para continuar.",
                     )
         else:
             self.account_mode = "new"
@@ -459,7 +459,7 @@ class CompanyMEICreateForm(forms.Form):
         hourly_rate = data.get("contract_hourly_rate")
 
         if contract_requested and hourly_rate is None:
-            self.add_error("contract_hourly_rate", "Informe o valor/hora para criar o vinculo inicial.")
+            self.add_error("contract_hourly_rate", "Informe o valor/hora para criar o contrato inicial.")
 
         if contract_requested and start_date and end_date and end_date < start_date:
             self.add_error("contract_end_date", "A data final nao pode ser anterior a data inicial.")
@@ -509,7 +509,7 @@ class CompanyMEICreateForm(forms.Form):
             self.account_mode = "existing"
             self.account_hint = (
                 "Este profissional ja possui conta no HoraCerta. "
-                "Sera criado apenas um novo vinculo com sua empresa."
+                "Sera criado apenas um novo contrato com este cliente."
             )
         else:
             self.account_mode = "new"
@@ -549,14 +549,14 @@ class CompanyContractForm(forms.ModelForm):
             "hourly_rate": forms.NumberInput(attrs={"step": "0.01", "placeholder": "Ex.: 95.00"}),
             "start_date": forms.DateInput(attrs={"type": "date"}),
             "end_date": forms.DateInput(attrs={"type": "date"}),
-            "notes": forms.Textarea(attrs={"rows": 3, "placeholder": "Observacoes do vinculo (opcional)"}),
+            "notes": forms.Textarea(attrs={"rows": 3, "placeholder": "Observacoes do contrato (opcional)"}),
             "contract_file": forms.ClearableFileInput(attrs={"accept": ".pdf,application/pdf"}),
         }
         labels = {
-            "hourly_rate": "Valor/hora do vinculo",
+            "hourly_rate": "Valor/hora do contrato",
             "start_date": "Inicio da vigencia",
             "end_date": "Fim da vigencia (opcional)",
-            "contract_file": "PDF do vinculo (opcional)",
+            "contract_file": "PDF do contrato (opcional)",
             "notes": "Observacoes internas (opcional)",
         }
 
@@ -585,7 +585,7 @@ class CompanyContractForm(forms.ModelForm):
 
         self.fields["employee"].queryset = employee_queryset
         self.fields["employee"].empty_label = "Selecione um prestador"
-        self.fields["employee"].widget.attrs.update({"title": "Selecione o prestador do vinculo"})
+        self.fields["employee"].widget.attrs.update({"title": "Selecione o prestador do contrato"})
 
         if self.instance and self.instance.pk and self.instance.employee_id:
             initial_employee = self.fields["employee"].queryset.filter(id=self.instance.employee_id).first()

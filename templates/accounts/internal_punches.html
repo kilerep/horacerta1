@@ -25,7 +25,7 @@
         </select>
       </div>
       <div class="field">
-        <label for="employee">Funcionário</label>
+        <label for="employee">Profissional</label>
         <select id="employee" name="employee">
           <option value="">Todos</option>
           {% for option in employees %}
@@ -59,7 +59,7 @@
           <tr>
             <th>ID</th>
             <th>Data/hora</th>
-            <th>Funcionário</th>
+            <th>Profissional</th>
             <th>Empresa/contrato</th>
             <th>Status</th>
             <th>Observação</th>
@@ -70,7 +70,7 @@
             <tr>
               <td data-label="ID"><a class="strong-link" href="{% url 'internal_punch_detail' punch.id %}">{{ punch.id }}</a></td>
               <td data-label="Data/hora">{{ punch.timestamp|date:"d/m/Y H:i" }}</td>
-              <td data-label="Funcionário"><a class="strong-link" href="{% url 'internal_employee_detail' punch.contract.employee.id %}">{{ punch.contract.employee.full_name }}</a></td>
+              <td data-label="Profissional"><a class="strong-link" href="{% url 'internal_employee_detail' punch.contract.employee.id %}">{{ punch.contract.employee.full_name }}</a></td>
               <td data-label="Empresa/contrato"><a class="strong-link" href="{% url 'internal_company_detail' punch.contract.company.id %}">{{ punch.contract.company.name }}</a><br><span class="muted">R$ {{ punch.contract.hourly_rate }}/h</span></td>
               <td data-label="Status">
                 {% if punch.is_cancelled %}

@@ -143,7 +143,7 @@
       <article class="summary-item">
         <div class="k">Valor acumulado no periodo</div>
         <div class="v">{{ estimated_value_brl }}</div>
-        <div class="h">Estimativa operacional com base no valor/hora do(s) vinculo(s)</div>
+        <div class="h">Estimativa operacional com base no valor/hora do(s) contrato(s)</div>
       </article>
     </div>
     <h3 style="margin:14px 0 0;">Qualidade da validacao</h3>
@@ -208,7 +208,7 @@
   </section>
 
   <section class="closure-panel">
-    <h3 style="margin:0;">Relatorios de servico no periodo</h3>
+    <h3 style="margin:0;">Relatorios no periodo</h3>
     <p class="closure-sub">Registros de atividade enviados pelo profissional no mesmo recorte do fechamento.</p>
     {% if service_reports %}
       <div class="table-wrap">
@@ -217,7 +217,7 @@
             <tr>
               <th>Data</th>
               <th>Titulo</th>
-              <th>Vinculo</th>
+              <th>Contrato</th>
               <th>Enviado em</th>
               <th>Acoes</th>
             </tr>
@@ -231,7 +231,7 @@
                   {% if report.contract %}
                     Inicio {{ report.contract.start_date|date:"d/m/Y"|default:"-" }} | R$ {{ report.contract.hourly_rate }}/h
                   {% else %}
-                    <span class="muted">Sem vinculo</span>
+                    <span class="muted">Sem contrato</span>
                   {% endif %}
                 </td>
                 <td>{{ report.created_at|date:"d/m/Y H:i" }}</td>
@@ -242,7 +242,7 @@
         </table>
       </div>
     {% else %}
-      <div class="empty-box">Nenhum relatorio de servico encontrado para este periodo.</div>
+      <div class="empty-box">Nenhum relatorio encontrado para este periodo.</div>
     {% endif %}
   </section>
 </div>

@@ -97,16 +97,16 @@
         <span>{{ state.hint }}</span>
       </article>
       <article class="mei-box">
-        <strong>Vinculos</strong>
+        <strong>Contratos</strong>
         <span>{{ contracts|length }} total | {{ active_contracts }} operacional</span>
       </article>
       <article class="mei-box">
-        <strong>Ultimo vinculo</strong>
+        <strong>Ultimo contrato</strong>
         <span>
           {% if latest_contract %}
             R$ {{ latest_contract.hourly_rate }} | inicio {{ latest_contract.start_date|date:"d/m/Y" }}
           {% else %}
-            Nenhum vinculo criado ainda.
+            Nenhum contrato criado ainda.
           {% endif %}
         </span>
       </article>
@@ -124,7 +124,7 @@
         <button type="button" class="btn" data-copy-text="Ative seu acesso no HoraCerta em {{ activation_link }} usando o email {{ employee.user.email|default:employee.user.username }}.">Copiar link de ativacao</button>
       {% endif %}
       {% if edit_contract_url %}
-        <a class="btn primary" href="{{ edit_contract_url }}">Editar vinculo</a>
+        <a class="btn primary" href="{{ edit_contract_url }}">Editar contrato</a>
       {% else %}
         <a class="btn primary" href="{{ create_contract_url }}">Ir para MEIs</a>
       {% endif %}
@@ -149,7 +149,7 @@
   </section>
 
   <section class="mei-profile-card">
-    <h3 style="margin:0 0 10px;">Historico de vinculos</h3>
+    <h3 style="margin:0 0 10px;">Historico de contratos</h3>
     <div class="mei-table-wrap">
       <table class="mei-table">
         <thead>
@@ -184,7 +184,7 @@
             </tr>
           {% empty %}
             <tr>
-              <td colspan="5" class="muted">Nenhum vinculo criado para este profissional.</td>
+              <td colspan="5" class="muted">Nenhum contrato criado para este profissional.</td>
             </tr>
           {% endfor %}
         </tbody>

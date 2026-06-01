@@ -65,7 +65,7 @@
                 </a>
                 <a class="item {% if current == 'company_meis' or current == 'company_mei_profile' or current == 'company_contracts' or current == 'company_mei_closure' %}is-active{% endif %}" href="{% url 'company_meis' %}">
                   <div class="icon">P</div>
-                  <div><strong>Prestadores</strong><div class="muted item-sub">cadastro, vínculos e status</div></div>
+                  <div><strong>Prestadores</strong><div class="muted item-sub">cadastro, contratos e status</div></div>
                 </a>
                 <a class="item {% if current == 'company_history' or current == 'company_history_legacy' or current == 'company_incident_center' or current == 'company_records_review_center' or current == 'company_record_review_detail' %}is-active{% endif %}" href="{% url 'company_history' %}">
                   <div class="icon">R</div>
@@ -116,7 +116,7 @@
                 </a>
                 <a class="item {% if current == 'mei_contract' %}is-active{% endif %}" href="{% url 'mei_contract' %}">
                   <div class="icon">C</div>
-                  <div><strong>Meus vinculos</strong><div class="muted item-sub">empresa, valor e status</div></div>
+                  <div><strong>Meus clientes</strong><div class="muted item-sub">cliente, contrato e valor</div></div>
                 </a>
                 <a class="item {% if current == 'mei_history' %}is-active{% endif %}" href="{% url 'mei_history' %}">
                   <div class="icon">H</div>
@@ -145,7 +145,7 @@
                 </a>
                 <a class="item {% if current == 'mei_reports' or current == 'mei_service_report_detail' or current == 'mei_service_report_request_detail' %}is-active{% endif %}" href="{% url 'mei_reports' %}">
                   <div class="icon">R</div>
-                  <div><strong>Relatórios de Serviço</strong><div class="muted item-sub">envio e consulta pessoal</div></div>
+                  <div><strong>Relatórios</strong><div class="muted item-sub">envio e consulta pessoal</div></div>
                 </a>
               </div>
             {% endwith %}

@@ -1,6 +1,6 @@
 {% extends "accounts/base.html" %}
-{% block title %}Meus Vinculos{% endblock %}
-{% block page_title %}Meus Vinculos{% endblock %}
+{% block title %}Meus clientes{% endblock %}
+{% block page_title %}Meus clientes{% endblock %}
 
 {% block content %}
   <style>
@@ -37,7 +37,7 @@
         <h2 style="margin:0;">Selecionar contrato ativo</h2>
         <form method="get" class="row" style="margin-top:10px;">
           <div class="field">
-            <label>Empresa e contrato</label>
+            <label>Cliente e contrato</label>
             <select name="contract" onchange="this.form.submit()">
               {% for c in active_contracts %}
                 <option value="{{ c.id }}" {% if active_contract and c.id == active_contract.id %}selected{% endif %}>
@@ -54,7 +54,7 @@
         <h2 style="margin:0;">Detalhes do contrato ativo</h2>
         <p class="muted" style="margin:8px 0 0;">Informacoes do contrato selecionado para sua rotina de registro.</p>
         <div class="grid">
-          <div class="stat"><div class="k">Empresa</div><div class="v">{{ active_contract.company.name|default:"-" }}</div></div>
+          <div class="stat"><div class="k">Cliente</div><div class="v">{{ active_contract.company.name|default:"-" }}</div></div>
           <div class="stat"><div class="k">Valor por hora</div><div class="v">R$ {{ active_contract.hourly_rate }}</div></div>
           <div class="stat"><div class="k">Status</div><div class="v">Ativo</div></div>
           <div class="stat"><div class="k">Inicio / Fim</div><div class="v" style="font-size:16px;">{{ active_contract.start_date|date:"d/m/Y" }} {% if active_contract.end_date %}- {{ active_contract.end_date|date:"d/m/Y" }}{% else %}- em aberto{% endif %}</div></div>
@@ -69,7 +69,7 @@
         <h2 style="margin:0;">Sem contrato ativo no momento</h2>
         <div class="warning inactive">
           Seu cadastro possui contrato(s), mas nenhum esta ativo para operacao neste momento.
-          Verifique com a empresa se ha renovacao, reativacao ou novo contrato.
+          Verifique com o cliente se ha renovacao, reativacao ou novo contrato.
         </div>
         <div style="margin-top:10px;">
           <strong>Ultimos contratos:</strong>
@@ -84,7 +84,7 @@
       <section class="panel">
         <h2 style="margin:0;">Nenhum contrato criado ainda</h2>
         <div class="warning pending">
-          Seu cadastro foi criado, mas a empresa ainda nao cadastrou o primeiro contrato.
+          Seu cadastro foi criado, mas ainda nao ha contrato cadastrado para operar.
           Assim que o contrato for criado e estiver vigente, o registro de horarios sera liberado.
         </div>
       </section>

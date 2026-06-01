@@ -67,12 +67,12 @@
     <section class="panel">
       <h2 style="margin:0 0 10px;">Resumo do profissional</h2>
       {% if contracts_count == 0 %}
-        <p class="muted" style="margin:0;">Voce ainda nao possui vinculos ativos.</p>
+        <p class="muted" style="margin:0;">Voce ainda nao possui clientes ativos.</p>
       {% else %}
         <form method="get" class="row">
           {% if contracts_count > 1 %}
             <div class="field">
-              <label>Selecionar empresa e contrato</label>
+              <label>Selecionar cliente e contrato</label>
               <select name="contract" onchange="this.form.submit()">
                 {% for c in contracts %}
                   <option value="{{ c.id }}" {% if selected_contract and c.id == selected_contract.id %}selected{% endif %}>
@@ -83,7 +83,7 @@
             </div>
           {% else %}
             <div class="field">
-              <label>Empresa e contrato ativo</label>
+              <label>Cliente e contrato ativo</label>
               <div><strong>{{ selected_contract.company.name }}</strong> - R$ {{ selected_contract.hourly_rate }}/h</div>
             </div>
           {% endif %}
@@ -94,7 +94,7 @@
     {% if contracts_count > 0 %}
       <section class="cards">
         <article class="stat">
-          <div class="k">Empresa</div>
+          <div class="k">Cliente atual</div>
           <div class="v" style="font-size:24px">{{ selected_contract.company.name }}</div>
         </article>
         <article class="stat">
@@ -102,7 +102,7 @@
           <div class="v" style="font-size:24px">{{ current_period_label }}</div>
         </article>
         <article class="stat">
-          <div class="k">Status do vinculo</div>
+          <div class="k">Status do contrato</div>
           <div class="v" style="font-size:24px">Ativo</div>
         </article>
         <article class="stat">
@@ -152,7 +152,7 @@
           {% for punch_time in recent_today_punches %}
             <span class="chip">{{ punch_time }}</span>
           {% empty %}
-            <span class="muted">Sem horarios hoje neste vinculo.</span>
+            <span class="muted">Sem horarios hoje neste contrato.</span>
           {% endfor %}
         </div>
       </section>

@@ -1,6 +1,6 @@
 {% extends "accounts/base.html" %}
-{% block title %}Relatorios de servico{% endblock %}
-{% block page_title %}Relatorios de servico{% endblock %}
+{% block title %}Relatorios{% endblock %}
+{% block page_title %}Relatorios{% endblock %}
 
 {% block content %}
 <style>
@@ -79,7 +79,7 @@
 
   <section class="sr-panel">
     <h2 class="sr-title">Consulta de relatorios enviados</h2>
-    <p class="sr-sub">Modulo de relatorio de servico separado do ponto. Use filtros para consulta operacional por periodo e profissional.</p>
+    <p class="sr-sub">Modulo de relatorios separado do ponto. Use filtros para consulta operacional por periodo e profissional.</p>
     <form method="get" class="sr-filters">
       <div class="sr-field">
         <label for="employee-filter">Profissional</label>
@@ -130,7 +130,7 @@
 
   <section class="sr-panel">
     <h2 class="sr-title">Nova solicitacao de relatorio</h2>
-    <p class="sr-sub">Solicite relatorios de servico por profissional, com data ou periodo e instrucao curta.</p>
+    <p class="sr-sub">Solicite relatorios por profissional, com data ou periodo e instrucao curta.</p>
     <form method="post" data-submit-once="true">
       {% csrf_token %}
       <input type="hidden" name="action" value="create_request">
@@ -261,7 +261,7 @@
           <tr>
             <th>Data do servico</th>
             <th>Profissional</th>
-            <th>Empresa/vinculo</th>
+            <th>Cliente/contrato</th>
             <th>Titulo</th>
             <th>Enviado em</th>
             <th>Acoes</th>

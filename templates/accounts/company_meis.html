@@ -13,7 +13,7 @@
       <div>
         <h2 class="company-meis__title">Prestadores</h2>
         <p class="company-meis__subtitle">
-          Área única para acompanhar cadastro, vínculo e status operacional dos prestadores da empresa.
+          Área única para acompanhar cadastro, contrato e status operacional dos prestadores.
         </p>
       </div>
       <div class="company-meis__hero-badge">Empresa cadastra, prestador registra, empresa acompanha</div>
@@ -21,18 +21,18 @@
 
     {% if request.GET.status == "created_mei" %}
       <div class="company-meis__alert">
-        Profissional cadastrado com sucesso. Se necessário, use o bloco abaixo para configurar o primeiro vínculo.
+        Profissional cadastrado com sucesso. Se necessário, use o bloco abaixo para configurar o primeiro contrato.
       </div>
     {% elif request.GET.status == "created_with_contract" %}
-      <div class="company-meis__alert">Profissional e vínculo inicial criados com sucesso.</div>
+      <div class="company-meis__alert">Profissional e contrato inicial criados com sucesso.</div>
     {% elif request.GET.status == "linked_existing_with_contract" %}
-      <div class="company-meis__alert">Conta existente localizada. Novo vínculo criado com sucesso para esta empresa.</div>
+      <div class="company-meis__alert">Conta existente localizada. Novo contrato criado com sucesso para este cliente.</div>
     {% elif request.GET.status == "linked_existing" %}
-      <div class="company-meis__alert">Conta existente localizada. Cadastro vinculado a esta empresa com sucesso.</div>
+      <div class="company-meis__alert">Conta existente localizada. Cadastro associado a este cliente com sucesso.</div>
     {% elif request.GET.status == "link_created" %}
-      <div class="company-meis__alert">Primeiro vínculo configurado com sucesso para o profissional selecionado.</div>
+      <div class="company-meis__alert">Primeiro contrato configurado com sucesso para o profissional selecionado.</div>
     {% elif request.GET.status == "contract_ended" %}
-      <div class="company-meis__alert">Vínculo encerrado com histórico preservado.</div>
+      <div class="company-meis__alert">Contrato encerrado com histórico preservado.</div>
     {% elif request.GET.status == "access_deactivated" %}
       <div class="company-meis__alert">Acesso do profissional desativado com sucesso.</div>
     {% elif request.GET.status == "access_reactivated" %}
@@ -40,11 +40,11 @@
     {% elif request.GET.status == "invalid_employee" %}
       <div class="company-meis__error company-meis__error--wide">Profissional invalido para esta empresa.</div>
     {% elif request.GET.status == "invalid_contract" %}
-      <div class="company-meis__error company-meis__error--wide">Vínculo inválido para esta empresa.</div>
+      <div class="company-meis__error company-meis__error--wide">Contrato inválido para este cliente.</div>
     {% endif %}
     {% if show_flow_notice %}
       <div class="company-meis__alert">
-        O fluxo principal foi simplificado: cadastre o prestador e, se quiser, já configure o primeiro vínculo neste mesmo formulário.
+        O fluxo principal foi simplificado: cadastre o prestador e, se quiser, já configure o primeiro contrato neste mesmo formulário.
       </div>
     {% endif %}
     <div class="company-meis__flow-note">
@@ -98,7 +98,7 @@
 
       <section class="company-meis__section company-meis__section--optional">
         <header class="company-meis__section-head">
-          <h3>Primeiro vínculo <span class="company-meis__badge">Opcional</span></h3>
+          <h3>Primeiro contrato <span class="company-meis__badge">Opcional</span></h3>
           <p>Configuração opcional para liberar o registro de horas sem sair desta tela.</p>
         </header>
         <div class="company-meis__grid">
@@ -147,20 +147,20 @@
       <input type="hidden" name="action" value="create_link">
       <section class="company-meis__section company-meis__section--optional">
         <header class="company-meis__section-head">
-          <h3>Configurar primeiro vínculo para prestador já cadastrado</h3>
+          <h3>Configurar primeiro contrato para prestador já cadastrado</h3>
           <p>Use este bloco apenas quando o prestador já estiver cadastrado e faltar configuração operacional.</p>
         </header>
         <div class="company-meis__grid">
           <div class="company-meis__field">
             <label for="{{ create_link_form.employee.id_for_label }}">{{ create_link_form.employee.label }}</label>
             {{ create_link_form.employee }}
-            <div class="company-meis__hint">Selecione um prestador sem vínculo ativo para liberar a operação.</div>
+            <div class="company-meis__hint">Selecione um prestador sem contrato ativo para liberar a operação.</div>
             {% if create_link_form.employee.errors %}<div class="company-meis__error">{{ create_link_form.employee.errors }}</div>{% endif %}
           </div>
           <div class="company-meis__field">
             <label for="{{ create_link_form.hourly_rate.id_for_label }}">{{ create_link_form.hourly_rate.label }}</label>
             {{ create_link_form.hourly_rate }}
-            <div class="company-meis__hint">Defina o valor/hora que será aplicado neste vínculo.</div>
+            <div class="company-meis__hint">Defina o valor/hora que será aplicado neste contrato.</div>
             {% if create_link_form.hourly_rate.errors %}<div class="company-meis__error">{{ create_link_form.hourly_rate.errors }}</div>{% endif %}
           </div>
           <div class="company-meis__field">
@@ -191,7 +191,7 @@
         {% endif %}
       </section>
       <div class="company-meis__actions">
-        <button class="btn primary company-meis__submit" type="submit">Salvar primeiro vínculo</button>
+        <button class="btn primary company-meis__submit" type="submit">Salvar primeiro contrato</button>
       </div>
     </form>
 
@@ -199,7 +199,7 @@
       <header class="company-meis__list-header">
         <div>
           <h2 class="company-meis__title">Base de prestadores</h2>
-          <p class="company-meis__list-subtitle">Acompanhe conta, vínculo, último registro e próximas ações em um único lugar.</p>
+          <p class="company-meis__list-subtitle">Acompanhe conta, contrato, último registro e próximas ações em um único lugar.</p>
           <div class="company-meis__list-meta">
             <span class="company-meis__meta-pill">Resultados: {{ employees|length }}</span>
             <span class="company-meis__meta-pill">Ativos: {{ tab_counts.ativos }}</span>
@@ -228,7 +228,7 @@
             <tr>
               <th>Prestador</th>
               <th>Conta</th>
-              <th>Vínculo</th>
+              <th>Contrato</th>
               <th>Contrato atual</th>
               <th>Último registro</th>
               <th>Ações</th>
@@ -245,7 +245,7 @@
                   <span class="company-meis__pill company-meis__pill--{{ row.activation.tone }}">{{ row.activation.label }}</span>
                   <div class="company-meis__state-hint">{{ row.activation.hint }}</div>
                 </td>
-                <td data-label="Vínculo">
+                <td data-label="Contrato">
                   <span class="company-meis__pill company-meis__pill--{{ row.contract_status.tone }}">{{ row.contract_status.label }}</span>
                   <div class="company-meis__state-hint">{{ row.contract_status.hint }}</div>
                 </td>
@@ -255,9 +255,9 @@
                     <span class="company-meis__muted">
                       {{ row.display_contract.start_date|date:"d/m/Y" }} até {{ row.display_contract.end_date|date:"d/m/Y"|default:"sem fim" }}
                     </span>
-                    <div class="company-meis__state-hint">{{ row.total_contracts }} vínculo(s) no histórico</div>
+                    <div class="company-meis__state-hint">{{ row.total_contracts }} contrato(s) no histórico</div>
                   {% else %}
-                    <span class="company-meis__muted">Nenhum vínculo configurado</span>
+                    <span class="company-meis__muted">Nenhum contrato configurado</span>
                   {% endif %}
                 </td>
                 <td data-label="Último registro">
@@ -279,16 +279,16 @@
                     <button type="button" class="btn" data-copy-text="{{ row.activation_copy_text }}">Copiar link</button>
                   {% endif %}
                   {% if row.total_contracts == 0 %}
-                    <a class="btn primary" href="{{ row.setup_first_link_url }}">Criar vínculo</a>
+                    <a class="btn primary" href="{{ row.setup_first_link_url }}">Criar contrato</a>
                   {% else %}
-                    <a class="btn primary" href="{{ row.manage_contracts_url }}">Gerenciar vínculo</a>
+                    <a class="btn primary" href="{{ row.manage_contracts_url }}">Gerenciar contrato</a>
                   {% endif %}
                   {% if row.current_contract %}
                     <form method="post" class="company-meis__inline-form">
                       {% csrf_token %}
                       <input type="hidden" name="action" value="end_contract">
                       <input type="hidden" name="contract_id" value="{{ row.current_contract.id }}">
-                      <button type="submit" class="btn" onclick="return confirm('Encerrar o vínculo ativo deste prestador? O histórico será preservado.');">Encerrar vínculo</button>
+                      <button type="submit" class="btn" onclick="return confirm('Encerrar o contrato ativo deste prestador? O histórico será preservado.');">Encerrar contrato</button>
                     </form>
                   {% endif %}
                   {% if row.activation.key == "inactive" and not row.employee.ended_at %}

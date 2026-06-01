@@ -145,7 +145,7 @@
       <header class="panel-head">
         <div>
           <h2 class="panel-title">Filtros e exportacoes</h2>
-          <p class="panel-subtitle">Modulo de relatorio de servico, separado do fluxo de ponto. Use os filtros para analise gerencial.</p>
+          <p class="panel-subtitle">Modulo de relatorios, separado do fluxo de ponto. Use os filtros para analise gerencial.</p>
         </div>
       </header>
       <form method="get" class="row" style="margin-top:10px;" data-submit-once="true">
@@ -207,7 +207,7 @@
             <tr>
               <th>Data</th>
               <th>MEI</th>
-              <th>Empresa / vinculo</th>
+              <th>Cliente / contrato</th>
               <th>Horarios</th>
               <th>Total do dia</th>
               <th>Status</th>
@@ -260,7 +260,7 @@
 
     <section id="request-report" class="panel">
       <h2 class="table-title">Solicitar detalhamento de atividades</h2>
-      <p class="table-subtitle">Este bloco e para relatorio de servico/trabalho realizado, sem relacao com justificativa de horario.</p>
+      <p class="table-subtitle">Este bloco e para relatorio de trabalho realizado, sem relacao com justificativa de horario.</p>
       <form method="post" class="row" style="margin-top:10px;" data-submit-once="true">
         {% csrf_token %}
         <input type="hidden" name="action" value="request_activity_report">

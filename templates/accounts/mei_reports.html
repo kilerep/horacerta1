@@ -1,6 +1,6 @@
 {% extends "accounts/base.html" %}
-{% block title %}Relatorios de servico{% endblock %}
-{% block page_title %}Relatorios de servico{% endblock %}
+{% block title %}Relatorios{% endblock %}
+{% block page_title %}Relatorios{% endblock %}
 
 {% block content %}
 <style>
@@ -70,16 +70,16 @@
 <div class="sr-wrap">
   {% if request.GET.event == "report_created" %}
     <section class="hc-global-feedback" role="status" aria-live="polite">
-      Relatorio de servico enviado com sucesso.
+      Relatorio enviado com sucesso.
     </section>
   {% endif %}
 
   <section class="sr-panel">
     <h2 class="sr-title">Contexto atual</h2>
-    <p class="sr-sub">Selecione empresa e vinculo para filtrar solicitacoes e relatorios no contexto operacional correto.</p>
+    <p class="sr-sub">Selecione cliente e contrato para filtrar solicitacoes e relatorios no contexto correto.</p>
     <form method="get" class="sr-grid">
       <div class="sr-field">
-        <label for="sr-contract-selector">Empresa e vinculo</label>
+        <label for="sr-contract-selector">Cliente e contrato</label>
         <select id="sr-contract-selector" name="contract" onchange="this.form.submit()">
           {% for c in contracts %}
             <option value="{{ c.id }}" {% if selected_contract and c.id == selected_contract.id %}selected{% endif %}>
@@ -93,14 +93,14 @@
 
   <section class="sr-panel">
     <h2 class="sr-title">Solicitacoes recebidas da empresa</h2>
-    <p class="sr-sub">Acompanhe o que esta pendente e responda com relatorio de servico vinculado a cada solicitacao.</p>
+    <p class="sr-sub">Acompanhe pendencias e responda com um relatorio vinculado a cada solicitacao.</p>
     <div class="sr-meta">Pendentes: {{ pending_requests|length }} | Respondidas/Revisadas: {{ responded_requests|length }}</div>
     <div class="sr-table-wrap">
       <table class="sr-table">
         <thead>
           <tr>
             <th>Solicitado em</th>
-            <th>Empresa</th>
+            <th>Cliente</th>
             <th>Assunto</th>
             <th>Periodo</th>
             <th>Status</th>
@@ -192,8 +192,8 @@
   </section>
 
   <section class="sr-panel">
-    <h2 class="sr-title">Novo relatorio de servico</h2>
-    <p class="sr-sub">Modulo separado do ponto. Registre o trabalho executado sem relacao com o registro de horarios.</p>
+    <h2 class="sr-title">Novo relatorio</h2>
+    <p class="sr-sub">Registre o trabalho executado para conferencia externa, sem alterar os horarios.</p>
     <form method="post" data-submit-once="true">
       {% csrf_token %}
       <input type="hidden" name="action" value="create_report">
@@ -233,14 +233,14 @@
 
   <section class="sr-panel">
     <h2 class="sr-title">Meus relatorios enviados</h2>
-    <p class="sr-sub">Consulta rapida dos relatorios de servico ja registrados no sistema.</p>
+    <p class="sr-sub">Consulta rapida dos relatorios ja registrados no sistema.</p>
     <div class="sr-meta">Total: {{ reports|length }} relatorio(s)</div>
     <div class="sr-table-wrap">
       <table class="sr-table">
         <thead>
           <tr>
             <th>Data</th>
-            <th>Empresa/vinculo</th>
+            <th>Cliente/contrato</th>
             <th>Titulo</th>
             <th>Enviado em</th>
             <th>Acoes</th>

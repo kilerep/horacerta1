@@ -3,7 +3,7 @@
 {% block page_title %}Detalhe da empresa{% endblock %}
 {% block internal_breadcrumb %}<span class="internal-breadcrumb__sep">></span><a href="{% url 'internal_companies' %}">Empresas</a><span class="internal-breadcrumb__sep">></span><span>{{ company.name }}</span>{% endblock %}
 {% block internal_title %}{{ company.name }}{% endblock %}
-{% block internal_subtitle %}Empresa, vínculos, uso e ações administrativas.{% endblock %}
+{% block internal_subtitle %}Cliente, contratos, uso e ações administrativas.{% endblock %}
 
 {% block internal_content %}
   <section class="internal-panel">
@@ -13,7 +13,7 @@
         <p class="internal-subtitle">{{ company.email|default:"E-mail não informado" }}{% if company.cnpj %} | {{ company.cnpj }}{% endif %}</p>
       </div>
       <div class="internal-actions">
-        <a class="btn" href="{% url 'internal_employees' %}?company={{ company.id }}">Ver funcionários</a>
+        <a class="btn" href="{% url 'internal_employees' %}?company={{ company.id }}">Ver profissionais</a>
         <a class="btn" href="{% url 'internal_punches' %}?company={{ company.id }}">Ver registros</a>
         <a class="btn" href="{% url 'internal_correction_requests' %}?company={{ company.id }}">Ver solicitações</a>
       </div>
@@ -26,8 +26,8 @@
     {% endif %}
 
     <div class="metric-grid">
-      <div class="metric-card"><div class="label">Funcionários</div><div class="value">{{ company.employee_count }}</div><div class="hint">Total vinculado</div></div>
-      <div class="metric-card"><div class="label">Funcionários ativos</div><div class="value">{{ company.active_employee_count }}</div><div class="hint">Perfis ativos</div></div>
+      <div class="metric-card"><div class="label">Profissionais</div><div class="value">{{ company.employee_count }}</div><div class="hint">Total associado</div></div>
+      <div class="metric-card"><div class="label">Profissionais ativos</div><div class="value">{{ company.active_employee_count }}</div><div class="hint">Perfis ativos</div></div>
       <div class="metric-card"><div class="label">Registros totais</div><div class="value">{{ company.punch_count }}</div><div class="hint">Batidas ativas</div></div>
       <div class="metric-card"><div class="label">Registros últimos 30 dias</div><div class="value">{{ company.punch_count_last_30_days }}</div><div class="hint">Uso recente</div></div>
       <div class="metric-card"><div class="label">Último registro</div><div class="value">{% if company.last_punch_at %}{{ company.last_punch_at|date:"d/m" }}{% else %}-{% endif %}</div><div class="hint">{% if company.last_punch_at %}{{ company.last_punch_at|date:"d/m/Y H:i" }}{% else %}Sem registros{% endif %}</div></div>
@@ -83,8 +83,8 @@
   <section class="internal-panel">
     <div class="internal-head">
       <div>
-        <h3>Funcionarios ativos</h3>
-        <p class="internal-subtitle">Vinculos ativos desta empresa. Encerrar vinculo nao apaga login nem historico.</p>
+        <h3>Profissionais ativos</h3>
+        <p class="internal-subtitle">Contratos ativos deste cliente. Encerrar contrato nao apaga login nem historico.</p>
       </div>
     </div>
     <div class="table-wrap">
@@ -104,7 +104,7 @@
                   <input type="hidden" name="action" value="end_relationship">
                   <input type="hidden" name="relationship_id" value="{{ row.employee.id }}">
                   <input name="description" required placeholder="Motivo obrigatorio">
-                  <button class="btn danger" type="submit" onclick="return confirm('Encerrar somente este vinculo com a empresa?')">Encerrar vinculo</button>
+                  <button class="btn danger" type="submit" onclick="return confirm('Encerrar somente este contrato com o cliente?')">Encerrar contrato</button>
                 </form>
               </td>
             </tr>
@@ -119,7 +119,7 @@
   <section class="internal-panel">
     <div class="internal-head">
       <div>
-        <h3>Vinculos encerrados</h3>
+        <h3>Contratos encerrados</h3>
         <p class="internal-subtitle">Historico preservado em modo consulta.</p>
       </div>
     </div>
@@ -137,7 +137,7 @@
               <td>{{ row.punch_count }}</td>
             </tr>
           {% empty %}
-            <tr><td colspan="6"><div class="empty-state">Nenhum vinculo encerrado.</div></td></tr>
+            <tr><td colspan="6"><div class="empty-state">Nenhum contrato encerrado.</div></td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -146,12 +146,12 @@
 
   <section class="internal-panel">
     <div class="internal-head">
-      <h3>Contratos e vínculos</h3>
+      <h3>Contratos</h3>
       <a class="btn" href="{% url 'internal_punches' %}?company={{ company.id }}">Ver registros da empresa</a>
     </div>
     <div class="table-wrap">
       <table class="internal-table">
-        <thead><tr><th>Funcionário</th><th>Valor/h</th><th>Início</th><th>Fim</th><th>Status</th></tr></thead>
+        <thead><tr><th>Profissional</th><th>Valor/h</th><th>Início</th><th>Fim</th><th>Status</th></tr></thead>
         <tbody>
           {% for contract in contracts %}
             <tr>
@@ -176,7 +176,7 @@
     </div>
     <div class="table-wrap">
       <table class="internal-table">
-        <thead><tr><th>Data</th><th>Funcionário</th><th>Tipo</th><th>Status</th><th>Criada em</th></tr></thead>
+        <thead><tr><th>Data</th><th>Profissional</th><th>Tipo</th><th>Status</th><th>Criada em</th></tr></thead>
         <tbody>
           {% for item in correction_requests %}
             <tr>
@@ -198,7 +198,7 @@
     <h3>Últimos registros de ponto</h3>
     <div class="table-wrap">
       <table class="internal-table">
-        <thead><tr><th>Data/hora</th><th>Funcionário</th><th>Contrato</th><th>Status</th><th>Observação</th></tr></thead>
+        <thead><tr><th>Data/hora</th><th>Profissional</th><th>Contrato</th><th>Status</th><th>Observação</th></tr></thead>
         <tbody>
           {% for punch in recent_punches %}
             <tr>

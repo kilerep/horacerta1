@@ -32,11 +32,11 @@
       </section>
     {% elif request.GET.event == "qr_contract_missing" %}
       <section class="hc-feedback hc-feedback--warn" role="status" aria-live="polite">
-        Seu perfil nao possui vinculo operacional ativo para este local QR.
+        Seu perfil nao possui contrato operacional ativo para este local QR.
       </section>
     {% elif request.GET.event == "report_sent" %}
       <section class="hc-feedback hc-feedback--ok" role="status" aria-live="polite">
-        Retorno enviado com sucesso para a empresa.
+        Retorno enviado com sucesso para o cliente.
       </section>
     {% elif request.GET.event == "correction_request_sent" %}
       <section class="hc-feedback hc-feedback--ok" role="status" aria-live="polite">
@@ -90,12 +90,12 @@
         <h2 class="hc-section-title">Cadastro confirmado, aguardando liberacao operacional</h2>
         <p class="hc-muted" style="margin:0 0 8px;">
           Seu cadastro no HoraCerta esta ativo{% if employee_company_name %} para <strong>{{ employee_company_name }}</strong>{% endif %},
-          mas ainda nao existe vinculo operacional vigente para registrar horarios.
+          mas ainda nao existe contrato operacional vigente para registrar horarios.
         </p>
         {% if state_context %}
           <p class="hc-muted" style="margin:0;"><strong>Estado atual:</strong> {{ state_context.label }} - {{ state_context.hint }}</p>
         {% endif %}
-        <p class="hc-muted" style="margin:8px 0 0;">Peca para sua empresa criar ou ativar o vinculo no painel de gestao.</p>
+        <p class="hc-muted" style="margin:8px 0 0;">Solicite ao cliente a criacao ou ativacao do contrato no painel.</p>
       </section>
     {% else %}
       <section class="hc-panel hc-main-card">
@@ -144,11 +144,11 @@
 
         <div class="hc-meta-grid">
           <article class="hc-mini-card">
-            <span class="hc-mini-label">Empresa vinculada</span>
+            <span class="hc-mini-label">Cliente atual</span>
             <strong class="hc-mini-value">{{ selected_contract.company.name }}</strong>
           </article>
           <article class="hc-mini-card">
-            <span class="hc-mini-label">Status do vinculo</span>
+            <span class="hc-mini-label">Status do contrato</span>
             <strong class="hc-mini-value hc-mini-value--status">Ativo</strong>
           </article>
           <article class="hc-mini-card">
@@ -156,7 +156,7 @@
             <strong class="hc-mini-value">R$ {{ selected_contract.hourly_rate }}</strong>
           </article>
           <article class="hc-mini-card">
-            <span class="hc-mini-label">Periodo do vinculo</span>
+            <span class="hc-mini-label">Periodo do contrato</span>
             <strong class="hc-mini-value">
               {{ selected_contract.start_date|date:"d/m/Y" }}
               {% if selected_contract.end_date %}
@@ -170,7 +170,7 @@
 
         <div class="hc-action-stack">
           <form method="get" class="hc-field">
-            <label>Selecionar empresa e contrato</label>
+            <label>Selecionar cliente e contrato</label>
             <select name="contract" onchange="this.form.submit()">
               {% for c in contracts %}
                 <option value="{{ c.id }}" {% if selected_contract and c.id == selected_contract.id %}selected{% endif %}>
@@ -181,7 +181,7 @@
           </form>
           {% if location_required_for_selected_contract %}
             <div class="hc-context-note">
-              Este vinculo valida localizacao no momento do registro. Nao ha rastreamento continuo.
+              Este contrato valida localizacao no momento do registro. Nao ha rastreamento continuo.
             </div>
           {% endif %}
 
@@ -247,7 +247,7 @@
             <div id="hcManualErrors" class="hc-error-box hc-manual-errors" hidden></div>
 
             <div class="hc-field">
-              <label for="hcManualContract">Empresa e contrato</label>
+              <label for="hcManualContract">Cliente e contrato</label>
               <select id="hcManualContract" name="contract" required>
                 {% for c in contracts %}
                   <option value="{{ c.id }}" {% if selected_contract and c.id == selected_contract.id %}selected{% endif %}>

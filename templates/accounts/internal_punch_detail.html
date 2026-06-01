@@ -13,7 +13,7 @@
         <p class="internal-subtitle">{{ punch.id }}</p>
       </div>
       <div class="internal-actions">
-        <a class="btn" href="{% url 'internal_employee_detail' punch.contract.employee.id %}">Ver funcionário</a>
+        <a class="btn" href="{% url 'internal_employee_detail' punch.contract.employee.id %}">Ver profissional</a>
         <a class="btn" href="{% url 'internal_company_detail' punch.contract.company.id %}">Ver empresa</a>
       </div>
     </div>
@@ -27,7 +27,7 @@
     <div class="notice">Correções administrativas alteram o cálculo de horas e ficam registradas em auditoria.</div>
 
     <div class="detail-grid">
-      <div class="detail-item"><div class="k">Funcionário</div><div class="v">{{ punch.contract.employee.full_name }}</div></div>
+      <div class="detail-item"><div class="k">Profissional</div><div class="v">{{ punch.contract.employee.full_name }}</div></div>
       <div class="detail-item"><div class="k">Empresa</div><div class="v">{{ punch.contract.company.name }}</div></div>
       <div class="detail-item"><div class="k">Contrato</div><div class="v">R$ {{ punch.contract.hourly_rate }}/h</div></div>
       <div class="detail-item"><div class="k">Data/hora</div><div class="v">{{ punch.timestamp|date:"d/m/Y H:i:s" }}</div></div>

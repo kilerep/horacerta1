@@ -257,13 +257,13 @@
   <div class="mei-history">
     <section class="mei-history__panel">
       <h2 class="mei-history__title">Filtros do histórico</h2>
-      <p class="mei-history__sub">Selecione vínculo e período para acompanhar sua jornada com clareza.</p>
+      <p class="mei-history__sub">Selecione cliente, contrato e período para acompanhar sua jornada com clareza.</p>
       <div style="margin-top:10px;">
         <a class="btn" href="{% url 'mei_punch_correction_request' %}">Reportar problema no horário</a>
       </div>
       <form method="get" class="mei-history__filters" data-submit-once="true">
         <div class="mei-history__field">
-          <label>Vínculo</label>
+          <label>Cliente e contrato</label>
           <select name="contract" onchange="this.form.submit()">
             {% for c in contracts %}
               <option value="{{ c.id }}" {% if selected_contract and c.id == selected_contract.id %}selected{% endif %}>

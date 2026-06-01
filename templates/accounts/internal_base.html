@@ -18,7 +18,7 @@
       <div class="internal-head">
         <div>
           <h2>{% block internal_title %}Backoffice HoraCerta{% endblock %}</h2>
-          <p class="internal-subtitle">{% block internal_subtitle %}Central interna para acompanhar empresas, funcionários, registros e solicitações.{% endblock %}</p>
+          <p class="internal-subtitle">{% block internal_subtitle %}Central interna para acompanhar clientes, profissionais, registros e solicitações.{% endblock %}</p>
         </div>
       </div>
 
@@ -26,7 +26,7 @@
         {% with current=request.resolver_match.url_name %}
           <a class="internal-nav__item {% if current == 'internal_dashboard' %}is-active{% endif %}" href="{% url 'internal_dashboard' %}">Visão geral</a>
           <a class="internal-nav__item {% if current == 'internal_companies' or current == 'internal_company_detail' %}is-active{% endif %}" href="{% url 'internal_companies' %}">Empresas</a>
-          <a class="internal-nav__item {% if current == 'internal_employees' or current == 'internal_employee_detail' %}is-active{% endif %}" href="{% url 'internal_employees' %}">Funcionários</a>
+          <a class="internal-nav__item {% if current == 'internal_employees' or current == 'internal_employee_detail' %}is-active{% endif %}" href="{% url 'internal_employees' %}">Profissionais</a>
           <a class="internal-nav__item {% if current == 'internal_punches' or current == 'internal_punch_detail' %}is-active{% endif %}" href="{% url 'internal_punches' %}">Registros de ponto</a>
           <a class="internal-nav__item {% if current == 'internal_correction_requests' or current == 'internal_correction_request_detail' %}is-active{% endif %}" href="{% url 'internal_correction_requests' %}">
             Solicitações

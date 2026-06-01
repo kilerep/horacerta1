@@ -27,7 +27,7 @@
     {% endif %}
 
     <div class="detail-grid">
-      <div class="detail-item"><div class="k">Funcionário</div><div class="v">{{ correction_request.employee.full_name }}</div></div>
+      <div class="detail-item"><div class="k">Profissional</div><div class="v">{{ correction_request.employee.full_name }}</div></div>
       <div class="detail-item"><div class="k">Empresa</div><div class="v">{{ correction_request.company.name }}</div></div>
       <div class="detail-item"><div class="k">Data do problema</div><div class="v">{{ correction_request.problem_date|date:"d/m/Y" }}</div></div>
       <div class="detail-item"><div class="k">Tipo</div><div class="v">{{ correction_request.get_problem_type_display }}</div></div>

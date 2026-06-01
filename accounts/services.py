@@ -121,7 +121,7 @@ def create_or_link_mei_by_email(
         if Employee.objects.filter(user=user, company=company).exists():
             raise MeiLinkError(
                 "already_linked_company",
-                "Este MEI ja possui vinculo com sua empresa. Use o gerenciamento de vinculos para continuar.",
+                "Este MEI ja possui contrato com este cliente. Use o gerenciamento de contratos para continuar.",
             )
 
         employee = Employee.objects.create(

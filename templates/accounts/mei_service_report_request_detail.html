@@ -69,7 +69,7 @@
 
   <section class="rq-panel">
     <h2 class="rq-title">Detalhe da solicitacao</h2>
-    <p class="rq-sub">Resposta via relatorio de servico, sem relacao com justificativa de horario ou ponto.</p>
+    <p class="rq-sub">Resposta via relatorio, sem relacao com justificativa de horario ou ponto.</p>
     <div class="rq-grid">
       <article class="rq-kv">
         <div class="k">Empresa</div>
@@ -115,7 +115,7 @@
   {% if can_respond %}
     <section class="rq-panel">
       <h2 class="rq-title">Responder solicitacao</h2>
-      <p class="rq-sub">Preencha e envie um relatorio de servico vinculado a esta solicitacao.</p>
+      <p class="rq-sub">Preencha e envie um relatorio vinculado a esta solicitacao.</p>
       <form method="post" data-submit-once="true">
         {% csrf_token %}
         <input type="hidden" name="action" value="respond_request">

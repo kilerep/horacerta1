@@ -36,7 +36,7 @@
     {% if contracts %}
       <form method="get" class="row" style="margin-top:12px;" data-submit-once="true">
         <div class="field">
-          <label>Vinculo</label>
+          <label>Cliente e contrato</label>
           <select name="contract" required>
             {% for c in contracts %}
               <option value="{{ c.id }}">{{ c.company.name }} - R$ {{ c.hourly_rate }}/h</option>
@@ -56,7 +56,7 @@
         <button class="btn" type="submit" formaction="{% url 'export_pdf' %}" data-loading-text="Gerando PDF...">PDF</button>
       </form>
     {% else %}
-      <p class="muted" style="margin-top:10px;">Sem vinculos ativos para exportar.</p>
+      <p class="muted" style="margin-top:10px;">Sem clientes ativos para exportar.</p>
     {% endif %}
   </section>
 {% endblock %}

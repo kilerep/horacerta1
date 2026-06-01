@@ -247,7 +247,7 @@
           <span class="plan-eyebrow">Plano atual</span>
           <h2 class="plan-title">{{ current_plan_name }}</h2>
           <p class="plan-subtitle">
-            Sua empresa possui acesso aos recursos essenciais para acompanhar prestadores, vínculos,
+            Sua empresa possui acesso aos recursos essenciais para acompanhar prestadores, contratos,
             registros de horário, histórico, conferência, notificações e relatórios.
           </p>
         </div>
@@ -288,7 +288,7 @@
     {% if limit_reached %}
       <article class="plan-message is-warning">
         <h3>Sua empresa atingiu o limite de {{ active_provider_limit }} prestadores ativos do plano atual.</h3>
-        <p>Você pode encerrar vínculos que não estão mais em operação ou solicitar a ampliação do limite.</p>
+        <p>Você pode encerrar contratos que não estão mais em operação ou solicitar a ampliação do limite.</p>
       </article>
     {% endif %}
 
@@ -308,7 +308,7 @@
       <article class="plan-panel usage-card">
         <div>
           <h3>Uso do limite</h3>
-          <p>Prestadores com vínculo encerrado permanecem disponíveis no histórico e não contam no limite do plano.</p>
+          <p>Prestadores com contrato encerrado permanecem disponíveis no histórico e não contam no limite do plano.</p>
         </div>
         <div class="usage-row">
           <span class="usage-number">{{ active_provider_count }}</span>

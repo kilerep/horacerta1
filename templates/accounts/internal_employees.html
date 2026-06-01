@@ -1,15 +1,15 @@
 {% extends "accounts/internal_base.html" %}
-{% block title %}HoraCerta - Funcionários internos{% endblock %}
-{% block page_title %}Funcionários{% endblock %}
-{% block internal_breadcrumb %}<span class="internal-breadcrumb__sep">></span><span>Funcionários</span>{% endblock %}
-{% block internal_title %}Funcionários{% endblock %}
+{% block title %}HoraCerta - Profissionais internos{% endblock %}
+{% block page_title %}Profissionais{% endblock %}
+{% block internal_breadcrumb %}<span class="internal-breadcrumb__sep">></span><span>Profissionais</span>{% endblock %}
+{% block internal_title %}Profissionais{% endblock %}
 {% block internal_subtitle %}Base geral de profissionais vinculados às empresas.{% endblock %}
 
 {% block internal_content %}
   <section class="internal-panel">
     <div class="internal-head">
       <div>
-        <h2>Funcionários e MEIs</h2>
+        <h2>Profissionais e MEIs</h2>
         <p class="internal-subtitle">Base geral de profissionais vinculados às empresas.</p>
       </div>
     </div>
@@ -48,7 +48,7 @@
           <tr>
             <th>Nome/username</th>
             <th>E-mail</th>
-            <th>Empresa/vínculo principal</th>
+            <th>Cliente/contrato principal</th>
             <th>Status</th>
             <th>Último registro</th>
             <th>Registros</th>
@@ -59,13 +59,13 @@
             <tr>
               <td data-label="Nome/username"><a class="strong-link" href="{% url 'internal_employee_detail' row.employee.id %}">{{ row.employee.full_name|default:row.employee.user.username }}</a></td>
               <td data-label="E-mail">{{ row.employee.user.email|default:"-" }}</td>
-              <td data-label="Empresa/vínculo principal"><a class="strong-link" href="{% url 'internal_company_detail' row.employee.company.id %}">{{ row.employee.company.name }}</a></td>
+              <td data-label="Cliente/contrato principal"><a class="strong-link" href="{% url 'internal_company_detail' row.employee.company.id %}">{{ row.employee.company.name }}</a></td>
               <td data-label="Status"><span class="pill {{ row.status.tone }}">{{ row.status.label }}</span></td>
               <td data-label="Último registro">{% if row.last_punch_at %}{{ row.last_punch_at|date:"d/m/Y H:i" }}{% else %}<span class="muted">Sem registros</span>{% endif %}</td>
               <td data-label="Registros">{{ row.punch_count }}</td>
             </tr>
           {% empty %}
-            <tr><td colspan="6"><div class="empty-state">Nenhum funcionário encontrado.</div></td></tr>
+            <tr><td colspan="6"><div class="empty-state">Nenhum profissional encontrado.</div></td></tr>
           {% endfor %}
         </tbody>
       </table>

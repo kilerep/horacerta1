@@ -1,9 +1,9 @@
 {% extends "accounts/internal_base.html" %}
-{% block title %}HoraCerta - Funcionário interno{% endblock %}
-{% block page_title %}Detalhe do funcionário{% endblock %}
-{% block internal_breadcrumb %}<span class="internal-breadcrumb__sep">></span><a href="{% url 'internal_employees' %}">Funcionários</a><span class="internal-breadcrumb__sep">></span><span>{{ employee.full_name }}</span>{% endblock %}
+{% block title %}HoraCerta - Profissional interno{% endblock %}
+{% block page_title %}Detalhe do profissional{% endblock %}
+{% block internal_breadcrumb %}<span class="internal-breadcrumb__sep">></span><a href="{% url 'internal_employees' %}">Profissionais</a><span class="internal-breadcrumb__sep">></span><span>{{ employee.full_name }}</span>{% endblock %}
 {% block internal_title %}{{ employee.full_name }}{% endblock %}
-{% block internal_subtitle %}Perfil, acesso, vínculos, registros e ações administrativas.{% endblock %}
+{% block internal_subtitle %}Perfil, acesso, contratos, registros e ações administrativas.{% endblock %}
 
 {% block internal_content %}
   <section class="internal-panel">
@@ -87,7 +87,7 @@
   </section>
 
   <section class="internal-panel">
-    <h3>Vinculos com empresas</h3>
+    <h3>Contratos com clientes</h3>
     <div class="table-wrap">
       <table class="internal-table">
         <thead><tr><th>Empresa</th><th>Status</th><th>Registros</th><th>Ultimo registro</th><th>Encerramento</th><th>Acao</th></tr></thead>
@@ -113,7 +113,7 @@
                     <input type="hidden" name="action" value="end_relationship">
                     <input type="hidden" name="relationship_id" value="{{ row.employee.id }}">
                     <input name="description" required placeholder="Motivo obrigatorio">
-                    <button class="btn danger" type="submit" onclick="return confirm('Encerrar somente este vinculo com a empresa?')">Encerrar vinculo</button>
+                    <button class="btn danger" type="submit" onclick="return confirm('Encerrar somente este contrato com o cliente?')">Encerrar contrato</button>
                   </form>
                 {% else %}
                   <span class="pill warn">sem acao</span>
@@ -121,7 +121,7 @@
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="6"><div class="empty-state">Nenhum vinculo encontrado.</div></td></tr>
+            <tr><td colspan="6"><div class="empty-state">Nenhum contrato encontrado.</div></td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -129,7 +129,7 @@
   </section>
 
   <section class="internal-panel">
-    <h3>Empresas, vínculos e contratos</h3>
+    <h3>Clientes e contratos</h3>
     <div class="table-wrap">
       <table class="internal-table">
         <thead><tr><th>Empresa</th><th>Valor/h</th><th>Início</th><th>Fim</th><th>Status</th><th>Observações</th></tr></thead>
@@ -191,7 +191,7 @@
               <td>{{ punch.note|default:"-" }}</td>
             </tr>
           {% empty %}
-            <tr><td colspan="5"><div class="empty-state">Nenhum registro de ponto para este funcionário.</div></td></tr>
+            <tr><td colspan="5"><div class="empty-state">Nenhum registro de ponto para este profissional.</div></td></tr>
           {% endfor %}
         </tbody>
       </table>

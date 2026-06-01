@@ -3,7 +3,7 @@
 {% block page_title %}Solicitações{% endblock %}
 {% block internal_breadcrumb %}<span class="internal-breadcrumb__sep">></span><span>Solicitações</span>{% endblock %}
 {% block internal_title %}Solicitações de correção{% endblock %}
-{% block internal_subtitle %}Pedidos enviados por funcionários/MEIs. A solicitação não altera cálculo automaticamente.{% endblock %}
+{% block internal_subtitle %}Pedidos enviados por profissionais/MEIs. A solicitação não altera cálculo automaticamente.{% endblock %}
 
 {% block internal_content %}
   <section class="internal-panel">
@@ -27,7 +27,7 @@
         </select>
       </div>
       <div class="field">
-        <label for="employee">Funcionário</label>
+        <label for="employee">Profissional</label>
         <select id="employee" name="employee">
           <option value="">Todos</option>
           {% for option in employees %}
@@ -57,7 +57,7 @@
         <thead>
           <tr>
             <th>Solicitação</th>
-            <th>Funcionário</th>
+            <th>Profissional</th>
             <th>Empresa</th>
             <th>Data</th>
             <th>Tipo</th>
@@ -69,7 +69,7 @@
           {% for row in rows %}
             <tr>
               <td data-label="Solicitação"><a class="strong-link" href="{% url 'internal_correction_request_detail' row.request.id %}">{{ row.request.id }}</a></td>
-              <td data-label="Funcionário">{{ row.request.employee.full_name }}</td>
+              <td data-label="Profissional">{{ row.request.employee.full_name }}</td>
               <td data-label="Empresa">{{ row.request.company.name }}</td>
               <td data-label="Data">{{ row.request.problem_date|date:"d/m/Y" }}</td>
               <td data-label="Tipo">{{ row.request.get_problem_type_display }}</td>

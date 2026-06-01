@@ -28,7 +28,7 @@
         Use esta área para avisar um erro no registro de ponto. O horário não será alterado automaticamente; a solicitação será analisada.
       </p>
       {% if no_employee %}
-        <div class="alert warn" style="margin-top:12px;">Não foi possível localizar seu perfil de funcionário para abrir a solicitação.</div>
+        <div class="alert warn" style="margin-top:12px;">Não foi possível localizar seu perfil profissional para abrir a solicitação.</div>
       {% else %}
         <form method="post" class="mei-request__form" data-submit-once="true">
           {% csrf_token %}
