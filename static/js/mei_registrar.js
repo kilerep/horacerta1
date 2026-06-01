@@ -9,6 +9,7 @@
   var form = document.getElementById("hcPunchForm");
   var punchBtn = document.getElementById("hcPunchBtn");
   var punchLabel = punchBtn ? punchBtn.querySelector(".hc-punch-btn__label") : null;
+  var defaultPunchLabel = punchLabel ? punchLabel.textContent : "Registrar horario";
   var geoLatitudeInput = document.getElementById("hcGeoLatitude");
   var geoLongitudeInput = document.getElementById("hcGeoLongitude");
   var geoAccuracyInput = document.getElementById("hcGeoAccuracy");
@@ -93,13 +94,13 @@
       punchBtn.disabled = true;
       punchBtn.classList.add("is-loading");
       punchBtn.setAttribute("aria-busy", "true");
-      punchLabel.textContent = "Registrando horario...";
+      punchLabel.textContent = "Registrando horário...";
       return;
     }
     punchBtn.disabled = false;
     punchBtn.classList.remove("is-loading");
     punchBtn.removeAttribute("aria-busy");
-    punchLabel.textContent = "Registrar horario";
+    punchLabel.textContent = defaultPunchLabel;
   }
 
   function bindPunchSubmit() {
@@ -333,7 +334,7 @@
       }
 
       var clientErrors = [];
-      if (!selectedContract) clientErrors.push("Selecione empresa e contrato.");
+      if (!selectedContract) clientErrors.push("Selecione cliente e contrato.");
       if (!selectedDate) clientErrors.push("Informe a data do registro.");
       if (!times.length) clientErrors.push("Informe pelo menos 1 horario.");
 

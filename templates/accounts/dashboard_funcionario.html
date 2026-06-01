@@ -142,43 +142,36 @@
           </div>
         </section>
 
-        <div class="hc-meta-grid">
-          <article class="hc-mini-card">
-            <span class="hc-mini-label">Cliente atual</span>
-            <strong class="hc-mini-value">{{ selected_contract.company.name }}</strong>
-          </article>
-          <article class="hc-mini-card">
-            <span class="hc-mini-label">Status do contrato</span>
-            <strong class="hc-mini-value hc-mini-value--status">Ativo</strong>
-          </article>
-          <article class="hc-mini-card">
-            <span class="hc-mini-label">Valor por hora</span>
-            <strong class="hc-mini-value">R$ {{ selected_contract.hourly_rate }}</strong>
-          </article>
-          <article class="hc-mini-card">
-            <span class="hc-mini-label">Periodo do contrato</span>
-            <strong class="hc-mini-value">
-              {{ selected_contract.start_date|date:"d/m/Y" }}
-              {% if selected_contract.end_date %}
-                ate {{ selected_contract.end_date|date:"d/m/Y" }}
-              {% else %}
-                ate em aberto
-              {% endif %}
-            </strong>
-          </article>
-        </div>
+        <section class="hc-client-current" aria-labelledby="hcClientCurrentTitle">
+          <div class="hc-client-current__head">
+            <div>
+              <h3 id="hcClientCurrentTitle" class="hc-client-current__title">Cliente atual</h3>
+              <p class="hc-client-current__active">{{ selected_contract.company.name }}</p>
+            </div>
+            {% if contracts.count > 5 %}
+              <a class="hc-client-current__all" href="{% url 'mei_contract' %}?contract={{ selected_contract.id }}">Ver todos</a>
+            {% endif %}
+          </div>
+          <div class="hc-client-strip" role="list" aria-label="Clientes ativos">
+            {% for c in contracts %}
+              <a
+                class="hc-client-card {% if selected_contract and c.id == selected_contract.id %}is-selected{% endif %}"
+                href="?contract={{ c.id }}"
+                role="listitem"
+                {% if selected_contract and c.id == selected_contract.id %}aria-current="true"{% endif %}
+              >
+                <span class="hc-client-card__name">{{ c.company.name }}</span>
+                <span class="hc-client-card__meta">
+                  <strong>R$ {{ c.hourly_rate }}/h</strong>
+                  <span class="hc-client-card__status">Ativo</span>
+                </span>
+                <span class="hc-client-card__start">Inicio {{ c.start_date|date:"d/m/Y" }}</span>
+              </a>
+            {% endfor %}
+          </div>
+        </section>
 
         <div class="hc-action-stack">
-          <form method="get" class="hc-field">
-            <label>Selecionar cliente e contrato</label>
-            <select name="contract" onchange="this.form.submit()">
-              {% for c in contracts %}
-                <option value="{{ c.id }}" {% if selected_contract and c.id == selected_contract.id %}selected{% endif %}>
-                  {{ c.company.name }} | R$ {{ c.hourly_rate }}/h | desde {{ c.start_date|date:"d/m/Y" }}
-                </option>
-              {% endfor %}
-            </select>
-          </form>
           {% if location_required_for_selected_contract %}
             <div class="hc-context-note">
               Este contrato valida localizacao no momento do registro. Nao ha rastreamento continuo.
@@ -192,7 +185,7 @@
             <input type="hidden" name="geo_longitude" id="hcGeoLongitude" value="">
             <input type="hidden" name="geo_accuracy_m" id="hcGeoAccuracy" value="">
             <button id="hcPunchBtn" class="hc-punch-btn" type="submit">
-              <span class="hc-punch-btn__label">Registrar horario</span>
+              <span class="hc-punch-btn__label">Registrar horário na {{ selected_contract.company.name }}</span>
               <span class="hc-punch-btn__spinner" aria-hidden="true"></span>
             </button>
             <button id="hcManualOpen" class="btn hc-manual-open-btn" type="button">Registrar horario manual</button>
@@ -246,15 +239,10 @@
             {% csrf_token %}
             <div id="hcManualErrors" class="hc-error-box hc-manual-errors" hidden></div>
 
-            <div class="hc-field">
-              <label for="hcManualContract">Cliente e contrato</label>
-              <select id="hcManualContract" name="contract" required>
-                {% for c in contracts %}
-                  <option value="{{ c.id }}" {% if selected_contract and c.id == selected_contract.id %}selected{% endif %}>
-                    {{ c.company.name }} - R$ {{ c.hourly_rate }}/h
-                  </option>
-                {% endfor %}
-              </select>
+            <input id="hcManualContract" type="hidden" name="contract" value="{{ selected_contract.id }}">
+            <div class="hc-manual-client">
+              <span>Cliente atual</span>
+              <strong>{{ selected_contract.company.name }}</strong>
             </div>
 
             <div class="hc-field">
