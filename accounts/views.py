@@ -764,6 +764,24 @@ def _month_label_ptbr(date_obj):
     return f"{month_names[date_obj.month - 1].capitalize()} de {date_obj.year}"
 
 
+def _format_brl(value):
+    brl = f"{(value or Decimal('0')):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    return f"R$ {brl}"
+
+
+def _contract_status_for_mei(contract):
+    today = timezone.localdate()
+    if contract_is_operational(contract, on_date=today):
+        return {"label": "Ativo", "tone": "success"}
+    if contract.is_active and contract.start_date and contract.start_date > today:
+        return {"label": "Agendado", "tone": "pending"}
+    if not contract.is_active:
+        return {"label": "Pausado", "tone": "muted"}
+    if contract.end_date and contract.end_date < today:
+        return {"label": "Encerrado", "tone": "warn"}
+    return {"label": "Inativo", "tone": "muted"}
+
+
 def signup(request):
     if request.user.is_authenticated:
         return _redirect_for_role(request.user)
@@ -4670,6 +4688,59 @@ def mei_contract(request):
         if not active_contract:
             active_contract = active_contracts[0]
 
+    today = timezone.localdate()
+    month_start = today.replace(day=1)
+    month_start_dt = timezone.make_aware(datetime.combine(month_start, time.min))
+    month_end_dt = timezone.make_aware(datetime.combine(today, time.max))
+    contract_ids = [contract.id for contract in all_contracts]
+    monthly_punches_by_contract = defaultdict(list)
+    last_punch_by_contract = {}
+
+    if contract_ids:
+        monthly_punches = (
+            Punch.objects.filter(contract_id__in=contract_ids, timestamp__range=(month_start_dt, month_end_dt))
+            .select_related("contract", "contract__company")
+            .order_by("timestamp")
+        )
+        for punch in monthly_punches:
+            monthly_punches_by_contract[punch.contract_id].append(punch)
+
+        recent_punches = (
+            Punch.objects.filter(contract_id__in=contract_ids)
+            .select_related("contract", "contract__company")
+            .order_by("-timestamp")[:500]
+        )
+        for punch in recent_punches:
+            last_punch_by_contract.setdefault(punch.contract_id, punch)
+
+    client_rows = []
+    total_month_seconds = 0
+    total_estimated_value = Decimal("0.00")
+    for contract in all_contracts:
+        month_rows, _max_cols = build_daily_summary(monthly_punches_by_contract.get(contract.id, []), min_punch_columns=4)
+        month_seconds = sum(row["total_seconds"] for row in month_rows)
+        estimated_value = ((Decimal(month_seconds) / Decimal("3600")) * (contract.hourly_rate or Decimal("0"))).quantize(
+            Decimal("0.01")
+        )
+        total_month_seconds += month_seconds
+        total_estimated_value += estimated_value
+        last_punch = last_punch_by_contract.get(contract.id)
+        client_rows.append(
+            {
+                "contract": contract,
+                "status": _contract_status_for_mei(contract),
+                "total_hours_month": format_hhmm(month_seconds),
+                "estimated_value": estimated_value,
+                "estimated_value_brl": _format_brl(estimated_value),
+                "last_punch": last_punch,
+                "last_punch_label": timezone.localtime(last_punch.timestamp).strftime("%d/%m/%Y %H:%M")
+                if last_punch
+                else "Sem registros",
+                "details_url": f"{reverse('mei_contract')}?contract={contract.id}",
+                "report_url": f"{reverse('mei_reports')}?contract={contract.id}",
+            }
+        )
+
     return render(
         request,
         "accounts/mei_contract.html",
@@ -4678,6 +4749,14 @@ def mei_contract(request):
             "active_contracts": active_contracts,
             "inactive_contracts": inactive_contracts,
             "all_contracts": all_contracts,
+            "client_rows": client_rows,
+            "active_clients_count": len(active_contracts),
+            "inactive_clients_count": len(inactive_contracts),
+            "current_period_label": _month_label_ptbr(today),
+            "total_hours_month": format_hhmm(total_month_seconds),
+            "total_estimated_value_brl": _format_brl(total_estimated_value.quantize(Decimal("0.01"))),
+            "add_client_available": False,
+            "client_self_management_available": False,
         },
     )
 

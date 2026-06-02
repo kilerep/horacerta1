@@ -4,88 +4,147 @@
 
 {% block content %}
   <style>
-    .contract-wrap{ display:grid; gap:14px; }
-    .panel{
+    .clients-page{ display:grid; gap:14px; }
+    .clients-hero,
+    .clients-panel,
+    .client-card{
       border:1px solid var(--border);
-      border-radius: var(--radius);
+      border-radius:var(--radius);
       background:
-        radial-gradient(circle at 14% 0, rgba(79,124,255,.24), transparent 44%),
-        linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
-      padding:14px;
+        radial-gradient(circle at 12% 0, rgba(79,124,255,.2), transparent 42%),
+        linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      box-shadow:var(--shadow);
     }
-    .grid{ display:grid; grid-template-columns:repeat(4,minmax(170px,1fr)); gap:10px; margin-top:10px; }
-    .stat{ border:1px solid var(--border); border-radius:14px; background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)); padding:12px; }
-    .k{ color:var(--muted); font-size:12px; }
-    .v{ font-size:20px; font-weight:800; margin-top:2px; }
-    .warning{ border-radius:12px; padding:12px; margin-top:8px; }
-    .warning.pending{ border:1px solid rgba(255,176,32,.45); background:rgba(255,176,32,.12); color:#ffe7ad; }
-    .warning.inactive{ border:1px solid rgba(255,94,94,.35); background:rgba(255,94,94,.12); color:#ffd8d8; }
-    .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
-    .field{ display:flex; flex-direction:column; gap:6px; min-width:220px; flex:1; }
-    label{ color:var(--muted); font-size:13px; }
-    select{
-      width:100%; padding:10px 12px; border-radius:12px; border:1px solid var(--border);
-      background:rgba(255,255,255,.06); color:var(--text); outline:none;
+    .clients-hero{ padding:16px; display:grid; gap:14px; }
+    .clients-hero__top{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; }
+    .clients-eyebrow{ margin:0 0 4px; color:var(--muted); font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; }
+    .clients-title{ margin:0; font-size:clamp(22px, 4vw, 32px); line-height:1.1; }
+    .clients-subtitle{ margin:6px 0 0; color:var(--muted); max-width:680px; }
+    .clients-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+    .clients-summary{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+    .clients-stat{ border:1px solid rgba(255,255,255,.1); border-radius:12px; padding:12px; background:rgba(255,255,255,.035); }
+    .clients-stat span{ display:block; color:var(--muted); font-size:12px; }
+    .clients-stat strong{ display:block; margin-top:4px; font-size:20px; }
+    .clients-panel{ padding:14px; }
+    .clients-section-head{ display:flex; justify-content:space-between; gap:10px; align-items:center; margin-bottom:10px; }
+    .clients-section-head h2{ margin:0; font-size:18px; }
+    .clients-section-head p{ margin:3px 0 0; color:var(--muted); font-size:13px; }
+    .client-list{ display:grid; gap:10px; }
+    .client-card{ padding:14px; display:grid; gap:12px; }
+    .client-card.is-selected{ border-color:rgba(45,211,145,.55); box-shadow:0 0 0 2px rgba(45,211,145,.13), var(--shadow); }
+    .client-card__head{ display:flex; justify-content:space-between; gap:12px; align-items:flex-start; }
+    .client-name{ margin:0; font-size:19px; line-height:1.2; overflow-wrap:anywhere; }
+    .client-period{ margin:4px 0 0; color:var(--muted); font-size:12px; }
+    .client-status{ flex:0 0 auto; border-radius:999px; padding:5px 9px; font-size:12px; font-weight:900; border:1px solid rgba(255,255,255,.12); }
+    .client-status.success{ color:#dcffe9; border-color:rgba(45,211,145,.42); background:rgba(45,211,145,.13); }
+    .client-status.pending{ color:#ffe7ad; border-color:rgba(255,176,32,.42); background:rgba(255,176,32,.12); }
+    .client-status.warn{ color:#ffd8d8; border-color:rgba(255,94,94,.38); background:rgba(255,94,94,.12); }
+    .client-status.muted{ color:var(--muted); background:rgba(255,255,255,.05); }
+    .client-metrics{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
+    .client-metric{ border:1px solid rgba(255,255,255,.09); border-radius:12px; padding:10px; background:rgba(255,255,255,.03); }
+    .client-metric span{ display:block; color:var(--muted); font-size:11px; }
+    .client-metric strong{ display:block; margin-top:3px; font-size:15px; }
+    .client-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+    .btn[aria-disabled="true"]{ opacity:.48; cursor:not-allowed; }
+    .clients-empty{ border:1px dashed rgba(255,255,255,.18); border-radius:14px; padding:18px; background:rgba(255,255,255,.03); }
+    .clients-empty h2{ margin:0; font-size:20px; }
+    .clients-empty p{ margin:8px 0 0; color:var(--muted); }
+    .clients-note{ color:var(--muted); font-size:12px; margin:10px 0 0; }
+    @media (max-width: 900px){
+      .clients-summary,
+      .client-metrics{ grid-template-columns:repeat(2,minmax(0,1fr)); }
     }
-    .muted{ color:var(--muted); }
-    @media (max-width: 900px){ .grid{ grid-template-columns:1fr; } .row .btn{ width:100%; } .field{ min-width:100%; } }
+    @media (max-width: 640px){
+      .clients-hero__top,
+      .client-card__head{ display:grid; }
+      .clients-actions .btn,
+      .client-actions .btn{ width:100%; justify-content:center; }
+      .clients-summary,
+      .client-metrics{ grid-template-columns:1fr; }
+    }
   </style>
 
-  <div class="contract-wrap">
-    {% if active_contracts %}
-      <section class="panel">
-        <h2 style="margin:0;">Selecionar contrato ativo</h2>
-        <form method="get" class="row" style="margin-top:10px;">
-          <div class="field">
-            <label>Cliente e contrato</label>
-            <select name="contract" onchange="this.form.submit()">
-              {% for c in active_contracts %}
-                <option value="{{ c.id }}" {% if active_contract and c.id == active_contract.id %}selected{% endif %}>
-                  {{ c.company.name }} - R$ {{ c.hourly_rate }}/h
-                </option>
-              {% endfor %}
-            </select>
-          </div>
-          <button class="btn" type="submit">Ver detalhes</button>
-        </form>
-      </section>
+  <div class="clients-page">
+    <section class="clients-hero">
+      <div class="clients-hero__top">
+        <div>
+          <p class="clients-eyebrow">Carteira de clientes</p>
+          <h1 class="clients-title">Meus clientes</h1>
+          <p class="clients-subtitle">Acompanhe contratos, horas registradas e valores estimados por cliente no mês atual.</p>
+        </div>
+        <div class="clients-actions">
+          {% if add_client_available %}
+            <a class="btn primary" href="#">Adicionar cliente</a>
+          {% else %}
+            <span class="btn primary" aria-disabled="true" title="Cadastro de cliente pelo profissional depende da proxima etapa de modelagem.">Adicionar cliente</span>
+          {% endif %}
+          <a class="btn" href="{% url 'mei_reports' %}">Gerar relatório</a>
+        </div>
+      </div>
 
-      <section class="panel">
-        <h2 style="margin:0;">Detalhes do contrato ativo</h2>
-        <p class="muted" style="margin:8px 0 0;">Informacoes do contrato selecionado para sua rotina de registro.</p>
-        <div class="grid">
-          <div class="stat"><div class="k">Cliente</div><div class="v">{{ active_contract.company.name|default:"-" }}</div></div>
-          <div class="stat"><div class="k">Valor por hora</div><div class="v">R$ {{ active_contract.hourly_rate }}</div></div>
-          <div class="stat"><div class="k">Status</div><div class="v">Ativo</div></div>
-          <div class="stat"><div class="k">Inicio / Fim</div><div class="v" style="font-size:16px;">{{ active_contract.start_date|date:"d/m/Y" }} {% if active_contract.end_date %}- {{ active_contract.end_date|date:"d/m/Y" }}{% else %}- em aberto{% endif %}</div></div>
+      <div class="clients-summary">
+        <div class="clients-stat"><span>Clientes ativos</span><strong>{{ active_clients_count }}</strong></div>
+        <div class="clients-stat"><span>Clientes inativos</span><strong>{{ inactive_clients_count }}</strong></div>
+        <div class="clients-stat"><span>Horas em {{ current_period_label }}</span><strong>{{ total_hours_month }}</strong></div>
+        <div class="clients-stat"><span>Valor estimado</span><strong>{{ total_estimated_value_brl }}</strong></div>
+      </div>
+    </section>
+
+    {% if client_rows %}
+      <section class="clients-panel">
+        <div class="clients-section-head">
+          <div>
+            <h2>Clientes vinculados</h2>
+            <p>{{ client_rows|length }} contrato(s) encontrado(s) para sua conta.</p>
+          </div>
         </div>
-        <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;">
-          {% if active_contract.contract_file %}<a class="btn" href="{{ active_contract.contract_file.url }}" target="_blank" rel="noopener">Baixar PDF do contrato</a>{% endif %}
-          <a class="btn" href="{% url 'employee_dashboard' %}">Voltar ao painel</a>
+
+        <div class="client-list">
+          {% for row in client_rows %}
+            <article class="client-card {% if active_contract and row.contract.id == active_contract.id %}is-selected{% endif %}">
+              <header class="client-card__head">
+                <div>
+                  <h3 class="client-name">{{ row.contract.company.name }}</h3>
+                  <p class="client-period">
+                    Desde {{ row.contract.start_date|date:"d/m/Y" }}
+                    {% if row.contract.end_date %} ate {{ row.contract.end_date|date:"d/m/Y" }}{% else %} | contrato em aberto{% endif %}
+                  </p>
+                </div>
+                <span class="client-status {{ row.status.tone }}">{{ row.status.label }}</span>
+              </header>
+
+              <div class="client-metrics">
+                <div class="client-metric"><span>Valor por hora</span><strong>R$ {{ row.contract.hourly_rate }}/h</strong></div>
+                <div class="client-metric"><span>Horas no mês</span><strong>{{ row.total_hours_month }}</strong></div>
+                <div class="client-metric"><span>Valor estimado</span><strong>{{ row.estimated_value_brl }}</strong></div>
+                <div class="client-metric"><span>Último registro</span><strong>{{ row.last_punch_label }}</strong></div>
+              </div>
+
+              <div class="client-actions">
+                <a class="btn" href="{{ row.details_url }}">Ver detalhes</a>
+                <a class="btn" href="{{ row.report_url }}">Gerar relatório</a>
+                <span class="btn" aria-disabled="true" title="Pausar cliente depende de fluxo MEI-side.">Pausar</span>
+                <span class="btn" aria-disabled="true" title="Encerrar cliente depende de fluxo MEI-side.">Encerrar</span>
+                <span class="btn" aria-disabled="true" title="Editar dados depende de cadastro de cliente pelo profissional.">Editar dados</span>
+              </div>
+            </article>
+          {% endfor %}
         </div>
-      </section>
-    {% elif all_contracts %}
-      <section class="panel">
-        <h2 style="margin:0;">Sem contrato ativo no momento</h2>
-        <div class="warning inactive">
-          Seu cadastro possui contrato(s), mas nenhum esta ativo para operacao neste momento.
-          Verifique com o cliente se ha renovacao, reativacao ou novo contrato.
-        </div>
-        <div style="margin-top:10px;">
-          <strong>Ultimos contratos:</strong>
-          <ul>
-            {% for c in inactive_contracts|slice:":5" %}
-              <li>{{ c.company.name }} | inicio {{ c.start_date|date:"d/m/Y" }} {% if c.end_date %}| fim {{ c.end_date|date:"d/m/Y" }}{% endif %}</li>
-            {% endfor %}
-          </ul>
-        </div>
+        <p class="clients-note">Ações de pausa, encerramento e edição estão preservadas visualmente, mas dependem de modelagem específica para o profissional gerenciar clientes sem apagar histórico.</p>
       </section>
     {% else %}
-      <section class="panel">
-        <h2 style="margin:0;">Nenhum contrato criado ainda</h2>
-        <div class="warning pending">
-          Seu cadastro foi criado, mas ainda nao ha contrato cadastrado para operar.
-          Assim que o contrato for criado e estiver vigente, o registro de horarios sera liberado.
+      <section class="clients-panel">
+        <div class="clients-empty">
+          <h2>Nenhum cliente cadastrado ainda</h2>
+          <p>Quando um cliente estiver vinculado à sua conta, ele aparecerá aqui com contrato, valor por hora, horas do mês e histórico de registros.</p>
+          <div class="clients-actions" style="margin-top:12px;">
+            {% if add_client_available %}
+              <a class="btn primary" href="#">Adicionar cliente</a>
+            {% else %}
+              <span class="btn primary" aria-disabled="true" title="Cadastro de cliente pelo profissional depende da proxima etapa de modelagem.">Adicionar cliente</span>
+            {% endif %}
+            <a class="btn" href="{% url 'mei_panel' %}">Voltar ao painel</a>
+          </div>
         </div>
       </section>
     {% endif %}
