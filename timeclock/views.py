@@ -274,9 +274,17 @@ def employee_dashboard(request):
         )
 
     if request.method == "POST" and request.POST.get("action") == "punch":
+        posted_contract_id = (request.POST.get("contract") or "").strip()
+        active_contracts_count = contracts.count()
+        if active_contracts_count > 1 and not posted_contract_id:
+            return redirect(f"{request.path}?event=contract_required")
+        if not selected_contract or (posted_contract_id and mei_context.invalid_requested_contract):
+            return redirect(f"{request.path}?event=invalid_contract")
+
         geo_latitude = _parse_geo_decimal(request.POST.get("geo_latitude"), min_value=-90, max_value=90)
         geo_longitude = _parse_geo_decimal(request.POST.get("geo_longitude"), min_value=-180, max_value=180)
         geo_accuracy_m = _parse_geo_decimal(request.POST.get("geo_accuracy_m"), min_value=0, max_value=10000)
+        punch_note = (request.POST.get("note") or "").strip()[:1000]
         now_local = timezone.localtime()
         policy_snapshot = _policy_audit_snapshot(selected_contract)
         qr_requirement = _resolve_qr_requirement(selected_contract, now_local)
@@ -296,6 +304,7 @@ def employee_dashboard(request):
         Punch.objects.create(
             contract=selected_contract,
             timestamp=timezone.now(),
+            note=punch_note,
             geo_latitude=geo_latitude,
             geo_longitude=geo_longitude,
             geo_accuracy_m=geo_accuracy_m,
@@ -308,7 +317,15 @@ def employee_dashboard(request):
             qr_confirmed_at=timezone.now() if qr_location else None,
             audit_payload={
                 "source": "WEB_PROFESSIONAL_DASHBOARD",
+                "origin": "automatic",
                 "recorded_from": "button_punch",
+                "user_id": str(request.user.id),
+                "employee_id": str(selected_contract.employee_id),
+                "company_id": str(selected_contract.company_id),
+                "contract_id": str(selected_contract.id),
+                "company_name": selected_contract.company.name,
+                "local_date": now_local.date().isoformat(),
+                "local_time": now_local.strftime("%H:%M:%S"),
                 "policy": policy_snapshot,
                 "qr_required_for_punch": qr_required,
                 "qr_requirement_reason": qr_requirement.get("reason") or "",
@@ -453,11 +470,12 @@ def create_manual_punches(request):
 
     contract_id = (request.POST.get("contract") or "").strip()
     manual_date_raw = (request.POST.get("manual_date") or "").strip()
+    manual_note = (request.POST.get("manual_note") or request.POST.get("note") or "").strip()[:1000]
     raw_times = request.POST.getlist("times")
 
     errors = []
     if not contract_id:
-        errors.append("Selecione um vinculo.")
+        errors.append("Selecione cliente e contrato.")
     if not manual_date_raw:
         errors.append("Informe a data do lancamento.")
 
@@ -540,11 +558,20 @@ def create_manual_punches(request):
                 contract=contract,
                 timestamp=manual_timestamp,
                 is_manual=True,
+                note=manual_note,
                 validation_method=confidence.get("validation_method") or Punch.ValidationMethod.FREE_POLICY,
                 confidence_status=confidence.get("confidence_status") or Punch.ConfidenceStatus.FREE,
                 audit_payload={
                     "source": "WEB_PROFESSIONAL_DASHBOARD",
+                    "origin": "manual",
                     "recorded_from": "manual_batch",
+                    "user_id": str(request.user.id),
+                    "employee_id": str(contract.employee_id),
+                    "company_id": str(contract.company_id),
+                    "contract_id": str(contract.id),
+                    "company_name": contract.company.name,
+                    "local_date": launch_date.isoformat(),
+                    "local_time": f"{hour:02d}:{minute:02d}:00",
                     "policy": policy_snapshot,
                     "qr_required_for_punch": False,
                     "qr_requirement_reason": "manual_entry",

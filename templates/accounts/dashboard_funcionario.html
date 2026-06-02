@@ -22,6 +22,14 @@
       <section class="hc-feedback hc-feedback--ok" role="status" aria-live="polite">
         Registro manual salvo com sucesso{% if request.GET.created %} ({{ request.GET.created }} horario{% if request.GET.created != "1" %}s{% endif %}){% endif %}.
       </section>
+    {% elif request.GET.event == "contract_required" %}
+      <section class="hc-feedback hc-feedback--warn" role="status" aria-live="polite">
+        Selecione cliente e contrato antes de registrar horario.
+      </section>
+    {% elif request.GET.event == "invalid_contract" %}
+      <section class="hc-feedback hc-feedback--warn" role="status" aria-live="polite">
+        O contrato selecionado esta inativo, encerrado ou nao pertence a sua conta.
+      </section>
     {% elif request.GET.event == "qr_confirmed" %}
       <section class="hc-feedback hc-feedback--ok" role="status" aria-live="polite">
         Presenca confirmada por QR. Faça sua marcacao normalmente.
@@ -206,7 +214,7 @@
             <article class="hc-history-item {% if day.is_incomplete %}is-warn{% else %}is-ok{% endif %}">
               <div>
                 <strong>{{ day.date|date:"d/m/Y" }}</strong>
-                <span class="hc-muted"> | {{ day.total_hours_hhmm }} | {{ day.status }}</span>
+                <span class="hc-muted"> | {{ selected_contract.company.name }} | {{ day.total_hours_hhmm }} | {{ day.status }}</span>
               </div>
               <div class="hc-muted">{{ day.punch_times|join:" - "|default:"-" }}</div>
             </article>
@@ -264,6 +272,11 @@
                 </div>
               </div>
               <button id="hcAddTimeBtn" type="button" class="btn hc-add-time-btn">Adicionar horario</button>
+            </div>
+
+            <div class="hc-field">
+              <label for="hcManualNote">Observacao</label>
+              <textarea id="hcManualNote" name="manual_note" rows="3" placeholder="Opcional"></textarea>
             </div>
 
             <footer class="hc-modal-actions">
