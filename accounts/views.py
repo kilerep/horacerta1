@@ -4390,58 +4390,100 @@ def mei_panel(request):
     denied = _redirect_if_not_mei(request)
     if denied:
         return denied
-    mei_context = resolve_mei_context(request)
-    contracts = mei_context.contracts
-    selected_contract = mei_context.selected_contract
+    contracts = list(mei_contracts_for_user(request.user, include_inactive_contracts=True))
+    active_contracts = [contract for contract in contracts if contract_is_operational(contract)]
 
-    current_period_label = _month_label_ptbr(timezone.localdate())
-    total_hours_month = "00:00"
-    accrued_value = Decimal("0.00")
-    accrued_value_brl = "R$ 0,00"
-    worked_days = 0
-    complete_days = 0
-    incomplete_days = 0
-    recent_today_punches = []
+    today = timezone.localdate()
+    week_start = today - timedelta(days=today.weekday())
+    month_start = today.replace(day=1)
+    month_start_dt = timezone.make_aware(datetime.combine(month_start, time.min))
+    month_end_dt = timezone.make_aware(datetime.combine(today, time.max))
+    contract_ids = [contract.id for contract in contracts]
+    monthly_punches_by_contract = defaultdict(list)
 
-    if selected_contract:
-        today = timezone.localdate()
-        month_start = today.replace(day=1)
-        start_dt = timezone.make_aware(datetime.combine(month_start, time.min))
-        end_dt = timezone.make_aware(datetime.combine(today, time.max))
-        monthly_punches = list(
-            Punch.objects.filter(contract=selected_contract, timestamp__range=(start_dt, end_dt)).order_by("timestamp")
+    if contract_ids:
+        monthly_punches = (
+            Punch.objects.filter(contract_id__in=contract_ids, timestamp__range=(month_start_dt, month_end_dt))
+            .select_related("contract", "contract__company")
+            .order_by("timestamp")
         )
-        month_rows, _max_cols = build_daily_summary(monthly_punches, min_punch_columns=4)
-        total_seconds = sum(row["total_seconds"] for row in month_rows)
-        total_hours_month = format_hhmm(total_seconds)
-        worked_days = len(month_rows)
-        complete_days = sum(1 for row in month_rows if not row["is_incomplete"])
-        incomplete_days = sum(1 for row in month_rows if row["is_incomplete"])
-        today_start = timezone.make_aware(datetime.combine(today, time.min))
-        today_end = timezone.make_aware(datetime.combine(today, time.max))
-        recent_today_punches = [
-            timezone.localtime(p.timestamp).strftime("%H:%M")
-            for p in Punch.objects.filter(contract=selected_contract, timestamp__range=(today_start, today_end))
-            .order_by("-timestamp")[:6]
-        ]
+        for punch in monthly_punches:
+            monthly_punches_by_contract[punch.contract_id].append(punch)
 
-        hourly_rate = selected_contract.hourly_rate or Decimal("0")
-        accrued_value = ((Decimal(total_seconds) / Decimal("3600")) * hourly_rate).quantize(Decimal("0.01"))
-        brl = f"{accrued_value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-        accrued_value_brl = f"R$ {brl}"
+    client_summaries = []
+    total_today_seconds = 0
+    total_week_seconds = 0
+    total_month_seconds = 0
+    total_estimated_value = Decimal("0.00")
+    incomplete_days = 0
+    incomplete_alerts = []
+    paused_contracts = []
+    missing_rate_contracts = []
+
+    for contract in contracts:
+        month_rows, _max_cols = build_daily_summary(monthly_punches_by_contract.get(contract.id, []), min_punch_columns=4)
+        month_seconds = sum(row["total_seconds"] for row in month_rows)
+        week_seconds = sum(row["total_seconds"] for row in month_rows if row["date"] >= week_start)
+        today_seconds = sum(row["total_seconds"] for row in month_rows if row["date"] == today)
+        client_incomplete_days = [row for row in month_rows if row["is_incomplete"]]
+        hourly_rate = contract.hourly_rate or Decimal("0")
+        estimated_value = ((Decimal(month_seconds) / Decimal("3600")) * hourly_rate).quantize(Decimal("0.01"))
+        status = _contract_status_for_mei(contract)
+
+        total_today_seconds += today_seconds
+        total_week_seconds += week_seconds
+        total_month_seconds += month_seconds
+        total_estimated_value += estimated_value
+        incomplete_days += len(client_incomplete_days)
+
+        if client_incomplete_days:
+            incomplete_alerts.append(
+                {
+                    "contract": contract,
+                    "count": len(client_incomplete_days),
+                    "latest_date": client_incomplete_days[0]["date"],
+                }
+            )
+        if status["label"] != "Ativo":
+            paused_contracts.append({"contract": contract, "status": status})
+        if hourly_rate <= Decimal("0"):
+            missing_rate_contracts.append(contract)
+
+        client_summaries.append(
+            {
+                "contract": contract,
+                "status": status,
+                "total_hours_month": format_hhmm(month_seconds),
+                "hourly_rate": hourly_rate,
+                "estimated_value_brl": _format_brl(estimated_value),
+            }
+        )
+
+    pending_report_requests_qs = ActivityReportRequest.objects.filter(
+        employee__user=request.user,
+        status=ActivityReportRequest.Status.PENDING,
+    ).select_related("company", "contract")
+    pending_reports_count = pending_report_requests_qs.count()
+    pending_report_requests = list(pending_report_requests_qs[:20])
 
     context = {
         "contracts": contracts,
-        "contracts_count": contracts.count(),
-        "selected_contract": selected_contract,
-        "current_period_label": current_period_label,
-        "total_hours_month": total_hours_month,
-        "accrued_value_brl": accrued_value_brl,
-        "worked_days": worked_days,
-        "complete_days": complete_days,
+        "contracts_count": len(contracts),
+        "active_clients_count": len(active_contracts),
+        "current_period_label": _month_label_ptbr(today),
+        "week_period_label": f"{week_start:%d/%m} a {today:%d/%m}",
+        "total_hours_today": format_hhmm(total_today_seconds),
+        "total_hours_week": format_hhmm(total_week_seconds),
+        "total_hours_month": format_hhmm(total_month_seconds),
+        "estimated_value_month_brl": _format_brl(total_estimated_value.quantize(Decimal("0.01"))),
         "incomplete_days": incomplete_days,
         "pending_days": incomplete_days,
-        "recent_today_punches": recent_today_punches,
+        "pending_reports_count": pending_reports_count,
+        "pending_report_requests": pending_report_requests,
+        "client_summaries": client_summaries,
+        "incomplete_alerts": incomplete_alerts,
+        "paused_contracts": paused_contracts,
+        "missing_rate_contracts": missing_rate_contracts,
     }
     return render(request, "accounts/mei_panel.html", context)
 
