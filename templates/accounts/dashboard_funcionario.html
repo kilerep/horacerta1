@@ -151,32 +151,25 @@
               <h3 id="hcClientCurrentTitle" class="hc-client-current__title">Cliente atual</h3>
               <p class="hc-client-current__active">{{ selected_contract.company.name }}</p>
             </div>
-            {% if contracts_count > 5 %}
-              <button class="hc-client-current__all" id="hcClientPickerOpen" type="button">Selecionar cliente</button>
-            {% endif %}
           </div>
-          <div class="client-carousel hc-client-strip" id="hcClientCarousel" role="list" aria-label="Clientes ativos">
-            {% for c in contracts %}
-              <button
-                class="client-card hc-client-card {% if selected_contract and c.id == selected_contract.id %}is-selected active{% endif %}"
-                type="button"
-                role="listitem"
-                data-contract-id="{{ c.id }}"
-                data-client-name="{{ c.company.name }}"
-                data-requires-location="{% if c.id in location_required_contract_ids %}1{% else %}0{% endif %}"
-                aria-pressed="{% if selected_contract and c.id == selected_contract.id %}true{% else %}false{% endif %}"
-              >
-                <span class="hc-client-card__name">{{ c.company.name }}</span>
-                <span class="hc-client-card__meta">
-                  <strong>R$ {{ c.hourly_rate }}/h</strong>
-                  <span class="hc-client-card__status">Ativo</span>
-                </span>
-                <span class="hc-client-card__start">Desde {{ c.start_date|date:"d/m/Y" }}</span>
-                {% if c.id in location_required_contract_ids %}
-                  <span class="hc-client-card__location">Localização validada no registro</span>
-                {% endif %}
-              </button>
-            {% endfor %}
+          <div class="hc-client-select-wrap">
+            <label for="hcContractSelect">Selecionar cliente e contrato</label>
+            <select id="hcContractSelect" class="hc-client-select" name="contract_selector">
+              {% for c in contracts %}
+                <option
+                  value="{{ c.id }}"
+                  data-client-name="{{ c.company.name }}"
+                  {% if selected_contract and c.id == selected_contract.id %}selected{% endif %}
+                >
+                  {{ c.company.name }} | R$ {{ c.hourly_rate }}/h | desde {{ c.start_date|date:"d/m/Y" }}
+                </option>
+              {% endfor %}
+            </select>
+            <div class="hc-client-details" aria-live="polite">
+              <span>Status do contrato: <strong>Ativo</strong></span>
+              <span>Valor por hora: <strong>R$ {{ selected_contract.hourly_rate }}/h</strong></span>
+              <span>Período: <strong>desde {{ selected_contract.start_date|date:"d/m/Y" }}{% if selected_contract.end_date %} ate {{ selected_contract.end_date|date:"d/m/Y" }}{% endif %}</strong></span>
+            </div>
           </div>
         </section>
 
@@ -280,30 +273,6 @@
           </form>
         </section>
       </div>
-      {% if contracts_count > 5 %}
-        <div id="hcClientPickerModal" class="hc-modal" aria-hidden="true">
-          <div id="hcClientPickerOverlay" class="hc-overlay"></div>
-          <section class="hc-modal-card hc-client-picker" role="dialog" aria-modal="true" aria-labelledby="hcClientPickerTitle">
-            <header class="hc-modal-header">
-              <h3 id="hcClientPickerTitle">Selecionar cliente</h3>
-              <button id="hcClientPickerClose" type="button" class="hc-modal-close" aria-label="Fechar modal">x</button>
-            </header>
-            <div class="hc-client-picker__list">
-              {% for c in contracts %}
-                <button
-                  type="button"
-                  class="hc-client-picker__item {% if selected_contract and c.id == selected_contract.id %}is-selected{% endif %}"
-                  data-contract-id="{{ c.id }}"
-                  data-client-name="{{ c.company.name }}"
-                >
-                  <span>{{ c.company.name }}</span>
-                  <strong>R$ {{ c.hourly_rate }}/h</strong>
-                </button>
-              {% endfor %}
-            </div>
-          </section>
-        </div>
-      {% endif %}
     {% endif %}
   </div>
 {% endblock %}

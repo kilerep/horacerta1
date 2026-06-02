@@ -225,162 +225,48 @@ main,
   line-height:1.35;
 }
 
-.hc-client-current__all{
-  flex:0 0 auto;
-  border:1px solid rgba(129,171,255,.36);
-  border-radius:999px;
-  padding:6px 10px;
-  color:#dbe7ff;
-  background:rgba(63,119,255,.12);
-  font-size:12px;
-  font-weight:800;
-  text-decoration:none;
-  cursor:pointer;
-}
-
-.client-carousel,
-.hc-client-strip{
-  width:100%;
-  max-width:100%;
-  min-width:0;
-  display:flex !important;
-  flex-direction:row !important;
-  flex-wrap:nowrap !important;
-  gap:10px;
-  overflow-x:auto !important;
-  overflow-y:hidden;
-  overscroll-behavior-x:contain;
-  scroll-snap-type:x mandatory;
-  scroll-padding-inline:6%;
-  padding:2px 6% 10px;
-  margin:0 -2px -8px;
-  -webkit-overflow-scrolling:touch;
-  scrollbar-width:thin;
-}
-
-.client-card,
-.hc-client-card{
-  appearance:none;
-  border:none;
-  text-align:left;
-  font:inherit;
-  flex:0 0 88% !important;
-  width:88%;
-  max-width:380px;
-  min-width:0;
-  min-height:128px;
+.hc-client-select-wrap{
   display:grid;
-  align-content:space-between;
   gap:8px;
-  scroll-snap-align:center;
-  border:1px solid rgba(255,255,255,.13);
-  border-radius:16px;
-  padding:12px;
+}
+
+.hc-client-select-wrap label{
+  color:#dbe7ff;
+  font-size:12px;
+  font-weight:900;
+}
+
+.hc-client-select{
+  width:100%;
+  min-height:46px;
+  border:1px solid rgba(129,171,255,.28);
+  border-radius:12px;
+  padding:0 12px;
+  background:#101a2d;
   color:var(--text);
-  text-decoration:none;
-  background:
-    radial-gradient(circle at 10% 0, rgba(79,124,255,.22), transparent 46%),
-    linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.025));
-  box-shadow:0 10px 24px rgba(3,7,20,.24);
-  transition:border-color .18s ease, transform .18s ease, background .18s ease, box-shadow .18s ease;
-  cursor:pointer;
+  font:inherit;
+  font-size:14px;
 }
 
-.client-card:hover,
-.hc-client-card:hover{
-  transform:translateY(-1px);
-  border-color:rgba(129,171,255,.45);
-  background:
-    radial-gradient(circle at 10% 0, rgba(79,124,255,.28), transparent 46%),
-    linear-gradient(180deg, rgba(255,255,255,.075), rgba(255,255,255,.035));
+.hc-client-select:focus{
+  outline:none;
+  border-color:rgba(45,211,145,.65);
+  box-shadow:0 0 0 3px rgba(45,211,145,.14);
 }
 
-.client-card.active,
-.hc-client-card.is-selected{
-  border-color:rgba(45,211,145,.72);
-  box-shadow:0 0 0 2px rgba(45,211,145,.16), 0 14px 30px rgba(3,7,20,.32);
-}
-
-.hc-client-card__name{
-  font-size:15px;
-  font-weight:900;
-  line-height:1.2;
-  overflow-wrap:anywhere;
-}
-
-.hc-client-card__meta{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:8px;
-  color:#e8f0ff;
-  font-size:13px;
-}
-
-.hc-client-card__status{
-  border:1px solid rgba(45,211,145,.38);
-  border-radius:999px;
-  padding:3px 8px;
-  background:rgba(45,211,145,.13);
-  color:#dcffe9;
-  font-size:11px;
-  font-weight:900;
-}
-
-.hc-client-card__start{
+.hc-client-details{
+  display:grid;
+  gap:5px;
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:12px;
+  padding:10px 12px;
+  background:rgba(255,255,255,.035);
   color:var(--muted);
   font-size:12px;
 }
 
-.hc-client-card__location{
-  display:inline-flex;
-  width:max-content;
-  max-width:100%;
-  border:1px solid rgba(129,171,255,.34);
-  border-radius:999px;
-  padding:4px 8px;
-  background:rgba(63,119,255,.12);
-  color:#dbe7ff;
-  font-size:11px;
-  font-weight:800;
-}
-
-.hc-client-picker{
-  max-width:520px;
-}
-
-.hc-client-picker__list{
-  display:grid;
-  gap:8px;
-}
-
-.hc-client-picker__item{
-  width:100%;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  border:1px solid rgba(255,255,255,.12);
-  border-radius:12px;
-  padding:11px 12px;
-  background:rgba(255,255,255,.04);
+.hc-client-details strong{
   color:var(--text);
-  text-align:left;
-  cursor:pointer;
-}
-
-.hc-client-picker__item span{
-  font-weight:900;
-}
-
-.hc-client-picker__item strong{
-  color:#dbe7ff;
-  white-space:nowrap;
-}
-
-.hc-client-picker__item.is-selected{
-  border-color:rgba(45,211,145,.58);
-  background:rgba(45,211,145,.12);
 }
 
 .hc-manual-client{
@@ -821,11 +707,6 @@ body.hc-modal-open{
     grid-template-columns:1fr;
   }
 
-  .client-card,
-  .hc-client-card{
-    flex-basis:90% !important;
-    width:90%;
-  }
 }
 
 @media (min-width: 700px){

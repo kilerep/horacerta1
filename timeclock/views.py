@@ -4,7 +4,7 @@ from decimal import Decimal, InvalidOperation
 from io import BytesIO
 
 from django.contrib.auth.decorators import login_required
-from django.db import models, transaction
+from django.db import transaction
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -381,30 +381,9 @@ def employee_dashboard(request):
     history_days_desc = sorted(history_days, key=lambda row: row["date"], reverse=True)
     recent_history_days = history_days_desc[:7]
     recent_inconsistencies = [row for row in history_days_desc[:20] if row["is_incomplete"]][:5]
-    contracts = list(contracts)
-    contract_company_ids = [contract.company_id for contract in contracts]
-    location_policy_company_ids = set(
-        CompanyAttendancePolicy.objects.filter(
-            company_id__in=contract_company_ids,
-        )
-        .filter(
-            models.Q(require_location=True)
-            | models.Q(
-                validation_mode__in=[
-                    CompanyAttendancePolicy.ValidationMode.GEOLOCATION,
-                    CompanyAttendancePolicy.ValidationMode.PRESENTIAL_QR,
-                ]
-            )
-        )
-        .values_list("company_id", flat=True)
-    )
-    location_required_contract_ids = [
-        contract.id for contract in contracts if contract.company_id in location_policy_company_ids
-    ]
 
     context = {
         "contracts": contracts,
-        "contracts_count": len(contracts),
         "selected_contract": selected_contract,
         "punches_today": punches_today,
         "total_punches_today": total_punches_today,
@@ -430,7 +409,6 @@ def employee_dashboard(request):
         "state_context": employee_lifecycle_summary(selected_contract.employee, contracts),
         "pending_report_requests": pending_report_requests,
         "location_required_for_selected_contract": location_required_for_selected_contract,
-        "location_required_contract_ids": location_required_contract_ids,
         "context_warning": (
             "O vinculo selecionado anteriormente nao esta mais disponivel. Exibindo o vinculo ativo atual."
             if (mei_context.invalid_requested_contract or mei_context.invalid_session_contract)
