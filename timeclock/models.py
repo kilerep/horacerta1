@@ -15,6 +15,12 @@ class Contract(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
+    class ClosureType(models.TextChoices):
+        WEEKLY = "WEEKLY", "Semanal"
+        BIWEEKLY = "BIWEEKLY", "Quinzenal"
+        MONTHLY = "MONTHLY", "Mensal"
+        CUSTOM = "CUSTOM", "Personalizado"
+
     employee = models.ForeignKey(
         Employee,
         on_delete=models.PROTECT,
@@ -34,6 +40,11 @@ class Contract(models.Model):
     contract_file = models.FileField(upload_to="contracts/", null=True, blank=True)
     start_date = models.DateField(default=timezone.localdate)
     end_date = models.DateField(null=True, blank=True)
+    closure_type = models.CharField(
+        max_length=20,
+        choices=ClosureType.choices,
+        default=ClosureType.MONTHLY,
+    )
     notes = models.TextField(blank=True, default="")
     is_active = models.BooleanField(default=True)
 

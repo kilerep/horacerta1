@@ -110,6 +110,10 @@ urlpatterns = [
     path("me/exportar/", views.mei_export, name="mei_export"),
     path("me/contract/", views.mei_contract, name="mei_contract_en"),
     path("me/contrato/", views.mei_contract, name="mei_contract"),
+    path("me/clientes/novo/", views.mei_client_create, name="mei_client_create"),
+    path("me/clientes/<uuid:contract_id>/editar/", views.mei_client_edit, name="mei_client_edit"),
+    path("me/clients/new/", views.mei_client_create, name="mei_client_create_en"),
+    path("me/clients/<uuid:contract_id>/edit/", views.mei_client_edit, name="mei_client_edit_en"),
     path("me/relatorios/", views.mei_reports, name="mei_reports"),
     path("me/relatorios/<uuid:report_id>/", views.mei_service_report_detail, name="mei_service_report_detail"),
     path(

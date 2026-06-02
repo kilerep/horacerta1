@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AuthenticationForm
+from django.db import transaction
 from django.db.models import Q
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
@@ -650,6 +651,134 @@ class CompanyProfileForm(forms.ModelForm):
         widgets = {
             "address": forms.Textarea(attrs={"rows": 3}),
         }
+
+
+class MEIClientForm(forms.Form):
+    name = forms.CharField(label="Nome do cliente/empresa", max_length=120)
+    cnpj = forms.CharField(label="CNPJ (opcional)", max_length=18, required=False)
+    contact_name = forms.CharField(label="Contato responsavel (opcional)", max_length=120, required=False)
+    whatsapp = forms.CharField(label="WhatsApp (opcional)", max_length=30, required=False)
+    email = forms.EmailField(label="E-mail (opcional)", required=False)
+    hourly_rate = forms.DecimalField(
+        label="Valor por hora",
+        max_digits=10,
+        decimal_places=2,
+        min_value=Decimal("0.01"),
+        widget=forms.NumberInput(attrs={"step": "0.01", "min": "0.01", "placeholder": "Ex.: 95.00"}),
+    )
+    start_date = forms.DateField(
+        label="Data de inicio",
+        widget=forms.DateInput(attrs={"type": "date"}),
+    )
+    closure_type = forms.ChoiceField(
+        label="Tipo de fechamento",
+        choices=Contract.ClosureType.choices,
+    )
+    require_location = forms.BooleanField(label="Exige localizacao no registro", required=False)
+    notes = forms.CharField(
+        label="Observacoes internas",
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 4, "placeholder": "Informacoes internas sobre o atendimento, combinados ou faturamento."}),
+    )
+
+    def __init__(self, *args, user=None, instance=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user = user
+        self.instance = instance
+        if instance and not self.is_bound:
+            policy = getattr(instance.company, "attendance_policy", None)
+            self.initial.update(
+                {
+                    "name": instance.company.name,
+                    "cnpj": instance.company.cnpj,
+                    "contact_name": getattr(instance.company, "contact_name", ""),
+                    "whatsapp": getattr(instance.company, "whatsapp", "") or instance.company.phone,
+                    "email": instance.company.email or "",
+                    "hourly_rate": instance.hourly_rate,
+                    "start_date": instance.start_date,
+                    "closure_type": getattr(instance, "closure_type", Contract.ClosureType.MONTHLY),
+                    "require_location": bool(policy and policy.require_location),
+                    "notes": instance.notes or instance.company.internal_note,
+                }
+            )
+        for field in self.fields.values():
+            field.widget.attrs.setdefault("class", "hc-input")
+
+    def clean_name(self):
+        return (self.cleaned_data.get("name") or "").strip()
+
+    def clean_cnpj(self):
+        return (self.cleaned_data.get("cnpj") or "").strip()
+
+    def clean_contact_name(self):
+        return (self.cleaned_data.get("contact_name") or "").strip()
+
+    def clean_whatsapp(self):
+        return (self.cleaned_data.get("whatsapp") or "").strip()
+
+    def clean_email(self):
+        value = (self.cleaned_data.get("email") or "").strip().lower()
+        return value or None
+
+    def clean_notes(self):
+        return (self.cleaned_data.get("notes") or "").strip()
+
+    def clean(self):
+        data = super().clean()
+        if not self.user:
+            raise forms.ValidationError("Usuario MEI nao identificado.")
+        if getattr(self.user, "role", None) != User.Role.FUNCIONARIO:
+            raise forms.ValidationError("Apenas profissionais podem cadastrar clientes.")
+        return data
+
+    def save(self):
+        data = self.cleaned_data
+        require_location = bool(data.get("require_location"))
+        with transaction.atomic():
+            if self.instance:
+                company = self.instance.company
+                employee = self.instance.employee
+                contract = self.instance
+            else:
+                company = Company(owner=self.user)
+                employee = Employee(user=self.user, company=company)
+                contract = Contract(company=company, employee=employee, is_active=True)
+
+            company.name = data["name"]
+            company.cnpj = data.get("cnpj") or ""
+            company.contact_name = data.get("contact_name") or ""
+            company.whatsapp = data.get("whatsapp") or ""
+            company.phone = data.get("whatsapp") or company.phone or ""
+            company.email = data.get("email")
+            company.internal_note = data.get("notes") or ""
+            company.save()
+
+            employee.company = company
+            employee.user = self.user
+            employee.full_name = self.user.get_full_name() or self.user.email or self.user.username
+            employee.phone = employee.phone or company.whatsapp or company.phone
+            employee.is_active = True
+            employee.save()
+
+            contract.company = company
+            contract.employee = employee
+            contract.hourly_rate = data["hourly_rate"]
+            contract.start_date = data["start_date"]
+            contract.closure_type = data["closure_type"]
+            contract.notes = data.get("notes") or ""
+            contract.is_active = True
+            contract.save()
+
+            policy, _created = CompanyAttendancePolicy.objects.get_or_create(company=company)
+            policy.validation_mode = (
+                CompanyAttendancePolicy.ValidationMode.GEOLOCATION
+                if require_location
+                else CompanyAttendancePolicy.ValidationMode.FREE
+            )
+            policy.require_location = require_location
+            policy.updated_by = self.user
+            policy.save()
+            return contract
 
 
 class CompanyAttendancePolicyForm(forms.ModelForm):

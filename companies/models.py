@@ -11,6 +11,8 @@ class Company(models.Model):
 
     name = models.CharField(max_length=120)
     cnpj = models.CharField(max_length=18, blank=True, default="")
+    contact_name = models.CharField(max_length=120, blank=True, default="")
+    whatsapp = models.CharField(max_length=30, blank=True, default="")
     email = models.EmailField(blank=True, null=True)
     phone = models.CharField(max_length=30, blank=True, default="")
     address = models.TextField(blank=True, default="")

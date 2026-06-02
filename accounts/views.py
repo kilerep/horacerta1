@@ -77,6 +77,7 @@ from .forms import (
     CompanyActivityReportRequestForm,
     CompanyContractForm,
     CompanyMEICreateForm,
+    MEIClientForm,
     CompanyProfileForm,
     PunchCorrectionRequestForm,
     EmployeeSearchForm,
@@ -4755,8 +4756,66 @@ def mei_contract(request):
             "current_period_label": _month_label_ptbr(today),
             "total_hours_month": format_hhmm(total_month_seconds),
             "total_estimated_value_brl": _format_brl(total_estimated_value.quantize(Decimal("0.01"))),
-            "add_client_available": False,
-            "client_self_management_available": False,
+        },
+    )
+
+
+@login_required
+def mei_client_create(request):
+    denied = _redirect_if_not_mei(request)
+    if denied:
+        return denied
+
+    if request.method == "POST":
+        form = MEIClientForm(request.POST, user=request.user)
+        if form.is_valid():
+            contract = form.save()
+            messages.success(request, "Cliente cadastrado com sucesso.")
+            return redirect(f"{reverse('mei_contract')}?contract={contract.id}")
+        messages.error(request, "Revise os campos destacados antes de salvar.")
+    else:
+        form = MEIClientForm(user=request.user, initial={"start_date": timezone.localdate()})
+
+    return render(
+        request,
+        "accounts/mei_client_form.html",
+        {
+            "form": form,
+            "mode": "create",
+            "title": "Adicionar cliente",
+        },
+    )
+
+
+@login_required
+def mei_client_edit(request, contract_id):
+    denied = _redirect_if_not_mei(request)
+    if denied:
+        return denied
+
+    contract = get_object_or_404(
+        mei_contracts_for_user(request.user, include_inactive_contracts=True),
+        id=contract_id,
+    )
+
+    if request.method == "POST":
+        form = MEIClientForm(request.POST, user=request.user, instance=contract)
+        if form.is_valid():
+            contract = form.save()
+            messages.success(request, "Cliente atualizado com sucesso.")
+            return redirect(f"{reverse('mei_contract')}?contract={contract.id}")
+        messages.error(request, "Revise os campos destacados antes de salvar.")
+    else:
+        form = MEIClientForm(user=request.user, instance=contract)
+
+    return render(
+        request,
+        "accounts/mei_client_form.html",
+        {
+            "form": form,
+            "mode": "edit",
+            "contract": contract,
+            "title": "Editar cliente",
         },
     )
 

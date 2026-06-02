@@ -1,0 +1,138 @@
+{% extends "accounts/base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+  <style>
+    .client-form-page{ display:grid; gap:14px; }
+    .client-form-panel{
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:16px;
+      background:
+        radial-gradient(circle at 12% 0, rgba(79,124,255,.2), transparent 42%),
+        linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      box-shadow:var(--shadow);
+    }
+    .client-form-head{ display:flex; justify-content:space-between; gap:12px; align-items:flex-start; flex-wrap:wrap; margin-bottom:14px; }
+    .client-form-head h1{ margin:0; font-size:clamp(22px,4vw,30px); line-height:1.1; }
+    .client-form-head p{ margin:6px 0 0; color:var(--muted); max-width:680px; }
+    .client-form-grid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+    .client-form-field{ display:grid; gap:6px; }
+    .client-form-field.full{ grid-column:1 / -1; }
+    .client-form-field label{ color:#dbe7ff; font-size:12px; font-weight:900; }
+    .client-form-field input,
+    .client-form-field select,
+    .client-form-field textarea{
+      width:100%;
+      border:1px solid rgba(129,171,255,.28);
+      border-radius:12px;
+      padding:11px 12px;
+      background:#101a2d;
+      color:var(--text);
+      font:inherit;
+      outline:none;
+    }
+    .client-form-field input:focus,
+    .client-form-field select:focus,
+    .client-form-field textarea:focus{
+      border-color:rgba(45,211,145,.65);
+      box-shadow:0 0 0 3px rgba(45,211,145,.14);
+    }
+    .client-form-check{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      border:1px solid rgba(255,255,255,.1);
+      border-radius:12px;
+      padding:12px;
+      background:rgba(255,255,255,.035);
+    }
+    .client-form-check input{ width:auto; }
+    .client-form-error{ color:#ffd8d8; font-size:12px; }
+    .client-form-actions{ display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+    @media (max-width: 720px){
+      .client-form-grid{ grid-template-columns:1fr; }
+      .client-form-actions .btn{ width:100%; justify-content:center; }
+    }
+  </style>
+
+  <div class="client-form-page">
+    <section class="client-form-panel">
+      <header class="client-form-head">
+        <div>
+          <h1>{{ title }}</h1>
+          <p>Cadastre o cliente, defina o contrato e escolha se o registro de horário deve validar localização.</p>
+        </div>
+        <a class="btn" href="{% url 'mei_contract' %}">Voltar</a>
+      </header>
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+          <div class="client-form-error">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="client-form-grid">
+          <div class="client-form-field">
+            {{ form.name.label_tag }}
+            {{ form.name }}
+            {% for error in form.name.errors %}<span class="client-form-error">{{ error }}</span>{% endfor %}
+          </div>
+          <div class="client-form-field">
+            {{ form.cnpj.label_tag }}
+            {{ form.cnpj }}
+            {% for error in form.cnpj.errors %}<span class="client-form-error">{{ error }}</span>{% endfor %}
+          </div>
+          <div class="client-form-field">
+            {{ form.contact_name.label_tag }}
+            {{ form.contact_name }}
+            {% for error in form.contact_name.errors %}<span class="client-form-error">{{ error }}</span>{% endfor %}
+          </div>
+          <div class="client-form-field">
+            {{ form.whatsapp.label_tag }}
+            {{ form.whatsapp }}
+            {% for error in form.whatsapp.errors %}<span class="client-form-error">{{ error }}</span>{% endfor %}
+          </div>
+          <div class="client-form-field">
+            {{ form.email.label_tag }}
+            {{ form.email }}
+            {% for error in form.email.errors %}<span class="client-form-error">{{ error }}</span>{% endfor %}
+          </div>
+          <div class="client-form-field">
+            {{ form.hourly_rate.label_tag }}
+            {{ form.hourly_rate }}
+            {% for error in form.hourly_rate.errors %}<span class="client-form-error">{{ error }}</span>{% endfor %}
+          </div>
+          <div class="client-form-field">
+            {{ form.start_date.label_tag }}
+            {{ form.start_date }}
+            {% for error in form.start_date.errors %}<span class="client-form-error">{{ error }}</span>{% endfor %}
+          </div>
+          <div class="client-form-field">
+            {{ form.closure_type.label_tag }}
+            {{ form.closure_type }}
+            {% for error in form.closure_type.errors %}<span class="client-form-error">{{ error }}</span>{% endfor %}
+          </div>
+          <div class="client-form-field full">
+            <label class="client-form-check">
+              {{ form.require_location }}
+              <span>Exigir localização no registro</span>
+            </label>
+            {% for error in form.require_location.errors %}<span class="client-form-error">{{ error }}</span>{% endfor %}
+          </div>
+          <div class="client-form-field full">
+            {{ form.notes.label_tag }}
+            {{ form.notes }}
+            {% for error in form.notes.errors %}<span class="client-form-error">{{ error }}</span>{% endfor %}
+          </div>
+        </div>
+
+        <footer class="client-form-actions">
+          <button class="btn primary" type="submit">Salvar cliente</button>
+          <a class="btn" href="{% url 'mei_contract' %}">Cancelar</a>
+        </footer>
+      </form>
+    </section>
+  </div>
+{% endblock %}

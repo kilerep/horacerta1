@@ -40,7 +40,7 @@
     .client-status.pending{ color:#ffe7ad; border-color:rgba(255,176,32,.42); background:rgba(255,176,32,.12); }
     .client-status.warn{ color:#ffd8d8; border-color:rgba(255,94,94,.38); background:rgba(255,94,94,.12); }
     .client-status.muted{ color:var(--muted); background:rgba(255,255,255,.05); }
-    .client-metrics{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
+    .client-metrics{ display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; }
     .client-metric{ border:1px solid rgba(255,255,255,.09); border-radius:12px; padding:10px; background:rgba(255,255,255,.03); }
     .client-metric span{ display:block; color:var(--muted); font-size:11px; }
     .client-metric strong{ display:block; margin-top:3px; font-size:15px; }
@@ -73,11 +73,7 @@
           <p class="clients-subtitle">Acompanhe contratos, horas registradas e valores estimados por cliente no mês atual.</p>
         </div>
         <div class="clients-actions">
-          {% if add_client_available %}
-            <a class="btn primary" href="#">Adicionar cliente</a>
-          {% else %}
-            <span class="btn primary" aria-disabled="true" title="Cadastro de cliente pelo profissional depende da proxima etapa de modelagem.">Adicionar cliente</span>
-          {% endif %}
+          <a class="btn primary" href="{% url 'mei_client_create' %}">Adicionar cliente</a>
           <a class="btn" href="{% url 'mei_reports' %}">Gerar relatório</a>
         </div>
       </div>
@@ -115,6 +111,7 @@
 
               <div class="client-metrics">
                 <div class="client-metric"><span>Valor por hora</span><strong>R$ {{ row.contract.hourly_rate }}/h</strong></div>
+                <div class="client-metric"><span>Fechamento</span><strong>{{ row.contract.get_closure_type_display }}</strong></div>
                 <div class="client-metric"><span>Horas no mês</span><strong>{{ row.total_hours_month }}</strong></div>
                 <div class="client-metric"><span>Valor estimado</span><strong>{{ row.estimated_value_brl }}</strong></div>
                 <div class="client-metric"><span>Último registro</span><strong>{{ row.last_punch_label }}</strong></div>
@@ -125,7 +122,7 @@
                 <a class="btn" href="{{ row.report_url }}">Gerar relatório</a>
                 <span class="btn" aria-disabled="true" title="Pausar cliente depende de fluxo MEI-side.">Pausar</span>
                 <span class="btn" aria-disabled="true" title="Encerrar cliente depende de fluxo MEI-side.">Encerrar</span>
-                <span class="btn" aria-disabled="true" title="Editar dados depende de cadastro de cliente pelo profissional.">Editar dados</span>
+                <a class="btn" href="{% url 'mei_client_edit' row.contract.id %}">Editar dados</a>
               </div>
             </article>
           {% endfor %}
@@ -138,11 +135,7 @@
           <h2>Nenhum cliente cadastrado ainda</h2>
           <p>Quando um cliente estiver vinculado à sua conta, ele aparecerá aqui com contrato, valor por hora, horas do mês e histórico de registros.</p>
           <div class="clients-actions" style="margin-top:12px;">
-            {% if add_client_available %}
-              <a class="btn primary" href="#">Adicionar cliente</a>
-            {% else %}
-              <span class="btn primary" aria-disabled="true" title="Cadastro de cliente pelo profissional depende da proxima etapa de modelagem.">Adicionar cliente</span>
-            {% endif %}
+            <a class="btn primary" href="{% url 'mei_client_create' %}">Adicionar cliente</a>
             <a class="btn" href="{% url 'mei_panel' %}">Voltar ao painel</a>
           </div>
         </div>
