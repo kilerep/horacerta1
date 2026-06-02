@@ -121,14 +121,24 @@
         <input type="hidden" name="action" value="respond_request">
         <div class="rq-form-grid">
           <div class="rq-field">
-            <label for="{{ report_form.report_date.id_for_label }}">{{ report_form.report_date.label }}</label>
-            {{ report_form.report_date }}
-            {% if report_form.report_date.errors %}<div class="rq-error">{{ report_form.report_date.errors }}</div>{% endif %}
-          </div>
-          <div class="rq-field">
             <label for="{{ report_form.contract.id_for_label }}">{{ report_form.contract.label }}</label>
             {{ report_form.contract }}
             {% if report_form.contract.errors %}<div class="rq-error">{{ report_form.contract.errors }}</div>{% endif %}
+          </div>
+          <div class="rq-field">
+            <label for="{{ report_form.status.id_for_label }}">{{ report_form.status.label }}</label>
+            {{ report_form.status }}
+            {% if report_form.status.errors %}<div class="rq-error">{{ report_form.status.errors }}</div>{% endif %}
+          </div>
+          <div class="rq-field">
+            <label for="{{ report_form.date_from.id_for_label }}">{{ report_form.date_from.label }}</label>
+            {{ report_form.date_from }}
+            {% if report_form.date_from.errors %}<div class="rq-error">{{ report_form.date_from.errors }}</div>{% endif %}
+          </div>
+          <div class="rq-field">
+            <label for="{{ report_form.date_to.id_for_label }}">{{ report_form.date_to.label }}</label>
+            {{ report_form.date_to }}
+            {% if report_form.date_to.errors %}<div class="rq-error">{{ report_form.date_to.errors }}</div>{% endif %}
           </div>
           <div class="rq-field rq-field--full">
             <label for="{{ report_form.title.id_for_label }}">{{ report_form.title.label }}</label>

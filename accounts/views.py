@@ -9,7 +9,7 @@ import csv
 from calendar import monthrange
 from collections import defaultdict
 import json
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from django.conf import settings
 from django.contrib import messages
@@ -781,6 +781,86 @@ def _contract_status_for_mei(contract):
     if contract.end_date and contract.end_date < today:
         return {"label": "Encerrado", "tone": "warn"}
     return {"label": "Inativo", "tone": "muted"}
+
+
+def _build_service_report_payload(contract, date_from, date_to):
+    tz = timezone.get_current_timezone()
+    start_dt = timezone.make_aware(datetime.combine(date_from, time.min), tz)
+    end_dt = timezone.make_aware(datetime.combine(date_to, time.max), tz)
+    punches = list(
+        Punch.objects.filter(contract=contract, timestamp__range=(start_dt, end_dt))
+        .select_related("validated_location", "qr_confirmed_location")
+        .order_by("timestamp")
+    )
+    punches_by_day = defaultdict(list)
+    for punch in punches:
+        punches_by_day[timezone.localtime(punch.timestamp, tz).date()].append(punch)
+
+    days = []
+    total_seconds = 0
+    manual_count = 0
+    located_count = 0
+    incomplete_days = 0
+    observations = []
+    current_day = date_from
+    while current_day <= date_to:
+        day_punches = sorted(punches_by_day.get(current_day, []), key=lambda item: item.timestamp)
+        local_datetimes = [timezone.localtime(item.timestamp, tz) for item in day_punches]
+        day_seconds, is_incomplete = compute_day_total(local_datetimes)
+        day_manual_count = sum(1 for item in day_punches if item.is_manual)
+        day_location_count = sum(
+            1
+            for item in day_punches
+            if item.geo_latitude is not None
+            or item.geo_longitude is not None
+            or item.validated_location_id
+            or item.qr_confirmed_location_id
+        )
+        day_notes = [item.note for item in day_punches if (item.note or "").strip()]
+        manual_count += day_manual_count
+        located_count += day_location_count
+        total_seconds += day_seconds
+        if is_incomplete:
+            incomplete_days += 1
+        observations.extend(day_notes)
+        days.append(
+            {
+                "date": current_day.isoformat(),
+                "date_label": current_day.strftime("%d/%m/%Y"),
+                "punch_times": [item.strftime("%H:%M") for item in local_datetimes],
+                "total_hours": format_hhmm(day_seconds),
+                "is_incomplete": is_incomplete,
+                "manual_count": day_manual_count,
+                "location_count": day_location_count,
+                "notes": day_notes,
+            }
+        )
+        current_day += timedelta(days=1)
+
+    hourly_rate = contract.hourly_rate or Decimal("0")
+    estimated_value = ((Decimal(total_seconds) / Decimal("3600")) * hourly_rate).quantize(Decimal("0.01"))
+    return {
+        "professional": contract.employee.full_name or contract.employee.user.email or contract.employee.user.username,
+        "company": contract.company.name,
+        "contract_id": str(contract.id),
+        "employee_id": str(contract.employee_id),
+        "company_id": str(contract.company_id),
+        "period": {
+            "date_from": date_from.isoformat(),
+            "date_to": date_to.isoformat(),
+            "label": f"{date_from:%d/%m/%Y} ate {date_to:%d/%m/%Y}",
+        },
+        "days": days,
+        "total_hours": format_hhmm(total_seconds),
+        "total_seconds": total_seconds,
+        "hourly_rate": str(hourly_rate),
+        "estimated_value": str(estimated_value),
+        "estimated_value_brl": _format_brl(estimated_value),
+        "manual_count": manual_count,
+        "location_count": located_count,
+        "incomplete_days": incomplete_days,
+        "observations": observations,
+    }
 
 
 def signup(request):
@@ -4868,18 +4948,29 @@ def mei_reports(request):
     if denied:
         return denied
 
-    mei_context = resolve_mei_context(request, include_inactive_contracts=True)
-    contracts = mei_context.contracts
-    selected_contract = mei_context.selected_contract
-    selected_employee = mei_context.selected_employee
-    if not selected_employee:
+    contracts = mei_contracts_for_user(request.user, include_inactive_contracts=True)
+    contracts_list = list(contracts)
+    if not contracts_list:
         return redirect("mei_panel")
 
-    reports_qs = ServiceReport.objects.filter(employee=selected_employee).select_related("company", "contract").order_by(
-        "-report_date", "-created_at"
+    selected_contract_id = (request.GET.get("contract") or request.POST.get("selected_contract") or "").strip()
+    selected_contract = None
+    if selected_contract_id:
+        selected_contract = next((item for item in contracts_list if str(item.id) == selected_contract_id), None)
+    if not selected_contract:
+        selected_contract = contracts_list[0]
+
+    date_from_raw = (request.GET.get("date_from") or "").strip()
+    date_to_raw = (request.GET.get("date_to") or "").strip()
+    status_filter = (request.GET.get("status") or "").strip()
+
+    reports_qs = (
+        ServiceReport.objects.filter(employee__user=request.user)
+        .select_related("company", "contract", "employee", "employee__user")
+        .order_by("-report_date", "-created_at")
     )
     requests_qs = (
-        ActivityReportRequest.objects.filter(employee=selected_employee)
+        ActivityReportRequest.objects.filter(employee__user=request.user)
         .select_related("company", "contract", "requested_by", "response_report")
         .order_by("-requested_at")
     )
@@ -4889,19 +4980,48 @@ def mei_reports(request):
             Q(contract=selected_contract)
             | Q(contract__isnull=True, company=selected_contract.company)
         )
+    date_from = None
+    date_to = None
+    if date_from_raw:
+        try:
+            date_from = datetime.strptime(date_from_raw, "%Y-%m-%d").date()
+        except ValueError:
+            date_from = None
+    if date_to_raw:
+        try:
+            date_to = datetime.strptime(date_to_raw, "%Y-%m-%d").date()
+        except ValueError:
+            date_to = None
+    if date_from and date_to and date_from > date_to:
+        date_from, date_to = date_to, date_from
+    if date_from:
+        reports_qs = reports_qs.filter(date_to__gte=date_from)
+    if date_to:
+        reports_qs = reports_qs.filter(date_from__lte=date_to)
+    valid_statuses = {choice[0] for choice in ServiceReport.Status.choices}
+    if status_filter in valid_statuses:
+        reports_qs = reports_qs.filter(status=status_filter)
+
     pending_requests = [item for item in requests_qs[:300] if item.status == ActivityReportRequest.Status.PENDING]
     responded_requests = [item for item in requests_qs[:300] if item.status != ActivityReportRequest.Status.PENDING]
-    report_form = ServiceReportCreateForm(employee=selected_employee)
+    report_form = ServiceReportCreateForm(user=request.user)
     if selected_contract:
         report_form.fields["contract"].initial = selected_contract
 
     if request.method == "POST" and (request.POST.get("action") or "").strip().lower() == "create_report":
-        report_form = ServiceReportCreateForm(request.POST, employee=selected_employee)
+        report_form = ServiceReportCreateForm(request.POST, user=request.user)
         if report_form.is_valid():
-            report_form.save()
+            report = report_form.save(commit=False)
+            report.summary_payload = _build_service_report_payload(
+                report.contract,
+                report.date_from,
+                report.date_to,
+            )
+            if not report.title:
+                report.title = f"Relatorio de horas - {report.company.name}"
+            report.save()
             redirect_url = f"{reverse('mei_reports')}?event=report_created"
-            if selected_contract:
-                redirect_url = f"{redirect_url}&contract={selected_contract.id}"
+            redirect_url = f"{redirect_url}&contract={report.contract.id}"
             return redirect(redirect_url)
 
     reports = list(reports_qs[:300])
@@ -4909,13 +5029,16 @@ def mei_reports(request):
         request,
         "accounts/mei_reports.html",
         {
-            "employee": selected_employee,
-            "contracts": contracts,
+            "contracts": contracts_list,
             "selected_contract": selected_contract,
             "report_form": report_form,
             "reports": reports,
             "pending_requests": pending_requests,
             "responded_requests": responded_requests,
+            "status_filter": status_filter,
+            "date_from": date_from_raw,
+            "date_to": date_to_raw,
+            "status_choices": ServiceReport.Status.choices,
         },
     )
 
@@ -4931,17 +5054,90 @@ def mei_service_report_detail(request, report_id):
         id=report_id,
         employee__user=request.user,
     )
+    if request.method == "POST" and (request.POST.get("action") or "").strip() == "generate_conference_link":
+        if not report.conference_token:
+            report.conference_token = uuid4()
+        report.conference_link_created_at = timezone.now()
+        if report.status == ServiceReport.Status.DRAFT:
+            report.status = ServiceReport.Status.SENT
+        report.save(update_fields=["conference_token", "conference_link_created_at", "status", "updated_at"])
+        messages.success(request, "Link de conferencia gerado.")
+        return redirect("mei_service_report_detail", report_id=report.id)
+
     selected_contract = getattr(report, "contract", None)
     reports_url = reverse("mei_reports")
     if selected_contract:
         reports_url = f"{reports_url}?contract={selected_contract.id}"
+    conference_url = ""
+    if report.conference_token:
+        conference_url = request.build_absolute_uri(reverse("public_service_report_conference", args=[report.conference_token]))
     return render(
         request,
         "accounts/mei_service_report_detail.html",
         {
             "employee": report.employee,
             "report": report,
+            "payload": report.summary_payload or {},
             "reports_url": reports_url,
+            "conference_url": conference_url,
+            "pdf_url": reverse("mei_service_report_pdf", args=[report.id]),
+        },
+    )
+
+
+@login_required
+def mei_service_report_pdf(request, report_id):
+    denied = _redirect_if_not_mei(request)
+    if denied:
+        return denied
+    report = get_object_or_404(
+        ServiceReport.objects.select_related("company", "contract", "employee", "employee__user"),
+        id=report_id,
+        employee__user=request.user,
+    )
+    payload = report.summary_payload or {}
+    lines = [
+        "HoraCerta - Relatorio de horas",
+        f"Profissional: {payload.get('professional') or report.employee.full_name}",
+        f"Cliente: {payload.get('company') or report.company.name}",
+        f"Periodo: {(payload.get('period') or {}).get('label') or '-'}",
+        f"Status: {report.get_status_display()}",
+        f"Total de horas: {payload.get('total_hours') or '-'}",
+        f"Valor/hora: R$ {payload.get('hourly_rate') or report.contract.hourly_rate}",
+        f"Valor estimado: {payload.get('estimated_value_brl') or '-'}",
+        f"Registros manuais: {payload.get('manual_count', 0)}",
+        f"Registros com localizacao: {payload.get('location_count', 0)}",
+        f"Dias incompletos: {payload.get('incomplete_days', 0)}",
+        "",
+        "Dias:",
+    ]
+    for day in (payload.get("days") or [])[:45]:
+        lines.append(
+            f"{day.get('date_label')} | {', '.join(day.get('punch_times') or []) or '-'} | "
+            f"{day.get('total_hours')} | {'incompleto' if day.get('is_incomplete') else 'ok'}"
+        )
+    return _build_pdf_response(f"horacerta_relatorio_{report.id}.pdf", lines)
+
+
+def public_service_report_conference(request, token):
+    report = get_object_or_404(
+        ServiceReport.objects.select_related("company", "contract", "employee", "employee__user"),
+        conference_token=token,
+    )
+    if report.status == ServiceReport.Status.SENT:
+        report.status = ServiceReport.Status.VIEWED
+        report.save(update_fields=["status", "updated_at"])
+    return render(
+        request,
+        "accounts/mei_service_report_detail.html",
+        {
+            "employee": report.employee,
+            "report": report,
+            "payload": report.summary_payload or {},
+            "reports_url": "",
+            "conference_url": request.build_absolute_uri(),
+            "pdf_url": "",
+            "public_view": True,
         },
     )
 
@@ -4968,8 +5164,10 @@ def mei_service_report_request_detail(request, request_id):
 
     can_respond = report_request.status == ActivityReportRequest.Status.PENDING
     initial = {
-        "report_date": report_request.date_to or report_request.date_from or timezone.localdate(),
+        "date_from": report_request.date_from or timezone.localdate().replace(day=1),
+        "date_to": report_request.date_to or timezone.localdate(),
         "title": report_request.subject[:120] if report_request.subject else "",
+        "status": ServiceReport.Status.SENT,
     }
     if report_request.contract_id:
         initial["contract"] = report_request.contract_id
@@ -5000,7 +5198,13 @@ def mei_service_report_request_detail(request, request_id):
             )
         if report_form.is_valid():
             with transaction.atomic():
-                report = report_form.save()
+                report = report_form.save(commit=False)
+                report.summary_payload = _build_service_report_payload(
+                    report.contract,
+                    report.date_from,
+                    report.date_to,
+                )
+                report.save()
                 report_request.response_report = report
                 report_request.response_text = report.description
                 report_request.status = ActivityReportRequest.Status.RESPONDED

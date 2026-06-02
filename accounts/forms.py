@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AuthenticationForm
 from django.db import transaction
 from django.db.models import Q
+from django.utils import timezone
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 from companies.models import Company, CompanyAttendancePolicy, CompanyAuthorizedLocation, Employee
@@ -117,6 +118,8 @@ class PunchCorrectionRequestForm(forms.ModelForm):
                 .order_by("-timestamp")
             )
         self.fields["contract"].queryset = contracts_qs
+        self.fields["date_from"].required = True
+        self.fields["date_to"].required = True
         self.fields["contract"].label_from_instance = (
             lambda obj: f"{obj.company.name} | inicio {obj.start_date.strftime('%d/%m/%Y') if obj.start_date else '-'}"
         )
@@ -181,28 +184,43 @@ class ServiceReportCreateForm(forms.ModelForm):
 
     class Meta:
         model = ServiceReport
-        fields = ["report_date", "contract", "title", "description"]
+        fields = ["contract", "date_from", "date_to", "status", "title", "description"]
         widgets = {
-            "report_date": forms.DateInput(attrs={"type": "date"}),
-            "title": forms.TextInput(attrs={"placeholder": "Resumo curto do servico executado"}),
+            "date_from": forms.DateInput(attrs={"type": "date"}),
+            "date_to": forms.DateInput(attrs={"type": "date"}),
+            "title": forms.TextInput(attrs={"placeholder": "Ex.: Relatorio de horas do periodo"}),
             "description": forms.Textarea(
                 attrs={
                     "rows": 5,
-                    "placeholder": "Descreva o trabalho realizado no dia, entregas e contexto operacional.",
+                    "placeholder": "Observacoes gerais, entregas ou contexto para conferencia do cliente.",
                 }
             ),
         }
         labels = {
-            "report_date": "Data do servico",
+            "date_from": "Data inicial",
+            "date_to": "Data final",
+            "status": "Status",
             "title": "Titulo",
-            "description": "Descricao do servico",
+            "description": "Observacoes",
         }
 
-    def __init__(self, *args, employee=None, **kwargs):
+    def __init__(self, *args, employee=None, user=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.employee = employee
+        self.user = user
         contracts_qs = Contract.objects.none()
-        if employee:
+        if user:
+            contracts_qs = (
+                Contract.objects.filter(
+                    employee__user=user,
+                    is_active=True,
+                    employee__is_active=True,
+                    company__isnull=False,
+                )
+                .select_related("company", "employee")
+                .order_by("company__name", "-start_date", "-created_at")
+            )
+        elif employee:
             contracts_qs = (
                 Contract.objects.filter(
                     employee=employee,
@@ -216,12 +234,33 @@ class ServiceReportCreateForm(forms.ModelForm):
         self.fields["contract"].label_from_instance = (
             lambda obj: f"{obj.company.name} | inicio {obj.start_date.strftime('%d/%m/%Y') if obj.start_date else '-'} | R$ {obj.hourly_rate}/h"
         )
+        if not self.is_bound:
+            today = timezone.localdate()
+            self.initial.setdefault("date_from", today.replace(day=1))
+            self.initial.setdefault("date_to", today)
+            self.initial.setdefault("status", ServiceReport.Status.DRAFT)
+
+    def clean(self):
+        data = super().clean()
+        contract = data.get("contract")
+        if contract:
+            self.instance.contract = contract
+            self.instance.company = contract.company
+            self.instance.employee = contract.employee
+            self.instance.report_date = data.get("date_to") or timezone.localdate()
+        date_from = data.get("date_from")
+        date_to = data.get("date_to")
+        if date_from and date_to and date_from > date_to:
+            self.add_error("date_to", "Data final nao pode ser anterior a data inicial.")
+        return data
 
     def clean_contract(self):
         contract = self.cleaned_data.get("contract")
         if not contract:
             return contract
         if self.employee and contract.employee_id != self.employee.id:
+            raise forms.ValidationError("Selecione um contrato valido do seu perfil.")
+        if self.user and contract.employee.user_id != self.user.id:
             raise forms.ValidationError("Selecione um contrato valido do seu perfil.")
         return contract
 
@@ -235,6 +274,7 @@ class ServiceReportCreateForm(forms.ModelForm):
             report.contract = contract
             report.company = contract.company
             report.employee = contract.employee
+        report.report_date = self.cleaned_data.get("date_to") or timezone.localdate()
         if commit:
             report.save()
         return report

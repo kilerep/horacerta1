@@ -1,58 +1,113 @@
 {% extends "accounts/base.html" %}
-{% block title %}Detalhe do relatorio{% endblock %}
-{% block page_title %}Detalhe do relatorio{% endblock %}
+{% block title %}Detalhe do relatório{% endblock %}
+{% block page_title %}Detalhe do relatório{% endblock %}
 
 {% block content %}
 <style>
-  .detail-wrap{ display:grid; gap:12px; }
-  .detail-card{
+  .report-detail{display:grid;gap:14px}
+  .detail-panel{
     border:1px solid var(--border);
     border-radius:var(--radius);
     padding:16px;
-    background:
-      radial-gradient(circle at 10% -12%, rgba(79,124,255,.2), transparent 45%),
-      linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+    background:radial-gradient(circle at 10% 0, rgba(79,124,255,.2), transparent 42%), linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+    box-shadow:var(--shadow);
   }
-  .detail-title{ margin:0; font-size:22px; }
-  .detail-sub{ margin:8px 0 0; color:var(--muted); }
-  .detail-grid{ margin-top:12px; display:grid; gap:10px; grid-template-columns:repeat(2,minmax(0,1fr)); }
-  .detail-box{ border:1px solid rgba(255,255,255,.1); border-radius:12px; padding:12px; background:rgba(255,255,255,.03); }
-  .detail-box strong{ display:block; margin-bottom:4px; }
-  .detail-box span{ color:var(--muted); font-size:13px; line-height:1.45; }
-  .detail-text{ white-space:pre-wrap; line-height:1.55; }
-  .detail-actions{ margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; }
-  @media (max-width: 900px){ .detail-grid{ grid-template-columns:1fr; } }
+  .detail-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
+  .detail-title{margin:0;font-size:clamp(22px,4vw,30px)}
+  .detail-sub{margin:6px 0 0;color:var(--muted)}
+  .detail-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .detail-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:12px}
+  .detail-box{border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:11px;background:rgba(255,255,255,.035)}
+  .detail-box span{display:block;color:var(--muted);font-size:12px}
+  .detail-box strong{display:block;margin-top:4px;font-size:17px}
+  .detail-table-wrap{margin-top:12px;border:1px solid var(--border);border-radius:14px;overflow-x:auto}
+  .detail-table{width:100%;border-collapse:collapse;min-width:820px}
+  .detail-table th,.detail-table td{padding:10px;border-bottom:1px solid rgba(255,255,255,.07);text-align:left;vertical-align:top}
+  .detail-table th{color:var(--muted);font-size:12px}
+  .detail-table tr:last-child td{border-bottom:none}
+  .detail-note{white-space:pre-wrap;line-height:1.5;color:var(--muted)}
+  .link-box{margin-top:10px;border:1px solid rgba(45,211,145,.3);border-radius:12px;padding:10px;background:rgba(45,211,145,.08);overflow-wrap:anywhere}
+  @media (max-width: 900px){.detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media (max-width: 640px){.detail-grid{grid-template-columns:1fr}.detail-actions .btn{width:100%;justify-content:center}}
 </style>
 
-<div class="detail-wrap">
-  <section class="detail-card">
-    <h2 class="detail-title">{{ report.title }}</h2>
-    <p class="detail-sub">Relatorio de servico separado do fluxo de ponto.</p>
+<div class="report-detail">
+  <section class="detail-panel">
+    <div class="detail-head">
+      <div>
+        <h1 class="detail-title">{{ report.title }}</h1>
+        <p class="detail-sub">{{ report.company.name }} | {{ report.date_from|date:"d/m/Y" }} até {{ report.date_to|date:"d/m/Y" }} | {{ report.get_status_display }}</p>
+      </div>
+      {% if not public_view %}
+        <div class="detail-actions">
+          <a class="btn" href="{{ reports_url }}">Voltar</a>
+          <a class="btn" href="{{ pdf_url }}">Baixar PDF</a>
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="generate_conference_link">
+            <button class="btn primary" type="submit">Gerar link de conferência</button>
+          </form>
+        </div>
+      {% endif %}
+    </div>
+    {% if conference_url %}
+      <div class="link-box">
+        <strong>Link de conferência</strong><br>
+        {{ conference_url }}
+      </div>
+    {% endif %}
+  </section>
+
+  <section class="detail-panel">
     <div class="detail-grid">
-      <article class="detail-box">
-        <strong>Data do servico</strong>
-        <span>{{ report.report_date|date:"d/m/Y" }}</span>
-      </article>
-      <article class="detail-box">
-        <strong>Empresa</strong>
-        <span>{{ report.company.name }}</span>
-      </article>
-      <article class="detail-box">
-        <strong>Contrato</strong>
-        <span>Inicio {{ report.contract.start_date|date:"d/m/Y" }} | R$ {{ report.contract.hourly_rate }}/h</span>
-      </article>
-      <article class="detail-box">
-        <strong>Enviado em</strong>
-        <span>{{ report.created_at|date:"d/m/Y H:i" }}</span>
-      </article>
-      <article class="detail-box" style="grid-column:1 / -1;">
-        <strong>Descricao do servico</strong>
-        <span class="detail-text">{{ report.description }}</span>
-      </article>
+      <article class="detail-box"><span>Profissional</span><strong>{% if payload.professional %}{{ payload.professional }}{% else %}{{ report.employee.full_name }}{% endif %}</strong></article>
+      <article class="detail-box"><span>Cliente</span><strong>{% if payload.company %}{{ payload.company }}{% else %}{{ report.company.name }}{% endif %}</strong></article>
+      <article class="detail-box"><span>Total de horas</span><strong>{{ payload.total_hours|default:"-" }}</strong></article>
+      <article class="detail-box"><span>Valor estimado</span><strong>{{ payload.estimated_value_brl|default:"-" }}</strong></article>
+      <article class="detail-box"><span>Valor/hora</span><strong>R$ {% if payload.hourly_rate %}{{ payload.hourly_rate }}{% else %}{{ report.contract.hourly_rate }}{% endif %}/h</strong></article>
+      <article class="detail-box"><span>Registros manuais</span><strong>{{ payload.manual_count|default:0 }}</strong></article>
+      <article class="detail-box"><span>Com localização</span><strong>{{ payload.location_count|default:0 }}</strong></article>
+      <article class="detail-box"><span>Dias incompletos</span><strong>{{ payload.incomplete_days|default:0 }}</strong></article>
     </div>
-    <div class="detail-actions">
-      <a class="btn" href="{{ reports_url }}">Voltar para relatorios</a>
+  </section>
+
+  <section class="detail-panel">
+    <h2 class="detail-title">Dias do período</h2>
+    <div class="detail-table-wrap">
+      <table class="detail-table">
+        <thead>
+          <tr>
+            <th>Dia</th>
+            <th>Horários</th>
+            <th>Total</th>
+            <th>Manual</th>
+            <th>Localização</th>
+            <th>Status</th>
+            <th>Observações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for day in payload.days %}
+            <tr>
+              <td>{{ day.date_label }}</td>
+              <td>{{ day.punch_times|join:", "|default:"-" }}</td>
+              <td>{{ day.total_hours }}</td>
+              <td>{{ day.manual_count }}</td>
+              <td>{{ day.location_count }}</td>
+              <td>{% if day.is_incomplete %}Incompleto{% else %}OK{% endif %}</td>
+              <td>{{ day.notes|join:"; "|default:"-" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="7">Sem registros no período.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
+  </section>
+
+  <section class="detail-panel">
+    <h2 class="detail-title">Observações gerais</h2>
+    <p class="detail-note">{{ report.description|default:"Sem observações gerais." }}</p>
   </section>
 </div>
 {% endblock %}

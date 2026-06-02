@@ -1,271 +1,181 @@
 {% extends "accounts/base.html" %}
-{% block title %}Relatorios{% endblock %}
-{% block page_title %}Relatorios{% endblock %}
+{% block title %}Relatórios{% endblock %}
+{% block page_title %}Relatórios{% endblock %}
 
 {% block content %}
 <style>
-  .sr-wrap{ display:grid; gap:14px; }
-  .sr-panel{
+  .reports-page{display:grid;gap:14px}
+  .reports-panel{
     border:1px solid var(--border);
     border-radius:var(--radius);
     padding:16px;
-    background:
-      radial-gradient(circle at 10% -10%, rgba(79,124,255,.22), transparent 42%),
-      linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+    background:radial-gradient(circle at 10% 0, rgba(79,124,255,.2), transparent 42%), linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+    box-shadow:var(--shadow);
   }
-  .sr-title{ margin:0; font-size:20px; }
-  .sr-sub{ margin:8px 0 0; color:var(--muted); font-size:13px; max-width:760px; }
-  .sr-grid{ margin-top:12px; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
-  .sr-field{ display:flex; flex-direction:column; gap:6px; }
-  .sr-field--full{ grid-column:1 / -1; }
-  .sr-field label{ color:var(--muted); font-size:12px; font-weight:700; }
-  .sr-field input, .sr-field select, .sr-field textarea{
-    width:100%;
-    min-height:44px;
-    border-radius:12px;
-    border:1px solid var(--border);
-    background:rgba(255,255,255,.06);
-    color:var(--text);
-    padding:10px 12px;
+  .reports-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
+  .reports-title{margin:0;font-size:clamp(22px,4vw,30px)}
+  .reports-sub{margin:6px 0 0;color:var(--muted);max-width:760px}
+  .reports-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:12px}
+  .reports-field{display:grid;gap:6px}
+  .reports-field.full{grid-column:1 / -1}
+  .reports-field label{color:#dbe7ff;font-size:12px;font-weight:900}
+  .reports-field input,.reports-field select,.reports-field textarea{
+    width:100%;border:1px solid rgba(129,171,255,.28);border-radius:12px;padding:10px 12px;background:#101a2d;color:var(--text);font:inherit
   }
-  .sr-field textarea{ min-height:120px; resize:vertical; line-height:1.45; }
-  .sr-error{
-    border:1px solid rgba(255,94,94,.3);
-    border-radius:10px;
-    background:rgba(255,94,94,.12);
-    color:#ffd8d8;
-    font-size:12px;
-    padding:6px 8px;
-  }
-  .sr-actions{ margin-top:10px; display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
-  .sr-meta{ margin-top:10px; color:var(--muted); font-size:12px; }
-  .sr-table-wrap{ margin-top:12px; border:1px solid var(--border); border-radius:14px; overflow-x:auto; }
-  .sr-table{ width:100%; border-collapse:collapse; min-width:760px; }
-  .sr-table th, .sr-table td{ text-align:left; padding:11px 10px; border-bottom:1px solid rgba(255,255,255,.07); vertical-align:top; }
-  .sr-table th{ color:var(--muted); font-size:13px; }
-  .sr-table tr:last-child td{ border-bottom:none; }
-  .sr-empty{
-    display:grid; gap:8px; justify-items:start;
-    border:1px dashed rgba(255,255,255,.18);
-    border-radius:12px; padding:12px;
-  }
-  .sr-badge{
-    display:inline-flex;
-    align-items:center;
-    border-radius:999px;
-    padding:4px 10px;
-    font-size:12px;
-    font-weight:700;
-    border:1px solid transparent;
-  }
-  .sr-badge--pending{ background:rgba(255,187,0,.12); border-color:rgba(255,187,0,.28); color:#ffd36a; }
-  .sr-badge--responded{ background:rgba(79,124,255,.15); border-color:rgba(79,124,255,.35); color:#b9ccff; }
-  .sr-badge--reviewed{ background:rgba(24,195,125,.15); border-color:rgba(24,195,125,.35); color:#b2f5d8; }
-  @media (max-width: 920px){
-    .sr-grid{ grid-template-columns:1fr; }
-    .sr-actions .btn{ width:100%; justify-content:center; }
-  }
+  .reports-field textarea{min-height:120px;resize:vertical}
+  .reports-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:12px}
+  .reports-table-wrap{margin-top:12px;border:1px solid var(--border);border-radius:14px;overflow-x:auto}
+  .reports-table{width:100%;border-collapse:collapse;min-width:900px}
+  .reports-table th,.reports-table td{padding:11px 10px;border-bottom:1px solid rgba(255,255,255,.07);text-align:left;vertical-align:top}
+  .reports-table th{color:var(--muted);font-size:12px}
+  .reports-table tr:last-child td{border-bottom:none}
+  .status-pill{display:inline-flex;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:900;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05)}
+  .empty{border:1px dashed rgba(255,255,255,.18);border-radius:12px;padding:14px;background:rgba(255,255,255,.03)}
+  .error{margin-top:6px;color:#ffd8d8;font-size:12px}
+  @media (max-width: 980px){.reports-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media (max-width: 640px){.reports-grid{grid-template-columns:1fr}.reports-actions .btn{width:100%;justify-content:center}}
 </style>
 
-<div class="sr-wrap">
+<div class="reports-page">
   {% if request.GET.event == "report_created" %}
-    <section class="hc-global-feedback" role="status" aria-live="polite">
-      Relatorio enviado com sucesso.
-    </section>
+    <section class="reports-panel" role="status">Relatório gerado e salvo com sucesso.</section>
   {% endif %}
 
-  <section class="sr-panel">
-    <h2 class="sr-title">Contexto atual</h2>
-    <p class="sr-sub">Selecione cliente e contrato para filtrar solicitacoes e relatorios no contexto correto.</p>
-    <form method="get" class="sr-grid">
-      <div class="sr-field">
-        <label for="sr-contract-selector">Cliente e contrato</label>
-        <select id="sr-contract-selector" name="contract" onchange="this.form.submit()">
+  <section class="reports-panel">
+    <div class="reports-head">
+      <div>
+        <h1 class="reports-title">Relatórios</h1>
+        <p class="reports-sub">Gere relatórios por cliente e período para conferência externa.</p>
+      </div>
+      <a class="btn" href="{% url 'mei_contract' %}">Meus clientes</a>
+    </div>
+    <form method="get" class="reports-grid">
+      <div class="reports-field">
+        <label for="filter-contract">Cliente</label>
+        <select id="filter-contract" name="contract">
           {% for c in contracts %}
-            <option value="{{ c.id }}" {% if selected_contract and c.id == selected_contract.id %}selected{% endif %}>
-              {{ c.company.name }} - R$ {{ c.hourly_rate }}/h
-            </option>
+            <option value="{{ c.id }}" {% if selected_contract and c.id == selected_contract.id %}selected{% endif %}>{{ c.company.name }} | R$ {{ c.hourly_rate }}/h</option>
           {% endfor %}
         </select>
       </div>
+      <div class="reports-field">
+        <label for="filter-date-from">Data inicial</label>
+        <input id="filter-date-from" type="date" name="date_from" value="{{ date_from }}">
+      </div>
+      <div class="reports-field">
+        <label for="filter-date-to">Data final</label>
+        <input id="filter-date-to" type="date" name="date_to" value="{{ date_to }}">
+      </div>
+      <div class="reports-field">
+        <label for="filter-status">Status</label>
+        <select id="filter-status" name="status">
+          <option value="">Todos</option>
+          {% for value,label in status_choices %}
+            <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="reports-actions full">
+        <button class="btn primary" type="submit">Filtrar</button>
+      </div>
     </form>
   </section>
 
-  <section class="sr-panel">
-    <h2 class="sr-title">Solicitacoes recebidas da empresa</h2>
-    <p class="sr-sub">Acompanhe pendencias e responda com um relatorio vinculado a cada solicitacao.</p>
-    <div class="sr-meta">Pendentes: {{ pending_requests|length }} | Respondidas/Revisadas: {{ responded_requests|length }}</div>
-    <div class="sr-table-wrap">
-      <table class="sr-table">
-        <thead>
-          <tr>
-            <th>Solicitado em</th>
-            <th>Cliente</th>
-            <th>Assunto</th>
-            <th>Periodo</th>
-            <th>Status</th>
-            <th>Acoes</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for item in pending_requests %}
-            <tr>
-              <td>{{ item.requested_at|date:"d/m/Y H:i" }}</td>
-              <td>{{ item.company.name }}</td>
-              <td>{{ item.subject|default:"Solicitacao de relatorio" }}</td>
-              <td>
-                {% if item.date_from or item.date_to %}
-                  {{ item.date_from|date:"d/m/Y"|default:"-" }} ate {{ item.date_to|date:"d/m/Y"|default:"-" }}
-                {% else %}
-                  -
-                {% endif %}
-              </td>
-              <td><span class="sr-badge sr-badge--pending">Pendente</span></td>
-              <td>
-                <a class="btn primary" href="{% url 'mei_service_report_request_detail' item.id %}{% if selected_contract %}?contract={{ selected_contract.id }}{% endif %}">Responder</a>
-              </td>
-            </tr>
-          {% empty %}
-            <tr>
-              <td colspan="6">
-                <div class="sr-empty">
-                  <strong>Nenhuma solicitacao pendente no momento.</strong>
-                </div>
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-  <section class="sr-panel">
-    <h2 class="sr-title">Historico de solicitacoes</h2>
-    <p class="sr-sub">Solicitacoes que ja receberam resposta e estao em acompanhamento.</p>
-    <div class="sr-table-wrap">
-      <table class="sr-table">
-        <thead>
-          <tr>
-            <th>Solicitado em</th>
-            <th>Assunto</th>
-            <th>Status</th>
-            <th>Resposta</th>
-            <th>Acoes</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for item in responded_requests %}
-            <tr>
-              <td>{{ item.requested_at|date:"d/m/Y H:i" }}</td>
-              <td>{{ item.subject|default:"Solicitacao de relatorio" }}</td>
-              <td>
-                {% if item.status == "RESPONDED" %}
-                  <span class="sr-badge sr-badge--responded">Respondida</span>
-                {% else %}
-                  <span class="sr-badge sr-badge--reviewed">Revisada</span>
-                {% endif %}
-              </td>
-              <td>
-                {% if item.response_report %}
-                  {{ item.response_report.title }}<br>
-                  <span class="muted">{{ item.response_report.report_date|date:"d/m/Y" }}</span>
-                {% else %}
-                  -
-                {% endif %}
-              </td>
-              <td>
-                <a class="btn" href="{% url 'mei_service_report_request_detail' item.id %}{% if selected_contract %}?contract={{ selected_contract.id }}{% endif %}">Abrir detalhe</a>
-              </td>
-            </tr>
-          {% empty %}
-            <tr>
-              <td colspan="5">
-                <div class="sr-empty">
-                  <strong>Sem solicitacoes respondidas ainda.</strong>
-                </div>
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-  <section class="sr-panel">
-    <h2 class="sr-title">Novo relatorio</h2>
-    <p class="sr-sub">Registre o trabalho executado para conferencia externa, sem alterar os horarios.</p>
-    <form method="post" data-submit-once="true">
+  <section class="reports-panel">
+    <h2 class="reports-title">Gerar relatório de horas</h2>
+    <p class="reports-sub">O relatório será salvo com dias, horários, totais, observações, manuais, localização e dias incompletos.</p>
+    <form method="post">
       {% csrf_token %}
       <input type="hidden" name="action" value="create_report">
-      {% if selected_contract %}
-        <input type="hidden" name="selected_contract" value="{{ selected_contract.id }}">
-      {% endif %}
-      <div class="sr-grid">
-        <div class="sr-field">
-          <label for="{{ report_form.report_date.id_for_label }}">{{ report_form.report_date.label }}</label>
-          {{ report_form.report_date }}
-          {% if report_form.report_date.errors %}<div class="sr-error">{{ report_form.report_date.errors }}</div>{% endif %}
-        </div>
-        <div class="sr-field">
-          <label for="{{ report_form.contract.id_for_label }}">{{ report_form.contract.label }}</label>
+      {% if selected_contract %}<input type="hidden" name="selected_contract" value="{{ selected_contract.id }}">{% endif %}
+      <div class="reports-grid">
+        <div class="reports-field">
+          {{ report_form.contract.label_tag }}
           {{ report_form.contract }}
-          {% if report_form.contract.errors %}<div class="sr-error">{{ report_form.contract.errors }}</div>{% endif %}
+          {% for error in report_form.contract.errors %}<span class="error">{{ error }}</span>{% endfor %}
         </div>
-        <div class="sr-field sr-field--full">
-          <label for="{{ report_form.title.id_for_label }}">{{ report_form.title.label }}</label>
+        <div class="reports-field">
+          {{ report_form.date_from.label_tag }}
+          {{ report_form.date_from }}
+          {% for error in report_form.date_from.errors %}<span class="error">{{ error }}</span>{% endfor %}
+        </div>
+        <div class="reports-field">
+          {{ report_form.date_to.label_tag }}
+          {{ report_form.date_to }}
+          {% for error in report_form.date_to.errors %}<span class="error">{{ error }}</span>{% endfor %}
+        </div>
+        <div class="reports-field">
+          {{ report_form.status.label_tag }}
+          {{ report_form.status }}
+          {% for error in report_form.status.errors %}<span class="error">{{ error }}</span>{% endfor %}
+        </div>
+        <div class="reports-field full">
+          {{ report_form.title.label_tag }}
           {{ report_form.title }}
-          {% if report_form.title.errors %}<div class="sr-error">{{ report_form.title.errors }}</div>{% endif %}
+          {% for error in report_form.title.errors %}<span class="error">{{ error }}</span>{% endfor %}
         </div>
-        <div class="sr-field sr-field--full">
-          <label for="{{ report_form.description.id_for_label }}">{{ report_form.description.label }}</label>
+        <div class="reports-field full">
+          {{ report_form.description.label_tag }}
           {{ report_form.description }}
-          {% if report_form.description.errors %}<div class="sr-error">{{ report_form.description.errors }}</div>{% endif %}
+          {% for error in report_form.description.errors %}<span class="error">{{ error }}</span>{% endfor %}
         </div>
       </div>
-      {% if report_form.non_field_errors %}
-        <div class="sr-error" style="margin-top:10px;">{{ report_form.non_field_errors }}</div>
-      {% endif %}
-      <div class="sr-actions">
-        <button class="btn primary" type="submit" data-loading-text="Enviando relatorio...">Enviar relatorio</button>
+      {% if report_form.non_field_errors %}<div class="error">{{ report_form.non_field_errors }}</div>{% endif %}
+      <div class="reports-actions">
+        <button class="btn primary" type="submit">Gerar relatório</button>
       </div>
     </form>
   </section>
 
-  <section class="sr-panel">
-    <h2 class="sr-title">Meus relatorios enviados</h2>
-    <p class="sr-sub">Consulta rapida dos relatorios ja registrados no sistema.</p>
-    <div class="sr-meta">Total: {{ reports|length }} relatorio(s)</div>
-    <div class="sr-table-wrap">
-      <table class="sr-table">
+  <section class="reports-panel">
+    <h2 class="reports-title">Relatórios salvos</h2>
+    <div class="reports-table-wrap">
+      <table class="reports-table">
         <thead>
           <tr>
-            <th>Data</th>
-            <th>Cliente/contrato</th>
-            <th>Titulo</th>
-            <th>Enviado em</th>
-            <th>Acoes</th>
+            <th>Período</th>
+            <th>Cliente</th>
+            <th>Título</th>
+            <th>Status</th>
+            <th>Total</th>
+            <th>Valor estimado</th>
+            <th>Ações</th>
           </tr>
         </thead>
         <tbody>
           {% for report in reports %}
             <tr>
-              <td>{{ report.report_date|date:"d/m/Y" }}</td>
+              <td>{{ report.date_from|date:"d/m/Y" }} até {{ report.date_to|date:"d/m/Y" }}</td>
               <td>{{ report.company.name }}</td>
               <td>{{ report.title }}</td>
-              <td>{{ report.created_at|date:"d/m/Y H:i" }}</td>
-              <td>
-                <a class="btn" href="{% url 'mei_service_report_detail' report.id %}{% if selected_contract %}?contract={{ selected_contract.id }}{% endif %}">Abrir detalhe</a>
-              </td>
+              <td><span class="status-pill">{{ report.get_status_display }}</span></td>
+              <td>{{ report.summary_payload.total_hours|default:"-" }}</td>
+              <td>{{ report.summary_payload.estimated_value_brl|default:"-" }}</td>
+              <td><a class="btn" href="{% url 'mei_service_report_detail' report.id %}">Ver detalhes</a></td>
             </tr>
           {% empty %}
+            <tr><td colspan="7"><div class="empty">Nenhum relatório salvo para os filtros atuais.</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="reports-panel">
+    <h2 class="reports-title">Solicitações pendentes</h2>
+    <div class="reports-table-wrap">
+      <table class="reports-table">
+        <thead><tr><th>Cliente</th><th>Assunto</th><th>Período</th><th>Ações</th></tr></thead>
+        <tbody>
+          {% for item in pending_requests %}
             <tr>
-              <td colspan="5">
-                <div class="sr-empty">
-                  <strong>Nenhum relatorio enviado.</strong>
-                  <p class="sr-sub" style="margin:0;">Use o formulario acima para registrar o primeiro servico.</p>
-                </div>
-              </td>
+              <td>{{ item.company.name }}</td>
+              <td>{{ item.subject|default:"Solicitação de relatório" }}</td>
+              <td>{{ item.date_from|date:"d/m/Y"|default:"-" }} até {{ item.date_to|date:"d/m/Y"|default:"-" }}</td>
+              <td><a class="btn" href="{% url 'mei_service_report_request_detail' item.id %}">Responder</a></td>
             </tr>
+          {% empty %}
+            <tr><td colspan="4"><div class="empty">Nenhuma solicitação pendente.</div></td></tr>
           {% endfor %}
         </tbody>
       </table>

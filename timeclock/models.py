@@ -544,6 +544,15 @@ class ActivityReportRequest(models.Model):
 class ServiceReport(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
+    class Status(models.TextChoices):
+        DRAFT = "DRAFT", "Rascunho"
+        SENT = "SENT", "Enviado"
+        VIEWED = "VIEWED", "Visualizado"
+        REVIEWED = "REVIEWED", "Conferido"
+        DIVERGENT = "DIVERGENT", "Com divergencia"
+        PAID = "PAID", "Pago"
+        CANCELED = "CANCELED", "Cancelado"
+
     company = models.ForeignKey(
         Company,
         on_delete=models.PROTECT,
@@ -561,8 +570,14 @@ class ServiceReport(models.Model):
     )
 
     report_date = models.DateField(default=timezone.localdate)
+    date_from = models.DateField(null=True, blank=True)
+    date_to = models.DateField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
     title = models.CharField(max_length=120)
     description = models.TextField()
+    summary_payload = models.JSONField(default=dict, blank=True)
+    conference_token = models.UUIDField(null=True, blank=True, unique=True)
+    conference_link_created_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -572,6 +587,8 @@ class ServiceReport(models.Model):
             models.Index(fields=["company", "report_date"]),
             models.Index(fields=["employee", "report_date"]),
             models.Index(fields=["contract", "report_date"]),
+            models.Index(fields=["employee", "status", "report_date"]),
+            models.Index(fields=["conference_token"]),
         ]
 
     def clean(self):
@@ -595,6 +612,8 @@ class ServiceReport(models.Model):
                 if self.company_id and self.employee_id and contract.employee.company_id != self.company_id:
                     errors["employee"] = "Profissional informado nao pertence a empresa."
 
+        if self.date_from and self.date_to and self.date_from > self.date_to:
+            errors["date_to"] = "Data final nao pode ser anterior a data inicial."
         if errors:
             raise ValidationError(errors)
 

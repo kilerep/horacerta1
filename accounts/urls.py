@@ -116,11 +116,13 @@ urlpatterns = [
     path("me/clients/<uuid:contract_id>/edit/", views.mei_client_edit, name="mei_client_edit_en"),
     path("me/relatorios/", views.mei_reports, name="mei_reports"),
     path("me/relatorios/<uuid:report_id>/", views.mei_service_report_detail, name="mei_service_report_detail"),
+    path("me/relatorios/<uuid:report_id>/pdf/", views.mei_service_report_pdf, name="mei_service_report_pdf"),
     path(
         "me/relatorios/solicitacoes/<uuid:request_id>/",
         views.mei_service_report_request_detail,
         name="mei_service_report_request_detail",
     ),
+    path("conferencia/relatorio/<uuid:token>/", views.public_service_report_conference, name="public_service_report_conference"),
 
     path("help/", views.help_view, name="help"),
     path("terms/", views.terms_view, name="terms"),
