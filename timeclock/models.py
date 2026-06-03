@@ -553,6 +553,13 @@ class ServiceReport(models.Model):
         PAID = "PAID", "Pago"
         CANCELED = "CANCELED", "Cancelado"
 
+    class ConferenceStatus(models.TextChoices):
+        PENDING = "PENDING", "Aguardando conferencia"
+        VIEWED = "VIEWED", "Visualizado"
+        REVIEWED = "REVIEWED", "Conferido"
+        REVOKED = "REVOKED", "Link revogado"
+        EXPIRED = "EXPIRED", "Link expirado"
+
     company = models.ForeignKey(
         Company,
         on_delete=models.PROTECT,
@@ -578,6 +585,16 @@ class ServiceReport(models.Model):
     summary_payload = models.JSONField(default=dict, blank=True)
     conference_token = models.UUIDField(null=True, blank=True, unique=True)
     conference_link_created_at = models.DateTimeField(null=True, blank=True)
+    conference_first_viewed_at = models.DateTimeField(null=True, blank=True)
+    conference_reviewed_at = models.DateTimeField(null=True, blank=True)
+    conference_comment = models.TextField(blank=True, default="")
+    conference_final_status = models.CharField(
+        max_length=20,
+        choices=ConferenceStatus.choices,
+        default=ConferenceStatus.PENDING,
+    )
+    conference_revoked_at = models.DateTimeField(null=True, blank=True)
+    conference_expires_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -620,6 +637,35 @@ class ServiceReport(models.Model):
     def save(self, *args, **kwargs):
         self.full_clean()
         return super().save(*args, **kwargs)
+
+    @property
+    def conference_is_expired(self):
+        return bool(self.conference_expires_at and self.conference_expires_at <= timezone.now())
+
+    @property
+    def conference_is_revoked(self):
+        return bool(self.conference_revoked_at)
+
+    @property
+    def conference_is_accessible(self):
+        return bool(self.conference_token and not self.conference_is_revoked and not self.conference_is_expired)
+
+    def ensure_conference_link(self, expires_at=None):
+        if not self.conference_token or self.conference_is_revoked or self.conference_is_expired:
+            self.conference_token = uuid.uuid4()
+            self.conference_first_viewed_at = None
+            self.conference_reviewed_at = None
+            self.conference_comment = ""
+        self.conference_link_created_at = timezone.now()
+        self.conference_revoked_at = None
+        self.conference_expires_at = expires_at
+        self.conference_final_status = self.ConferenceStatus.PENDING
+        if self.status == self.Status.DRAFT:
+            self.status = self.Status.SENT
+
+    def revoke_conference_link(self):
+        self.conference_revoked_at = timezone.now()
+        self.conference_final_status = self.ConferenceStatus.REVOKED
 
     def __str__(self):
         return f"ServiceReport<{self.id}> {self.report_date:%d/%m/%Y} {self.title}"

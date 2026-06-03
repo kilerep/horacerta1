@@ -9,7 +9,7 @@ import csv
 from calendar import monthrange
 from collections import defaultdict
 import json
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from django.conf import settings
 from django.contrib import messages
@@ -5054,14 +5054,47 @@ def mei_service_report_detail(request, report_id):
         id=report_id,
         employee__user=request.user,
     )
-    if request.method == "POST" and (request.POST.get("action") or "").strip() == "generate_conference_link":
-        if not report.conference_token:
-            report.conference_token = uuid4()
-        report.conference_link_created_at = timezone.now()
-        if report.status == ServiceReport.Status.DRAFT:
-            report.status = ServiceReport.Status.SENT
-        report.save(update_fields=["conference_token", "conference_link_created_at", "status", "updated_at"])
-        messages.success(request, "Link de conferencia gerado.")
+    if request.method == "POST":
+        action = (request.POST.get("action") or "").strip()
+        if action == "generate_conference_link":
+            expires_at = None
+            expires_at_raw = (request.POST.get("conference_expires_at") or "").strip()
+            if expires_at_raw:
+                try:
+                    expires_at = datetime.strptime(expires_at_raw, "%Y-%m-%dT%H:%M")
+                    expires_at = timezone.make_aware(expires_at, timezone.get_current_timezone())
+                except ValueError:
+                    messages.error(request, "Informe uma data de expiracao valida.")
+                    return redirect("mei_service_report_detail", report_id=report.id)
+                if expires_at <= timezone.now():
+                    messages.error(request, "A expiracao precisa ser uma data futura.")
+                    return redirect("mei_service_report_detail", report_id=report.id)
+            report.ensure_conference_link(expires_at=expires_at)
+            report.save(
+                update_fields=[
+                    "conference_token",
+                    "conference_link_created_at",
+                    "conference_first_viewed_at",
+                    "conference_reviewed_at",
+                    "conference_comment",
+                    "conference_revoked_at",
+                    "conference_expires_at",
+                    "conference_final_status",
+                    "status",
+                    "updated_at",
+                ]
+            )
+            messages.success(request, "Link de conferencia gerado.")
+            return redirect("mei_service_report_detail", report_id=report.id)
+        if action == "revoke_conference_link":
+            if report.conference_token and not report.conference_revoked_at:
+                report.revoke_conference_link()
+                report.save(update_fields=["conference_revoked_at", "conference_final_status", "updated_at"])
+                messages.success(request, "Link de conferencia revogado.")
+            else:
+                messages.info(request, "Este relatorio nao possui link ativo para revogar.")
+            return redirect("mei_service_report_detail", report_id=report.id)
+        messages.error(request, "Acao invalida para este relatorio.")
         return redirect("mei_service_report_detail", report_id=report.id)
 
     selected_contract = getattr(report, "contract", None)
@@ -5095,6 +5128,10 @@ def mei_service_report_pdf(request, report_id):
         id=report_id,
         employee__user=request.user,
     )
+    return _service_report_pdf_response(report)
+
+
+def _service_report_pdf_response(report):
     payload = report.summary_payload or {}
     lines = [
         "HoraCerta - Relatorio de horas",
@@ -5124,22 +5161,93 @@ def public_service_report_conference(request, token):
         ServiceReport.objects.select_related("company", "contract", "employee", "employee__user"),
         conference_token=token,
     )
+    now = timezone.now()
+    unavailable_reason = ""
+    if report.conference_revoked_at:
+        unavailable_reason = "Este link de conferencia foi revogado pelo profissional."
+    elif report.conference_is_expired:
+        unavailable_reason = "Este link de conferencia expirou."
+        if report.conference_final_status != ServiceReport.ConferenceStatus.EXPIRED:
+            report.conference_final_status = ServiceReport.ConferenceStatus.EXPIRED
+            report.save(update_fields=["conference_final_status", "updated_at"])
+
+    if unavailable_reason:
+        return render(
+            request,
+            "public/service_report_conference.html",
+            {
+                "report": None,
+                "payload": {},
+                "unavailable_reason": unavailable_reason,
+            },
+            status=410,
+        )
+
+    if request.method == "POST":
+        action = (request.POST.get("action") or "").strip()
+        if action == "confirm_review":
+            report.conference_comment = (request.POST.get("conference_comment") or "").strip()
+            report.conference_reviewed_at = now
+            if not report.conference_first_viewed_at:
+                report.conference_first_viewed_at = now
+            report.conference_final_status = ServiceReport.ConferenceStatus.REVIEWED
+            report.status = ServiceReport.Status.REVIEWED
+            report.save(
+                update_fields=[
+                    "conference_comment",
+                    "conference_reviewed_at",
+                    "conference_first_viewed_at",
+                    "conference_final_status",
+                    "status",
+                    "updated_at",
+                ]
+            )
+            messages.success(request, "Conferencia registrada com sucesso.")
+            return redirect("public_service_report_conference", token=report.conference_token)
+        messages.error(request, "Acao invalida para este link.")
+        return redirect("public_service_report_conference", token=report.conference_token)
+
+    update_fields = []
+    if not report.conference_first_viewed_at:
+        report.conference_first_viewed_at = now
+        update_fields.append("conference_first_viewed_at")
+    if report.conference_final_status == ServiceReport.ConferenceStatus.PENDING:
+        report.conference_final_status = ServiceReport.ConferenceStatus.VIEWED
+        update_fields.append("conference_final_status")
     if report.status == ServiceReport.Status.SENT:
         report.status = ServiceReport.Status.VIEWED
-        report.save(update_fields=["status", "updated_at"])
+        update_fields.append("status")
+    if update_fields:
+        update_fields.append("updated_at")
+        report.save(update_fields=update_fields)
+
+    public_pdf_url = reverse("public_service_report_pdf", args=[report.conference_token])
     return render(
         request,
-        "accounts/mei_service_report_detail.html",
+        "public/service_report_conference.html",
         {
-            "employee": report.employee,
             "report": report,
             "payload": report.summary_payload or {},
-            "reports_url": "",
             "conference_url": request.build_absolute_uri(),
-            "pdf_url": "",
-            "public_view": True,
+            "pdf_url": public_pdf_url,
         },
     )
+
+
+def public_service_report_pdf(request, token):
+    report = get_object_or_404(
+        ServiceReport.objects.select_related("company", "contract", "employee", "employee__user"),
+        conference_token=token,
+        conference_revoked_at__isnull=True,
+    )
+    if report.conference_is_expired:
+        report.conference_final_status = ServiceReport.ConferenceStatus.EXPIRED
+        report.save(update_fields=["conference_final_status", "updated_at"])
+        raise PermissionDenied("Link de conferencia expirado.")
+    if not report.conference_first_viewed_at:
+        report.conference_first_viewed_at = timezone.now()
+        report.save(update_fields=["conference_first_viewed_at", "updated_at"])
+    return _service_report_pdf_response(report)
 
 
 @login_required

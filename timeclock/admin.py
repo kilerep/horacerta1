@@ -1,5 +1,5 @@
 ﻿from django.contrib import admin
-from .models import Contract, Punch, PunchCorrectionLog, PunchCorrectionRequest
+from .models import Contract, Punch, PunchCorrectionLog, PunchCorrectionRequest, ServiceReport
 
 
 @admin.register(Contract)
@@ -31,3 +31,30 @@ class PunchCorrectionRequestAdmin(admin.ModelAdmin):
     list_filter = ("status", "problem_type", "company")
     search_fields = ("employee__full_name", "user__email", "company__name", "description")
     readonly_fields = ("created_at", "updated_at", "resolved_at")
+
+
+@admin.register(ServiceReport)
+class ServiceReportAdmin(admin.ModelAdmin):
+    list_display = (
+        "title",
+        "company",
+        "employee",
+        "status",
+        "conference_final_status",
+        "conference_first_viewed_at",
+        "conference_reviewed_at",
+        "conference_revoked_at",
+    )
+    list_filter = ("status", "conference_final_status", "company")
+    search_fields = ("title", "company__name", "employee__full_name", "employee__user__email", "conference_comment")
+    readonly_fields = (
+        "conference_token",
+        "conference_link_created_at",
+        "conference_first_viewed_at",
+        "conference_reviewed_at",
+        "conference_comment",
+        "conference_final_status",
+        "conference_revoked_at",
+        "created_at",
+        "updated_at",
+    )
