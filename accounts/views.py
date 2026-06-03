@@ -26,6 +26,12 @@ from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
+from reportlab.lib import colors
+from reportlab.lib.enums import TA_RIGHT
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.lib.units import cm
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from companies.models import (
     Company,
@@ -5102,8 +5108,14 @@ def mei_service_report_detail(request, report_id):
     if selected_contract:
         reports_url = f"{reports_url}?contract={selected_contract.id}"
     conference_url = ""
-    if report.conference_token:
+    if report.conference_is_accessible:
         conference_url = request.build_absolute_uri(reverse("public_service_report_conference", args=[report.conference_token]))
+    client_name = (report.summary_payload or {}).get("company") or report.company.name
+    if client_name:
+        whatsapp_message = f"Olá, {client_name}, segue meu relatório de horas pelo HoraCerta para conferência: {conference_url}"
+    else:
+        whatsapp_message = f"Olá, segue meu relatório de horas pelo HoraCerta para conferência: {conference_url}"
+    whatsapp_url = f"https://wa.me/?text={quote(whatsapp_message, safe='')}" if conference_url else ""
     return render(
         request,
         "accounts/mei_service_report_detail.html",
@@ -5113,6 +5125,8 @@ def mei_service_report_detail(request, report_id):
             "payload": report.summary_payload or {},
             "reports_url": reports_url,
             "conference_url": conference_url,
+            "whatsapp_message": whatsapp_message if conference_url else "",
+            "whatsapp_url": whatsapp_url,
             "pdf_url": reverse("mei_service_report_pdf", args=[report.id]),
         },
     )
@@ -5133,27 +5147,132 @@ def mei_service_report_pdf(request, report_id):
 
 def _service_report_pdf_response(report):
     payload = report.summary_payload or {}
-    lines = [
-        "HoraCerta - Relatorio de horas",
-        f"Profissional: {payload.get('professional') or report.employee.full_name}",
-        f"Cliente: {payload.get('company') or report.company.name}",
-        f"Periodo: {(payload.get('period') or {}).get('label') or '-'}",
-        f"Status: {report.get_status_display()}",
-        f"Total de horas: {payload.get('total_hours') or '-'}",
-        f"Valor/hora: R$ {payload.get('hourly_rate') or report.contract.hourly_rate}",
-        f"Valor estimado: {payload.get('estimated_value_brl') or '-'}",
-        f"Registros manuais: {payload.get('manual_count', 0)}",
-        f"Registros com localizacao: {payload.get('location_count', 0)}",
-        f"Dias incompletos: {payload.get('incomplete_days', 0)}",
-        "",
-        "Dias:",
-    ]
-    for day in (payload.get("days") or [])[:45]:
-        lines.append(
-            f"{day.get('date_label')} | {', '.join(day.get('punch_times') or []) or '-'} | "
-            f"{day.get('total_hours')} | {'incompleto' if day.get('is_incomplete') else 'ok'}"
+    def pdf_text(value, default="-"):
+        text = str(value if value not in (None, "") else default)
+        return escape(text)
+
+    buffer = BytesIO()
+    filename = f"horacerta_relatorio_{report.id}.pdf"
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        rightMargin=1.5 * cm,
+        leftMargin=1.5 * cm,
+        topMargin=1.4 * cm,
+        bottomMargin=1.4 * cm,
+        title="HoraCerta - Relatorio de horas",
+    )
+
+    styles = getSampleStyleSheet()
+    styles.add(
+        ParagraphStyle(
+            name="MetaRight",
+            parent=styles["Normal"],
+            alignment=TA_RIGHT,
+            textColor=colors.HexColor("#4b5563"),
+            fontSize=8,
+            leading=10,
         )
-    return _build_pdf_response(f"horacerta_relatorio_{report.id}.pdf", lines)
+    )
+    styles.add(
+        ParagraphStyle(
+            name="SmallMuted",
+            parent=styles["Normal"],
+            textColor=colors.HexColor("#4b5563"),
+            fontSize=8,
+            leading=10,
+        )
+    )
+    styles["Title"].fontName = "Helvetica-Bold"
+    styles["Title"].fontSize = 18
+    styles["Title"].leading = 22
+    styles["Heading2"].fontSize = 12
+    styles["Heading2"].leading = 15
+
+    professional_name = payload.get("professional") or report.employee.full_name
+    client_name = payload.get("company") or report.company.name
+    period_label = (payload.get("period") or {}).get("label")
+    if not period_label:
+        start_label = report.date_from.strftime("%d/%m/%Y") if report.date_from else "-"
+        end_label = report.date_to.strftime("%d/%m/%Y") if report.date_to else "-"
+        period_label = f"{start_label} a {end_label}"
+    emitted_at = timezone.localtime().strftime("%d/%m/%Y %H:%M")
+
+    story = [
+        Paragraph("HoraCerta - Relatorio de horas", styles["Title"]),
+        Paragraph(f"Emitido em {emitted_at}", styles["MetaRight"]),
+        Spacer(1, 10),
+    ]
+
+    summary_rows = [
+        ["Profissional", professional_name],
+        ["Cliente", client_name],
+        ["Periodo", period_label],
+        ["Total de horas", payload.get("total_hours") or "-"],
+        ["Valor estimado", payload.get("estimated_value_brl") or "-"],
+    ]
+    summary_table = Table(summary_rows, colWidths=[4 * cm, 13 * cm])
+    summary_table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#eef2ff")),
+                ("TEXTCOLOR", (0, 0), (0, -1), colors.HexColor("#1f2937")),
+                ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+                ("FONTNAME", (1, 0), (1, -1), "Helvetica"),
+                ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#d1d5db")),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("ROWBACKGROUNDS", (1, 0), (1, -1), [colors.white, colors.HexColor("#f9fafb")]),
+                ("LEFTPADDING", (0, 0), (-1, -1), 7),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 7),
+                ("TOPPADDING", (0, 0), (-1, -1), 6),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+            ]
+        )
+    )
+    story.extend([summary_table, Spacer(1, 14), Paragraph("Dias e horarios", styles["Heading2"])])
+
+    day_rows = [["Dia", "Horarios", "Total", "Status", "Observacoes"]]
+    for day in payload.get("days") or []:
+        day_rows.append(
+            [
+                Paragraph(pdf_text(day.get("date_label")), styles["SmallMuted"]),
+                Paragraph(pdf_text(", ".join(day.get("punch_times") or []) or "-"), styles["SmallMuted"]),
+                Paragraph(pdf_text(day.get("total_hours")), styles["SmallMuted"]),
+                Paragraph("Incompleto" if day.get("is_incomplete") else "OK", styles["SmallMuted"]),
+                Paragraph(pdf_text("; ".join(day.get("notes") or []) or "-"), styles["SmallMuted"]),
+            ]
+        )
+    if len(day_rows) == 1:
+        day_rows.append(["-", "Sem registros no periodo.", "-", "-", "-"])
+
+    days_table = Table(day_rows, colWidths=[2.7 * cm, 5.4 * cm, 2.1 * cm, 2.3 * cm, 4.5 * cm], repeatRows=1)
+    days_table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#111827")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+                ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#d1d5db")),
+                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f9fafb")]),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 5),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+                ("TOPPADDING", (0, 0), (-1, -1), 5),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+            ]
+        )
+    )
+    story.extend([days_table, Spacer(1, 14), Paragraph("Observacoes", styles["Heading2"])])
+    description = pdf_text(report.description or "Sem observacoes gerais.").replace("\n", "<br/>")
+    story.append(Paragraph(description, styles["Normal"]))
+
+    doc.build(story)
+    pdf = buffer.getvalue()
+    buffer.close()
+    response = HttpResponse(pdf, content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
 
 
 def public_service_report_conference(request, token):

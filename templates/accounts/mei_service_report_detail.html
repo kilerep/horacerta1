@@ -19,6 +19,10 @@
   .inline-field{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .inline-field label{font-size:12px;color:var(--muted)}
   .inline-field input{min-height:40px;border:1px solid var(--border);border-radius:10px;padding:0 10px;background:rgba(255,255,255,.04);color:var(--text)}
+  .share-panel{margin-top:14px;border:1px solid rgba(45,211,145,.28);border-radius:12px;padding:12px;background:rgba(45,211,145,.07);display:grid;gap:10px}
+  .share-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .share-url{flex:1 1 320px;border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:10px;background:rgba(255,255,255,.04);overflow-wrap:anywhere;color:var(--text)}
+  .share-status{font-size:12px;color:var(--muted);min-height:18px}
   .detail-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:12px}
   .detail-box{border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:11px;background:rgba(255,255,255,.035)}
   .detail-box span{display:block;color:var(--muted);font-size:12px}
@@ -63,9 +67,15 @@
       {% endif %}
     </div>
     {% if conference_url %}
-      <div class="link-box">
-        <strong>Link de conferência</strong><br>
-        {{ conference_url }}
+      <div class="share-panel" data-share-panel>
+        <strong>Compartilhar relatorio</strong>
+        <div class="share-row">
+          <div class="share-url" data-share-url>{{ conference_url }}</div>
+          <button class="btn" type="button" data-copy-link>Copiar link</button>
+          <a class="btn primary" href="{{ whatsapp_url }}" target="_blank" rel="noopener">Enviar pelo WhatsApp</a>
+          <a class="btn" href="{{ pdf_url }}">Baixar PDF</a>
+        </div>
+        <div class="share-status" data-copy-status></div>
         <div class="detail-sub">
           Status: {{ report.get_conference_final_status_display }}
           {% if report.conference_expires_at %} | Expira em {{ report.conference_expires_at|date:"d/m/Y H:i" }}{% endif %}
@@ -76,6 +86,11 @@
         {% if report.conference_comment %}
           <div class="detail-sub"><strong>Comentário da empresa:</strong> {{ report.conference_comment }}</div>
         {% endif %}
+      </div>
+    {% else %}
+      <div class="link-box">
+        <strong>Link de conferencia indisponivel</strong>
+        <div class="detail-sub">Gere um link ativo para copiar, enviar pelo WhatsApp e permitir a conferencia publica.</div>
       </div>
     {% endif %}
   </section>
@@ -132,4 +147,33 @@
     <p class="detail-note">{{ report.description|default:"Sem observações gerais." }}</p>
   </section>
 </div>
+<script>
+  (function () {
+    var panel = document.querySelector("[data-share-panel]");
+    if (!panel) return;
+
+    var button = panel.querySelector("[data-copy-link]");
+    var urlNode = panel.querySelector("[data-share-url]");
+    var statusNode = panel.querySelector("[data-copy-status]");
+    if (!button || !urlNode) return;
+
+    button.addEventListener("click", function () {
+      var value = urlNode.textContent.trim();
+      function setStatus(message) {
+        if (statusNode) statusNode.textContent = message;
+      }
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(value).then(function () {
+          setStatus("Link copiado.");
+        }).catch(function () {
+          setStatus("Nao foi possivel copiar automaticamente. Selecione o link e copie manualmente.");
+        });
+        return;
+      }
+
+      setStatus("Selecione o link e copie manualmente.");
+    });
+  })();
+</script>
 {% endblock %}
