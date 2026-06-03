@@ -557,6 +557,7 @@ class ServiceReport(models.Model):
         PENDING = "PENDING", "Aguardando conferencia"
         VIEWED = "VIEWED", "Visualizado"
         REVIEWED = "REVIEWED", "Conferido"
+        DIVERGENT = "DIVERGENT", "Com divergencia"
         REVOKED = "REVOKED", "Link revogado"
         EXPIRED = "EXPIRED", "Link expirado"
 

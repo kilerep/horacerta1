@@ -2277,11 +2277,11 @@ def company_meis(request):
             }
         if latest_contract:
             if latest_contract.end_date and latest_contract.end_date < timezone.localdate():
-                label = "Contrato encerrado"
+                label = "Vínculo encerrado"
                 hint = f"Encerrado em {latest_contract.end_date:%d/%m/%Y}."
                 key = "ended"
             elif not latest_contract.is_active:
-                label = "Contrato encerrado"
+                label = "Vínculo encerrado"
                 hint = "Contrato inativo. Histórico preservado para consulta."
                 key = "ended"
             else:
@@ -3816,7 +3816,7 @@ def company_plan(request):
     current_plan = subscription.plan if subscription else None
     commercial_plan = _commercial_plan_snapshot(subscription)
     active_provider_count = (
-        Contract.objects.filter(company=company, is_active=True, employee__is_active=True)
+        Contract.objects.filter(company=company, is_active=True, employee__is_active=True, employee__user__is_active=True)
         .values("employee_id")
         .distinct()
         .count()
@@ -3840,6 +3840,7 @@ def company_plan(request):
         "Notificações para empresa e prestadores.",
         "Registro de problemas de horário pelo prestador.",
         "Correções administrativas com auditoria interna.",
+        "Prestadores com vínculo ativo contam no limite do plano.",
     ]
 
     date_format = "%d/%m/%Y"
@@ -4476,7 +4477,9 @@ def mei_panel(request):
     denied = _redirect_if_not_mei(request)
     if denied:
         return denied
-    contracts = list(mei_contracts_for_user(request.user, include_inactive_contracts=True))
+    mei_context = resolve_mei_context(request, include_inactive_contracts=True)
+    selected_contract = mei_context.selected_contract
+    contracts = list(mei_context.contracts)
     active_contracts = [contract for contract in contracts if contract_is_operational(contract)]
 
     today = timezone.localdate()
@@ -4554,6 +4557,7 @@ def mei_panel(request):
 
     context = {
         "contracts": contracts,
+        "selected_contract": selected_contract,
         "contracts_count": len(contracts),
         "active_clients_count": len(active_contracts),
         "current_period_label": _month_label_ptbr(today),
@@ -4570,6 +4574,11 @@ def mei_panel(request):
         "incomplete_alerts": incomplete_alerts,
         "paused_contracts": paused_contracts,
         "missing_rate_contracts": missing_rate_contracts,
+        "context_warning": (
+            "O vinculo selecionado anteriormente nao esta mais disponivel. Exibindo o vinculo atual."
+            if (mei_context.invalid_requested_contract or mei_context.invalid_session_contract)
+            else ""
+        ),
     }
     return render(request, "accounts/mei_panel.html", context)
 
@@ -5304,13 +5313,17 @@ def public_service_report_conference(request, token):
 
     if request.method == "POST":
         action = (request.POST.get("action") or "").strip()
-        if action == "confirm_review":
+        if action in {"confirm_review", "report_divergence"}:
             report.conference_comment = (request.POST.get("conference_comment") or "").strip()
             report.conference_reviewed_at = now
             if not report.conference_first_viewed_at:
                 report.conference_first_viewed_at = now
-            report.conference_final_status = ServiceReport.ConferenceStatus.REVIEWED
-            report.status = ServiceReport.Status.REVIEWED
+            if action == "report_divergence":
+                report.conference_final_status = ServiceReport.ConferenceStatus.DIVERGENT
+                report.status = ServiceReport.Status.DIVERGENT
+            else:
+                report.conference_final_status = ServiceReport.ConferenceStatus.REVIEWED
+                report.status = ServiceReport.Status.REVIEWED
             report.save(
                 update_fields=[
                     "conference_comment",
@@ -5321,7 +5334,10 @@ def public_service_report_conference(request, token):
                     "updated_at",
                 ]
             )
-            messages.success(request, "Conferencia registrada com sucesso.")
+            if action == "report_divergence":
+                messages.success(request, "Divergencia registrada com sucesso.")
+            else:
+                messages.success(request, "Conferencia registrada com sucesso.")
             return redirect("public_service_report_conference", token=report.conference_token)
         messages.error(request, "Acao invalida para este link.")
         return redirect("public_service_report_conference", token=report.conference_token)

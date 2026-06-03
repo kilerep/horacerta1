@@ -58,7 +58,7 @@
             Acesso publico restrito ao token deste relatorio.
           </p>
         </div>
-        <span class="status-pill {% if report.conference_reviewed_at %}ok{% endif %}">{{ report.get_conference_final_status_display }}</span>
+        <span class="status-pill {% if report.conference_final_status == "REVIEWED" %}ok{% elif report.conference_final_status == "DIVERGENT" %}warn{% endif %}">{{ report.get_conference_final_status_display }}</span>
       </div>
       <div class="actions" style="margin-top:14px">
         <a class="btn" href="{{ pdf_url }}">Baixar PDF</a>
@@ -123,15 +123,15 @@
     <section class="public-panel">
       <h2 class="section-title">Conferencia da empresa</h2>
       {% if report.conference_reviewed_at %}
-        <p class="conference-sub">Conferencia registrada em {{ report.conference_reviewed_at|date:"d/m/Y H:i" }}.</p>
+        <p class="conference-sub">{{ report.get_conference_final_status_display }} em {{ report.conference_reviewed_at|date:"d/m/Y H:i" }}.</p>
         <p class="note">{{ report.conference_comment|default:"Sem comentario informado." }}</p>
       {% else %}
         <form class="review-form" method="post">
           {% csrf_token %}
-          <input type="hidden" name="action" value="confirm_review">
-          <textarea name="conference_comment" maxlength="3000" placeholder="Comentario opcional para o profissional"></textarea>
+          <textarea name="conference_comment" maxlength="3000" placeholder="Comentario para o profissional. Informe o motivo se houver divergencia."></textarea>
           <div class="actions">
-            <button class="btn primary" type="submit">Marcar como conferido</button>
+            <button class="btn primary" type="submit" name="action" value="confirm_review">Marcar como conferido</button>
+            <button class="btn" type="submit" name="action" value="report_divergence">Informar divergencia</button>
           </div>
         </form>
       {% endif %}

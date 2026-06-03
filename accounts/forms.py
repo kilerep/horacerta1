@@ -118,8 +118,7 @@ class PunchCorrectionRequestForm(forms.ModelForm):
                 .order_by("-timestamp")
             )
         self.fields["contract"].queryset = contracts_qs
-        self.fields["date_from"].required = True
-        self.fields["date_to"].required = True
+        self.fields["problem_date"].required = True
         self.fields["contract"].label_from_instance = (
             lambda obj: f"{obj.company.name} | inicio {obj.start_date.strftime('%d/%m/%Y') if obj.start_date else '-'}"
         )
