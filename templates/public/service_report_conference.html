@@ -74,8 +74,6 @@
         <article class="metric"><span>Total de horas</span><strong>{{ payload.total_hours|default:"-" }}</strong></article>
         <article class="metric"><span>Valor estimado</span><strong>{{ payload.estimated_value_brl|default:"-" }}</strong></article>
         <article class="metric"><span>Dias incompletos</span><strong>{{ payload.incomplete_days|default:0 }}</strong></article>
-        <article class="metric"><span>Registros manuais</span><strong>{{ payload.manual_count|default:0 }}</strong></article>
-        <article class="metric"><span>Com localizacao</span><strong>{{ payload.location_count|default:0 }}</strong></article>
         <article class="metric"><span>Primeira visualizacao</span><strong>{{ report.conference_first_viewed_at|date:"d/m/Y H:i"|default:"Registrando..." }}</strong></article>
         <article class="metric"><span>Conferencia</span><strong>{{ report.conference_reviewed_at|date:"d/m/Y H:i"|default:"Pendente" }}</strong></article>
       </div>
@@ -90,8 +88,6 @@
               <th>Dia</th>
               <th>Horarios</th>
               <th>Total</th>
-              <th>Manual</th>
-              <th>Localizacao</th>
               <th>Status</th>
               <th>Observacoes</th>
             </tr>
@@ -102,13 +98,11 @@
                 <td>{{ day.date_label }}</td>
                 <td>{{ day.punch_times|join:", "|default:"-" }}</td>
                 <td>{{ day.total_hours }}</td>
-                <td>{{ day.manual_count }}</td>
-                <td>{{ day.location_count }}</td>
                 <td>{% if day.is_incomplete %}Incompleto{% else %}OK{% endif %}</td>
                 <td>{{ day.notes|join:"; "|default:"-" }}</td>
               </tr>
             {% empty %}
-              <tr><td colspan="7">Sem registros no periodo.</td></tr>
+              <tr><td colspan="5">Sem registros no periodo.</td></tr>
             {% endfor %}
           </tbody>
         </table>

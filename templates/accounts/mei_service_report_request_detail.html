@@ -120,6 +120,9 @@
         {% csrf_token %}
         <input type="hidden" name="action" value="respond_request">
         <div class="rq-form-grid">
+          <div class="rq-field rq-field--full">
+            <div class="rq-sub">Ao gerar este relatorio, os dias incluidos no periodo serao bloqueados para edicao.</div>
+          </div>
           <div class="rq-field">
             <label for="{{ report_form.contract.id_for_label }}">{{ report_form.contract.label }}</label>
             {{ report_form.contract }}

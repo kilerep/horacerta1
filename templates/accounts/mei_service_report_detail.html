@@ -102,8 +102,6 @@
       <article class="detail-box"><span>Total de horas</span><strong>{{ payload.total_hours|default:"-" }}</strong></article>
       <article class="detail-box"><span>Valor estimado</span><strong>{{ payload.estimated_value_brl|default:"-" }}</strong></article>
       <article class="detail-box"><span>Valor/hora</span><strong>R$ {% if payload.hourly_rate %}{{ payload.hourly_rate }}{% else %}{{ report.contract.hourly_rate }}{% endif %}/h</strong></article>
-      <article class="detail-box"><span>Registros manuais</span><strong>{{ payload.manual_count|default:0 }}</strong></article>
-      <article class="detail-box"><span>Com localização</span><strong>{{ payload.location_count|default:0 }}</strong></article>
       <article class="detail-box"><span>Dias incompletos</span><strong>{{ payload.incomplete_days|default:0 }}</strong></article>
     </div>
   </section>
@@ -117,8 +115,6 @@
             <th>Dia</th>
             <th>Horários</th>
             <th>Total</th>
-            <th>Manual</th>
-            <th>Localização</th>
             <th>Status</th>
             <th>Observações</th>
           </tr>
@@ -129,13 +125,11 @@
               <td>{{ day.date_label }}</td>
               <td>{{ day.punch_times|join:", "|default:"-" }}</td>
               <td>{{ day.total_hours }}</td>
-              <td>{{ day.manual_count }}</td>
-              <td>{{ day.location_count }}</td>
               <td>{% if day.is_incomplete %}Incompleto{% else %}OK{% endif %}</td>
               <td>{{ day.notes|join:"; "|default:"-" }}</td>
             </tr>
           {% empty %}
-            <tr><td colspan="7">Sem registros no período.</td></tr>
+            <tr><td colspan="5">Sem registros no período.</td></tr>
           {% endfor %}
         </tbody>
       </table>

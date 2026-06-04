@@ -1,0 +1,154 @@
+{% extends "accounts/base.html" %}
+{% block title %}HoraCerta - Editar horarios de hoje{% endblock %}
+{% block page_title %}Editar horarios de hoje{% endblock %}
+
+{% block content %}
+  <style>
+    .today-edit{display:grid;gap:14px;max-width:880px}
+    .today-edit__panel{
+      border:1px solid var(--color-border);
+      border-radius:var(--radius-lg);
+      background:var(--surface-raised);
+      box-shadow:var(--shadow-sm);
+      padding:18px;
+    }
+    .today-edit__title{margin:0;font-size:20px}
+    .today-edit__sub{margin:8px 0 0;color:var(--color-text-muted);font-size:13px;line-height:1.45}
+    .today-edit__form{display:grid;gap:14px;margin-top:16px}
+    .today-edit__field{display:grid;gap:6px}
+    .today-edit__field label,
+    .today-edit__label{color:var(--color-text-muted);font-size:13px;font-weight:800}
+    .today-edit__field select,
+    .today-edit__field textarea,
+    .today-edit__time input{
+      width:100%;
+      min-height:42px;
+      border:1px solid var(--color-border);
+      border-radius:10px;
+      background:var(--surface);
+      color:var(--color-text);
+      padding:8px 10px;
+    }
+    .today-edit__grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+    .today-edit__metric{border:1px solid var(--color-border);border-radius:10px;padding:10px;background:var(--surface)}
+    .today-edit__metric span{display:block;color:var(--color-text-muted);font-size:12px;font-weight:800}
+    .today-edit__metric strong{display:block;margin-top:4px;font-size:18px}
+    .today-edit__times{display:grid;gap:8px}
+    .today-edit__time{display:grid;grid-template-columns:minmax(110px,160px) auto;gap:8px;align-items:center}
+    .today-edit__remove{display:inline-flex;align-items:center;gap:6px;color:var(--color-text-muted);font-size:13px;font-weight:700}
+    .today-edit__remove input{width:18px;height:18px}
+    .today-edit__actions{display:flex;gap:8px;flex-wrap:wrap}
+    .today-edit__errors{display:grid;gap:6px;margin:0;padding:12px 14px;border-radius:10px;background:#fef2f2;color:#991b1b}
+    .today-edit__locked{border:1px solid #fde68a;background:#fffbeb;color:#92400e;border-radius:10px;padding:12px;font-weight:700}
+    .today-edit__empty{color:var(--color-text-muted);font-size:13px}
+    @media (max-width: 640px){
+      .today-edit__grid{grid-template-columns:1fr}
+      .today-edit__time{grid-template-columns:1fr}
+    }
+  </style>
+
+  <div class="today-edit">
+    <section class="today-edit__panel">
+      <h2 class="today-edit__title">Editar horarios de hoje</h2>
+      <p class="today-edit__sub">
+        Voce so pode editar horarios do dia atual. Dias anteriores ficam bloqueados para preservar a seguranca dos relatorios.
+      </p>
+      {% if is_locked %}
+        <div class="today-edit__locked" style="margin-top:12px;">{{ lock_message }}</div>
+      {% endif %}
+      {% if errors %}
+        <ul class="today-edit__errors">
+          {% for error in errors %}<li>{{ error }}</li>{% endfor %}
+        </ul>
+      {% endif %}
+
+      <form method="post" class="today-edit__form" data-submit-once="true">
+        {% csrf_token %}
+        <div class="today-edit__grid">
+          <article class="today-edit__metric"><span>Data atual</span><strong>{{ today|date:"d/m/Y" }}</strong></article>
+          <article class="today-edit__metric"><span>Total do dia</span><strong>{{ total_hours }}</strong></article>
+          <article class="today-edit__metric"><span>Status</span><strong>{% if is_incomplete %}Incompleto{% else %}OK{% endif %}</strong></article>
+        </div>
+
+        <div class="today-edit__field">
+          <label for="contract">Cliente/contrato</label>
+          <select id="contract" name="contract" {% if is_locked %}disabled{% endif %} required>
+            {% for contract in contracts %}
+              <option value="{{ contract.id }}" {% if selected_contract and contract.id == selected_contract.id %}selected{% endif %}>
+                {{ contract.company.name }} - R$ {{ contract.hourly_rate }}/h
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <div class="today-edit__label">Horarios registrados</div>
+          <div class="today-edit__times" id="existingTimes" style="margin-top:8px;">
+            {% for punch in today_punches %}
+              <div class="today-edit__time">
+                <input type="hidden" name="existing_punch_id" value="{{ punch.id }}">
+                <input type="time" name="existing_time" value="{{ punch.timestamp|date:'H:i' }}" {% if is_locked %}disabled{% endif %} required>
+                <label class="today-edit__remove">
+                  <input type="checkbox" name="remove_punch" value="{{ punch.id }}" {% if is_locked %}disabled{% endif %}>
+                  Remover
+                </label>
+              </div>
+            {% empty %}
+              <div class="today-edit__empty">Nenhum horario registrado hoje.</div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div>
+          <div class="today-edit__label">Adicionar horario</div>
+          <div class="today-edit__times" id="newTimes" style="margin-top:8px;">
+            <div class="today-edit__time">
+              <input type="time" name="new_time" {% if is_locked %}disabled{% endif %}>
+              <button class="btn" type="button" data-remove-new {% if is_locked %}disabled{% endif %}>Remover</button>
+            </div>
+          </div>
+          <button class="btn" type="button" id="addTimeBtn" style="margin-top:8px;" {% if is_locked %}disabled{% endif %}>Adicionar horario</button>
+        </div>
+
+        <div class="today-edit__field">
+          <label for="day_note">Observacao</label>
+          <textarea id="day_note" name="day_note" rows="3" placeholder="Opcional" {% if is_locked %}disabled{% endif %}>{{ day_note }}</textarea>
+        </div>
+
+        <div class="today-edit__actions">
+          <button class="btn primary" type="submit" {% if is_locked %}disabled{% endif %}>Salvar alteracoes</button>
+          <a class="btn" href="{% url 'mei_history' %}">Cancelar</a>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <script>
+    (function () {
+      var addBtn = document.getElementById("addTimeBtn");
+      var list = document.getElementById("newTimes");
+      if (!addBtn || !list) return;
+
+      function bindRemove(button) {
+        button.addEventListener("click", function () {
+          var row = button.closest(".today-edit__time");
+          if (row && list.children.length > 1) row.remove();
+          else if (row) {
+            var input = row.querySelector("input");
+            if (input) input.value = "";
+          }
+        });
+      }
+
+      list.querySelectorAll("[data-remove-new]").forEach(bindRemove);
+      addBtn.addEventListener("click", function () {
+        var row = document.createElement("div");
+        row.className = "today-edit__time";
+        row.innerHTML = '<input type="time" name="new_time"><button class="btn" type="button" data-remove-new>Remover</button>';
+        list.appendChild(row);
+        bindRemove(row.querySelector("[data-remove-new]"));
+        row.querySelector("input").focus();
+      });
+    })();
+  </script>
+{% endblock %}

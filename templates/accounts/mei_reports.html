@@ -71,6 +71,9 @@
       {% csrf_token %}
       <input type="hidden" name="action" value="create_report">
       <input type="hidden" name="status" value="DRAFT">
+      <div class="reports-field full">
+        <span class="reports-sub">Ao gerar este relatório, os dias incluídos no período serão bloqueados para edição.</span>
+      </div>
       <div class="reports-field">
         {{ report_form.contract.label_tag }}
         {{ report_form.contract }}
@@ -126,7 +129,6 @@
             <div class="report-metrics">
               <div class="report-metric"><span>Total</span><strong>{{ report.summary_payload.total_hours|default:"-" }}</strong></div>
               <div class="report-metric"><span>Valor estimado</span><strong>{{ report.summary_payload.estimated_value_brl|default:"-" }}</strong></div>
-              <div class="report-metric"><span>Manuais</span><strong>{{ report.summary_payload.manual_count|default:0 }}</strong></div>
               <div class="report-metric"><span>Dias incompletos</span><strong>{{ report.summary_payload.incomplete_days|default:0 }}</strong></div>
             </div>
             <div class="report-card__actions">

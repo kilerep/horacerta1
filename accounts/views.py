@@ -870,6 +870,22 @@ def _build_service_report_payload(contract, date_from, date_to):
     }
 
 
+def _report_locks_day_for_user(user, day):
+    return ServiceReport.objects.filter(
+        employee__user=user,
+        date_from__lte=day,
+        date_to__gte=day,
+    ).exclude(status=ServiceReport.Status.CANCELED).exists()
+
+
+def _today_bounds(day):
+    tz = timezone.get_current_timezone()
+    return (
+        timezone.make_aware(datetime.combine(day, time.min), tz),
+        timezone.make_aware(datetime.combine(day, time.max), tz),
+    )
+
+
 def signup(request):
     if request.user.is_authenticated:
         return _redirect_for_role(request.user)
@@ -4719,6 +4735,154 @@ def mei_history(request):
 
 
 @login_required
+def mei_edit_today_punches(request):
+    denied = _redirect_if_not_mei(request)
+    if denied:
+        return denied
+
+    contracts = list(mei_contracts_for_user(request.user, include_inactive_contracts=False))
+    if not contracts:
+        messages.error(request, "Cadastre um cliente ativo antes de editar os horarios de hoje.")
+        return redirect("mei_panel")
+
+    today = timezone.localdate()
+    is_locked = _report_locks_day_for_user(request.user, today)
+    start_dt, end_dt = _today_bounds(today)
+    contract_ids = [contract.id for contract in contracts]
+    today_punches_qs = (
+        Punch.objects.filter(contract_id__in=contract_ids, timestamp__range=(start_dt, end_dt))
+        .select_related("contract", "contract__company")
+        .order_by("timestamp", "created_at")
+    )
+    today_punches = list(today_punches_qs)
+
+    selected_contract_id = (request.POST.get("contract") or request.GET.get("contract") or "").strip()
+    selected_contract = next((item for item in contracts if str(item.id) == selected_contract_id), None)
+    if not selected_contract and today_punches:
+        selected_contract = next((item for item in contracts if item.id == today_punches[0].contract_id), None)
+    if not selected_contract:
+        selected_contract = contracts[0]
+
+    errors = []
+    note_value = ""
+
+    if request.method == "POST":
+        if is_locked:
+            messages.error(request, "Este dia esta bloqueado porque ja foi incluido em um relatorio gerado.")
+            return redirect("mei_edit_today_punches")
+
+        posted_contract = next((item for item in contracts if str(item.id) == selected_contract_id), None)
+        if not posted_contract:
+            errors.append("Selecione um cliente/contrato ativo da sua conta.")
+        else:
+            selected_contract = posted_contract
+
+        existing_ids = request.POST.getlist("existing_punch_id")
+        existing_times = request.POST.getlist("existing_time")
+        remove_ids = set(request.POST.getlist("remove_punch"))
+        new_times = [(value or "").strip() for value in request.POST.getlist("new_time") if (value or "").strip()]
+        note_value = (request.POST.get("day_note") or "").strip()[:1000]
+
+        today_punches_by_id = {str(punch.id): punch for punch in today_punches}
+        if len(existing_ids) != len(existing_times):
+            errors.append("Nao foi possivel validar os horarios enviados.")
+
+        parsed_existing = []
+        for punch_id, raw_time in zip(existing_ids, existing_times):
+            punch = today_punches_by_id.get(punch_id)
+            if not punch:
+                errors.append("Um dos horarios enviados nao pertence ao dia atual da sua conta.")
+                continue
+            if punch_id in remove_ids:
+                continue
+            try:
+                parsed_time = datetime.strptime((raw_time or "").strip(), "%H:%M").time()
+            except ValueError:
+                errors.append("Informe horarios existentes no formato HH:MM.")
+                continue
+            parsed_existing.append((punch, parsed_time))
+
+        parsed_new = []
+        for raw_time in new_times:
+            try:
+                parsed_new.append(datetime.strptime(raw_time, "%H:%M").time())
+            except ValueError:
+                errors.append("Informe horarios adicionados no formato HH:MM.")
+
+        final_times = [item[1] for item in parsed_existing] + parsed_new
+        if not final_times:
+            errors.append("Mantenha pelo menos um horario no dia atual.")
+
+        sorted_times = sorted(final_times)
+        for idx in range(0, len(sorted_times) - 1, 2):
+            if sorted_times[idx] >= sorted_times[idx + 1]:
+                errors.append("A entrada deve ser menor que a saida em cada par de horarios.")
+                break
+
+        if not errors:
+            tz = timezone.get_current_timezone()
+            with transaction.atomic():
+                for punch_id in remove_ids:
+                    punch = today_punches_by_id.get(punch_id)
+                    if punch and not punch.is_cancelled:
+                        punch.is_cancelled = True
+                        punch.cancelled_at = timezone.now()
+                        punch.cancelled_by = request.user
+                        punch.save(update_fields=["is_cancelled", "cancelled_at", "cancelled_by"])
+
+                for punch, parsed_time in parsed_existing:
+                    punch.timestamp = timezone.make_aware(datetime.combine(today, parsed_time), tz)
+                    punch.contract = selected_contract
+                    if note_value:
+                        punch.note = note_value
+                    update_fields = ["timestamp", "contract"]
+                    if note_value:
+                        update_fields.append("note")
+                    punch.save(update_fields=update_fields)
+
+                for parsed_time in parsed_new:
+                    Punch.objects.create(
+                        contract=selected_contract,
+                        timestamp=timezone.make_aware(datetime.combine(today, parsed_time), tz),
+                        note=note_value,
+                        is_manual=True,
+                        validation_method=Punch.ValidationMethod.FREE_POLICY,
+                        confidence_status=Punch.ConfidenceStatus.FREE,
+                        qr_confirmation_status=Punch.QrConfirmationStatus.NOT_REQUIRED,
+                        audit_payload={"origin": "today_edit"},
+                    )
+
+            messages.success(request, "Horarios de hoje atualizados com sucesso.")
+            return redirect("mei_history")
+
+    today_punches = list(
+        Punch.objects.filter(contract_id__in=contract_ids, timestamp__range=(start_dt, end_dt))
+        .select_related("contract", "contract__company")
+        .order_by("timestamp", "created_at")
+    )
+    local_datetimes = [timezone.localtime(punch.timestamp) for punch in today_punches]
+    total_seconds, is_incomplete = compute_day_total(local_datetimes)
+    active_note = note_value or next((punch.note for punch in today_punches if (punch.note or "").strip()), "")
+
+    return render(
+        request,
+        "accounts/mei_edit_today_punches.html",
+        {
+            "contracts": contracts,
+            "selected_contract": selected_contract,
+            "today": today,
+            "today_punches": today_punches,
+            "total_hours": format_hhmm(total_seconds),
+            "is_incomplete": is_incomplete,
+            "is_locked": is_locked,
+            "lock_message": "Este dia esta bloqueado porque ja foi incluido em um relatorio gerado.",
+            "errors": errors,
+            "day_note": active_note,
+        },
+    )
+
+
+@login_required
 def mei_punch_correction_request(request):
     denied = _redirect_if_not_mei(request)
     if denied:
@@ -5318,15 +5482,13 @@ def _service_report_pdf_response(report):
 
     day_rows = [["Dia", "Horarios", "Total", "Status", "Observacoes"]]
     for day in payload.get("days") or []:
-        status_parts = ["Incompleto" if day.get("is_incomplete") else "OK"]
-        if day.get("manual_count"):
-            status_parts.append(f"{day.get('manual_count')} manual")
+        status_label = "Incompleto" if day.get("is_incomplete") else "OK"
         day_rows.append(
             [
                 Paragraph(pdf_text(day.get("date_label")), styles["SmallMuted"]),
                 Paragraph(pdf_text(", ".join(day.get("punch_times") or []) or "-"), styles["SmallMuted"]),
                 Paragraph(pdf_text(day.get("total_hours")), styles["SmallMuted"]),
-                Paragraph(pdf_text(" / ".join(status_parts)), styles["SmallMuted"]),
+                Paragraph(pdf_text(status_label), styles["SmallMuted"]),
                 Paragraph(pdf_text("; ".join(day.get("notes") or []) or "-"), styles["SmallMuted"]),
             ]
         )

@@ -927,6 +927,137 @@ class MeiMultiCompanyContextTests(TestCase):
         self.assertEqual(Punch.objects.filter(contract=self.contract_a, is_manual=True).count(), 2)
         self.assertEqual(Punch.objects.filter(contract=self.contract_b, is_manual=True).count(), 0)
 
+    def test_mei_can_edit_today_punches_and_switch_contract_for_whole_day(self):
+        today = timezone.localdate()
+        start = timezone.make_aware(datetime.combine(today, datetime.min.time()))
+        punch_a = Punch.objects.create(contract=self.contract_a, timestamp=start + timedelta(hours=8))
+        punch_b = Punch.objects.create(contract=self.contract_a, timestamp=start + timedelta(hours=12))
+
+        response = self.client.get(reverse("mei_edit_today_punches"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Editar horarios de hoje")
+
+        response = self.client.post(
+            reverse("mei_edit_today_punches"),
+            {
+                "contract": str(self.contract_b.id),
+                "existing_punch_id": [str(punch_a.id), str(punch_b.id)],
+                "existing_time": ["07:30", "11:30"],
+                "new_time": ["12:30", "16:30"],
+                "day_note": "Ajuste do dia",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+
+        punches = list(Punch.objects.filter(timestamp__date=today).order_by("timestamp"))
+        self.assertEqual(len(punches), 4)
+        self.assertTrue(all(punch.contract_id == self.contract_b.id for punch in punches))
+        self.assertEqual([timezone.localtime(punch.timestamp).strftime("%H:%M") for punch in punches], ["07:30", "11:30", "12:30", "16:30"])
+        self.assertEqual(Punch.objects.filter(is_manual=True).count(), 2)
+
+    def test_mei_can_remove_wrong_today_punch_but_not_empty_day(self):
+        today = timezone.localdate()
+        start = timezone.make_aware(datetime.combine(today, datetime.min.time()))
+        first = Punch.objects.create(contract=self.contract_a, timestamp=start + timedelta(hours=8))
+        wrong = Punch.objects.create(contract=self.contract_a, timestamp=start + timedelta(hours=9))
+
+        response = self.client.post(
+            reverse("mei_edit_today_punches"),
+            {
+                "contract": str(self.contract_a.id),
+                "existing_punch_id": [str(first.id), str(wrong.id)],
+                "existing_time": ["08:00", "09:00"],
+                "remove_punch": [str(wrong.id)],
+                "new_time": ["12:00"],
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        wrong.refresh_from_db()
+        self.assertTrue(wrong.is_cancelled)
+        self.assertEqual(Punch.objects.filter(timestamp__date=today, is_cancelled=False).count(), 2)
+
+        response = self.client.post(
+            reverse("mei_edit_today_punches"),
+            {
+                "contract": str(self.contract_a.id),
+                "existing_punch_id": [str(first.id)],
+                "existing_time": ["08:00"],
+                "remove_punch": [str(first.id)],
+                "new_time": [""],
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Mantenha pelo menos um horario no dia atual")
+
+    def test_mei_today_edit_is_blocked_after_generated_report(self):
+        today = timezone.localdate()
+        start = timezone.make_aware(datetime.combine(today, datetime.min.time()))
+        punch = Punch.objects.create(contract=self.contract_a, timestamp=start + timedelta(hours=8))
+        ServiceReport.objects.create(
+            company=self.company_a,
+            employee=self.employee_a,
+            contract=self.contract_a,
+            date_from=today,
+            date_to=today,
+            report_date=today,
+            status=ServiceReport.Status.DRAFT,
+            title="Fechamento do dia",
+            summary_payload={},
+        )
+
+        response = self.client.get(reverse("mei_edit_today_punches"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Este dia esta bloqueado porque ja foi incluido em um relatorio gerado")
+
+        response = self.client.post(
+            reverse("mei_edit_today_punches"),
+            {
+                "contract": str(self.contract_a.id),
+                "existing_punch_id": [str(punch.id)],
+                "existing_time": ["10:00"],
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        punch.refresh_from_db()
+        self.assertEqual(timezone.localtime(punch.timestamp).strftime("%H:%M"), "08:00")
+
+    def test_mei_cannot_edit_using_contract_from_other_user(self):
+        other_user = User.objects.create_user(
+            username="mei.alien@example.com",
+            email="mei.alien@example.com",
+            password="Senha@12345",
+            role=User.Role.FUNCIONARIO,
+        )
+        other_employee = Employee.objects.create(
+            user=other_user,
+            company=self.company_a,
+            full_name="MEI Alien",
+            is_active=True,
+        )
+        other_contract = Contract.objects.create(
+            employee=other_employee,
+            company=self.company_a,
+            hourly_rate="90.00",
+            start_date=timezone.localdate() - timedelta(days=1),
+            is_active=True,
+        )
+        today = timezone.localdate()
+        start = timezone.make_aware(datetime.combine(today, datetime.min.time()))
+        punch = Punch.objects.create(contract=self.contract_a, timestamp=start + timedelta(hours=8))
+
+        response = self.client.post(
+            reverse("mei_edit_today_punches"),
+            {
+                "contract": str(other_contract.id),
+                "existing_punch_id": [str(punch.id)],
+                "existing_time": ["09:00"],
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Selecione um cliente/contrato ativo da sua conta")
+        punch.refresh_from_db()
+        self.assertEqual(timezone.localtime(punch.timestamp).strftime("%H:%M"), "08:00")
+
     def test_mei_report_can_be_created_without_description_and_shared_securely(self):
         today = timezone.localdate()
         start = timezone.make_aware(datetime.combine(today, datetime.min.time()))
@@ -984,6 +1115,10 @@ class MeiMultiCompanyContextTests(TestCase):
         public_url = reverse("public_service_report_conference", args=[report.conference_token])
         public_response = self.client.get(public_url)
         self.assertEqual(public_response.status_code, 200)
+        self.assertNotContains(public_response, "manual")
+        self.assertNotContains(public_response, "Manual")
+        self.assertNotContains(public_response, "Localizacao")
+        self.assertNotContains(public_response, "Localização")
         report.refresh_from_db()
         self.assertIsNotNone(report.conference_first_viewed_at)
         self.assertEqual(report.status, ServiceReport.Status.VIEWED)

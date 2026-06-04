@@ -104,6 +104,7 @@ urlpatterns = [
     path("me/painel/", views.mei_panel, name="mei_panel"),
     path("me/profile/", views.mei_profile, name="mei_profile"),
     path("me/historico/", views.mei_history, name="mei_history"),
+    path("me/editar-horarios-hoje/", views.mei_edit_today_punches, name="mei_edit_today_punches"),
     path("me/reportar-problema-ponto/", views.mei_punch_correction_request, name="mei_punch_correction_request"),
     path("me/notificacoes/", views.mei_notifications, name="mei_notifications"),
     path("me/notificacoes/<uuid:notification_id>/acao/", views.mei_notification_action, name="mei_notification_action"),
