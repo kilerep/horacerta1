@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="manifest" href="{% url 'pwa_manifest' %}">
   <meta name="application-name" content="HoraCerta">
-  <meta name="theme-color" content="#1d4ed8">
+  <meta name="theme-color" content="#0b1220">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="HoraCerta">
@@ -49,7 +49,7 @@
   </style>
   {% block extra_head %}{% endblock %}
 </head>
-<body data-theme="executive-blue" data-default-theme="executive-blue" data-theme-company="{{ header_company_theme|default:'' }}" data-theme-user="{{ header_user_theme|default:'' }}">
+<body data-theme="graphite-premium" data-default-theme="graphite-premium" data-theme-company="{{ header_company_theme|default:'' }}" data-theme-user="{{ header_user_theme|default:'' }}">
   <header class="header-wrap">
     <div class="container">
       <div class="header">
@@ -64,9 +64,10 @@
           <div class="theme-switch" aria-label="Tema visual">
             <span class="theme-switch__label">Tema</span>
             <select class="theme-switch__select" data-theme-control>
-              <option value="executive-blue">Azul Executivo Premium</option>
               <option value="graphite-premium">Grafite Premium</option>
-              <option value="corporate-light-blue">Azul Claro Corporativo</option>
+              <option value="professional-neutral">Neutro Profissional</option>
+              <option value="brazil-corporate">Brasil Corporativo</option>
+              <option value="rubro-professional">Rubro Profissional</option>
             </select>
           </div>
           <a class="link hide-sm" href="{% url 'landing' %}#como-funciona">Como funciona</a>

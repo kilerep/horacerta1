@@ -41,7 +41,7 @@
     }
   </style>
 </head>
-<body data-theme="executive-blue" data-default-theme="executive-blue" data-theme-company="{{ header_company_theme|default:'' }}" data-theme-user="{{ header_user_theme|default:'' }}" class="{% block body_class %}{% endblock %}">
+<body data-theme="graphite-premium" data-default-theme="graphite-premium" data-theme-company="{{ header_company_theme|default:'' }}" data-theme-user="{{ header_user_theme|default:'' }}" class="{% block body_class %}{% endblock %}">
   <div class="wrap">
     <header>
       <div class="brand">
@@ -55,9 +55,10 @@
         <div class="theme-switch" aria-label="Tema visual">
           <span class="theme-switch__label">Tema</span>
           <select class="theme-switch__select" data-theme-control>
-            <option value="executive-blue">Azul Executivo Premium</option>
             <option value="graphite-premium">Grafite Premium</option>
-            <option value="corporate-light-blue">Azul Claro Corporativo</option>
+            <option value="professional-neutral">Neutro Profissional</option>
+            <option value="brazil-corporate">Brasil Corporativo</option>
+            <option value="rubro-professional">Rubro Profissional</option>
           </select>
         </div>
         <a class="btn" href="{% url 'help' %}">Ajuda</a>

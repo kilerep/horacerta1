@@ -1,0 +1,82 @@
+{% extends "accounts/base.html" %}
+{% block title %}Relatorio de servico{% endblock %}
+{% block page_title %}Relatorio de servico{% endblock %}
+
+{% block content %}
+  <style>
+    .service-report-prep{display:grid;gap:14px;max-width:920px}
+    .service-report-prep__panel{
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:16px;
+      background:
+        radial-gradient(circle at 12% 0, rgba(79,124,255,.16), transparent 42%),
+        linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      box-shadow:var(--shadow);
+    }
+    .service-report-prep__title{margin:0;font-size:22px;line-height:1.15}
+    .service-report-prep__sub{margin:8px 0 0;color:var(--muted);font-size:13px;line-height:1.45}
+    .service-report-prep__grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}
+    .service-report-prep__field{display:grid;gap:6px}
+    .service-report-prep__field--full{grid-column:1 / -1}
+    .service-report-prep__field label{font-size:12px;font-weight:800;color:var(--muted)}
+    .service-report-prep__field input,
+    .service-report-prep__field textarea{
+      width:100%;
+      border:1px solid var(--border);
+      border-radius:12px;
+      background:rgba(255,255,255,.06);
+      color:var(--text);
+      padding:11px 12px;
+    }
+    .service-report-prep__field textarea{resize:vertical}
+    .service-report-prep__actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+    @media (max-width:640px){
+      .service-report-prep__grid{grid-template-columns:1fr}
+      .service-report-prep__actions .btn{width:100%;justify-content:center}
+    }
+  </style>
+
+  <div class="service-report-prep">
+    <section class="service-report-prep__panel">
+      <h2 class="service-report-prep__title">Relatorio de servico por periodo</h2>
+      <p class="service-report-prep__sub">Em breve: relatorio de servico por periodo. Este fluxo sera separado do relatorio de horas.</p>
+
+      <div class="service-report-prep__grid" aria-label="Estrutura futura do relatorio de servico">
+        <div class="service-report-prep__field">
+          <label>Cliente</label>
+          <input type="text" value="{{ contract.company.name }}" disabled>
+        </div>
+        <div class="service-report-prep__field">
+          <label>Data de emissao</label>
+          <input type="date" value="{{ issued_at|date:'Y-m-d' }}" disabled>
+        </div>
+        <div class="service-report-prep__field">
+          <label>Data inicial</label>
+          <input type="date" value="{{ date_from|date:'Y-m-d' }}" disabled>
+        </div>
+        <div class="service-report-prep__field">
+          <label>Data final</label>
+          <input type="date" value="{{ date_to|date:'Y-m-d' }}" disabled>
+        </div>
+        <div class="service-report-prep__field service-report-prep__field--full">
+          <label>Titulo</label>
+          <input type="text" value="Relatorio de servico - {{ contract.company.name }}" disabled>
+        </div>
+        <div class="service-report-prep__field service-report-prep__field--full">
+          <label>Descricao dos servicos realizados</label>
+          <textarea rows="5" disabled>Durante o periodo informado, descreva aqui os servicos executados para este cliente.</textarea>
+        </div>
+        <div class="service-report-prep__field service-report-prep__field--full">
+          <label>Observacoes opcionais</label>
+          <textarea rows="3" disabled></textarea>
+        </div>
+      </div>
+
+      <div class="service-report-prep__actions">
+        <a class="btn" href="{% url 'mei_contract' %}?contract={{ contract.id }}">Voltar aos detalhes</a>
+        <span class="btn primary" aria-disabled="true">Geracao em breve</span>
+      </div>
+    </section>
+  </div>
+{% endblock %}

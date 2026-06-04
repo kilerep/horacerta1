@@ -1,6 +1,6 @@
 (function () {
   var STORAGE_KEY = "hc_theme";
-  var THEMES = ["executive-blue", "graphite-premium", "corporate-light-blue"];
+  var THEMES = ["graphite-premium", "professional-neutral", "brazil-corporate", "rubro-professional"];
 
   function isValidTheme(theme) {
     return THEMES.indexOf(theme) !== -1;
@@ -8,7 +8,7 @@
 
   function getInitialTheme() {
     var body = document.body;
-    if (!body) return "executive-blue";
+    if (!body) return "graphite-premium";
 
     var persisted = "";
     try {
@@ -31,7 +31,7 @@
     var inlineTheme = (body.getAttribute("data-theme") || "").trim();
     if (isValidTheme(inlineTheme)) return inlineTheme;
 
-    return "executive-blue";
+    return "graphite-premium";
   }
 
   function applyTheme(theme) {

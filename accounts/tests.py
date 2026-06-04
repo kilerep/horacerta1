@@ -864,6 +864,51 @@ class MeiMultiCompanyContextTests(TestCase):
         self.assertEqual(response_zero_rate.context["summary_estimated_value_brl"], "R$ 0,00")
         self.assertEqual(response_zero_rate.context["history_rows"][0]["estimated_value_brl"], "R$ 0,00")
 
+    def test_mei_clients_listing_is_clean_and_detail_holds_actions(self):
+        ServiceReport.objects.create(
+            company=self.company_a,
+            employee=self.employee_a,
+            contract=self.contract_a,
+            report_date=timezone.localdate(),
+            date_from=timezone.localdate(),
+            date_to=timezone.localdate(),
+            title="Relatorio de horas A",
+            summary_payload={},
+        )
+
+        response = self.client.get(reverse("mei_contract"), {"contract": str(self.contract_a.id)})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["selected_client_row"]["contract"].id, self.contract_a.id)
+        self.assertEqual(response.context["selected_client_row"]["reports_count"], 1)
+        self.assertContains(response, "Ver detalhes")
+        self.assertContains(response, "Detalhes do cliente")
+        self.assertContains(response, "Editar contrato")
+        self.assertContains(response, "Ver histórico")
+        self.assertContains(response, "Gerar relatório de horas")
+        self.assertContains(response, "Gerar relatório de serviço")
+        self.assertContains(response, "Pausar cliente")
+        self.assertContains(response, "Encerrar contrato")
+        self.assertNotContains(response, "Editar dados")
+
+    def test_mei_service_report_prepare_page_is_future_ready(self):
+        response = self.client.get(reverse("mei_service_report_prepare", args=[self.contract_a.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.company_a.name)
+        self.assertContains(response, "Em breve: relatorio de servico por periodo")
+        self.assertContains(response, "Relatorio de servico -")
+
+    def test_theme_selector_uses_graphite_default_and_professional_themes(self):
+        self.client.logout()
+        response = self.client.get(reverse("login"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'data-default-theme="graphite-premium"')
+        self.assertContains(response, "Grafite Premium")
+        self.assertContains(response, "Neutro Profissional")
+        self.assertContains(response, "Brasil Corporativo")
+        self.assertContains(response, "Rubro Profissional")
+        self.assertNotContains(response, "Azul Executivo Premium")
+        self.assertNotContains(response, "Azul Claro Corporativo")
+
     def test_mei_reports_and_requests_follow_selected_contract(self):
         ServiceReport.objects.create(
             company=self.company_a,

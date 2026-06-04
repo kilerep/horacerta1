@@ -249,3 +249,187 @@
 
   --overlay-bg: rgba(15, 23, 42, 0.42);
 }
+
+[data-theme="professional-neutral"] {
+  color-scheme: dark;
+
+  --color-primary: #e5e7eb;
+  --color-primary-hover: #d1d5db;
+  --color-secondary: #9ca3af;
+  --color-bg: #0f1115;
+  --color-surface: #181b22;
+  --color-text-strong: #f5f5f5;
+  --color-text-muted: #a7aab3;
+  --color-border: #343a46;
+  --color-success: #22c55e;
+  --color-warning: #d6b13f;
+  --color-danger: #ef4444;
+
+  --surface-raised: #181b22;
+  --surface-subtle: #12151b;
+  --surface-soft: #20242d;
+  --surface-brand-soft: rgba(229, 231, 235, 0.12);
+  --surface-brand-strong: linear-gradient(180deg, #f3f4f6, #d1d5db);
+
+  --text-inverse: #111827;
+  --border-strong: #4b5563;
+  --border-brand: #6b7280;
+  --icon-bg: rgba(229, 231, 235, 0.1);
+  --icon-border: #4b5563;
+  --icon-fg: #f5f5f5;
+  --menu-hover-bg: #20242d;
+  --menu-active-bg: linear-gradient(90deg, rgba(229, 231, 235, 0.16), rgba(229, 231, 235, 0.06));
+  --menu-active-border: #6b7280;
+  --menu-active-text: #ffffff;
+  --btn-bg: #181b22;
+  --btn-border: #343a46;
+  --btn-text: #f5f5f5;
+  --btn-hover-bg: #20242d;
+  --btn-hover-border: #4b5563;
+  --btn-primary-shadow: 0 10px 20px rgba(229, 231, 235, 0.14);
+  --field-bg: #181b22;
+  --field-border: #343a46;
+  --field-placeholder: #8b909b;
+  --select-arrow: #e5e7eb;
+  --file-btn-bg: rgba(229, 231, 235, 0.12);
+  --file-btn-border: #4b5563;
+  --file-btn-text: #f5f5f5;
+  --table-row-hover: #20242d;
+  --badge-bg: #20242d;
+  --badge-border: #343a46;
+  --badge-text: #d1d5db;
+  --badge-solid-bg: #e5e7eb;
+  --badge-solid-text: #111827;
+  --success-bg: rgba(34, 197, 94, 0.14);
+  --success-border: rgba(34, 197, 94, 0.42);
+  --success-text: #bbf7d0;
+  --warning-bg: rgba(214, 177, 63, 0.14);
+  --warning-border: rgba(214, 177, 63, 0.42);
+  --warning-text: #f5df8e;
+  --danger-bg: rgba(239, 68, 68, 0.15);
+  --danger-border: rgba(239, 68, 68, 0.45);
+  --danger-text: #fecaca;
+  --overlay-bg: rgba(5, 7, 10, 0.7);
+}
+
+[data-theme="brazil-corporate"] {
+  color-scheme: dark;
+
+  --color-primary: #1f8f4d;
+  --color-primary-hover: #17743e;
+  --color-secondary: #d6b13f;
+  --color-bg: #07130d;
+  --color-surface: #102018;
+  --color-text-strong: #f8fafc;
+  --color-text-muted: #b7c8bd;
+  --color-border: #1f3d2a;
+  --color-success: #22c55e;
+  --color-warning: #d6b13f;
+  --color-danger: #ef4444;
+
+  --surface-raised: #102018;
+  --surface-subtle: #0b1710;
+  --surface-soft: #152a1d;
+  --surface-brand-soft: rgba(31, 143, 77, 0.18);
+  --surface-brand-strong: linear-gradient(180deg, #1f8f4d, #17743e);
+  --text-inverse: #f8fafc;
+  --border-strong: #2b5a3a;
+  --border-brand: rgba(31, 143, 77, 0.62);
+  --icon-bg: rgba(31, 143, 77, 0.16);
+  --icon-border: rgba(214, 177, 63, 0.35);
+  --icon-fg: #d6b13f;
+  --menu-hover-bg: #152a1d;
+  --menu-active-bg: linear-gradient(90deg, rgba(31, 143, 77, 0.24), rgba(37, 99, 235, 0.08));
+  --menu-active-border: rgba(31, 143, 77, 0.55);
+  --menu-active-text: #f8fafc;
+  --btn-bg: #102018;
+  --btn-border: #1f3d2a;
+  --btn-text: #f8fafc;
+  --btn-hover-bg: #152a1d;
+  --btn-hover-border: #2b5a3a;
+  --btn-primary-shadow: 0 10px 20px rgba(31, 143, 77, 0.3);
+  --field-bg: #102018;
+  --field-border: #1f3d2a;
+  --field-placeholder: #8fa99a;
+  --select-arrow: #d6b13f;
+  --file-btn-bg: rgba(31, 143, 77, 0.16);
+  --file-btn-border: rgba(214, 177, 63, 0.35);
+  --file-btn-text: #f8fafc;
+  --table-row-hover: #152a1d;
+  --badge-bg: #152a1d;
+  --badge-border: #1f3d2a;
+  --badge-text: #b7c8bd;
+  --badge-solid-bg: #1f8f4d;
+  --badge-solid-text: #f8fafc;
+  --success-bg: rgba(31, 143, 77, 0.16);
+  --success-border: rgba(31, 143, 77, 0.5);
+  --success-text: #bbf7d0;
+  --warning-bg: rgba(214, 177, 63, 0.14);
+  --warning-border: rgba(214, 177, 63, 0.44);
+  --warning-text: #f5df8e;
+  --danger-bg: rgba(239, 68, 68, 0.15);
+  --danger-border: rgba(239, 68, 68, 0.45);
+  --danger-text: #fecaca;
+  --overlay-bg: rgba(3, 9, 6, 0.72);
+}
+
+[data-theme="rubro-professional"] {
+  color-scheme: dark;
+
+  --color-primary: #c62828;
+  --color-primary-hover: #7f1d1d;
+  --color-secondary: #ef4444;
+  --color-bg: #0b0b0d;
+  --color-surface: #171717;
+  --color-text-strong: #f5f5f5;
+  --color-text-muted: #b8b8b8;
+  --color-border: #3a1f1f;
+  --color-success: #22c55e;
+  --color-warning: #d6b13f;
+  --color-danger: #ef4444;
+
+  --surface-raised: #171717;
+  --surface-subtle: #101012;
+  --surface-soft: #211818;
+  --surface-brand-soft: rgba(198, 40, 40, 0.18);
+  --surface-brand-strong: linear-gradient(180deg, #c62828, #7f1d1d);
+  --text-inverse: #ffffff;
+  --border-strong: #573030;
+  --border-brand: rgba(198, 40, 40, 0.56);
+  --icon-bg: rgba(198, 40, 40, 0.16);
+  --icon-border: rgba(198, 40, 40, 0.42);
+  --icon-fg: #fecaca;
+  --menu-hover-bg: #211818;
+  --menu-active-bg: linear-gradient(90deg, rgba(198, 40, 40, 0.24), rgba(198, 40, 40, 0.08));
+  --menu-active-border: rgba(198, 40, 40, 0.5);
+  --menu-active-text: #ffffff;
+  --btn-bg: #171717;
+  --btn-border: #3a1f1f;
+  --btn-text: #f5f5f5;
+  --btn-hover-bg: #211818;
+  --btn-hover-border: #573030;
+  --btn-primary-shadow: 0 10px 20px rgba(198, 40, 40, 0.32);
+  --field-bg: #171717;
+  --field-border: #3a1f1f;
+  --field-placeholder: #8f8585;
+  --select-arrow: #f5f5f5;
+  --file-btn-bg: rgba(198, 40, 40, 0.16);
+  --file-btn-border: rgba(198, 40, 40, 0.42);
+  --file-btn-text: #f5f5f5;
+  --table-row-hover: #211818;
+  --badge-bg: #211818;
+  --badge-border: #3a1f1f;
+  --badge-text: #d1d1d1;
+  --badge-solid-bg: #c62828;
+  --badge-solid-text: #ffffff;
+  --success-bg: rgba(34, 197, 94, 0.14);
+  --success-border: rgba(34, 197, 94, 0.42);
+  --success-text: #bbf7d0;
+  --warning-bg: rgba(214, 177, 63, 0.14);
+  --warning-border: rgba(214, 177, 63, 0.44);
+  --warning-text: #f5df8e;
+  --danger-bg: rgba(239, 68, 68, 0.18);
+  --danger-border: rgba(239, 68, 68, 0.5);
+  --danger-text: #fecaca;
+  --overlay-bg: rgba(5, 5, 7, 0.75);
+}

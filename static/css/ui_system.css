@@ -130,7 +130,10 @@ input[type="date"] {
 }
 
 [data-theme="graphite-premium"] input[type="date"],
-[data-theme="executive-blue-dark"] input[type="date"] {
+[data-theme="executive-blue-dark"] input[type="date"],
+[data-theme="professional-neutral"] input[type="date"],
+[data-theme="brazil-corporate"] input[type="date"],
+[data-theme="rubro-professional"] input[type="date"] {
   color-scheme: dark;
 }
 

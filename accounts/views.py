@@ -4990,11 +4990,11 @@ def mei_contract(request):
     selected_contract_id = (request.GET.get("contract") or "").strip()
 
     active_contract = None
-    if active_contracts:
+    if all_contracts:
         if selected_contract_id:
-            active_contract = next((c for c in active_contracts if str(c.id) == selected_contract_id), None)
+            active_contract = next((c for c in all_contracts if str(c.id) == selected_contract_id), None)
         if not active_contract:
-            active_contract = active_contracts[0]
+            active_contract = active_contracts[0] if active_contracts else all_contracts[0]
 
     today = timezone.localdate()
     month_start = today.replace(day=1)
@@ -5022,8 +5022,17 @@ def mei_contract(request):
             last_punch_by_contract.setdefault(punch.contract_id, punch)
 
     client_rows = []
+    selected_client_row = None
     total_month_seconds = 0
     total_estimated_value = Decimal("0.00")
+    report_counts_by_contract = {}
+    if contract_ids:
+        report_counts_by_contract = dict(
+            ServiceReport.objects.filter(contract_id__in=contract_ids)
+            .values_list("contract_id")
+            .annotate(total=Count("id"))
+        )
+
     for contract in all_contracts:
         month_rows, _max_cols = build_daily_summary(monthly_punches_by_contract.get(contract.id, []), min_punch_columns=4)
         month_seconds = sum(row["total_seconds"] for row in month_rows)
@@ -5033,21 +5042,26 @@ def mei_contract(request):
         total_month_seconds += month_seconds
         total_estimated_value += estimated_value
         last_punch = last_punch_by_contract.get(contract.id)
-        client_rows.append(
-            {
-                "contract": contract,
-                "status": _contract_status_for_mei(contract),
-                "total_hours_month": format_hhmm(month_seconds),
-                "estimated_value": estimated_value,
-                "estimated_value_brl": _format_brl(estimated_value),
-                "last_punch": last_punch,
-                "last_punch_label": timezone.localtime(last_punch.timestamp).strftime("%d/%m/%Y %H:%M")
-                if last_punch
-                else "Sem registros",
-                "details_url": f"{reverse('mei_contract')}?contract={contract.id}",
-                "report_url": f"{reverse('mei_reports')}?contract={contract.id}",
-            }
-        )
+        row = {
+            "contract": contract,
+            "status": _contract_status_for_mei(contract),
+            "total_hours_month": format_hhmm(month_seconds),
+            "estimated_value": estimated_value,
+            "estimated_value_brl": _format_brl(estimated_value),
+            "last_punch": last_punch,
+            "last_punch_label": timezone.localtime(last_punch.timestamp).strftime("%d/%m/%Y %H:%M")
+            if last_punch
+            else "Sem registros",
+            "reports_count": report_counts_by_contract.get(contract.id, 0),
+            "details_url": f"{reverse('mei_contract')}?contract={contract.id}",
+            "history_url": f"{reverse('mei_history')}?contract={contract.id}",
+            "report_url": f"{reverse('mei_reports')}?contract={contract.id}",
+            "service_report_url": reverse("mei_service_report_prepare", args=[contract.id]),
+            "edit_url": reverse("mei_client_edit", args=[contract.id]),
+        }
+        client_rows.append(row)
+        if active_contract and contract.id == active_contract.id:
+            selected_client_row = row
 
     return render(
         request,
@@ -5058,11 +5072,35 @@ def mei_contract(request):
             "inactive_contracts": inactive_contracts,
             "all_contracts": all_contracts,
             "client_rows": client_rows,
+            "selected_client_row": selected_client_row,
             "active_clients_count": len(active_contracts),
             "inactive_clients_count": len(inactive_contracts),
             "current_period_label": _month_label_ptbr(today),
             "total_hours_month": format_hhmm(total_month_seconds),
             "total_estimated_value_brl": _format_brl(total_estimated_value.quantize(Decimal("0.01"))),
+        },
+    )
+
+
+@login_required
+def mei_service_report_prepare(request, contract_id):
+    denied = _redirect_if_not_mei(request)
+    if denied:
+        return denied
+
+    contract = get_object_or_404(
+        mei_contracts_for_user(request.user, include_inactive_contracts=True),
+        id=contract_id,
+    )
+    today = timezone.localdate()
+    return render(
+        request,
+        "accounts/mei_service_report_prepare.html",
+        {
+            "contract": contract,
+            "date_from": today.replace(day=1),
+            "date_to": today,
+            "issued_at": today,
         },
     )
 

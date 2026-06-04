@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="HoraCerta">
-  <meta name="theme-color" content="#1d4ed8">
+  <meta name="theme-color" content="#0b1220">
   <link rel="apple-touch-icon" href="{% static 'pwa/apple-touch-icon-180.png' %}">
   <link rel="icon" type="image/png" sizes="32x32" href="{% static 'pwa/favicon-32.png' %}">
   <meta charset="utf-8" />
@@ -23,8 +23,8 @@
 
 <!-- Mudanca aqui -->
 <body
-  data-theme="executive-blue"
-  data-default-theme="executive-blue"
+  data-theme="graphite-premium"
+  data-default-theme="graphite-premium"
   data-theme-company="{{ header_company_theme|default:'' }}"
   data-theme-user="{{ header_user_theme|default:'' }}"
   data-company-plan-code="{{ header_current_plan_code|default:'' }}"
@@ -213,9 +213,10 @@
             <div class="theme-switch" aria-label="Tema visual">
               <span class="theme-switch__label">Tema</span>
               <select class="theme-switch__select" data-theme-control>
-                <option value="executive-blue">Azul Executivo Premium</option>
                 <option value="graphite-premium">Grafite Premium</option>
-                <option value="corporate-light-blue">Azul Claro Corporativo</option>
+                <option value="professional-neutral">Neutro Profissional</option>
+                <option value="brazil-corporate">Brasil Corporativo</option>
+                <option value="rubro-professional">Rubro Profissional</option>
               </select>
             </div>
           </div>
@@ -237,9 +238,10 @@
           <div class="theme-switch" aria-label="Tema visual">
             <span class="theme-switch__label">Tema</span>
             <select class="theme-switch__select" data-theme-control>
-              <option value="executive-blue">Azul Executivo Premium</option>
               <option value="graphite-premium">Grafite Premium</option>
-              <option value="corporate-light-blue">Azul Claro Corporativo</option>
+              <option value="professional-neutral">Neutro Profissional</option>
+              <option value="brazil-corporate">Brasil Corporativo</option>
+              <option value="rubro-professional">Rubro Profissional</option>
             </select>
           </div>
           <a class="btn" href="{% url 'help' %}">Central de ajuda</a>

@@ -40,19 +40,28 @@
     .client-status.pending{ color:#ffe7ad; border-color:rgba(255,176,32,.42); background:rgba(255,176,32,.12); }
     .client-status.warn{ color:#ffd8d8; border-color:rgba(255,94,94,.38); background:rgba(255,94,94,.12); }
     .client-status.muted{ color:var(--muted); background:rgba(255,255,255,.05); }
-    .client-metrics{ display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; }
+    .client-metrics{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
     .client-metric{ border:1px solid rgba(255,255,255,.09); border-radius:12px; padding:10px; background:rgba(255,255,255,.03); }
     .client-metric span{ display:block; color:var(--muted); font-size:11px; }
     .client-metric strong{ display:block; margin-top:3px; font-size:15px; }
     .client-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+    .client-actions--detail{ margin-top:12px; }
     .btn[aria-disabled="true"]{ opacity:.48; cursor:not-allowed; }
+    .client-detail-grid{ display:grid; grid-template-columns:1.1fr .9fr; gap:12px; }
+    .client-detail-box{ border:1px solid rgba(255,255,255,.09); border-radius:12px; padding:12px; background:rgba(255,255,255,.03); min-width:0; }
+    .client-detail-box h3{ margin:0 0 10px; font-size:16px; }
+    .client-detail-list{ display:grid; gap:8px; }
+    .client-detail-item{ display:grid; grid-template-columns:minmax(120px,.5fr) 1fr; gap:8px; }
+    .client-detail-item span{ color:var(--muted); font-size:12px; font-weight:800; }
+    .client-detail-item strong{ font-size:14px; overflow-wrap:anywhere; }
     .clients-empty{ border:1px dashed rgba(255,255,255,.18); border-radius:14px; padding:18px; background:rgba(255,255,255,.03); }
     .clients-empty h2{ margin:0; font-size:20px; }
     .clients-empty p{ margin:8px 0 0; color:var(--muted); }
     .clients-note{ color:var(--muted); font-size:12px; margin:10px 0 0; }
     @media (max-width: 900px){
       .clients-summary,
-      .client-metrics{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .client-metrics,
+      .client-detail-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); }
     }
     @media (max-width: 640px){
       .clients-hero__top,
@@ -60,7 +69,9 @@
       .clients-actions .btn,
       .client-actions .btn{ width:100%; justify-content:center; }
       .clients-summary,
-      .client-metrics{ grid-template-columns:1fr; }
+      .client-metrics,
+      .client-detail-grid,
+      .client-detail-item{ grid-template-columns:1fr; }
     }
   </style>
 
@@ -111,24 +122,66 @@
 
               <div class="client-metrics">
                 <div class="client-metric"><span>Valor por hora</span><strong>R$ {{ row.contract.hourly_rate }}/h</strong></div>
-                <div class="client-metric"><span>Fechamento</span><strong>{{ row.contract.get_closure_type_display }}</strong></div>
                 <div class="client-metric"><span>Horas no mês</span><strong>{{ row.total_hours_month }}</strong></div>
                 <div class="client-metric"><span>Valor estimado</span><strong>{{ row.estimated_value_brl }}</strong></div>
-                <div class="client-metric"><span>Último registro</span><strong>{{ row.last_punch_label }}</strong></div>
               </div>
 
               <div class="client-actions">
                 <a class="btn" href="{{ row.details_url }}">Ver detalhes</a>
-                <a class="btn" href="{{ row.report_url }}">Gerar relatório</a>
-                <span class="btn" aria-disabled="true" title="Pausar cliente depende de fluxo MEI-side.">Pausar</span>
-                <span class="btn" aria-disabled="true" title="Encerrar cliente depende de fluxo MEI-side.">Encerrar</span>
-                <a class="btn" href="{% url 'mei_client_edit' row.contract.id %}">Editar dados</a>
               </div>
             </article>
           {% endfor %}
         </div>
-        <p class="clients-note">Ações de pausa, encerramento e edição estão preservadas visualmente, mas dependem de modelagem específica para o profissional gerenciar clientes sem apagar histórico.</p>
       </section>
+
+      {% if selected_client_row %}
+        {% with row=selected_client_row contract=selected_client_row.contract company=selected_client_row.contract.company %}
+          <section class="clients-panel">
+            <div class="clients-section-head">
+              <div>
+                <h2>Detalhes do cliente</h2>
+                <p>Ações completas e contexto operacional de {{ company.name }}.</p>
+              </div>
+              <span class="client-status {{ row.status.tone }}">{{ row.status.label }}</span>
+            </div>
+
+            <div class="client-detail-grid">
+              <article class="client-detail-box">
+                <h3>Dados do cliente</h3>
+                <div class="client-detail-list">
+                  <div class="client-detail-item"><span>Nome</span><strong>{{ company.name }}</strong></div>
+                  <div class="client-detail-item"><span>Status</span><strong>{{ row.status.label }}</strong></div>
+                  <div class="client-detail-item"><span>Valor/hora</span><strong>R$ {{ contract.hourly_rate }}/h</strong></div>
+                  <div class="client-detail-item"><span>Data de início</span><strong>{{ contract.start_date|date:"d/m/Y"|default:"-" }}</strong></div>
+                  <div class="client-detail-item"><span>Fechamento</span><strong>{{ contract.get_closure_type_display }}</strong></div>
+                  <div class="client-detail-item"><span>Contato</span><strong>{{ company.contact_name|default:"-" }}</strong></div>
+                  <div class="client-detail-item"><span>WhatsApp</span><strong>{{ company.whatsapp|default:company.phone|default:"-" }}</strong></div>
+                  <div class="client-detail-item"><span>Observações</span><strong>{{ contract.notes|default:"-" }}</strong></div>
+                </div>
+              </article>
+
+              <article class="client-detail-box">
+                <h3>Resumo</h3>
+                <div class="client-detail-list">
+                  <div class="client-detail-item"><span>Horas no mês</span><strong>{{ row.total_hours_month }}</strong></div>
+                  <div class="client-detail-item"><span>Valor estimado</span><strong>{{ row.estimated_value_brl }}</strong></div>
+                  <div class="client-detail-item"><span>Último registro</span><strong>{{ row.last_punch_label }}</strong></div>
+                  <div class="client-detail-item"><span>Relatórios gerados</span><strong>{{ row.reports_count }}</strong></div>
+                </div>
+              </article>
+            </div>
+
+            <div class="client-actions client-actions--detail">
+              <a class="btn" href="{{ row.edit_url }}">Editar contrato</a>
+              <a class="btn" href="{{ row.history_url }}">Ver histórico</a>
+              <a class="btn primary" href="{{ row.report_url }}">Gerar relatório de horas</a>
+              <a class="btn" href="{{ row.service_report_url }}">Gerar relatório de serviço</a>
+              <span class="btn" aria-disabled="true" title="Em breve: pausa de cliente pelo profissional.">Pausar cliente</span>
+              <span class="btn" aria-disabled="true" title="Em breve: encerramento de contrato pelo profissional.">Encerrar contrato</span>
+            </div>
+          </section>
+        {% endwith %}
+      {% endif %}
     {% else %}
       <section class="clients-panel">
         <div class="clients-empty">
