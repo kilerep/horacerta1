@@ -208,6 +208,20 @@
       color:var(--text);
       overflow-wrap:anywhere;
     }
+    .mei-history__day-total-row{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .mei-history__day-money{
+      color:#2dd391;
+      font-size:15px;
+      font-weight:900;
+      line-height:1.2;
+      text-align:right;
+      white-space:nowrap;
+    }
     .mei-history__empty-state{
       margin-top:12px;
       border:1px dashed var(--border);
@@ -309,6 +323,10 @@
           <div class="k">Dias incompletos</div>
           <div class="v">{{ summary_total_days_incomplete }}</div>
         </article>
+        <article class="mei-history__summary-card">
+          <div class="k">Valor estimado</div>
+          <div class="v">{{ summary_estimated_value_brl }}</div>
+        </article>
       </div>
     </section>
 
@@ -324,6 +342,7 @@
                 <th>Horários</th>
                 <th>Horários registrados</th>
                 <th>Total</th>
+                <th>Valor estimado</th>
                 <th>Status</th>
               </tr>
             </thead>
@@ -334,6 +353,7 @@
                   <td>{{ row.punches_count }}</td>
                   <td class="mei-history__times">{{ row.punch_times_label }}</td>
                   <td>{{ row.total_hours_hhmm }}</td>
+                  <td>{{ row.estimated_value_brl }}</td>
                   <td>
                     <span class="mei-history__status-badge status-{{ row.status_kind }}">{{ row.status_label }}</span>
                   </td>
@@ -360,7 +380,10 @@
                 </div>
                 <div class="mei-history__day-item">
                   <span class="mei-history__day-label">Total</span>
-                  <span class="mei-history__day-value">{{ row.total_hours_hhmm }}</span>
+                  <span class="mei-history__day-total-row">
+                    <span class="mei-history__day-value">{{ row.total_hours_hhmm }}</span>
+                    <span class="mei-history__day-money">{{ row.estimated_value_brl }}</span>
+                  </span>
                 </div>
               </div>
             </article>

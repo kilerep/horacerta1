@@ -4692,8 +4692,12 @@ def mei_history(request):
     else:
         history_rows = grouped_rows
 
+    hourly_rate = getattr(selected_contract, "hourly_rate", None) or Decimal("0")
     history_rows = sorted(history_rows, key=lambda row: row["date"], reverse=True)
     for row in history_rows:
+        estimated_value = ((Decimal(row["total_seconds"]) / Decimal("3600")) * hourly_rate).quantize(Decimal("0.01"))
+        row["estimated_value"] = estimated_value
+        row["estimated_value_brl"] = _format_brl(estimated_value)
         if row["punches_count"] == 0:
             row["status_label"] = "Sem registros"
             row["status_kind"] = "empty"
@@ -4709,6 +4713,7 @@ def mei_history(request):
     total_punches = sum(row["punches_count"] for row in history_rows)
     total_seconds = sum(row["total_seconds"] for row in history_rows)
     total_hours_period = format_hhmm(total_seconds)
+    total_estimated_value = sum((row["estimated_value"] for row in history_rows), Decimal("0.00"))
     total_days_complete = sum(1 for row in history_rows if row["punches_count"] > 0 and not row["is_incomplete"])
     total_days_incomplete = sum(1 for row in history_rows if row["punches_count"] > 0 and row["is_incomplete"])
 
@@ -4728,6 +4733,7 @@ def mei_history(request):
         "summary_total_days_with_records": total_days_with_records,
         "summary_total_punches": total_punches,
         "summary_total_hours": total_hours_period,
+        "summary_estimated_value_brl": _format_brl(total_estimated_value.quantize(Decimal("0.01"))),
         "summary_total_days_complete": total_days_complete,
         "summary_total_days_incomplete": total_days_incomplete,
     }

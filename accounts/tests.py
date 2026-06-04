@@ -802,6 +802,68 @@ class MeiMultiCompanyContextTests(TestCase):
         self.assertEqual(response_a.context["summary_total_punches"], 2)
         self.assertEqual(response_b.context["summary_total_punches"], 4)
 
+    def test_mei_history_shows_estimated_value_for_period_and_days(self):
+        today = timezone.localdate()
+        yesterday = today - timedelta(days=1)
+        today_start = timezone.make_aware(datetime.combine(today, datetime.min.time()))
+        yesterday_start = timezone.make_aware(datetime.combine(yesterday, datetime.min.time()))
+        Punch.objects.create(contract=self.contract_a, timestamp=yesterday_start + timedelta(hours=8))
+        Punch.objects.create(contract=self.contract_a, timestamp=yesterday_start + timedelta(hours=10))
+        Punch.objects.create(contract=self.contract_a, timestamp=today_start + timedelta(hours=8))
+        Punch.objects.create(contract=self.contract_a, timestamp=today_start + timedelta(hours=12))
+        Punch.objects.create(contract=self.contract_a, timestamp=today_start + timedelta(hours=13))
+
+        response = self.client.get(
+            reverse("mei_history"),
+            {
+                "contract": str(self.contract_a.id),
+                "date_from": yesterday.isoformat(),
+                "date_to": today.isoformat(),
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["summary_total_hours"], "06:00")
+        self.assertEqual(response.context["summary_estimated_value_brl"], "R$ 480,00")
+        rows_by_date = {row["date"]: row for row in response.context["history_rows"]}
+        self.assertEqual(rows_by_date[yesterday]["estimated_value_brl"], "R$ 160,00")
+        self.assertEqual(rows_by_date[today]["estimated_value_brl"], "R$ 320,00")
+        self.assertTrue(rows_by_date[today]["is_incomplete"])
+        self.assertContains(response, "Valor estimado")
+        self.assertContains(response, "R$ 480,00")
+        self.assertContains(response, "R$ 320,00")
+
+        filtered_response = self.client.get(
+            reverse("mei_history"),
+            {
+                "contract": str(self.contract_a.id),
+                "date_from": yesterday.isoformat(),
+                "date_to": yesterday.isoformat(),
+            },
+        )
+        self.assertEqual(filtered_response.context["summary_total_hours"], "02:00")
+        self.assertEqual(filtered_response.context["summary_estimated_value_brl"], "R$ 160,00")
+
+    def test_mei_history_estimated_value_changes_by_contract_and_zero_rate(self):
+        today = timezone.localdate()
+        start = timezone.make_aware(datetime.combine(today, datetime.min.time()))
+        Punch.objects.create(contract=self.contract_a, timestamp=start + timedelta(hours=8))
+        Punch.objects.create(contract=self.contract_a, timestamp=start + timedelta(hours=10))
+        Punch.objects.create(contract=self.contract_b, timestamp=start + timedelta(hours=8))
+        Punch.objects.create(contract=self.contract_b, timestamp=start + timedelta(hours=10))
+
+        response_a = self.client.get(reverse("mei_history"), {"contract": str(self.contract_a.id)})
+        response_b = self.client.get(reverse("mei_history"), {"contract": str(self.contract_b.id)})
+
+        self.assertEqual(response_a.context["summary_estimated_value_brl"], "R$ 160,00")
+        self.assertEqual(response_b.context["summary_estimated_value_brl"], "R$ 240,00")
+
+        self.contract_b.hourly_rate = "0.00"
+        self.contract_b.save(update_fields=["hourly_rate"])
+        response_zero_rate = self.client.get(reverse("mei_history"), {"contract": str(self.contract_b.id)})
+        self.assertEqual(response_zero_rate.context["summary_estimated_value_brl"], "R$ 0,00")
+        self.assertEqual(response_zero_rate.context["history_rows"][0]["estimated_value_brl"], "R$ 0,00")
+
     def test_mei_reports_and_requests_follow_selected_contract(self):
         ServiceReport.objects.create(
             company=self.company_a,
