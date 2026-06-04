@@ -10,9 +10,9 @@
 .hero-points{display:grid;gap:8px;margin-top:18px;max-width:640px}
 .hero-point{border:1px solid var(--line);border-radius:12px;padding:11px 12px;background:rgba(255,255,255,.03)}
 .hero-visual{position:relative;border:1px solid var(--line);border-radius:24px;padding:18px;background:
-    radial-gradient(circle at 10% 0, rgba(47,107,255,.25), transparent 42%),
-    radial-gradient(circle at 90% 100%, rgba(46,162,239,.2), transparent 45%),
-    rgba(10,20,40,.9);
+    radial-gradient(circle at 10% 0, var(--color-primary-soft), transparent 42%),
+    radial-gradient(circle at 90% 100%, var(--color-primary-soft), transparent 45%),
+    color-mix(in oklab, var(--color-card) 86%, transparent);
   box-shadow:var(--shadow);
   isolation:isolate}
 .hero-visual::before{
@@ -20,7 +20,7 @@
   position:absolute;
   inset:auto 10% 6% 10%;
   height:44%;
-  background:radial-gradient(circle at 50% 0, rgba(47,107,255,.26), transparent 66%);
+  background:radial-gradient(circle at 50% 0, var(--color-primary-soft), transparent 66%);
   filter:blur(22px);
   opacity:.72;
   z-index:0;
@@ -29,7 +29,7 @@
 .hero-visual-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 4px 12px;color:var(--muted);font-size:12px;border-bottom:1px solid rgba(255,255,255,.08)}
 .hero-proof{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;background:rgba(95,241,177,.09);border:1px solid rgba(95,241,177,.35);color:#b8ffd9;font-weight:700}
 .phone-stack{position:relative;display:grid;grid-template-columns:1.12fr .88fr;gap:16px;padding-top:14px;min-height:460px;z-index:1}
-.phone-card{position:relative;border:1px solid rgba(255,255,255,.18);border-radius:26px;padding:10px;background:linear-gradient(180deg, rgba(20,30,52,.96), rgba(8,14,28,.96));box-shadow:0 18px 40px rgba(0,0,0,.42);transform-origin:center;transition:transform .25s ease, box-shadow .25s ease, border-color .25s ease}
+.phone-card{position:relative;border:1px solid rgba(255,255,255,.18);border-radius:26px;padding:10px;background:linear-gradient(180deg, color-mix(in oklab, var(--color-card) 90%, transparent), color-mix(in oklab, var(--color-surface) 90%, transparent));box-shadow:0 18px 40px rgba(0,0,0,.42);transform-origin:center;transition:transform .25s ease, box-shadow .25s ease, border-color .25s ease}
 .phone-card:hover{transform:translateY(-3px);box-shadow:0 24px 48px rgba(0,0,0,.5);border-color:rgba(255,255,255,.26)}
 .phone-card.primary{grid-row:1 / span 2;z-index:3;transform:scale(1.02)}
 .phone-card.secondary{margin-top:44px;z-index:2;transform:scale(.95)}
@@ -39,7 +39,7 @@
 .phone-label{display:block;margin-top:8px;color:var(--muted);font-size:12px;letter-spacing:.01em}
 .product-proof{margin-top:24px}
 .proof-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:18px}
-.proof-card{border:1px solid var(--line);border-radius:16px;padding:16px;background:rgba(10,20,40,.72)}
+.proof-card{border:1px solid var(--line);border-radius:16px;padding:16px;background:color-mix(in oklab, var(--color-card) 86%, transparent)}
 .proof-card h3{margin:0;font-size:1.05rem}
 .proof-card p{margin:8px 0 0;color:var(--muted)}
 .section{padding-top:68px}
@@ -49,21 +49,21 @@
 .grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
 .grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
 .trust-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:18px}
-.trust-card{border:1px solid var(--line);border-radius:16px;padding:16px;background:rgba(10,20,40,.72)}
+.trust-card{border:1px solid var(--line);border-radius:16px;padding:16px;background:color-mix(in oklab, var(--color-card) 86%, transparent)}
 .trust-card h3{margin:0;font-size:1.05rem}
 .trust-card p{margin:8px 0 0;color:var(--muted)}
-.card{border:1px solid var(--line);border-radius:16px;padding:16px;background:rgba(10,20,40,.72)}
+.card{border:1px solid var(--line);border-radius:16px;padding:16px;background:color-mix(in oklab, var(--color-card) 86%, transparent)}
 .card h3{margin:0;font-size:1.05rem}
 .card p,.card li{margin:8px 0 0;color:var(--muted)}
 .steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:18px}
-.step-index{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-size:12px;font-weight:800;background:rgba(47,107,255,.24);border:1px solid rgba(47,107,255,.45)}
+.step-index{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-size:12px;font-weight:800;background:var(--color-primary-soft);border:1px solid var(--color-primary-soft)}
 .faq{display:grid;gap:10px;margin-top:18px}
 .faq-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:18px}
-.faq-block{border:1px solid var(--line);border-radius:16px;padding:14px;background:rgba(10,20,40,.72)}
+.faq-block{border:1px solid var(--line);border-radius:16px;padding:14px;background:color-mix(in oklab, var(--color-card) 86%, transparent)}
 .faq-block h3{margin:0 0 4px;font-size:1rem}
 .faq-item{border:1px solid var(--line);border-radius:14px;padding:12px;background:rgba(255,255,255,.02)}
 .faq-item strong{display:block}
-.cta{margin-top:26px;border:1px solid var(--line);border-radius:20px;padding:28px;text-align:center;background:radial-gradient(circle at 0 0, rgba(47,107,255,.24), transparent 34%),radial-gradient(circle at 100% 100%, rgba(46,162,239,.18), transparent 34%),rgba(10,20,40,.85)}
+.cta{margin-top:26px;border:1px solid var(--line);border-radius:20px;padding:28px;text-align:center;background:radial-gradient(circle at 0 0, var(--color-primary-soft), transparent 34%),radial-gradient(circle at 100% 100%, var(--color-primary-soft), transparent 34%),color-mix(in oklab, var(--color-card) 86%, transparent)}
 .cta p{color:var(--muted);max-width:760px;margin:10px auto 0}
 .cta .hero-actions{justify-content:center}
 @media (max-width:980px){

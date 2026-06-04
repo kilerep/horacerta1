@@ -19,7 +19,7 @@
     toast.style.zIndex = "2200";
     toast.style.padding = "10px 12px";
     toast.style.borderRadius = "12px";
-    toast.style.border = "1px solid rgba(79,124,255,.45)";
+    toast.style.border = "1px solid var(--border-brand)";
     toast.style.background = "rgba(16,24,46,.94)";
     toast.style.color = "rgba(255,255,255,.94)";
     toast.style.fontSize = "13px";

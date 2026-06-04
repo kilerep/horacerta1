@@ -13,8 +13,8 @@
     border-radius:var(--radius);
     padding:18px;
     background:
-      radial-gradient(900px 360px at 10% -18%, rgba(47,124,255,.24), transparent 62%),
-      linear-gradient(180deg, rgba(11,20,48,.74), rgba(10,16,38,.7));
+      radial-gradient(900px 360px at 10% -18%, var(--color-primary-soft), transparent 62%),
+      linear-gradient(180deg, color-mix(in oklab, var(--color-card) 86%, transparent), color-mix(in oklab, var(--color-surface) 86%, transparent));
     box-shadow:0 18px 48px rgba(0,0,0,.28);
   }
   .terms-kicker{
@@ -25,9 +25,9 @@
     text-transform:uppercase;
     letter-spacing:.7px;
     border-radius:999px;
-    border:1px solid rgba(47,124,255,.4);
-    background:rgba(47,124,255,.2);
-    color:#eef4ff;
+    border:1px solid var(--color-primary-soft);
+    background:var(--color-primary-soft);
+    color:var(--color-text);
     padding:4px 10px;
     margin-bottom:8px;
   }

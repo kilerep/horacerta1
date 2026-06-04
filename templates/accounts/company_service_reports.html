@@ -10,7 +10,7 @@
     border-radius:var(--radius);
     padding:16px;
     background:
-      linear-gradient(145deg, rgba(79,124,255,.1), transparent 45%),
+      linear-gradient(145deg, var(--color-primary-soft), transparent 45%),
       linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
   }
   .sr-title{ margin:0; font-size:20px; }
@@ -54,7 +54,7 @@
     border:1px solid transparent;
   }
   .sr-badge--pending{ background:rgba(255,187,0,.12); border-color:rgba(255,187,0,.28); color:#ffd36a; }
-  .sr-badge--responded{ background:rgba(79,124,255,.15); border-color:rgba(79,124,255,.35); color:#b9ccff; }
+  .sr-badge--responded{ background:var(--color-primary-soft); border-color:var(--color-primary-soft); color:var(--color-text); }
   .sr-badge--reviewed{ background:rgba(24,195,125,.15); border-color:rgba(24,195,125,.35); color:#b2f5d8; }
   .sr-meta{ color:var(--muted); font-size:12px; }
   @media (max-width: 980px){

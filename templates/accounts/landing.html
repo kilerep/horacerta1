@@ -13,15 +13,15 @@
       --bg-1: #040c1c;
       --bg-2: #071224;
       --bg-3: #0a1630;
-      --panel: rgba(10, 20, 38, 0.82);
+      --panel: color-mix(in oklab, var(--color-card) 86%, transparent);
       --panel-strong: rgba(8, 17, 33, 0.94);
       --line: rgba(255, 255, 255, 0.12);
       --line-soft: rgba(255, 255, 255, 0.07);
       --text: #eef5ff;
       --muted: #9eb2cc;
-      --blue-1: #2f6bff;
-      --blue-2: #2ea2ef;
-      --blue-3: #74c6ff;
+      --landing-primary: var(--color-primary);
+      --landing-accent: var(--color-accent);
+      --landing-primary-strong: var(--color-primary-strong);
       --ok: #33c98b;
       --warn: #f4be48;
       --maxw: 1180px;
@@ -39,8 +39,8 @@
       font-family: "Manrope", "Segoe UI", sans-serif;
       color: var(--text);
       background:
-        radial-gradient(820px 360px at 10% -3%, rgba(46, 162, 239, 0.2), transparent 56%),
-        radial-gradient(950px 400px at 94% 1%, rgba(47, 107, 255, 0.22), transparent 54%),
+        radial-gradient(820px 360px at 10% -3%, var(--color-primary-soft), transparent 56%),
+        radial-gradient(950px 400px at 94% 1%, var(--color-primary-soft), transparent 54%),
         linear-gradient(180deg, var(--bg-1), var(--bg-2) 40%, var(--bg-3));
     }
 
@@ -90,7 +90,7 @@
       height: 38px;
       border-radius: 12px;
       border: 1px solid rgba(255, 255, 255, 0.16);
-      background: linear-gradient(135deg, rgba(47, 107, 255, 0.38), rgba(46, 162, 239, 0.16));
+      background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary-soft));
       display: grid;
       place-items: center;
       font-size: 15px;
@@ -169,8 +169,8 @@
     .btn.primary {
       border: 0;
       color: #fff;
-      background: linear-gradient(130deg, var(--blue-1), var(--blue-2));
-      box-shadow: 0 12px 34px rgba(47, 107, 255, 0.4);
+      background: linear-gradient(130deg, var(--landing-primary), var(--landing-accent));
+      box-shadow: 0 12px 34px var(--color-primary-soft);
     }
 
     .hero {
@@ -368,7 +368,7 @@
       font-size: 0.84rem;
       font-weight: 800;
       border: 1px solid rgba(116, 198, 255, 0.25);
-      background: linear-gradient(130deg, rgba(47, 107, 255, 0.33), rgba(46, 162, 239, 0.2));
+      background: linear-gradient(130deg, var(--color-primary-soft), var(--color-primary-soft));
     }
 
     .list {
@@ -413,9 +413,9 @@
       padding: 30px 20px;
       text-align: center;
       background:
-        radial-gradient(circle at 0% 0%, rgba(47, 107, 255, 0.24), transparent 34%),
-        radial-gradient(circle at 100% 100%, rgba(46, 162, 239, 0.18), transparent 34%),
-        linear-gradient(180deg, rgba(10, 20, 38, 0.95), rgba(7, 14, 28, 0.98));
+        radial-gradient(circle at 0% 0%, var(--color-primary-soft), transparent 34%),
+        radial-gradient(circle at 100% 100%, var(--color-primary-soft), transparent 34%),
+        linear-gradient(180deg, color-mix(in oklab, var(--color-card) 86%, transparent), rgba(7, 14, 28, 0.98));
       box-shadow: var(--shadow-strong);
     }
 

@@ -10,10 +10,10 @@
 
 .sidebar {
   width: 286px;
-  background: linear-gradient(180deg, var(--surface-raised), var(--surface-subtle));
+  background: linear-gradient(180deg, var(--color-card), var(--color-surface));
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-strong);
   padding: 16px;
   position: sticky;
   top: 18px;
@@ -25,7 +25,7 @@
   padding: 14px 14px 16px;
   border: 1px solid var(--color-border);
   border-radius: 16px;
-  background: var(--surface-raised);
+  background: var(--gradient-card);
 }
 
 .brand .name {
@@ -190,8 +190,8 @@
   padding: 16px 18px;
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);
-  background: var(--surface-raised);
-  box-shadow: var(--shadow-sm);
+  background: var(--gradient-card);
+  box-shadow: var(--shadow-soft);
 }
 
 .top-left .title {
@@ -236,8 +236,8 @@
   padding: 14px 16px;
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);
-  background: var(--surface-raised);
-  box-shadow: var(--shadow-sm);
+  background: var(--gradient-card);
+  box-shadow: var(--shadow-soft);
 }
 
 .guestbrand {
@@ -254,9 +254,9 @@
   border-radius: 10px;
   position: relative;
   flex: 0 0 auto;
-  background: var(--surface-brand-strong);
+  background: var(--gradient-button);
   border: 1px solid var(--border-brand);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-soft);
 }
 
 .logo-mark:after {

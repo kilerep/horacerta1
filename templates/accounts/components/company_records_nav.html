@@ -3,7 +3,7 @@
     border:1px solid var(--border);
     border-radius:var(--radius);
     padding:14px;
-    background:linear-gradient(140deg, rgba(79,124,255,.10), transparent 42%), rgba(255,255,255,.025);
+    background:linear-gradient(140deg, var(--color-primary-soft), transparent 42%), rgba(255,255,255,.025);
     display:grid;
     gap:12px;
   }
@@ -24,8 +24,8 @@
     font-weight:800;
   }
   .records-tab.is-active{
-    border-color:rgba(79,124,255,.55);
-    background:rgba(79,124,255,.18);
+    border-color:var(--color-primary-soft);
+    background:var(--color-primary-soft);
   }
   @media (max-width:760px){
     .records-tabs{ display:grid; grid-template-columns:1fr; }

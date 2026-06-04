@@ -9,7 +9,7 @@
       border:1px solid var(--border);
       border-radius:var(--radius);
       background:
-        linear-gradient(140deg, rgba(79,124,255,.10), transparent 44%),
+        linear-gradient(140deg, var(--color-primary-soft), transparent 44%),
         linear-gradient(180deg, rgba(250,204,21,.06), rgba(255,255,255,.03));
       padding:18px;
       box-shadow: inset 0 1px 0 rgba(255,255,255,.03), 0 12px 28px rgba(3,7,20,.28);
@@ -54,8 +54,8 @@
     }
     input[type="date"]{ color-scheme:dark; }
     input:focus, select:focus{
-      border-color:rgba(79,124,255,.55);
-      box-shadow:0 0 0 3px rgba(79,124,255,.16);
+      border-color:var(--color-primary-soft);
+      box-shadow:0 0 0 3px var(--color-primary-soft);
       background:rgba(255,255,255,.08);
     }
     .actions{ display:flex; gap:8px; flex-wrap:wrap; }

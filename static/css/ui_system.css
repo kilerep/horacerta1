@@ -11,8 +11,8 @@ body {
 body {
   margin: 0;
   font-family: "Segoe UI", "Inter", "Manrope", Arial, sans-serif;
-  background: var(--color-bg);
-  color: var(--color-text-strong);
+  background: var(--gradient-page);
+  color: var(--color-text);
 }
 
 a {
@@ -27,8 +27,8 @@ a {
 .card {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  background: var(--surface-raised);
-  box-shadow: var(--shadow-sm);
+  background: var(--gradient-card);
+  box-shadow: var(--shadow-soft);
   padding: 18px;
 }
 
@@ -64,7 +64,7 @@ a {
 
 .btn.primary {
   border-color: transparent;
-  background: var(--surface-brand-strong);
+  background: var(--gradient-button);
   color: var(--text-inverse);
   box-shadow: var(--btn-primary-shadow);
 }
@@ -130,7 +130,6 @@ input[type="date"] {
 }
 
 [data-theme="graphite-premium"] input[type="date"],
-[data-theme="executive-blue-dark"] input[type="date"],
 [data-theme="professional-neutral"] input[type="date"],
 [data-theme="brazil-corporate"] input[type="date"],
 [data-theme="rubro-professional"] input[type="date"] {
