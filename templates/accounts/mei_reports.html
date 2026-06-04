@@ -4,52 +4,169 @@
 
 {% block content %}
 <style>
-  .reports-page{display:grid;gap:14px}
-  .reports-panel{
-    border:1px solid var(--border);
-    border-radius:var(--radius);
-    padding:16px;
-    background:radial-gradient(circle at 10% 0, rgba(79,124,255,.2), transparent 42%), linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
-    box-shadow:var(--shadow);
-  }
-  .reports-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
-  .reports-title{margin:0;font-size:clamp(22px,4vw,30px)}
-  .reports-sub{margin:6px 0 0;color:var(--muted);max-width:760px}
-  .reports-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:12px}
-  .reports-field{display:grid;gap:6px}
-  .reports-field.full{grid-column:1 / -1}
+  .reports-page{display:grid;gap:14px;width:100%;max-width:100%;min-width:0}
+  .reports-panel{border:1px solid var(--border);border-radius:var(--radius);padding:14px;background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));box-shadow:var(--shadow);min-width:0}
+  .reports-head{display:grid;gap:6px}
+  .reports-title{margin:0;font-size:clamp(21px,5vw,30px);line-height:1.1}
+  .reports-sub{margin:0;color:var(--muted);line-height:1.45}
+  .reports-form{display:grid;gap:12px;margin-top:12px}
+  .reports-field{display:grid;gap:6px;min-width:0}
   .reports-field label{color:#dbe7ff;font-size:12px;font-weight:900}
-  .reports-field input,.reports-field select,.reports-field textarea{
-    width:100%;border:1px solid rgba(129,171,255,.28);border-radius:12px;padding:10px 12px;background:#101a2d;color:var(--text);font:inherit
+  .reports-field input,.reports-field select,.reports-field textarea{width:100%;box-sizing:border-box;border:1px solid rgba(129,171,255,.28);border-radius:12px;padding:12px;background:#101a2d;color:var(--text);font:inherit;min-height:46px}
+  .reports-field textarea{min-height:104px;resize:vertical}
+  .reports-actions{display:grid;gap:8px}
+  .reports-actions .btn{width:100%;justify-content:center;min-height:44px}
+  .reports-list{display:grid;gap:10px;margin-top:12px}
+  .report-card{border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px;background:rgba(255,255,255,.035);display:grid;gap:10px;min-width:0}
+  .report-card__head{display:grid;gap:5px}
+  .report-card__title{margin:0;font-size:17px;line-height:1.25;overflow-wrap:anywhere}
+  .report-card__meta{color:var(--muted);font-size:12px;line-height:1.45}
+  .report-metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .report-metric{border:1px solid rgba(255,255,255,.09);border-radius:10px;padding:9px;background:rgba(255,255,255,.03)}
+  .report-metric span{display:block;color:var(--muted);font-size:11px}
+  .report-metric strong{display:block;margin-top:3px}
+  .report-card__actions{display:grid;gap:8px}
+  .report-card__actions form{display:grid}
+  .report-card__actions .btn{width:100%;justify-content:center;min-height:42px}
+  .status-pill{display:inline-flex;width:max-content;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:900;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05)}
+  .empty{border:1px dashed rgba(255,255,255,.18);border-radius:12px;padding:14px;background:rgba(255,255,255,.03);color:var(--muted);line-height:1.45}
+  .feedback{border:1px solid rgba(45,211,145,.36);background:rgba(45,211,145,.1);border-radius:12px;padding:11px;color:#d9ffec}
+  .feedback.warn{border-color:rgba(255,176,32,.38);background:rgba(255,176,32,.12);color:#ffe7ad}
+  .error{margin-top:5px;color:#ffd8d8;font-size:12px}
+  .copy-status{min-height:18px;color:var(--muted);font-size:12px}
+  @media (min-width: 760px){
+    .reports-form{grid-template-columns:repeat(2,minmax(0,1fr));align-items:end}
+    .reports-field.full{grid-column:1 / -1}
+    .reports-actions{display:flex;justify-content:flex-end;flex-wrap:wrap}
+    .reports-actions .btn{width:auto}
+    .report-card__head{grid-template-columns:1fr auto;align-items:start}
+    .report-card__actions{display:flex;flex-wrap:wrap}
+    .report-card__actions .btn,.report-card__actions form{width:auto}
+    .report-card__actions form .btn{width:auto}
   }
-  .reports-field textarea{min-height:120px;resize:vertical}
-  .reports-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:12px}
-  .reports-table-wrap{margin-top:12px;border:1px solid var(--border);border-radius:14px;overflow-x:auto}
-  .reports-table{width:100%;border-collapse:collapse;min-width:900px}
-  .reports-table th,.reports-table td{padding:11px 10px;border-bottom:1px solid rgba(255,255,255,.07);text-align:left;vertical-align:top}
-  .reports-table th{color:var(--muted);font-size:12px}
-  .reports-table tr:last-child td{border-bottom:none}
-  .status-pill{display:inline-flex;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:900;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05)}
-  .empty{border:1px dashed rgba(255,255,255,.18);border-radius:12px;padding:14px;background:rgba(255,255,255,.03)}
-  .error{margin-top:6px;color:#ffd8d8;font-size:12px}
-  @media (max-width: 980px){.reports-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-  @media (max-width: 640px){.reports-grid{grid-template-columns:1fr}.reports-actions .btn{width:100%;justify-content:center}}
+  @media (min-width: 1040px){
+    .reports-form{grid-template-columns:1.2fr 1fr 1fr}
+    .reports-field.full{grid-column:1 / -1}
+    .report-metrics{grid-template-columns:repeat(4,minmax(0,1fr))}
+  }
 </style>
 
 <div class="reports-page">
   {% if request.GET.event == "report_created" %}
-    <section class="reports-panel" role="status">Relatório gerado e salvo com sucesso.</section>
+    <section class="feedback" role="status">Relatório gerado e pronto para envio.</section>
+  {% elif request.GET.event == "report_created_empty" %}
+    <section class="feedback warn" role="status">Relatório gerado, mas não havia horários registrados no período selecionado.</section>
+  {% elif request.GET.event == "link_created" %}
+    <section class="feedback" role="status">Link de conferência gerado.</section>
+  {% elif request.GET.event == "report_paid" %}
+    <section class="feedback" role="status">Relatório marcado como pago.</section>
   {% endif %}
 
   <section class="reports-panel">
     <div class="reports-head">
-      <div>
-        <h1 class="reports-title">Relatórios</h1>
-        <p class="reports-sub">Gere relatórios por cliente e período para conferência externa.</p>
-      </div>
-      <a class="btn" href="{% url 'mei_contract' %}">Meus clientes</a>
+      <h1 class="reports-title">Criar relatório</h1>
+      <p class="reports-sub">Escolha o cliente, informe o período e gere um relatório para conferência externa.</p>
     </div>
-    <form method="get" class="reports-grid">
+    <form method="post" class="reports-form" data-submit-once="true">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="create_report">
+      <input type="hidden" name="status" value="DRAFT">
+      <div class="reports-field">
+        {{ report_form.contract.label_tag }}
+        {{ report_form.contract }}
+        {% for error in report_form.contract.errors %}<span class="error">{{ error }}</span>{% endfor %}
+      </div>
+      <div class="reports-field">
+        {{ report_form.date_from.label_tag }}
+        {{ report_form.date_from }}
+        {% for error in report_form.date_from.errors %}<span class="error">{{ error }}</span>{% endfor %}
+      </div>
+      <div class="reports-field">
+        {{ report_form.date_to.label_tag }}
+        {{ report_form.date_to }}
+        {% for error in report_form.date_to.errors %}<span class="error">{{ error }}</span>{% endfor %}
+      </div>
+      <div class="reports-field full">
+        {{ report_form.title.label_tag }}
+        {{ report_form.title }}
+        {% for error in report_form.title.errors %}<span class="error">{{ error }}</span>{% endfor %}
+      </div>
+      <div class="reports-field full">
+        {{ report_form.description.label_tag }}
+        {{ report_form.description }}
+        <span class="reports-sub">Opcional.</span>
+        {% for error in report_form.description.errors %}<span class="error">{{ error }}</span>{% endfor %}
+      </div>
+      {% if report_form.non_field_errors %}<div class="error full">{{ report_form.non_field_errors }}</div>{% endif %}
+      <div class="reports-actions full">
+        <button class="btn primary" type="submit">Gerar relatório</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="reports-panel">
+    <div class="reports-head">
+      <h2 class="reports-title">Relatórios gerados</h2>
+      <p class="reports-sub">Acesse, compartilhe, baixe PDF ou exporte os horários filtrados.</p>
+    </div>
+    <div class="reports-actions" style="margin-top:12px">
+      <a class="btn" href="{{ csv_url }}">Exportar CSV</a>
+    </div>
+    <div class="reports-list">
+      {% for row in report_rows %}
+        {% with report=row.report %}
+          <article class="report-card">
+            <header class="report-card__head">
+              <div>
+                <h3 class="report-card__title">{{ report.title }}</h3>
+                <div class="report-card__meta">{{ report.company.name }} | {{ report.date_from|date:"d/m/Y" }} até {{ report.date_to|date:"d/m/Y" }}</div>
+              </div>
+              <span class="status-pill">{{ report.get_status_display }}</span>
+            </header>
+            <div class="report-metrics">
+              <div class="report-metric"><span>Total</span><strong>{{ report.summary_payload.total_hours|default:"-" }}</strong></div>
+              <div class="report-metric"><span>Valor estimado</span><strong>{{ report.summary_payload.estimated_value_brl|default:"-" }}</strong></div>
+              <div class="report-metric"><span>Manuais</span><strong>{{ report.summary_payload.manual_count|default:0 }}</strong></div>
+              <div class="report-metric"><span>Dias incompletos</span><strong>{{ report.summary_payload.incomplete_days|default:0 }}</strong></div>
+            </div>
+            <div class="report-card__actions">
+              <a class="btn" href="{{ row.detail_url }}">Ver</a>
+              {% if row.conference_url %}
+                <button class="btn" type="button" data-copy-text="{{ row.conference_url }}">Copiar link</button>
+                <a class="btn primary" href="{{ row.whatsapp_url }}" target="_blank" rel="noopener">Enviar WhatsApp</a>
+              {% else %}
+                <form method="post" data-submit-once="true">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="generate_conference_link">
+                  <input type="hidden" name="report_id" value="{{ report.id }}">
+                  <button class="btn" type="submit">Gerar link</button>
+                </form>
+              {% endif %}
+              <a class="btn" href="{{ row.pdf_url }}">PDF</a>
+              {% if report.status != "PAID" %}
+                <form method="post" data-submit-once="true">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="mark_paid">
+                  <input type="hidden" name="report_id" value="{{ report.id }}">
+                  <button class="btn" type="submit">Marcar como pago</button>
+                </form>
+              {% endif %}
+            </div>
+          </article>
+        {% endwith %}
+      {% empty %}
+        <div class="empty">Nenhum relatório gerado para os filtros atuais.</div>
+      {% endfor %}
+    </div>
+    <div class="copy-status" data-copy-status></div>
+  </section>
+
+  <section class="reports-panel">
+    <div class="reports-head">
+      <h2 class="reports-title">Filtrar relatórios gerados</h2>
+      <p class="reports-sub">Use os filtros para consultar relatórios e exportar CSV do mesmo cliente e período.</p>
+    </div>
+    <form method="get" class="reports-form">
       <div class="reports-field">
         <label for="filter-contract">Cliente</label>
         <select id="filter-contract" name="contract">
@@ -77,109 +194,53 @@
       </div>
       <div class="reports-actions full">
         <button class="btn primary" type="submit">Filtrar</button>
+        <a class="btn" href="{% url 'mei_reports' %}">Limpar filtros</a>
       </div>
     </form>
   </section>
 
-  <section class="reports-panel">
-    <h2 class="reports-title">Gerar relatório de horas</h2>
-    <p class="reports-sub">O relatório será salvo com dias, horários, totais, observações, manuais, localização e dias incompletos.</p>
-    <form method="post">
-      {% csrf_token %}
-      <input type="hidden" name="action" value="create_report">
-      {% if selected_contract %}<input type="hidden" name="selected_contract" value="{{ selected_contract.id }}">{% endif %}
-      <div class="reports-grid">
-        <div class="reports-field">
-          {{ report_form.contract.label_tag }}
-          {{ report_form.contract }}
-          {% for error in report_form.contract.errors %}<span class="error">{{ error }}</span>{% endfor %}
-        </div>
-        <div class="reports-field">
-          {{ report_form.date_from.label_tag }}
-          {{ report_form.date_from }}
-          {% for error in report_form.date_from.errors %}<span class="error">{{ error }}</span>{% endfor %}
-        </div>
-        <div class="reports-field">
-          {{ report_form.date_to.label_tag }}
-          {{ report_form.date_to }}
-          {% for error in report_form.date_to.errors %}<span class="error">{{ error }}</span>{% endfor %}
-        </div>
-        <div class="reports-field">
-          {{ report_form.status.label_tag }}
-          {{ report_form.status }}
-          {% for error in report_form.status.errors %}<span class="error">{{ error }}</span>{% endfor %}
-        </div>
-        <div class="reports-field full">
-          {{ report_form.title.label_tag }}
-          {{ report_form.title }}
-          {% for error in report_form.title.errors %}<span class="error">{{ error }}</span>{% endfor %}
-        </div>
-        <div class="reports-field full">
-          {{ report_form.description.label_tag }}
-          {{ report_form.description }}
-          {% for error in report_form.description.errors %}<span class="error">{{ error }}</span>{% endfor %}
-        </div>
+  {% if pending_requests %}
+    <section class="reports-panel">
+      <div class="reports-head">
+        <h2 class="reports-title">Solicitações pendentes</h2>
+        <p class="reports-sub">Pedidos de relatório feitos por clientes.</p>
       </div>
-      {% if report_form.non_field_errors %}<div class="error">{{ report_form.non_field_errors }}</div>{% endif %}
-      <div class="reports-actions">
-        <button class="btn primary" type="submit">Gerar relatório</button>
+      <div class="reports-list">
+        {% for item in pending_requests %}
+          <article class="report-card">
+            <h3 class="report-card__title">{{ item.subject|default:"Solicitação de relatório" }}</h3>
+            <div class="report-card__meta">{{ item.company.name }} | {{ item.date_from|date:"d/m/Y"|default:"-" }} até {{ item.date_to|date:"d/m/Y"|default:"-" }}</div>
+            <div class="report-card__actions">
+              <a class="btn primary" href="{% url 'mei_service_report_request_detail' item.id %}">Responder</a>
+            </div>
+          </article>
+        {% endfor %}
       </div>
-    </form>
-  </section>
-
-  <section class="reports-panel">
-    <h2 class="reports-title">Relatórios salvos</h2>
-    <div class="reports-table-wrap">
-      <table class="reports-table">
-        <thead>
-          <tr>
-            <th>Período</th>
-            <th>Cliente</th>
-            <th>Título</th>
-            <th>Status</th>
-            <th>Total</th>
-            <th>Valor estimado</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for report in reports %}
-            <tr>
-              <td>{{ report.date_from|date:"d/m/Y" }} até {{ report.date_to|date:"d/m/Y" }}</td>
-              <td>{{ report.company.name }}</td>
-              <td>{{ report.title }}</td>
-              <td><span class="status-pill">{{ report.get_status_display }}</span></td>
-              <td>{{ report.summary_payload.total_hours|default:"-" }}</td>
-              <td>{{ report.summary_payload.estimated_value_brl|default:"-" }}</td>
-              <td><a class="btn" href="{% url 'mei_service_report_detail' report.id %}">Ver detalhes</a></td>
-            </tr>
-          {% empty %}
-            <tr><td colspan="7"><div class="empty">Nenhum relatório salvo para os filtros atuais.</div></td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-  <section class="reports-panel">
-    <h2 class="reports-title">Solicitações pendentes</h2>
-    <div class="reports-table-wrap">
-      <table class="reports-table">
-        <thead><tr><th>Cliente</th><th>Assunto</th><th>Período</th><th>Ações</th></tr></thead>
-        <tbody>
-          {% for item in pending_requests %}
-            <tr>
-              <td>{{ item.company.name }}</td>
-              <td>{{ item.subject|default:"Solicitação de relatório" }}</td>
-              <td>{{ item.date_from|date:"d/m/Y"|default:"-" }} até {{ item.date_to|date:"d/m/Y"|default:"-" }}</td>
-              <td><a class="btn" href="{% url 'mei_service_report_request_detail' item.id %}">Responder</a></td>
-            </tr>
-          {% empty %}
-            <tr><td colspan="4"><div class="empty">Nenhuma solicitação pendente.</div></td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </section>
+    </section>
+  {% endif %}
 </div>
+
+<script>
+  (function () {
+    var statusNode = document.querySelector("[data-copy-status]");
+    function setStatus(message) {
+      if (statusNode) statusNode.textContent = message;
+    }
+    document.addEventListener("click", function (event) {
+      var button = event.target.closest("[data-copy-text]");
+      if (!button) return;
+      var value = button.getAttribute("data-copy-text") || "";
+      if (!value) return;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(value).then(function () {
+          setStatus("Link copiado.");
+        }).catch(function () {
+          setStatus("Não foi possível copiar automaticamente. Copie pelo detalhe do relatório.");
+        });
+        return;
+      }
+      setStatus("Copie o link pelo detalhe do relatório.");
+    });
+  })();
+</script>
 {% endblock %}

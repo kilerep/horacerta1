@@ -187,11 +187,11 @@ class ServiceReportCreateForm(forms.ModelForm):
         widgets = {
             "date_from": forms.DateInput(attrs={"type": "date"}),
             "date_to": forms.DateInput(attrs={"type": "date"}),
-            "title": forms.TextInput(attrs={"placeholder": "Ex.: Relatorio de horas do periodo"}),
+            "title": forms.TextInput(attrs={"placeholder": "Ex.: Relatório de horas do período"}),
             "description": forms.Textarea(
                 attrs={
                     "rows": 5,
-                    "placeholder": "Observacoes gerais, entregas ou contexto para conferencia do cliente.",
+                    "placeholder": "Observações gerais, entregas ou contexto para conferência do cliente.",
                 }
             ),
         }
@@ -199,8 +199,8 @@ class ServiceReportCreateForm(forms.ModelForm):
             "date_from": "Data inicial",
             "date_to": "Data final",
             "status": "Status",
-            "title": "Titulo",
-            "description": "Observacoes",
+            "title": "Título",
+            "description": "Observações",
         }
 
     def __init__(self, *args, employee=None, user=None, **kwargs):
@@ -230,6 +230,8 @@ class ServiceReportCreateForm(forms.ModelForm):
                 .order_by("company__name", "-start_date", "-created_at")
             )
         self.fields["contract"].queryset = contracts_qs
+        self.fields["title"].required = True
+        self.fields["description"].required = False
         self.fields["contract"].label_from_instance = (
             lambda obj: f"{obj.company.name} | inicio {obj.start_date.strftime('%d/%m/%Y') if obj.start_date else '-'} | R$ {obj.hourly_rate}/h"
         )

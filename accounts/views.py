@@ -6,6 +6,7 @@ from urllib.parse import quote, urlencode, urlparse
 from xml.sax.saxutils import escape
 import zipfile
 import csv
+import re
 from calendar import monthrange
 from collections import defaultdict
 import json
@@ -4804,8 +4805,7 @@ def mei_export(request):
     denied = _redirect_if_not_mei(request)
     if denied:
         return denied
-    contracts = resolve_mei_context(request).contracts
-    return render(request, "accounts/mei_export.html", {"contracts": contracts})
+    return redirect("mei_reports")
 
 
 @login_required
@@ -5023,23 +5023,89 @@ def mei_reports(request):
     if selected_contract:
         report_form.fields["contract"].initial = selected_contract
 
-    if request.method == "POST" and (request.POST.get("action") or "").strip().lower() == "create_report":
-        report_form = ServiceReportCreateForm(request.POST, user=request.user)
-        if report_form.is_valid():
-            report = report_form.save(commit=False)
-            report.summary_payload = _build_service_report_payload(
-                report.contract,
-                report.date_from,
-                report.date_to,
+    if request.method == "POST":
+        action = (request.POST.get("action") or "").strip().lower()
+        if action == "create_report":
+            report_form = ServiceReportCreateForm(request.POST, user=request.user)
+            if report_form.is_valid():
+                report = report_form.save(commit=False)
+                report.summary_payload = _build_service_report_payload(
+                    report.contract,
+                    report.date_from,
+                    report.date_to,
+                )
+                report.ensure_conference_link()
+                report.save()
+                redirect_url = f"{reverse('mei_reports')}?event=report_created"
+                if not report.summary_payload.get("total_seconds"):
+                    redirect_url = f"{reverse('mei_reports')}?event=report_created_empty"
+                redirect_url = f"{redirect_url}&contract={report.contract.id}"
+                return redirect(redirect_url)
+        elif action == "generate_conference_link":
+            report_id = (request.POST.get("report_id") or "").strip()
+            report = get_object_or_404(
+                ServiceReport.objects.select_related("contract"),
+                id=report_id,
+                employee__user=request.user,
             )
-            if not report.title:
-                report.title = f"Relatorio de horas - {report.company.name}"
-            report.save()
-            redirect_url = f"{reverse('mei_reports')}?event=report_created"
-            redirect_url = f"{redirect_url}&contract={report.contract.id}"
+            report.ensure_conference_link()
+            report.save(
+                update_fields=[
+                    "conference_token",
+                    "conference_link_created_at",
+                    "conference_first_viewed_at",
+                    "conference_reviewed_at",
+                    "conference_comment",
+                    "conference_revoked_at",
+                    "conference_expires_at",
+                    "conference_final_status",
+                    "status",
+                    "updated_at",
+                ]
+            )
+            redirect_url = f"{reverse('mei_reports')}?event=link_created&contract={report.contract_id}"
+            return redirect(redirect_url)
+        elif action == "mark_paid":
+            report_id = (request.POST.get("report_id") or "").strip()
+            report = get_object_or_404(
+                ServiceReport.objects.select_related("contract"),
+                id=report_id,
+                employee__user=request.user,
+            )
+            report.status = ServiceReport.Status.PAID
+            report.save(update_fields=["status", "updated_at"])
+            redirect_url = f"{reverse('mei_reports')}?event=report_paid&contract={report.contract_id}"
             return redirect(redirect_url)
 
     reports = list(reports_qs[:300])
+    report_rows = []
+    for report in reports:
+        conference_url = ""
+        whatsapp_url = ""
+        if report.conference_is_accessible:
+            conference_url = request.build_absolute_uri(reverse("public_service_report_conference", args=[report.conference_token]))
+            client_name = (report.summary_payload or {}).get("company") or report.company.name
+            whatsapp_message = f"Olá, {client_name}, segue meu relatório de horas pelo HoraCerta para conferência: {conference_url}"
+            whatsapp_url = f"https://wa.me/?text={quote(whatsapp_message, safe='')}"
+        report_rows.append(
+            {
+                "report": report,
+                "conference_url": conference_url,
+                "whatsapp_url": whatsapp_url,
+                "pdf_url": reverse("mei_service_report_pdf", args=[report.id]),
+                "detail_url": reverse("mei_service_report_detail", args=[report.id]),
+            }
+        )
+    csv_query = {}
+    if selected_contract:
+        csv_query["contract"] = str(selected_contract.id)
+    if date_from_raw:
+        csv_query["date_from"] = date_from_raw
+    if date_to_raw:
+        csv_query["date_to"] = date_to_raw
+    csv_url = reverse("export_csv")
+    if csv_query:
+        csv_url = f"{csv_url}?{urlencode(csv_query)}"
     return render(
         request,
         "accounts/mei_reports.html",
@@ -5048,12 +5114,14 @@ def mei_reports(request):
             "selected_contract": selected_contract,
             "report_form": report_form,
             "reports": reports,
+            "report_rows": report_rows,
             "pending_requests": pending_requests,
             "responded_requests": responded_requests,
             "status_filter": status_filter,
             "date_from": date_from_raw,
             "date_to": date_to_raw,
             "status_choices": ServiceReport.Status.choices,
+            "csv_url": csv_url,
         },
     )
 
@@ -5160,8 +5228,12 @@ def _service_report_pdf_response(report):
         text = str(value if value not in (None, "") else default)
         return escape(text)
 
+    def filename_part(value):
+        text = (str(value or "").strip().lower())
+        text = re.sub(r"[^a-z0-9]+", "-", text)
+        return text.strip("-") or "relatorio"
+
     buffer = BytesIO()
-    filename = f"horacerta_relatorio_{report.id}.pdf"
     doc = SimpleDocTemplate(
         buffer,
         pagesize=A4,
@@ -5205,6 +5277,10 @@ def _service_report_pdf_response(report):
         start_label = report.date_from.strftime("%d/%m/%Y") if report.date_from else "-"
         end_label = report.date_to.strftime("%d/%m/%Y") if report.date_to else "-"
         period_label = f"{start_label} a {end_label}"
+    period_file_label = "periodo"
+    if report.date_from and report.date_to:
+        period_file_label = f"{report.date_from:%Y%m%d}-{report.date_to:%Y%m%d}"
+    filename = f"horacerta_relatorio_{filename_part(client_name)}_{period_file_label}.pdf"
     emitted_at = timezone.localtime().strftime("%d/%m/%Y %H:%M")
 
     story = [
@@ -5242,12 +5318,15 @@ def _service_report_pdf_response(report):
 
     day_rows = [["Dia", "Horarios", "Total", "Status", "Observacoes"]]
     for day in payload.get("days") or []:
+        status_parts = ["Incompleto" if day.get("is_incomplete") else "OK"]
+        if day.get("manual_count"):
+            status_parts.append(f"{day.get('manual_count')} manual")
         day_rows.append(
             [
                 Paragraph(pdf_text(day.get("date_label")), styles["SmallMuted"]),
                 Paragraph(pdf_text(", ".join(day.get("punch_times") or []) or "-"), styles["SmallMuted"]),
                 Paragraph(pdf_text(day.get("total_hours")), styles["SmallMuted"]),
-                Paragraph("Incompleto" if day.get("is_incomplete") else "OK", styles["SmallMuted"]),
+                Paragraph(pdf_text(" / ".join(status_parts)), styles["SmallMuted"]),
                 Paragraph(pdf_text("; ".join(day.get("notes") or []) or "-"), styles["SmallMuted"]),
             ]
         )

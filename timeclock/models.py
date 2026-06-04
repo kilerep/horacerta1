@@ -582,7 +582,7 @@ class ServiceReport(models.Model):
     date_to = models.DateField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
     title = models.CharField(max_length=120)
-    description = models.TextField()
+    description = models.TextField(blank=True)
     summary_payload = models.JSONField(default=dict, blank=True)
     conference_token = models.UUIDField(null=True, blank=True, unique=True)
     conference_link_created_at = models.DateTimeField(null=True, blank=True)

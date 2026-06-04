@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
-from datetime import timedelta
+from datetime import datetime, timedelta
 from uuid import uuid4
 
 from companies.models import (
@@ -452,7 +452,7 @@ class InternalDashboardTests(TestCase):
         self.assertContains(response, "Sua empresa est")
         self.assertContains(response, "avaliando o HoraCerta Essencial")
         self.assertContains(response, "Durante o per")
-        self.assertContains(response, trial_end.strftime("%d/%m/%Y"))
+        self.assertContains(response, timezone.localtime(trial_end).strftime("%d/%m/%Y"))
 
     def test_company_plan_limit_counts_only_active_contracts(self):
         self._create_subscription()
@@ -894,6 +894,112 @@ class MeiMultiCompanyContextTests(TestCase):
     def test_export_csv_blocks_invalid_requested_contract(self):
         response = self.client.get(reverse("export_csv"), {"contract": str(uuid4())})
         self.assertEqual(response.status_code, 400)
+
+    def test_employee_dashboard_uses_selected_contract_for_auto_and_manual_punches(self):
+        response = self.client.get(reverse("employee_dashboard"), {"contract": str(self.contract_b.id)})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["selected_contract"].id, self.contract_b.id)
+        self.assertContains(response, "Selecionar cliente e contrato")
+        self.assertContains(response, self.company_b.name)
+        self.assertNotContains(response, "Exportar CSV")
+
+        auto_response = self.client.post(
+            f"{reverse('employee_dashboard')}?contract={self.contract_b.id}",
+            {
+                "action": "punch",
+                "contract": str(self.contract_b.id),
+            },
+        )
+        self.assertEqual(auto_response.status_code, 302)
+        self.assertTrue(Punch.objects.filter(contract=self.contract_b, is_manual=False).exists())
+        self.assertFalse(Punch.objects.filter(contract=self.contract_a, is_manual=False).exists())
+
+        manual_response = self.client.post(
+            reverse("create_manual_punches"),
+            {
+                "contract": str(self.contract_a.id),
+                "manual_date": timezone.localdate().isoformat(),
+                "times": ["08:00", "12:00"],
+                "manual_note": "Lancamento manual de teste",
+            },
+        )
+        self.assertEqual(manual_response.status_code, 200)
+        self.assertEqual(Punch.objects.filter(contract=self.contract_a, is_manual=True).count(), 2)
+        self.assertEqual(Punch.objects.filter(contract=self.contract_b, is_manual=True).count(), 0)
+
+    def test_mei_report_can_be_created_without_description_and_shared_securely(self):
+        today = timezone.localdate()
+        start = timezone.make_aware(datetime.combine(today, datetime.min.time()))
+        Punch.objects.create(contract=self.contract_b, timestamp=start + timedelta(hours=8))
+        Punch.objects.create(contract=self.contract_b, timestamp=start + timedelta(hours=12))
+
+        response = self.client.post(
+            reverse("mei_reports"),
+            {
+                "action": "create_report",
+                "contract": str(self.contract_b.id),
+                "date_from": today.isoformat(),
+                "date_to": today.isoformat(),
+                "title": "Relatorio sob demanda",
+                "description": "",
+                "status": ServiceReport.Status.DRAFT,
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        report = ServiceReport.objects.get(title="Relatorio sob demanda")
+        self.assertEqual(report.contract_id, self.contract_b.id)
+        self.assertEqual(report.employee_id, self.employee_b.id)
+        self.assertEqual(report.company_id, self.company_b.id)
+        self.assertEqual(report.description, "")
+        self.assertEqual(report.status, ServiceReport.Status.SENT)
+        self.assertIsNotNone(report.conference_token)
+        self.assertEqual(report.summary_payload["company"], self.company_b.name)
+
+        reports_response = self.client.get(reverse("mei_reports"), {"contract": str(self.contract_b.id)})
+        self.assertEqual(reports_response.status_code, 200)
+        self.assertContains(reports_response, "Exportar CSV")
+        self.assertContains(reports_response, "Copiar link")
+        self.assertContains(reports_response, "Enviar WhatsApp")
+        self.assertContains(reports_response, "PDF")
+
+        pdf_response = self.client.get(reverse("mei_service_report_pdf", args=[report.id]))
+        self.assertEqual(pdf_response.status_code, 200)
+        self.assertEqual(pdf_response["Content-Type"], "application/pdf")
+        self.assertTrue(pdf_response.content.startswith(b"%PDF-"))
+        self.assertIn("horacerta_relatorio_", pdf_response["Content-Disposition"])
+
+        csv_response = self.client.get(
+            reverse("export_csv"),
+            {
+                "contract": str(self.contract_b.id),
+                "date_from": today.isoformat(),
+                "date_to": today.isoformat(),
+            },
+        )
+        self.assertEqual(csv_response.status_code, 200)
+        csv_content = csv_response.content.decode("utf-8")
+        self.assertIn(self.company_b.name, csv_content)
+        self.assertNotIn(self.company_a.name, csv_content)
+
+        public_url = reverse("public_service_report_conference", args=[report.conference_token])
+        public_response = self.client.get(public_url)
+        self.assertEqual(public_response.status_code, 200)
+        report.refresh_from_db()
+        self.assertIsNotNone(report.conference_first_viewed_at)
+        self.assertEqual(report.status, ServiceReport.Status.VIEWED)
+
+        review_response = self.client.post(
+            public_url,
+            {
+                "action": "confirm_review",
+                "conference_comment": "Conferido pelo cliente.",
+            },
+        )
+        self.assertEqual(review_response.status_code, 302)
+        report.refresh_from_db()
+        self.assertEqual(report.status, ServiceReport.Status.REVIEWED)
+        self.assertEqual(report.conference_final_status, ServiceReport.ConferenceStatus.REVIEWED)
+        self.assertEqual(report.conference_comment, "Conferido pelo cliente.")
 
     def test_company_cannot_access_other_company_mei_profile(self):
         self.client.force_login(self.owner_a)
