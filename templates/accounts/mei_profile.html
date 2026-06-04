@@ -15,7 +15,7 @@
     .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
     .field{ display:flex; flex-direction:column; gap:6px; min-width:220px; flex:1; }
     label{ color:var(--muted); font-size:13px; }
-    input, textarea{
+    input, textarea, select{
       width:100%;
       padding:10px 12px;
       border-radius:12px;
@@ -98,6 +98,27 @@
       <div style="margin-top:10px;">
         <button class="btn primary" type="submit">Salvar perfil</button>
       </div>
+    </form>
+  </section>
+
+  <section class="panel" style="margin-top:14px;">
+    <h2 style="margin:0;">Aparência</h2>
+    <p class="muted" style="margin:8px 0 0;">Escolha o tema visual usado nas telas do sistema.</p>
+    <form method="post" class="row" style="margin-top:10px;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="save_theme">
+      {% if selected_contract %}
+        <input type="hidden" name="selected_contract" value="{{ selected_contract.id }}">
+      {% endif %}
+      <div class="field">
+        <label for="{{ theme_form.visual_theme.id_for_label }}">{{ theme_form.visual_theme.label }}</label>
+        {{ theme_form.visual_theme }}
+        {% if theme_form.visual_theme.errors %}<div class="error">{{ theme_form.visual_theme.errors }}</div>{% endif %}
+      </div>
+      <button class="btn primary" type="submit">Salvar tema</button>
+      {% if theme_form.non_field_errors %}
+        <div class="error" style="flex-basis:100%;">{{ theme_form.non_field_errors }}</div>
+      {% endif %}
     </form>
   </section>
 {% endblock %}

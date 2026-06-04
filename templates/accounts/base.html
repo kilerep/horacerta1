@@ -23,10 +23,11 @@
 
 <!-- Mudanca aqui -->
 <body
-  data-theme="graphite-premium"
+  data-theme="{% if request.user.is_authenticated %}{{ header_user_theme|default:'graphite-premium' }}{% else %}graphite-premium{% endif %}"
   data-default-theme="graphite-premium"
   data-theme-company="{{ header_company_theme|default:'' }}"
   data-theme-user="{{ header_user_theme|default:'' }}"
+  data-authenticated="{% if request.user.is_authenticated %}true{% else %}false{% endif %}"
   data-company-plan-code="{{ header_current_plan_code|default:'' }}"
   class="{% if request.user.is_authenticated and request.user.role == 'EMPRESA' %}role-company {% elif request.user.is_authenticated %}role-mei {% endif %}{% block body_class %}{% endblock %}">
   {% if request.user.is_authenticated %}
@@ -223,6 +224,11 @@
         </header>
 
         <section class="content">
+          {% if messages %}
+            {% for message in messages %}
+              <div class="hc-global-feedback{% if message.tags %} {{ message.tags }}{% endif %}" role="status">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
           {% block content %}{% endblock %}
         </section>
       </main>

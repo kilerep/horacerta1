@@ -93,6 +93,7 @@ from .forms import (
     MEIProfileForm,
     PeriodSearchForm,
     UnifiedSignupForm,
+    UserThemeForm,
 )
 from .mei_context import mei_contracts_for_user, resolve_mei_context
 from .permissions import can_access_internal_dashboard
@@ -4478,7 +4479,15 @@ def company_profile(request):
     if not company:
         return redirect("dashboard_empresa")
 
-    if request.method == "POST":
+    theme_form = UserThemeForm(instance=request.user)
+    if request.method == "POST" and (request.POST.get("action") or "") == "save_theme":
+        form = CompanyProfileForm(instance=company)
+        theme_form = UserThemeForm(request.POST, instance=request.user)
+        if theme_form.is_valid():
+            theme_form.save()
+            messages.success(request, "Tema atualizado com sucesso.")
+            return redirect("company_profile")
+    elif request.method == "POST":
         form = CompanyProfileForm(request.POST, request.FILES, instance=company)
         if form.is_valid():
             form.save()
@@ -4486,7 +4495,7 @@ def company_profile(request):
     else:
         form = CompanyProfileForm(instance=company)
 
-    return render(request, "accounts/company_profile.html", {"form": form, "company": company})
+    return render(request, "accounts/company_profile.html", {"form": form, "theme_form": theme_form, "company": company})
 
 
 @login_required
@@ -4620,7 +4629,19 @@ def mei_profile(request):
         if not employee:
             return redirect("mei_panel")
 
-    if request.method == "POST":
+    theme_form = UserThemeForm(instance=request.user)
+
+    if request.method == "POST" and (request.POST.get("action") or "") == "save_theme":
+        theme_form = UserThemeForm(request.POST, instance=request.user)
+        form = MEIProfileForm(instance=employee)
+        if theme_form.is_valid():
+            theme_form.save()
+            messages.success(request, "Tema atualizado com sucesso.")
+            redirect_url = reverse("mei_profile")
+            if selected_contract:
+                redirect_url = f"{redirect_url}?contract={selected_contract.id}"
+            return redirect(redirect_url)
+    elif request.method == "POST":
         form = MEIProfileForm(request.POST, request.FILES, instance=employee)
         if form.is_valid():
             form.save()
@@ -4636,6 +4657,7 @@ def mei_profile(request):
         "accounts/mei_profile.html",
         {
             "form": form,
+            "theme_form": theme_form,
             "employee": employee,
             "contracts": contracts,
             "selected_contract": selected_contract,

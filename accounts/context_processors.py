@@ -60,6 +60,7 @@ def header_profile_media(request):
     header_current_plan_code = ""
     header_current_plan_name = ""
     header_current_plan_tone = "premium"
+    header_user_theme = getattr(request.user, "visual_theme", "") or "graphite-premium"
     header_can_access_internal_dashboard = can_access_internal_dashboard(request.user)
 
     try:
@@ -171,5 +172,6 @@ def header_profile_media(request):
         "header_current_plan_code": header_current_plan_code,
         "header_current_plan_name": header_current_plan_name,
         "header_current_plan_tone": header_current_plan_tone,
+        "header_user_theme": header_user_theme,
         "header_can_access_internal_dashboard": header_can_access_internal_dashboard,
     }

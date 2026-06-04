@@ -909,6 +909,44 @@ class MeiMultiCompanyContextTests(TestCase):
         self.assertNotContains(response, "Azul Executivo Premium")
         self.assertNotContains(response, "Azul Claro Corporativo")
 
+    def test_mei_profile_saves_user_theme_and_applies_it_to_pages(self):
+        self.assertEqual(self.mei_user.visual_theme, User.VisualTheme.GRAPHITE)
+
+        response = self.client.post(
+            reverse("mei_profile"),
+            {
+                "action": "save_theme",
+                "visual_theme": User.VisualTheme.NEUTRAL,
+                "selected_contract": str(self.contract_a.id),
+            },
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Tema atualizado com sucesso.")
+        self.assertContains(response, 'data-theme="professional-neutral"')
+        self.mei_user.refresh_from_db()
+        self.assertEqual(self.mei_user.visual_theme, User.VisualTheme.NEUTRAL)
+
+        history_response = self.client.get(reverse("mei_history"), {"contract": str(self.contract_a.id)})
+        self.assertContains(history_response, 'data-theme="professional-neutral"')
+        self.assertContains(history_response, 'data-theme-user="professional-neutral"')
+
+    def test_company_profile_saves_user_theme(self):
+        self.client.force_login(self.owner_a)
+        response = self.client.post(
+            reverse("company_profile"),
+            {
+                "action": "save_theme",
+                "visual_theme": User.VisualTheme.BRAZIL,
+            },
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Tema atualizado com sucesso.")
+        self.assertContains(response, 'data-theme="brazil-corporate"')
+        self.owner_a.refresh_from_db()
+        self.assertEqual(self.owner_a.visual_theme, User.VisualTheme.BRAZIL)
+
     def test_mei_reports_and_requests_follow_selected_contract(self):
         ServiceReport.objects.create(
             company=self.company_a,

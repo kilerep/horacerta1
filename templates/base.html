@@ -41,7 +41,7 @@
     }
   </style>
 </head>
-<body data-theme="graphite-premium" data-default-theme="graphite-premium" data-theme-company="{{ header_company_theme|default:'' }}" data-theme-user="{{ header_user_theme|default:'' }}" class="{% block body_class %}{% endblock %}">
+<body data-theme="{% if request.user.is_authenticated %}{{ header_user_theme|default:'graphite-premium' }}{% else %}graphite-premium{% endif %}" data-default-theme="graphite-premium" data-theme-company="{{ header_company_theme|default:'' }}" data-theme-user="{{ header_user_theme|default:'' }}" data-authenticated="{% if request.user.is_authenticated %}true{% else %}false{% endif %}" class="{% block body_class %}{% endblock %}">
   <div class="wrap">
     <header>
       <div class="brand">

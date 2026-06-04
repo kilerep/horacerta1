@@ -99,7 +99,8 @@
     font-weight:600;
   }
   .profile-field input,
-  .profile-field textarea{
+  .profile-field textarea,
+  .profile-field select{
     width:100%;
     padding:10px 12px;
     border-radius:11px;
@@ -314,6 +315,35 @@
     <div class="profile-actions">
       <button class="btn primary" type="submit">Salvar perfil</button>
     </div>
+  </form>
+</section>
+
+<section class="company-profile" style="margin-top:14px;">
+  <header class="company-profile__hero">
+    <div>
+      <span class="company-profile__kicker">Aparencia</span>
+      <h2 class="company-profile__title">Tema do sistema</h2>
+      <p class="company-profile__subtitle">Escolha o tema visual usado nas telas do sistema.</p>
+    </div>
+  </header>
+  <form method="post" class="company-profile__form">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="save_theme">
+    <section class="profile-section">
+      <div class="profile-grid">
+        <div class="profile-field">
+          <label for="{{ theme_form.visual_theme.id_for_label }}">{{ theme_form.visual_theme.label }}</label>
+          {{ theme_form.visual_theme }}
+          {% if theme_form.visual_theme.errors %}<div class="profile-error">{{ theme_form.visual_theme.errors }}</div>{% endif %}
+        </div>
+      </div>
+      {% if theme_form.non_field_errors %}
+        <div class="profile-error">{{ theme_form.non_field_errors }}</div>
+      {% endif %}
+      <div class="profile-actions">
+        <button class="btn primary" type="submit">Salvar tema</button>
+      </div>
+    </section>
   </form>
 </section>
 

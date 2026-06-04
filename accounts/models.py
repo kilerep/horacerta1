@@ -7,6 +7,12 @@ class User(AbstractUser):
         EMPRESA = "EMPRESA", "Empresa (RH/Admin)"
         FUNCIONARIO = "FUNCIONARIO", "Funcionário (MEI)"
 
+    class VisualTheme(models.TextChoices):
+        GRAPHITE = "graphite-premium", "Grafite Premium"
+        NEUTRAL = "professional-neutral", "Neutro Profissional"
+        BRAZIL = "brazil-corporate", "Brasil Corporativo"
+        RUBRO = "rubro-professional", "Rubro Profissional"
+
     role = models.CharField(
         max_length=20,
         choices=Role.choices,
@@ -14,6 +20,11 @@ class User(AbstractUser):
     )
 
     email = models.EmailField(unique=True)  # <- importante
+    visual_theme = models.CharField(
+        max_length=40,
+        choices=VisualTheme.choices,
+        default=VisualTheme.GRAPHITE,
+    )
 
     def resolve_employee_profile(self, *, contract_id=None, company_id=None):
         """

@@ -9,6 +9,10 @@
   function getInitialTheme() {
     var body = document.body;
     if (!body) return "graphite-premium";
+    var isAuthenticated = body.getAttribute("data-authenticated") === "true";
+
+    var userTheme = (body.getAttribute("data-theme-user") || "").trim();
+    if (isAuthenticated && isValidTheme(userTheme)) return userTheme;
 
     var persisted = "";
     try {
@@ -19,7 +23,6 @@
     if (isValidTheme(persisted)) return persisted;
 
     // Future-ready hooks: backend can set company/user preference via data attrs.
-    var userTheme = (body.getAttribute("data-theme-user") || "").trim();
     if (isValidTheme(userTheme)) return userTheme;
 
     var companyTheme = (body.getAttribute("data-theme-company") || "").trim();

@@ -1008,3 +1008,12 @@ class MEIProfileForm(forms.ModelForm):
         if self.instance and not self.instance.user_id:
             raise forms.ValidationError("Perfil MEI sem usuario vinculado.")
         return data
+
+
+class UserThemeForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ["visual_theme"]
+        labels = {
+            "visual_theme": "Tema do sistema",
+        }
