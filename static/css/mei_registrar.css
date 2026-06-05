@@ -316,7 +316,7 @@ main,
   line-height:1;
   font-weight:900;
   letter-spacing:var(--clock-letter-spacing);
-  color:#f5f8ff;
+  color:var(--color-clock-main, #f5f8ff);
   text-shadow:0 10px 26px var(--color-primary-soft);
 }
 
