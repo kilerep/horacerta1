@@ -6001,6 +6001,8 @@ def _public_page_context(request, path="/"):
 
 
 def landing_view(request):
+    if request.user.is_authenticated:
+        return redirect("employee_dashboard")
     context = _public_page_context(request, "/")
     return render(request, "public/landing.html", context)
 
@@ -6021,7 +6023,7 @@ def pwa_manifest(request):
         "id": "/",
         "name": "HoraCerta - Gestao de Horas",
         "short_name": "HoraCerta",
-        "description": "Plataforma de gestao de horas entre empresa e MEI.",
+        "description": "Controle de horas, clientes e relatorios para profissionais e MEIs.",
         "start_url": "/",
         "scope": "/",
         "display": "standalone",

@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" href="{% static 'pwa/apple-touch-icon-180.png' %}">
   <link rel="icon" type="image/png" sizes="32x32" href="{% static 'pwa/favicon-32.png' %}">
   <title>{% block title %}HoraCerta{% endblock %}</title>
-  <meta name="description" content="{% block meta_description %}HoraCerta: SaaS de gestao de horas entre empresa e MEI com cadastro, registro e acompanhamento em tempo real.{% endblock %}">
+  <meta name="description" content="{% block meta_description %}HoraCerta: controle de horas, clientes e relatorios para profissionais e MEIs.{% endblock %}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -57,7 +57,7 @@
           <span class="mark">HC</span>
           <span>
             <div class="name">HoraCerta</div>
-            <div class="sub">SaaS operacional para empresa e MEI</div>
+            <div class="sub">Controle de horas para profissionais</div>
           </span>
         </a>
         <nav class="nav" aria-label="Navegacao publica">
@@ -70,13 +70,9 @@
               <option value="rubro-professional">Rubro Profissional</option>
             </select>
           </div>
-          <a class="link hide-sm" href="{% url 'landing' %}#como-funciona">Como funciona</a>
-          <a class="link hide-sm" href="{% url 'landing' %}#beneficios">Beneficios</a>
-          <a class="link hide-sm" href="{% url 'public_evaluation' %}">Avaliacao</a>
-          <a class="link hide-sm" href="{% url 'landing' %}#faq">FAQ</a>
+          <a class="link hide-sm" href="{% url 'landing' %}#recursos">Recursos</a>
           <a class="link" href="{% url 'help' %}">Ajuda</a>
           <a class="btn" href="{% url 'login' %}">Entrar no sistema</a>
-          <a class="btn primary" href="{% url 'signup' %}">Criar conta da empresa</a>
         </nav>
       </div>
     </div>
@@ -88,7 +84,7 @@
 
   <footer class="footer">
     <div class="container footer-row">
-      <span>© {% now "Y" %} HoraCerta. SaaS de gestao de horas para empresa e MEI.</span>
+      <span>© {% now "Y" %} HoraCerta. Controle de horas para profissionais e MEIs.</span>
       <span><a href="{% url 'terms' %}">Termos</a> | <a href="{% url 'privacy' %}">Privacidade</a> | <a href="{% url 'help' %}">Ajuda</a></span>
     </div>
   </footer>

@@ -1,7 +1,7 @@
 {% extends "public/base_public.html" %}
 {% load static %}
-{% block title %}HoraCerta | Gestão de Horas entre Empresa e MEI{% endblock %}
-{% block meta_description %}HoraCerta é um SaaS de gestão de horas entre empresa e MEI: a empresa cadastra, o MEI registra horários e a empresa acompanha em tempo real com histórico organizado.{% endblock %}
+{% block title %}HoraCerta | Controle de horas para profissionais{% endblock %}
+{% block meta_description %}Registre horarios, organize clientes e gere relatorios profissionais com o HoraCerta.{% endblock %}
 
 {% block extra_head %}
 <link rel="canonical" href="{{ canonical_url }}">
@@ -10,15 +10,15 @@
 <meta property="og:type" content="website">
 <meta property="og:locale" content="pt_BR">
 <meta property="og:site_name" content="HoraCerta">
-<meta property="og:title" content="HoraCerta | Gestão de Horas entre Empresa e MEI">
-<meta property="og:description" content="Plataforma operacional para empresa e MEI: a empresa cadastra, o MEI registra horários e a empresa acompanha em tempo real com histórico organizado.">
+<meta property="og:title" content="HoraCerta | Controle de horas para profissionais">
+<meta property="og:description" content="Registre horarios, organize clientes e gere relatorios profissionais em poucos minutos.">
 <meta property="og:url" content="{{ og_url }}">
 <meta property="og:image" content="{{ og_image_url }}">
-<meta property="og:image:alt" content="Tela real do Painel do Profissional no HoraCerta">
+<meta property="og:image:alt" content="HoraCerta">
 
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="HoraCerta | Gestão de Horas entre Empresa e MEI">
-<meta name="twitter:description" content="Gestão de horas entre empresa e MEI com fluxo operacional claro: cadastro, registro e acompanhamento em tempo real.">
+<meta name="twitter:title" content="HoraCerta | Controle de horas para profissionais">
+<meta name="twitter:description" content="Registre horarios, organize clientes e gere relatorios profissionais em poucos minutos.">
 <meta name="twitter:image" content="{{ og_image_url }}">
 
 <script type="application/ld+json">
@@ -30,7 +30,7 @@
       "name": "HoraCerta",
       "url": "{{ canonical_url|escapejs }}",
       "logo": "{{ request.scheme }}://{{ request.get_host }}{% static 'pwa/icon-512.png' %}",
-      "description": "Plataforma de gestão de horas entre empresa e MEI."
+      "description": "Controle de horas, clientes e relatorios para profissionais e MEIs."
     },
     {
       "@type": "SoftwareApplication",
@@ -39,7 +39,7 @@
       "operatingSystem": "Web, Android, iOS",
       "url": "{{ canonical_url|escapejs }}",
       "image": "{{ og_image_url|escapejs }}",
-      "description": "SaaS operacional para cadastro de MEI, registro de horários e acompanhamento em tempo real pela empresa.",
+      "description": "Aplicativo para profissionais registrarem horarios, organizarem clientes e gerarem relatorios.",
       "publisher": {
         "@type": "Organization",
         "name": "HoraCerta"
@@ -53,226 +53,85 @@
 
 {% block content %}
 <section class="container hero">
-  <div>
-    <span class="kicker">SaaS operacional de gestão de horas entre empresa e MEI</span>
-    <h1>Gestão de horas com padrão B2B para empresas que operam com MEI.</h1>
-    <p>O HoraCerta transforma uma rotina dispersa em operação clara: a empresa cadastra o MEI, o profissional registra horários e a gestão acompanha em tempo real com histórico organizado.</p>
-    <div class="hero-roles">
-      <span class="hero-role">RH: cadastro e governança da base</span>
-      <span class="hero-role">Operação: acompanhamento diário da jornada</span>
-      <span class="hero-role">Financeiro: conferência com histórico confiável</span>
-    </div>
+  <div class="hero-copy">
+    <span class="kicker">HoraCerta para profissionais e MEIs</span>
+    <h1>Controle suas horas com clareza.</h1>
+    <p class="lead">Registre horarios, organize clientes e gere relatorios profissionais em poucos minutos.</p>
+    <p>O HoraCerta ajuda profissionais e MEIs a acompanhar jornadas, valores estimados e relatorios por cliente.</p>
     <div class="hero-actions">
-      <a class="btn primary" href="{% url 'public_evaluation' %}">Iniciar avaliação da empresa</a>
-      <a class="btn" href="#como-funciona">Ver como funciona</a>
+      <a class="btn primary" href="{% url 'login' %}">Entrar no sistema</a>
+      <a class="btn" href="#recursos">Conhecer recursos</a>
     </div>
-    <p class="hero-assist">Já tem acesso? <a href="{% url 'login' %}">Entrar na plataforma</a></p>
-    <div class="hero-points">
-      <div class="hero-point">Produto em operação: as telas ao lado são capturas reais do mobile do MEI.</div>
-      <div class="hero-point">Fluxo claro e direto: empresa cadastra, MEI registra e empresa acompanha.</div>
-      <div class="hero-point">Sem métricas inventadas: proposta comercial baseada no que o produto já entrega.</div>
-    </div>
+    <p class="hero-assist">Conta criada por convite ou administracao do HoraCerta.</p>
   </div>
-  <div class="hero-visual" aria-label="Capturas reais do produto HoraCerta">
-    <div class="hero-visual-head">
-      <span>Capturas reais do aplicativo do profissional</span>
-      <span class="hero-proof">Produto já funcional</span>
+
+  <div class="hero-panel" aria-label="Resumo ilustrativo do HoraCerta">
+    <div class="panel-top">
+      <span>Hoje</span>
+      <strong>7h 40min</strong>
     </div>
-    <div class="phone-stack">
-      <figure class="phone-card primary">
-        <div class="phone-notch"></div>
-        <img
-          class="phone-shot"
-          src="{% static 'img/public/prints/painel-profissional-mobile.png.jpg' %}"
-          alt="Print real do Painel do Profissional no mobile"
-          width="823"
-          height="1536"
-          loading="eager"
-          decoding="async"
-          fetchpriority="high"
-          sizes="(max-width: 720px) 92vw, (max-width: 980px) 48vw, 26vw"
-        >
-        <figcaption class="phone-label">Print principal: Painel do Profissional</figcaption>
-      </figure>
-      <figure class="phone-card secondary">
-        <div class="phone-notch"></div>
-        <img
-          class="phone-shot"
-          src="{% static 'img/public/prints/resumo-mei-mobile.png.jpg' %}"
-          alt="Print real do Resumo do MEI no mobile"
-          width="832"
-          height="1536"
-          loading="lazy"
-          decoding="async"
-          fetchpriority="low"
-          sizes="(max-width: 980px) 46vw, 16vw"
-        >
-        <figcaption class="phone-label">Apoio: Resumo do MEI</figcaption>
-      </figure>
-      <figure class="phone-card tertiary">
-        <div class="phone-notch"></div>
-        <img
-          class="phone-shot"
-          src="{% static 'img/public/prints/meus-vinculos-mobile.png.jpg' %}"
-          alt="Print real complementar da operação do MEI no mobile"
-          width="691"
-          height="1536"
-          loading="lazy"
-          decoding="async"
-          fetchpriority="low"
-          sizes="(max-width: 980px) 46vw, 15vw"
-        >
-        <figcaption class="phone-label">Apoio secundário: visão de clientes do MEI</figcaption>
-      </figure>
+    <div class="client-row">
+      <span>Cliente</span>
+      <strong>Oficina Central</strong>
+    </div>
+    <div class="metric-grid">
+      <div>
+        <span>Valor estimado</span>
+        <strong>R$ 384,00</strong>
+      </div>
+      <div>
+        <span>Relatorios</span>
+        <strong>3 prontos</strong>
+      </div>
+    </div>
+    <div class="timeline">
+      <span></span>
+      <div>
+        <strong>Entrada registrada</strong>
+        <small>08:04</small>
+      </div>
+    </div>
+    <div class="timeline">
+      <span></span>
+      <div>
+        <strong>Saida registrada</strong>
+        <small>17:44</small>
+      </div>
     </div>
   </div>
 </section>
 
-<section class="container product-proof" id="produto">
-  <h2>Produto real, apresentado com transparência</h2>
-  <p class="intro">A home apresenta o HoraCerta com capturas reais do fluxo mobile do MEI. Sem números inventados, sem promessas artificiais e sem “demo” genérica como prova principal.</p>
-  <div class="proof-grid">
-    <article class="proof-card">
-      <h3>Painel do Profissional como evidência central</h3>
-      <p>O print principal mostra a experiência real que o MEI usa no dia a dia para registrar horários.</p>
-    </article>
-    <article class="proof-card">
-      <h3>Resumo do MEI para reforço visual</h3>
-      <p>A segunda captura reforça a leitura de produto existente, com contexto funcional real e coerente com o fluxo operacional.</p>
-    </article>
-    <article class="proof-card">
-      <h3>Visão de clientes como apoio secundário</h3>
-      <p>A terceira captura entra como reforço visual secundário, sem desviar da proposta principal do produto.</p>
-    </article>
-    <article class="proof-card">
-      <h3>Posicionamento comercial objetivo</h3>
-      <p>A comunicação reforça o posicionamento real do HoraCerta: gestão de horas clara, fluxo simples e confiança operacional.</p>
-    </article>
+<section class="container section" id="recursos">
+  <div class="section-head">
+    <h2>O essencial para fechar o dia com seguranca</h2>
+    <p class="intro">Uma entrada simples para a rotina: registrar, conferir e compartilhar informacoes com seus clientes.</p>
   </div>
-</section>
-
-<section class="container section" id="como-funciona">
-  <h2>Como funciona na rotina da operação</h2>
-  <p class="intro">Um fluxo objetivo para sair da planilha paralela e ganhar previsibilidade operacional.</p>
   <div class="steps">
-    <article class="card"><div class="step-index">01</div><h3>Empresa cadastra</h3><p>A empresa estrutura sua base de profissionais MEI com clareza de operação.</p></article>
-    <article class="card"><div class="step-index">02</div><h3>MEI registra</h3><p>O profissional registra horários de forma prática no painel, inclusive pelo celular.</p></article>
-    <article class="card"><div class="step-index">03</div><h3>Empresa acompanha</h3><p>A empresa acompanha em tempo real e consulta histórico organizado para conferência.</p></article>
-  </div>
-</section>
-
-<section class="container section" id="beneficios">
-  <h2>Benefícios para a operação</h2>
-  <p class="intro">Mais clareza de responsabilidade para cada área, com uma base única de trabalho.</p>
-  <div class="grid-3">
     <article class="card">
-      <h3>Para RH</h3>
-      <p>Estruture cadastro e rotina de profissionais MEI com visão centralizada e menos retrabalho interno.</p>
+      <div class="step-index">01</div>
+      <h3>Registre horarios</h3>
+      <p>Marque entradas e saidas pelo celular e mantenha o historico organizado.</p>
     </article>
     <article class="card">
-      <h3>Para operação</h3>
-      <p>Acompanhe jornada em tempo real e identifique rapidamente o que está em dia e o que exige ação.</p>
+      <div class="step-index">02</div>
+      <h3>Organize clientes</h3>
+      <p>Separe contratos, jornadas e valores para acompanhar cada atendimento com clareza.</p>
     </article>
     <article class="card">
-      <h3>Para financeiro</h3>
-      <p>Ganhe previsibilidade no fechamento com histórico organizado e conferência mais consistente.</p>
-    </article>
-  </div>
-</section>
-
-<section class="container section" id="confianca">
-  <h2>Por que confiar no HoraCerta</h2>
-  <p class="intro">A camada comercial foi construída para reduzir risco percebido na decisão: linguagem objetiva, produto real e proposta verificável.</p>
-  <div class="trust-grid">
-    <article class="trust-card">
-      <h3>Demonstração com produto real</h3>
-      <p>A landing usa capturas reais da plataforma para representar o uso diário sem simulações artificiais.</p>
-    </article>
-    <article class="trust-card">
-      <h3>Fluxo operacional claro</h3>
-      <p>Empresa cadastra, MEI registra e empresa acompanha: uma proposta simples de entender e de operar.</p>
-    </article>
-    <article class="trust-card">
-      <h3>Sem marketing inflado</h3>
-      <p>Sem contadores fake, sem depoimentos inventados e sem promessas além do estágio real do produto.</p>
-    </article>
-    <article class="trust-card">
-      <h3>Postura de software B2B</h3>
-      <p>Comunicação profissional, foco em rotina operacional e clareza para apoiar uma decisão de compra responsável.</p>
-    </article>
-  </div>
-</section>
-
-<section class="container section" id="para-quem">
-  <h2>Para quem é o HoraCerta</h2>
-  <div class="grid-2">
-    <article class="card">
-      <h3>Empresas com MEIs na rotina</h3>
-      <ul>
-        <li>RH e operação que precisam padronizar jornada.</li>
-        <li>Financeiro que precisa de base consistente para conferência.</li>
-        <li>Gestores que precisam de visão operacional contínua.</li>
-      </ul>
-    </article>
-    <article class="card">
-      <h3>MEIs que registram horas</h3>
-      <ul>
-        <li>Registro simples no fluxo definido pela empresa.</li>
-        <li>Menos ruído de comunicação e menos retrabalho.</li>
-        <li>Histórico claro para acompanhamento do dia a dia.</li>
-      </ul>
-    </article>
-  </div>
-</section>
-
-<section class="container section" id="quando-faz-sentido">
-  <h2>Quando o HoraCerta faz sentido</h2>
-  <p class="intro">Ideal para empresas que já operam com MEI e querem amadurecer controle sem aumentar complexidade.</p>
-  <div class="grid-3">
-    <article class="card"><h3>Base MEI em crescimento</h3><p>Quando planilha e mensagens já não sustentam a rotina com padrão de gestão.</p></article>
-    <article class="card"><h3>Fechamento mensal sensível</h3><p>Quando divergências entre áreas geram retrabalho e atrasam conferência financeira.</p></article>
-    <article class="card"><h3>Exigência de previsibilidade</h3><p>Quando a operação precisa visibilidade diária para evitar surpresas no fim do período.</p></article>
-  </div>
-</section>
-
-<section class="container section" id="faq">
-  <h2>Perguntas frequentes de decisão</h2>
-  <p class="intro">Respostas diretas para as dúvidas mais comuns de quem avalia o HoraCerta para a operação da empresa.</p>
-  <div class="faq-grid">
-    <article class="faq-block">
-      <h3>Escopo do produto</h3>
-      <div class="faq">
-        <article class="faq-item"><strong>O HoraCerta resolve qual parte da rotina?</strong><span class="intro">Cadastro de MEIs, registro de horários e acompanhamento operacional em tempo real.</span></article>
-        <article class="faq-item"><strong>O HoraCerta substitui sistema jurídico/contratual?</strong><span class="intro">Não. O foco é gestão de horas entre empresa e MEI, com visão operacional.</span></article>
-        <article class="faq-item"><strong>As imagens da landing são reais?</strong><span class="intro">Sim. A vitrine visual usa capturas reais do HoraCerta em operação.</span></article>
-      </div>
-    </article>
-    <article class="faq-block">
-      <h3>Uso no dia a dia</h3>
-      <div class="faq">
-        <article class="faq-item"><strong>O MEI consegue registrar pelo celular com rapidez?</strong><span class="intro">Sim. O fluxo mobile do profissional foi desenhado para uso recorrente e simples.</span></article>
-        <article class="faq-item"><strong>RH, operação e financeiro trabalham com a mesma base?</strong><span class="intro">Sim. O histórico centralizado reduz divergência de informação entre áreas.</span></article>
-        <article class="faq-item"><strong>Existe marketing inflado na página?</strong><span class="intro">Não. Não usamos métricas falsas, prova social fake ou promessas inventadas.</span></article>
-      </div>
-    </article>
-    <article class="faq-block">
-      <h3>Contratação e avaliação</h3>
-      <div class="faq">
-        <article class="faq-item"><strong>Como começar a avaliar a plataforma?</strong><span class="intro">Pela página de <a href="{% url 'public_evaluation' %}">avaliação</a>, com passo a passo e direcionamento para cadastro.</span></article>
-        <article class="faq-item"><strong>Já tenho conta. Como acesso?</strong><span class="intro">Use <a href="{% url 'login' %}">Entrar na plataforma</a> com seu login atual.</span></article>
-      </div>
+      <div class="step-index">03</div>
+      <h3>Gere relatorios</h3>
+      <p>Prepare relatorios profissionais para enviar aos clientes quando precisar.</p>
     </article>
   </div>
 </section>
 
 <section class="container section">
-  <div class="cta">
-    <h2>Eleve o controle da sua operação com um software B2B claro e confiável</h2>
-    <p>Se sua empresa opera com MEI e precisa de mais previsibilidade, o HoraCerta organiza cadastro, registro e acompanhamento em um fluxo único, profissional e verificável.</p>
-    <div class="hero-actions">
-      <a class="btn primary" href="{% url 'public_evaluation' %}">Iniciar avaliação da empresa</a>
-      <a class="btn" href="#quando-faz-sentido">Ver se faz sentido para meu cenário</a>
+  <div class="simple-cta">
+    <div>
+      <h2>Acesse seu painel profissional</h2>
+      <p>Ao entrar, o HoraCerta abre direto no seu painel para continuar a rotina.</p>
     </div>
+    <a class="btn primary" href="{% url 'login' %}">Entrar no sistema</a>
   </div>
 </section>
 {% endblock %}

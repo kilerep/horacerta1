@@ -1,7 +1,7 @@
 {% extends "public/base_public.html" %}
 {% load static %}
-{% block title %}Próximo Passo da Avaliação | HoraCerta{% endblock %}
-{% block meta_description %}Resumo simples da jornada pública do HoraCerta: descoberta, avaliação e entrada na plataforma para operação entre empresa e MEI.{% endblock %}
+{% block title %}Proximo passo | HoraCerta{% endblock %}
+{% block meta_description %}Resumo simples da jornada publica do HoraCerta para entrada na plataforma.{% endblock %}
 
 {% block extra_head %}
 <link rel="canonical" href="{{ canonical_url }}">
@@ -12,34 +12,33 @@
 {% block content %}
 <section class="container eval-wrap">
   <section class="eval-hero">
-    <span class="eval-kicker">Próximo passo</span>
-    <h1>Jornada pública do HoraCerta</h1>
-    <p>Você chegou à etapa final de pré-venda. Abaixo está o fluxo objetivo para seguir sem dúvida.</p>
+    <span class="eval-kicker">Proximo passo</span>
+    <h1>Entrada no HoraCerta</h1>
+    <p>Use seu acesso para entrar no painel e continuar sua rotina de registros e relatorios.</p>
   </section>
 
   <section class="eval-grid">
     <article class="eval-card">
-      <h3>1. Descoberta</h3>
-      <p>A empresa entende proposta, escopo e aderência na home pública.</p>
+      <h3>1. Conhecer</h3>
+      <p>Entenda como o HoraCerta organiza horarios, clientes e relatorios.</p>
     </article>
     <article class="eval-card">
-      <h3>2. Avaliação</h3>
-      <p>A empresa confirma cenário, momento e impacto operacional.</p>
+      <h3>2. Acessar</h3>
+      <p>Entre com uma conta criada por convite ou administracao do HoraCerta.</p>
     </article>
     <article class="eval-card">
-      <h3>3. Entrada</h3>
-      <p>A empresa cria conta ou acessa a plataforma para continuar a operação.</p>
+      <h3>3. Usar</h3>
+      <p>Registre sua rotina e acompanhe informacoes por cliente.</p>
     </article>
   </section>
 
   <section class="eval-card">
-    <h2>Escolha seu próximo passo</h2>
+    <h2>Escolha seu proximo passo</h2>
     <div class="eval-actions">
-      <a class="btn primary" href="{% url 'signup' %}?from=avaliacao-publica">Criar conta da empresa</a>
-      <a class="btn" href="{% url 'login' %}?from=avaliacao-publica">Entrar no sistema</a>
+      <a class="btn primary" href="{% url 'login' %}?from=avaliacao-publica">Entrar no sistema</a>
       <a class="btn" href="{% url 'landing' %}">Voltar para a home</a>
     </div>
-    <div class="eval-note">Fluxo comercial público: claro, honesto e alinhado ao estágio real do produto.</div>
+    <div class="eval-note">Conta criada por convite ou administracao do HoraCerta.</div>
   </section>
 </section>
 {% endblock %}
