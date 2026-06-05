@@ -51,6 +51,7 @@ from timeclock.models import (
     PunchCorrectionLog,
     PunchCorrectionRequest,
     ServiceReport,
+    WorkdayChangeLog,
 )
 from timeclock.notifications import (
     acknowledge_company_notification,
@@ -931,6 +932,58 @@ def _today_bounds(day):
         timezone.make_aware(datetime.combine(day, time.min), tz),
         timezone.make_aware(datetime.combine(day, time.max), tz),
     )
+
+
+def _request_ip_address(request):
+    forwarded_for = (request.META.get("HTTP_X_FORWARDED_FOR") or "").split(",")[0].strip()
+    return forwarded_for or request.META.get("REMOTE_ADDR") or None
+
+
+def _workday_log_snapshot(punches):
+    items = []
+    for punch in punches:
+        local_ts = timezone.localtime(punch.timestamp)
+        items.append(
+            {
+                "punch_id": str(punch.id),
+                "time": local_ts.strftime("%H:%M"),
+                "contract_id": str(punch.contract_id),
+                "company_id": str(punch.contract.company_id),
+                "company": punch.contract.company.name,
+                "is_cancelled": bool(punch.is_cancelled),
+                "note": punch.note or "",
+            }
+        )
+    active_items = [item for item in items if not item["is_cancelled"]]
+    return {
+        "times": [item["time"] for item in active_items],
+        "items": active_items,
+        "all_items": items,
+    }
+
+
+def _infer_workday_change_type(before_data, after_data):
+    before_items = {item["punch_id"]: item for item in before_data.get("items", [])}
+    after_items = {item["punch_id"]: item for item in after_data.get("items", [])}
+    before_ids = set(before_items)
+    after_ids = set(after_items)
+    changes = set()
+    if after_ids - before_ids:
+        changes.add(WorkdayChangeLog.ChangeType.ADD)
+    if before_ids - after_ids:
+        changes.add(WorkdayChangeLog.ChangeType.REMOVE)
+    for punch_id in before_ids & after_ids:
+        before_item = before_items[punch_id]
+        after_item = after_items[punch_id]
+        if before_item.get("contract_id") != after_item.get("contract_id"):
+            changes.add(WorkdayChangeLog.ChangeType.CLIENT_CHANGED)
+        if before_item.get("time") != after_item.get("time") or before_item.get("note") != after_item.get("note"):
+            changes.add(WorkdayChangeLog.ChangeType.EDIT)
+    if len(changes) > 1:
+        return WorkdayChangeLog.ChangeType.MIXED
+    if changes:
+        return next(iter(changes))
+    return WorkdayChangeLog.ChangeType.EDIT
 
 
 def signup(request):
@@ -1888,6 +1941,65 @@ def internal_audit(request):
                 {"user": user, "selected": str(user.id) == actor_id}
                 for user in User.objects.order_by("email", "username")
             ],
+        },
+    )
+
+
+@internal_staff_required
+def internal_workday_changes(request):
+    company_id = (request.GET.get("company") or "").strip()
+    employee_id = (request.GET.get("employee") or "").strip()
+    change_type = (request.GET.get("change_type") or "").strip()
+    date_from, date_to, start_dt, end_dt = _audit_date_bounds(request)
+
+    logs_qs = WorkdayChangeLog.objects.select_related(
+        "user",
+        "employee",
+        "employee__user",
+        "company",
+        "contract",
+    ).order_by("-changed_at")
+    logs_qs = _apply_datetime_bounds(logs_qs, "changed_at", start_dt, end_dt)
+    if company_id:
+        logs_qs = logs_qs.filter(company_id=company_id)
+    if employee_id:
+        logs_qs = logs_qs.filter(employee_id=employee_id)
+    valid_change_types = {choice[0] for choice in WorkdayChangeLog.ChangeType.choices}
+    if change_type in valid_change_types:
+        logs_qs = logs_qs.filter(change_type=change_type)
+
+    rows = []
+    for log in logs_qs[:300]:
+        before_times = ", ".join(log.before_data.get("times") or []) or "-"
+        after_times = ", ".join(log.after_data.get("times") or []) or "-"
+        rows.append(
+            {
+                "log": log,
+                "before_times": before_times,
+                "after_times": after_times,
+            }
+        )
+
+    companies = [
+        {"company": company, "selected": str(company.id) == company_id}
+        for company in Company.objects.order_by("name")
+    ]
+    employees = [
+        {"employee": employee, "selected": str(employee.id) == employee_id}
+        for employee in Employee.objects.select_related("company", "user").order_by("full_name")
+    ]
+
+    return render(
+        request,
+        "accounts/internal_workday_changes.html",
+        {
+            "rows": rows,
+            "companies": companies,
+            "employees": employees,
+            "change_type_choices": WorkdayChangeLog.ChangeType.choices,
+            "change_type": change_type,
+            "date_from": date_from,
+            "date_to": date_to,
         },
     )
 
@@ -4895,6 +5007,7 @@ def mei_edit_today_punches(request):
 
         if not errors:
             tz = timezone.get_current_timezone()
+            before_data = _workday_log_snapshot(today_punches)
             with transaction.atomic():
                 for punch_id in remove_ids:
                     punch = today_punches_by_id.get(punch_id)
@@ -4924,6 +5037,27 @@ def mei_edit_today_punches(request):
                         confidence_status=Punch.ConfidenceStatus.FREE,
                         qr_confirmation_status=Punch.QrConfirmationStatus.NOT_REQUIRED,
                         audit_payload={"origin": "today_edit"},
+                    )
+
+                updated_punches = list(
+                    Punch.objects.filter(contract_id__in=contract_ids, timestamp__range=(start_dt, end_dt))
+                    .select_related("contract", "contract__company")
+                    .order_by("timestamp", "created_at")
+                )
+                after_data = _workday_log_snapshot(updated_punches)
+                if before_data != after_data:
+                    WorkdayChangeLog.objects.create(
+                        user=request.user,
+                        employee=selected_contract.employee,
+                        company=selected_contract.company,
+                        contract=selected_contract,
+                        edited_date=today,
+                        before_data=before_data,
+                        after_data=after_data,
+                        change_type=_infer_workday_change_type(before_data, after_data),
+                        ip_address=_request_ip_address(request),
+                        user_agent=(request.META.get("HTTP_USER_AGENT") or "")[:255],
+                        note=note_value,
                     )
 
             messages.success(request, "Horarios de hoje atualizados com sucesso.")

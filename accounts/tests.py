@@ -22,6 +22,7 @@ from timeclock.models import (
     PunchCorrectionLog,
     PunchCorrectionRequest,
     ServiceReport,
+    WorkdayChangeLog,
 )
 from accounts.mei_context import MEI_SELECTED_CONTRACT_SESSION_KEY
 from .forms import CompanyAttendancePolicyForm, CompanyAuthorizedLocationForm
@@ -122,6 +123,7 @@ class InternalDashboardTests(TestCase):
             reverse("internal_corrections"),
             reverse("internal_notifications"),
             reverse("internal_audit"),
+            reverse("internal_workday_changes"),
         ]
 
         for url in routes:
@@ -143,6 +145,7 @@ class InternalDashboardTests(TestCase):
             reverse("internal_corrections"),
             reverse("internal_notifications"),
             reverse("internal_audit"),
+            reverse("internal_workday_changes"),
         ]
 
         for url in routes:
@@ -164,6 +167,7 @@ class InternalDashboardTests(TestCase):
             reverse("internal_corrections"),
             reverse("internal_notifications"),
             reverse("internal_audit"),
+            reverse("internal_workday_changes"),
         ]
 
         for url in routes:
@@ -192,6 +196,7 @@ class InternalDashboardTests(TestCase):
             reverse("internal_corrections"),
             reverse("internal_notifications"),
             reverse("internal_audit"),
+            reverse("internal_workday_changes"),
         ]
 
         for url in routes:
@@ -1099,6 +1104,27 @@ class MeiMultiCompanyContextTests(TestCase):
         self.assertTrue(all(punch.contract_id == self.contract_b.id for punch in punches))
         self.assertEqual([timezone.localtime(punch.timestamp).strftime("%H:%M") for punch in punches], ["07:30", "11:30", "12:30", "16:30"])
         self.assertEqual(Punch.objects.filter(is_manual=True).count(), 2)
+        log = WorkdayChangeLog.objects.get()
+        self.assertEqual(log.user, self.mei_user)
+        self.assertEqual(log.employee, self.employee_b)
+        self.assertEqual(log.company, self.company_b)
+        self.assertEqual(log.contract, self.contract_b)
+        self.assertEqual(log.edited_date, today)
+        self.assertEqual(log.change_type, WorkdayChangeLog.ChangeType.MIXED)
+        self.assertEqual(log.before_data["times"], ["08:00", "12:00"])
+        self.assertEqual(log.after_data["times"], ["07:30", "11:30", "12:30", "16:30"])
+
+        admin_user = User.objects.create_superuser(
+            username="admin-workday@example.com",
+            email="admin-workday@example.com",
+            password="Admin@12345",
+            role=User.Role.EMPRESA,
+        )
+        self.client.force_login(admin_user)
+        response = self.client.get(reverse("internal_workday_changes"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Alterações de horários")
+        self.assertContains(response, "07:30, 11:30, 12:30, 16:30")
 
     def test_mei_can_remove_wrong_today_punch_but_not_empty_day(self):
         today = timezone.localdate()
@@ -1120,6 +1146,10 @@ class MeiMultiCompanyContextTests(TestCase):
         wrong.refresh_from_db()
         self.assertTrue(wrong.is_cancelled)
         self.assertEqual(Punch.objects.filter(timestamp__date=today, is_cancelled=False).count(), 2)
+        log = WorkdayChangeLog.objects.get()
+        self.assertEqual(log.change_type, WorkdayChangeLog.ChangeType.MIXED)
+        self.assertEqual(log.before_data["times"], ["08:00", "09:00"])
+        self.assertEqual(log.after_data["times"], ["08:00", "12:00"])
 
         response = self.client.post(
             reverse("mei_edit_today_punches"),
@@ -1133,6 +1163,7 @@ class MeiMultiCompanyContextTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Mantenha pelo menos um horario no dia atual")
+        self.assertEqual(WorkdayChangeLog.objects.count(), 1)
 
     def test_mei_today_edit_is_blocked_after_generated_report(self):
         today = timezone.localdate()
@@ -1264,6 +1295,9 @@ class MeiMultiCompanyContextTests(TestCase):
         self.assertNotContains(public_response, "Manual")
         self.assertNotContains(public_response, "Localizacao")
         self.assertNotContains(public_response, "Localização")
+        self.assertNotContains(public_response, "Alterações de horários")
+        self.assertNotContains(public_response, "Antes")
+        self.assertNotContains(public_response, "Depois")
         report.refresh_from_db()
         self.assertIsNotNone(report.conference_first_viewed_at)
         self.assertEqual(report.status, ServiceReport.Status.VIEWED)
@@ -1275,11 +1309,11 @@ class MeiMultiCompanyContextTests(TestCase):
                 "conference_comment": "Conferido pelo cliente.",
             },
         )
-        self.assertEqual(review_response.status_code, 302)
+        self.assertEqual(review_response.status_code, 200)
         report.refresh_from_db()
-        self.assertEqual(report.status, ServiceReport.Status.REVIEWED)
-        self.assertEqual(report.conference_final_status, ServiceReport.ConferenceStatus.REVIEWED)
-        self.assertEqual(report.conference_comment, "Conferido pelo cliente.")
+        self.assertEqual(report.status, ServiceReport.Status.VIEWED)
+        self.assertEqual(report.conference_final_status, ServiceReport.ConferenceStatus.VIEWED)
+        self.assertEqual(report.conference_comment, "")
 
     def test_company_cannot_access_other_company_mei_profile(self):
         self.client.force_login(self.owner_a)

@@ -37,6 +37,7 @@
             {% if unread_internal_notifications_count %}<span class="badge">{{ unread_internal_notifications_count }}</span>{% endif %}
           </a>
           <a class="internal-nav__item {% if current == 'internal_audit' %}is-active{% endif %}" href="{% url 'internal_audit' %}">Auditoria</a>
+          <a class="internal-nav__item {% if current == 'internal_workday_changes' %}is-active{% endif %}" href="{% url 'internal_workday_changes' %}">Alterações de horários</a>
           <a class="internal-nav__item {% if current == 'internal_corrections' %}is-active{% endif %}" href="{% url 'internal_corrections' %}">Correções</a>
         {% endwith %}
       </nav>

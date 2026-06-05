@@ -1,0 +1,120 @@
+{% extends "accounts/internal_base.html" %}
+{% block title %}HoraCerta - Alterações de horários{% endblock %}
+{% block internal_breadcrumb %}<span class="internal-breadcrumb__sep">></span><span>Alterações de horários</span>{% endblock %}
+{% block internal_title %}Alterações de horários{% endblock %}
+{% block internal_subtitle %}Histórico interno das edições de horários realizadas pelo prestador no dia atual.{% endblock %}
+
+{% block internal_content %}
+  <style>
+    .workday-table{min-width:1120px}
+    .workday-values{display:grid;gap:6px;min-width:180px}
+    .workday-value{border:1px solid var(--color-border);border-radius:8px;padding:8px;background:color-mix(in oklab, var(--surface-soft) 60%, transparent)}
+    .workday-value b{display:block;color:var(--color-text-muted);font-size:11px;margin-bottom:3px}
+    .workday-json{margin-top:6px;color:var(--color-text-muted);font-size:12px;line-height:1.35;overflow-wrap:anywhere}
+  </style>
+
+  <section class="internal-panel">
+    <div class="internal-head">
+      <div>
+        <h3>Filtros</h3>
+        <p class="internal-subtitle">Refine por prestador, cliente, período da alteração e tipo de alteração.</p>
+      </div>
+    </div>
+    <form method="get" class="filter-grid">
+      <div class="field">
+        <label for="date_from">Data inicial</label>
+        <input id="date_from" name="date_from" type="date" value="{{ date_from|date:'Y-m-d' }}">
+      </div>
+      <div class="field">
+        <label for="date_to">Data final</label>
+        <input id="date_to" name="date_to" type="date" value="{{ date_to|date:'Y-m-d' }}">
+      </div>
+      <div class="field">
+        <label for="company">Cliente</label>
+        <select id="company" name="company">
+          <option value="">Todos</option>
+          {% for option in companies %}
+            <option value="{{ option.company.id }}" {% if option.selected %}selected{% endif %}>{{ option.company.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="employee">Prestador</label>
+        <select id="employee" name="employee">
+          <option value="">Todos</option>
+          {% for option in employees %}
+            <option value="{{ option.employee.id }}" {% if option.selected %}selected{% endif %}>{{ option.employee.full_name }} | {{ option.employee.company.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="change_type">Tipo de alteração</label>
+        <select id="change_type" name="change_type">
+          <option value="">Todos</option>
+          {% for value,label in change_type_choices %}
+            <option value="{{ value }}" {% if change_type == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button class="btn primary" type="submit">Filtrar</button>
+      <a class="btn secondary" href="{% url 'internal_workday_changes' %}">Limpar</a>
+    </form>
+  </section>
+
+  <section class="internal-panel">
+    <div class="internal-head">
+      <div>
+        <h3>Alterações de horários</h3>
+        <p class="internal-subtitle">Registros somente leitura. Edição e exclusão não estão disponíveis nesta tela.</p>
+      </div>
+      <span class="pill neutral">{{ rows|length }} itens</span>
+    </div>
+
+    <div class="table-wrap">
+      <table class="internal-table workday-table">
+        <thead>
+          <tr>
+            <th>Alterado em</th>
+            <th>Prestador</th>
+            <th>Cliente</th>
+            <th>Data alterada</th>
+            <th>Tipo</th>
+            <th>Antes/depois</th>
+            <th>Origem</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+            {% with log=row.log %}
+              <tr>
+                <td data-label="Alterado em">{{ log.changed_at|date:"d/m/Y H:i:s" }}</td>
+                <td data-label="Prestador">
+                  <a class="strong-link" href="{% url 'internal_employee_detail' log.employee.id %}">{{ log.employee.full_name }}</a>
+                  <div class="muted">{{ log.user.email|default:log.user.username }}</div>
+                </td>
+                <td data-label="Cliente">
+                  <a class="strong-link" href="{% url 'internal_company_detail' log.company.id %}">{{ log.company.name }}</a>
+                  <div class="muted">Contrato {{ log.contract.id }}</div>
+                </td>
+                <td data-label="Data alterada">{{ log.edited_date|date:"d/m/Y" }}</td>
+                <td data-label="Tipo"><span class="pill pending">{{ log.get_change_type_display }}</span></td>
+                <td data-label="Antes/depois">
+                  <div class="workday-values">
+                    <div class="workday-value"><b>Antes</b>{{ row.before_times }}</div>
+                    <div class="workday-value"><b>Depois</b>{{ row.after_times }}</div>
+                  </div>
+                </td>
+                <td data-label="Origem">
+                  <div class="muted">IP: {{ log.ip_address|default:"-" }}</div>
+                  <div class="workday-json">{{ log.note|default:"Sem observação." }}</div>
+                </td>
+              </tr>
+            {% endwith %}
+          {% empty %}
+            <tr><td colspan="7"><div class="empty-state">Nenhuma alteração de horário encontrada para os filtros selecionados.</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

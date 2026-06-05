@@ -275,6 +275,57 @@ class PunchCorrectionLog(models.Model):
         return f"{self.get_action_type_display()} - {self.punch_id}"
 
 
+class WorkdayChangeLog(models.Model):
+    class ChangeType(models.TextChoices):
+        EDIT = "edit", "Edicao"
+        ADD = "add", "Adicao"
+        REMOVE = "remove", "Remocao"
+        CLIENT_CHANGED = "client_changed", "Troca de cliente"
+        MIXED = "mixed", "Alteracao mista"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="workday_change_logs",
+    )
+    employee = models.ForeignKey(
+        Employee,
+        on_delete=models.PROTECT,
+        related_name="workday_change_logs",
+    )
+    company = models.ForeignKey(
+        Company,
+        on_delete=models.PROTECT,
+        related_name="workday_change_logs",
+    )
+    contract = models.ForeignKey(
+        Contract,
+        on_delete=models.PROTECT,
+        related_name="workday_change_logs",
+    )
+    edited_date = models.DateField()
+    before_data = models.JSONField(default=dict, blank=True)
+    after_data = models.JSONField(default=dict, blank=True)
+    change_type = models.CharField(max_length=30, choices=ChangeType.choices)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.CharField(max_length=255, blank=True, default="")
+    note = models.TextField(blank=True, default="")
+    changed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-changed_at"]
+        indexes = [
+            models.Index(fields=["edited_date", "-changed_at"]),
+            models.Index(fields=["employee", "-changed_at"]),
+            models.Index(fields=["company", "-changed_at"]),
+            models.Index(fields=["change_type", "-changed_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.get_change_type_display()} - {self.employee_id} - {self.edited_date:%d/%m/%Y}"
+
+
 class PunchCorrectionRequest(models.Model):
     class ProblemType(models.TextChoices):
         EXTRA_PUNCH = "extra_punch", "Registro a mais"
