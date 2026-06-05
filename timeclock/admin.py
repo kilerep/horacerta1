@@ -61,12 +61,14 @@ class ServiceReportAdmin(admin.ModelAdmin):
         "company",
         "employee",
         "status",
+        "payment_status",
+        "paid_at",
         "conference_final_status",
         "conference_first_viewed_at",
         "conference_reviewed_at",
         "conference_revoked_at",
     )
-    list_filter = ("status", "conference_final_status", "company")
+    list_filter = ("status", "payment_status", "conference_final_status", "company")
     search_fields = ("title", "company__name", "employee__full_name", "employee__user__email", "conference_comment")
     readonly_fields = (
         "conference_token",

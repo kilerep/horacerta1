@@ -5475,16 +5475,30 @@ def mei_reports(request):
             )
             redirect_url = f"{reverse('mei_reports')}?event=link_created&contract={report.contract_id}"
             return redirect(redirect_url)
-        elif action == "mark_paid":
+        elif action == "set_payment_status":
             report_id = (request.POST.get("report_id") or "").strip()
+            payment_status = (request.POST.get("payment_status") or "").strip()
             report = get_object_or_404(
                 ServiceReport.objects.select_related("contract"),
                 id=report_id,
                 employee__user=request.user,
             )
-            report.status = ServiceReport.Status.PAID
-            report.save(update_fields=["status", "updated_at"])
-            redirect_url = f"{reverse('mei_reports')}?event=report_paid&contract={report.contract_id}"
+            if payment_status == ServiceReport.PaymentStatus.PAID:
+                report.payment_status = ServiceReport.PaymentStatus.PAID
+                report.paid_at = timezone.now()
+                report.paid_note = (request.POST.get("paid_note") or "").strip()[:1000]
+                report.save(update_fields=["payment_status", "paid_at", "paid_note", "updated_at"])
+                event = "report_paid"
+            elif payment_status == ServiceReport.PaymentStatus.PENDING:
+                report.payment_status = ServiceReport.PaymentStatus.PENDING
+                report.paid_at = None
+                report.paid_note = (request.POST.get("paid_note") or "").strip()[:1000]
+                report.save(update_fields=["payment_status", "paid_at", "paid_note", "updated_at"])
+                event = "report_payment_pending"
+            else:
+                messages.error(request, "Status de pagamento invalido.")
+                event = "payment_invalid"
+            redirect_url = f"{reverse('mei_reports')}?event={event}&contract={report.contract_id}"
             return redirect(redirect_url)
 
     reports = list(reports_qs[:300])

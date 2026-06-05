@@ -83,6 +83,15 @@
           {% if report.conference_first_viewed_at %} | Visualizado em {{ report.conference_first_viewed_at|date:"d/m/Y" }} às {{ report.conference_first_viewed_at|date:"H:i" }}{% else %} | Ainda não visualizado{% endif %}
           {% if report.whatsapp_sent_attempted_at %} | Envio WhatsApp iniciado em {{ report.whatsapp_sent_attempted_at|date:"d/m/Y" }} às {{ report.whatsapp_sent_attempted_at|date:"H:i" }}{% endif %}
         </div>
+        <div class="detail-sub">
+          Pagamento:
+          {% if report.payment_status == "paid" %}
+            <strong>Pago{% if report.paid_at %} em {{ report.paid_at|date:"d/m/Y" }} às {{ report.paid_at|date:"H:i" }}{% endif %}</strong>
+          {% else %}
+            <strong>Pendente</strong>
+          {% endif %}
+          {% if report.paid_note %} | {{ report.paid_note }}{% endif %}
+        </div>
       </div>
     {% else %}
       <div class="link-box">

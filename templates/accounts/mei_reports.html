@@ -61,7 +61,9 @@
   {% elif request.GET.event == "link_created" %}
     <section class="feedback" role="status">Link de conferência gerado.</section>
   {% elif request.GET.event == "report_paid" %}
-    <section class="feedback" role="status">Relatório marcado como pago.</section>
+    <section class="feedback" role="status">Pagamento marcado como pago.</section>
+  {% elif request.GET.event == "report_payment_pending" %}
+    <section class="feedback" role="status">Pagamento voltou para pendente.</section>
   {% endif %}
 
   <section class="reports-panel">
@@ -134,6 +136,17 @@
               <div class="report-metric"><span>Dias incompletos</span><strong>{{ report.summary_payload.incomplete_days|default:0 }}</strong></div>
             </div>
             <div class="report-view-status">
+              Status do relatório: <strong>{{ report.get_status_display }}</strong>
+            </div>
+            <div class="report-view-status">
+              {% if report.payment_status == "paid" %}
+                Pagamento: <strong>Pago{% if report.paid_at %} em {{ report.paid_at|date:"d/m/Y" }} às {{ report.paid_at|date:"H:i" }}{% endif %}</strong>
+              {% else %}
+                Pagamento: <strong>Pendente</strong>
+              {% endif %}
+              {% if report.paid_note %} | {{ report.paid_note }}{% endif %}
+            </div>
+            <div class="report-view-status">
               {% if report.conference_first_viewed_at %}
                 <strong>Visualizado em {{ report.conference_first_viewed_at|date:"d/m/Y" }} às {{ report.conference_first_viewed_at|date:"H:i" }}</strong>
               {% else %}
@@ -157,12 +170,21 @@
                 </form>
               {% endif %}
               <a class="btn" href="{{ row.pdf_url }}">PDF</a>
-              {% if report.status != "PAID" %}
+              {% if report.payment_status != "paid" %}
                 <form method="post" data-submit-once="true">
                   {% csrf_token %}
-                  <input type="hidden" name="action" value="mark_paid">
+                  <input type="hidden" name="action" value="set_payment_status">
                   <input type="hidden" name="report_id" value="{{ report.id }}">
+                  <input type="hidden" name="payment_status" value="paid">
                   <button class="btn" type="submit">Marcar como pago</button>
+                </form>
+              {% else %}
+                <form method="post" data-submit-once="true" onsubmit="return confirm('Voltar este pagamento para pendente?')">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="set_payment_status">
+                  <input type="hidden" name="report_id" value="{{ report.id }}">
+                  <input type="hidden" name="payment_status" value="pending">
+                  <button class="btn" type="submit">Voltar para pendente</button>
                 </form>
               {% endif %}
             </div>

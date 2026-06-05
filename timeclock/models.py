@@ -612,6 +612,10 @@ class ServiceReport(models.Model):
         REVOKED = "REVOKED", "Link revogado"
         EXPIRED = "EXPIRED", "Link expirado"
 
+    class PaymentStatus(models.TextChoices):
+        PENDING = "pending", "Pendente"
+        PAID = "paid", "Pago"
+
     company = models.ForeignKey(
         Company,
         on_delete=models.PROTECT,
@@ -648,6 +652,9 @@ class ServiceReport(models.Model):
     conference_revoked_at = models.DateTimeField(null=True, blank=True)
     conference_expires_at = models.DateTimeField(null=True, blank=True)
     whatsapp_sent_attempted_at = models.DateTimeField(null=True, blank=True)
+    payment_status = models.CharField(max_length=20, choices=PaymentStatus.choices, default=PaymentStatus.PENDING)
+    paid_at = models.DateTimeField(null=True, blank=True)
+    paid_note = models.TextField(blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

@@ -1259,6 +1259,8 @@ class MeiMultiCompanyContextTests(TestCase):
         self.assertEqual(report.company_id, self.company_b.id)
         self.assertEqual(report.description, "")
         self.assertEqual(report.status, ServiceReport.Status.SENT)
+        self.assertEqual(report.payment_status, ServiceReport.PaymentStatus.PENDING)
+        self.assertIsNone(report.paid_at)
         self.assertIsNotNone(report.conference_token)
         self.assertEqual(report.summary_payload["company"], self.company_b.name)
 
@@ -1268,7 +1270,77 @@ class MeiMultiCompanyContextTests(TestCase):
         self.assertContains(reports_response, "Copiar link")
         self.assertContains(reports_response, "Enviar WhatsApp")
         self.assertContains(reports_response, "PDF")
+        self.assertContains(reports_response, "Pagamento:")
+        self.assertContains(reports_response, "Pendente")
 
+        paid_response = self.client.post(
+            reverse("mei_reports"),
+            {
+                "action": "set_payment_status",
+                "report_id": str(report.id),
+                "payment_status": ServiceReport.PaymentStatus.PAID,
+                "selected_contract": str(self.contract_b.id),
+            },
+        )
+        self.assertEqual(paid_response.status_code, 302)
+        report.refresh_from_db()
+        self.assertEqual(report.payment_status, ServiceReport.PaymentStatus.PAID)
+        self.assertIsNotNone(report.paid_at)
+        self.assertNotEqual(report.status, ServiceReport.Status.PAID)
+
+        paid_reports_response = self.client.get(reverse("mei_reports"), {"contract": str(self.contract_b.id)})
+        self.assertContains(paid_reports_response, "Pagamento:")
+        self.assertContains(paid_reports_response, "Pago")
+        self.assertContains(paid_reports_response, "Voltar para pendente")
+
+        pending_response = self.client.post(
+            reverse("mei_reports"),
+            {
+                "action": "set_payment_status",
+                "report_id": str(report.id),
+                "payment_status": ServiceReport.PaymentStatus.PENDING,
+                "selected_contract": str(self.contract_b.id),
+            },
+        )
+        self.assertEqual(pending_response.status_code, 302)
+        report.refresh_from_db()
+        self.assertEqual(report.payment_status, ServiceReport.PaymentStatus.PENDING)
+        self.assertIsNone(report.paid_at)
+
+        alien_user = User.objects.create_user(
+            username="mei.payment.alien@example.com",
+            email="mei.payment.alien@example.com",
+            password="Senha@12345",
+            role=User.Role.FUNCIONARIO,
+        )
+        alien_employee = Employee.objects.create(
+            user=alien_user,
+            company=self.company_a,
+            full_name="MEI Payment Alien",
+            is_active=True,
+        )
+        alien_contract = Contract.objects.create(
+            employee=alien_employee,
+            company=self.company_a,
+            hourly_rate="90.00",
+            start_date=timezone.localdate() - timedelta(days=1),
+            is_active=True,
+        )
+        self.client.force_login(alien_user)
+        other_response = self.client.post(
+            reverse("mei_reports"),
+            {
+                "action": "set_payment_status",
+                "report_id": str(report.id),
+                "payment_status": ServiceReport.PaymentStatus.PAID,
+                "selected_contract": str(alien_contract.id),
+            },
+        )
+        self.assertEqual(other_response.status_code, 404)
+        report.refresh_from_db()
+        self.assertEqual(report.payment_status, ServiceReport.PaymentStatus.PENDING)
+
+        self.client.force_login(self.mei_user)
         pdf_response = self.client.get(reverse("mei_service_report_pdf", args=[report.id]))
         self.assertEqual(pdf_response.status_code, 200)
         self.assertEqual(pdf_response["Content-Type"], "application/pdf")
@@ -1298,6 +1370,8 @@ class MeiMultiCompanyContextTests(TestCase):
         self.assertNotContains(public_response, "Alterações de horários")
         self.assertNotContains(public_response, "Antes")
         self.assertNotContains(public_response, "Depois")
+        self.assertNotContains(public_response, "Pagamento:")
+        self.assertNotContains(public_response, "Marcar como pago")
         report.refresh_from_db()
         self.assertIsNotNone(report.conference_first_viewed_at)
         self.assertEqual(report.status, ServiceReport.Status.VIEWED)
