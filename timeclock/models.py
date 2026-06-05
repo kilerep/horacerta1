@@ -596,6 +596,7 @@ class ServiceReport(models.Model):
     )
     conference_revoked_at = models.DateTimeField(null=True, blank=True)
     conference_expires_at = models.DateTimeField(null=True, blank=True)
+    whatsapp_sent_attempted_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

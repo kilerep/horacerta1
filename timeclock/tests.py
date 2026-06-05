@@ -1,5 +1,6 @@
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from types import SimpleNamespace
+from urllib.parse import parse_qs, unquote, urlparse
 
 from django.contrib.auth import get_user_model
 from django.test import SimpleTestCase, TestCase, override_settings
@@ -7,7 +8,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from companies.models import Company, CompanyAttendancePolicy, CompanyAuthorizedLocation, Employee
-from timeclock.models import Contract, Punch
+from timeclock.models import Contract, Punch, ServiceReport
 from .models import PunchCorrectionLog
 from .services import cancel_punch, compute_day_total, format_hhmm, format_punch_time, restore_punch, build_daily_summary
 from .services import evaluate_punch_confidence
@@ -332,3 +333,85 @@ class EmployeeDashboardPunchFlowTests(TestCase):
         self.assertIsNone(punch.geo_accuracy_m)
         self.assertEqual(punch.validation_method, Punch.ValidationMethod.GEOLOCATION)
         self.assertEqual(punch.confidence_status, Punch.ConfidenceStatus.NO_LOCATION)
+
+
+@override_settings(SECURE_SSL_REDIRECT=False)
+class ServiceReportSharingTests(TestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user(
+            username="owner.share@example.com",
+            email="owner.share@example.com",
+            password="Teste@12345",
+            role=User.Role.EMPRESA,
+        )
+        self.company = Company.objects.create(
+            name="Ensimec",
+            owner=self.owner,
+            email="ensimec@example.com",
+            whatsapp="+55 (11) 98888-7777",
+        )
+        self.mei_user = User.objects.create_user(
+            username="mei.share@example.com",
+            email="mei.share@example.com",
+            password="Teste@12345",
+            role=User.Role.FUNCIONARIO,
+        )
+        self.employee = Employee.objects.create(user=self.mei_user, company=self.company, full_name="MEI Share")
+        self.contract = Contract.objects.create(employee=self.employee, company=self.company, hourly_rate="10.00")
+        self.report = ServiceReport(
+            company=self.company,
+            employee=self.employee,
+            contract=self.contract,
+            report_date=date(2026, 6, 15),
+            date_from=date(2026, 6, 1),
+            date_to=date(2026, 6, 15),
+            title="Relatorio de junho",
+            summary_payload={
+                "company": "Ensimec",
+                "period": {"label": "01/06/2026 ate 15/06/2026"},
+                "total_hours": "80:30",
+                "estimated_value_brl": "R$ 805,00",
+            },
+        )
+        self.report.ensure_conference_link()
+        self.report.save()
+
+    def test_whatsapp_redirect_uses_saved_report_snapshot_and_records_attempt(self):
+        self.client.force_login(self.mei_user)
+
+        response = self.client.get(reverse("mei_service_report_whatsapp", args=[self.report.id]))
+
+        self.assertEqual(response.status_code, 302)
+        redirect_url = response["Location"]
+        self.assertTrue(redirect_url.startswith("https://wa.me/5511988887777?"))
+        parsed = urlparse(redirect_url)
+        text = unquote(parse_qs(parsed.query)["text"][0])
+        self.assertIn("Cliente: Ensimec", text)
+        self.assertIn("Período: 01/06/2026 até 15/06/2026", text)
+        self.assertIn("Total de horas: 80:30", text)
+        self.assertIn("Valor estimado: R$ 805,00", text)
+        self.assertIn(reverse("public_service_report_conference", args=[self.report.conference_token]), text)
+        self.report.refresh_from_db()
+        self.assertIsNotNone(self.report.whatsapp_sent_attempted_at)
+
+    def test_public_link_records_first_view_once(self):
+        url = reverse("public_service_report_conference", args=[self.report.conference_token])
+
+        first_response = self.client.get(url)
+
+        self.assertEqual(first_response.status_code, 200)
+        self.report.refresh_from_db()
+        first_viewed_at = self.report.conference_first_viewed_at
+        self.assertIsNotNone(first_viewed_at)
+        self.assertEqual(self.report.status, ServiceReport.Status.VIEWED)
+        self.assertEqual(self.report.conference_final_status, ServiceReport.ConferenceStatus.VIEWED)
+
+        self.report.conference_first_viewed_at = first_viewed_at - timedelta(days=1)
+        self.report.save(update_fields=["conference_first_viewed_at", "updated_at"])
+        expected_first_viewed_at = self.report.conference_first_viewed_at
+
+        second_response = self.client.get(url)
+
+        self.assertEqual(second_response.status_code, 200)
+        self.report.refresh_from_db()
+        self.assertEqual(self.report.conference_first_viewed_at, expected_first_viewed_at)

@@ -871,6 +871,52 @@ def _build_service_report_payload(contract, date_from, date_to):
     }
 
 
+def _service_report_period_label(report):
+    payload = report.summary_payload or {}
+    period = payload.get("period") or {}
+    label = (period.get("label") or "").strip()
+    if label:
+        return label.replace(" ate ", " até ")
+    start_label = report.date_from.strftime("%d/%m/%Y") if report.date_from else "-"
+    end_label = report.date_to.strftime("%d/%m/%Y") if report.date_to else "-"
+    return f"{start_label} até {end_label}"
+
+
+def _build_service_report_whatsapp_message(report, conference_url):
+    payload = report.summary_payload or {}
+    client_name = payload.get("company") or report.company.name
+    total_hours = payload.get("total_hours") or "-"
+    estimated_value = payload.get("estimated_value_brl") or "-"
+    period_label = _service_report_period_label(report)
+    return "\n".join(
+        [
+            "Olá, segue meu relatório de horas para conferência.",
+            "",
+            f"Cliente: {client_name}",
+            f"Período: {period_label}",
+            f"Total de horas: {total_hours}",
+            f"Valor estimado: {estimated_value}",
+            "",
+            "Link para conferência:",
+            conference_url,
+        ]
+    )
+
+
+def _normalize_whatsapp_number(value):
+    digits = re.sub(r"\D+", "", value or "")
+    return digits
+
+
+def _build_service_report_whatsapp_url(report, conference_url):
+    message = _build_service_report_whatsapp_message(report, conference_url)
+    encoded_message = quote(message, safe="")
+    number = _normalize_whatsapp_number(getattr(report.company, "whatsapp", ""))
+    if number:
+        return f"https://wa.me/{number}?text={encoded_message}"
+    return f"https://wa.me/?text={encoded_message}"
+
+
 def _report_locks_day_for_user(user, day):
     return ServiceReport.objects.filter(
         employee__user=user,
@@ -5314,9 +5360,7 @@ def mei_reports(request):
         whatsapp_url = ""
         if report.conference_is_accessible:
             conference_url = request.build_absolute_uri(reverse("public_service_report_conference", args=[report.conference_token]))
-            client_name = (report.summary_payload or {}).get("company") or report.company.name
-            whatsapp_message = f"Olá, {client_name}, segue meu relatório de horas pelo HoraCerta para conferência: {conference_url}"
-            whatsapp_url = f"https://wa.me/?text={quote(whatsapp_message, safe='')}"
+            whatsapp_url = reverse("mei_service_report_whatsapp", args=[report.id])
         report_rows.append(
             {
                 "report": report,
@@ -5354,6 +5398,30 @@ def mei_reports(request):
             "csv_url": csv_url,
         },
     )
+
+
+@login_required
+@require_GET
+def mei_service_report_whatsapp(request, report_id):
+    denied = _redirect_if_not_mei(request)
+    if denied:
+        return denied
+
+    report = get_object_or_404(
+        ServiceReport.objects.select_related("company", "contract", "employee", "employee__user"),
+        id=report_id,
+        employee__user=request.user,
+    )
+    if not report.conference_is_accessible:
+        messages.error(request, "Gere um link ativo antes de enviar pelo WhatsApp.")
+        return redirect("mei_service_report_detail", report_id=report.id)
+
+    if not report.whatsapp_sent_attempted_at:
+        report.whatsapp_sent_attempted_at = timezone.now()
+        report.save(update_fields=["whatsapp_sent_attempted_at", "updated_at"])
+
+    conference_url = request.build_absolute_uri(reverse("public_service_report_conference", args=[report.conference_token]))
+    return redirect(_build_service_report_whatsapp_url(report, conference_url))
 
 
 @login_required
@@ -5417,12 +5485,8 @@ def mei_service_report_detail(request, report_id):
     conference_url = ""
     if report.conference_is_accessible:
         conference_url = request.build_absolute_uri(reverse("public_service_report_conference", args=[report.conference_token]))
-    client_name = (report.summary_payload or {}).get("company") or report.company.name
-    if client_name:
-        whatsapp_message = f"Olá, {client_name}, segue meu relatório de horas pelo HoraCerta para conferência: {conference_url}"
-    else:
-        whatsapp_message = f"Olá, segue meu relatório de horas pelo HoraCerta para conferência: {conference_url}"
-    whatsapp_url = f"https://wa.me/?text={quote(whatsapp_message, safe='')}" if conference_url else ""
+    whatsapp_message = _build_service_report_whatsapp_message(report, conference_url) if conference_url else ""
+    whatsapp_url = reverse("mei_service_report_whatsapp", args=[report.id]) if conference_url else ""
     return render(
         request,
         "accounts/mei_service_report_detail.html",
@@ -5617,37 +5681,6 @@ def public_service_report_conference(request, token):
             },
             status=410,
         )
-
-    if request.method == "POST":
-        action = (request.POST.get("action") or "").strip()
-        if action in {"confirm_review", "report_divergence"}:
-            report.conference_comment = (request.POST.get("conference_comment") or "").strip()
-            report.conference_reviewed_at = now
-            if not report.conference_first_viewed_at:
-                report.conference_first_viewed_at = now
-            if action == "report_divergence":
-                report.conference_final_status = ServiceReport.ConferenceStatus.DIVERGENT
-                report.status = ServiceReport.Status.DIVERGENT
-            else:
-                report.conference_final_status = ServiceReport.ConferenceStatus.REVIEWED
-                report.status = ServiceReport.Status.REVIEWED
-            report.save(
-                update_fields=[
-                    "conference_comment",
-                    "conference_reviewed_at",
-                    "conference_first_viewed_at",
-                    "conference_final_status",
-                    "status",
-                    "updated_at",
-                ]
-            )
-            if action == "report_divergence":
-                messages.success(request, "Divergencia registrada com sucesso.")
-            else:
-                messages.success(request, "Conferencia registrada com sucesso.")
-            return redirect("public_service_report_conference", token=report.conference_token)
-        messages.error(request, "Acao invalida para este link.")
-        return redirect("public_service_report_conference", token=report.conference_token)
 
     update_fields = []
     if not report.conference_first_viewed_at:

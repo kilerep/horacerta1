@@ -21,6 +21,8 @@
   .report-card__head{display:grid;gap:5px}
   .report-card__title{margin:0;font-size:17px;line-height:1.25;overflow-wrap:anywhere}
   .report-card__meta{color:var(--muted);font-size:12px;line-height:1.45}
+  .report-view-status{color:var(--muted);font-size:12px;line-height:1.45}
+  .report-view-status strong{color:var(--color-text-strong)}
   .report-metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   .report-metric{border:1px solid rgba(255,255,255,.09);border-radius:10px;padding:9px;background:rgba(255,255,255,.03)}
   .report-metric span{display:block;color:var(--muted);font-size:11px}
@@ -130,6 +132,16 @@
               <div class="report-metric"><span>Total</span><strong>{{ report.summary_payload.total_hours|default:"-" }}</strong></div>
               <div class="report-metric"><span>Valor estimado</span><strong>{{ report.summary_payload.estimated_value_brl|default:"-" }}</strong></div>
               <div class="report-metric"><span>Dias incompletos</span><strong>{{ report.summary_payload.incomplete_days|default:0 }}</strong></div>
+            </div>
+            <div class="report-view-status">
+              {% if report.conference_first_viewed_at %}
+                <strong>Visualizado em {{ report.conference_first_viewed_at|date:"d/m/Y" }} às {{ report.conference_first_viewed_at|date:"H:i" }}</strong>
+              {% else %}
+                Ainda não visualizado
+              {% endif %}
+              {% if report.whatsapp_sent_attempted_at %}
+                | Envio WhatsApp iniciado em {{ report.whatsapp_sent_attempted_at|date:"d/m/Y" }} às {{ report.whatsapp_sent_attempted_at|date:"H:i" }}
+              {% endif %}
             </div>
             <div class="report-card__actions">
               <a class="btn" href="{{ row.detail_url }}">Ver</a>

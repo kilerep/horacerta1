@@ -118,6 +118,7 @@ urlpatterns = [
     path("me/clients/<uuid:contract_id>/edit/", views.mei_client_edit, name="mei_client_edit_en"),
     path("me/relatorios/", views.mei_reports, name="mei_reports"),
     path("me/relatorios/<uuid:report_id>/", views.mei_service_report_detail, name="mei_service_report_detail"),
+    path("me/relatorios/<uuid:report_id>/whatsapp/", views.mei_service_report_whatsapp, name="mei_service_report_whatsapp"),
     path("me/relatorios/<uuid:report_id>/pdf/", views.mei_service_report_pdf, name="mei_service_report_pdf"),
     path(
         "me/relatorios/solicitacoes/<uuid:request_id>/",

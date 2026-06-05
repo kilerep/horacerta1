@@ -80,12 +80,9 @@
           Status: {{ report.get_conference_final_status_display }}
           {% if report.conference_expires_at %} | Expira em {{ report.conference_expires_at|date:"d/m/Y H:i" }}{% endif %}
           {% if report.conference_revoked_at %} | Revogado em {{ report.conference_revoked_at|date:"d/m/Y H:i" }}{% endif %}
-          {% if report.conference_first_viewed_at %} | Primeira visualização {{ report.conference_first_viewed_at|date:"d/m/Y H:i" }}{% endif %}
-          {% if report.conference_reviewed_at %} | Conferido em {{ report.conference_reviewed_at|date:"d/m/Y H:i" }}{% endif %}
+          {% if report.conference_first_viewed_at %} | Visualizado em {{ report.conference_first_viewed_at|date:"d/m/Y" }} às {{ report.conference_first_viewed_at|date:"H:i" }}{% else %} | Ainda não visualizado{% endif %}
+          {% if report.whatsapp_sent_attempted_at %} | Envio WhatsApp iniciado em {{ report.whatsapp_sent_attempted_at|date:"d/m/Y" }} às {{ report.whatsapp_sent_attempted_at|date:"H:i" }}{% endif %}
         </div>
-        {% if report.conference_comment %}
-          <div class="detail-sub"><strong>Comentário da empresa:</strong> {{ report.conference_comment }}</div>
-        {% endif %}
       </div>
     {% else %}
       <div class="link-box">

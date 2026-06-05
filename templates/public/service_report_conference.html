@@ -24,8 +24,6 @@
   .report-table tr:last-child td{border-bottom:0}
   .note{white-space:pre-wrap;color:var(--muted);line-height:1.55}
   .actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-  .review-form{display:grid;gap:10px}
-  .review-form textarea{width:100%;min-height:112px;resize:vertical;border:1px solid var(--line);border-radius:8px;padding:12px;background:var(--surface);color:var(--color-text-strong);font:inherit;box-sizing:border-box}
   .message-list{display:grid;gap:8px;margin:0;padding:0;list-style:none}
   .message-list li{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--surface)}
   .unavailable{min-height:44vh;display:grid;align-content:center;gap:12px}
@@ -58,7 +56,7 @@
             Acesso publico restrito ao token deste relatorio.
           </p>
         </div>
-        <span class="status-pill {% if report.conference_final_status == "REVIEWED" %}ok{% elif report.conference_final_status == "DIVERGENT" %}warn{% endif %}">{{ report.get_conference_final_status_display }}</span>
+        <span class="status-pill {% if report.conference_final_status == "VIEWED" %}ok{% endif %}">{{ report.get_conference_final_status_display }}</span>
       </div>
       <div class="actions" style="margin-top:14px">
         <a class="btn" href="{{ pdf_url }}">Baixar PDF</a>
@@ -75,7 +73,6 @@
         <article class="metric"><span>Valor estimado</span><strong>{{ payload.estimated_value_brl|default:"-" }}</strong></article>
         <article class="metric"><span>Dias incompletos</span><strong>{{ payload.incomplete_days|default:0 }}</strong></article>
         <article class="metric"><span>Primeira visualizacao</span><strong>{{ report.conference_first_viewed_at|date:"d/m/Y H:i"|default:"Registrando..." }}</strong></article>
-        <article class="metric"><span>Conferencia</span><strong>{{ report.conference_reviewed_at|date:"d/m/Y H:i"|default:"Pendente" }}</strong></article>
       </div>
     </section>
 
@@ -114,22 +111,6 @@
       <p class="note">{{ report.description|default:"Sem observacoes gerais." }}</p>
     </section>
 
-    <section class="public-panel">
-      <h2 class="section-title">Conferencia da empresa</h2>
-      {% if report.conference_reviewed_at %}
-        <p class="conference-sub">{{ report.get_conference_final_status_display }} em {{ report.conference_reviewed_at|date:"d/m/Y H:i" }}.</p>
-        <p class="note">{{ report.conference_comment|default:"Sem comentario informado." }}</p>
-      {% else %}
-        <form class="review-form" method="post">
-          {% csrf_token %}
-          <textarea name="conference_comment" maxlength="3000" placeholder="Comentario para o profissional. Informe o motivo se houver divergencia."></textarea>
-          <div class="actions">
-            <button class="btn primary" type="submit" name="action" value="confirm_review">Marcar como conferido</button>
-            <button class="btn" type="submit" name="action" value="report_divergence">Informar divergencia</button>
-          </div>
-        </form>
-      {% endif %}
-    </section>
   {% endif %}
 </div>
 {% endblock %}
