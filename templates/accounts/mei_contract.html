@@ -31,7 +31,11 @@
     .clients-section-head p{ margin:3px 0 0; color:var(--muted); font-size:13px; }
     .client-list{ display:grid; gap:10px; }
     .client-card{ padding:14px; display:grid; gap:12px; }
-    .client-card.is-selected{ border-color:rgba(45,211,145,.55); box-shadow:0 0 0 2px rgba(45,211,145,.13), var(--shadow); }
+    .client-card.is-selected,
+    .client-card.is-details-open{
+      border-color:var(--border-brand);
+      box-shadow:0 0 0 2px var(--color-primary-soft), var(--shadow);
+    }
     .client-card__head{ display:flex; justify-content:space-between; gap:12px; align-items:flex-start; }
     .client-name{ margin:0; font-size:19px; line-height:1.2; overflow-wrap:anywhere; }
     .client-period{ margin:4px 0 0; color:var(--muted); font-size:12px; }
@@ -47,6 +51,12 @@
     .client-actions{ display:flex; gap:8px; flex-wrap:wrap; }
     .client-actions--detail{ margin-top:12px; }
     .btn[aria-disabled="true"]{ opacity:.48; cursor:not-allowed; }
+    .client-detail-panel{
+      border-top:1px solid var(--line-soft);
+      padding-top:12px;
+    }
+    .client-detail-panel[hidden]{ display:none; }
+    .client-detail-panel.is-open{ display:grid; gap:12px; }
     .client-detail-grid{ display:grid; grid-template-columns:1.1fr .9fr; gap:12px; }
     .client-detail-box{ border:1px solid rgba(255,255,255,.09); border-radius:12px; padding:12px; background:rgba(255,255,255,.03); min-width:0; }
     .client-detail-box h3{ margin:0 0 10px; font-size:16px; }
@@ -108,7 +118,11 @@
 
         <div class="client-list">
           {% for row in client_rows %}
-            <article class="client-card {% if active_contract and row.contract.id == active_contract.id %}is-selected{% endif %}">
+            <article
+              class="client-card {% if active_contract and row.contract.id == active_contract.id %}is-selected is-details-open{% endif %}"
+              data-client-details-card
+              data-client-id="{{ row.contract.id }}"
+            >
               <header class="client-card__head">
                 <div>
                   <h3 class="client-name">{{ row.contract.company.name }}</h3>
@@ -127,61 +141,74 @@
               </div>
 
               <div class="client-actions">
-                <a class="btn" href="{{ row.details_url }}">Ver detalhes</a>
+                <a
+                  class="btn"
+                  href="{{ row.details_url }}"
+                  data-client-details-toggle
+                  data-client-id="{{ row.contract.id }}"
+                  aria-controls="client-details-{{ row.contract.id }}"
+                  aria-expanded="{% if active_contract and row.contract.id == active_contract.id %}true{% else %}false{% endif %}"
+                >{% if active_contract and row.contract.id == active_contract.id %}Fechar detalhes{% else %}Ver detalhes{% endif %}</a>
               </div>
+
+              <section
+                id="client-details-{{ row.contract.id }}"
+                class="client-detail-panel {% if active_contract and row.contract.id == active_contract.id %}is-open{% endif %}"
+                data-client-details-panel
+                data-client-id="{{ row.contract.id }}"
+                {% if not active_contract or row.contract.id != active_contract.id %}hidden{% endif %}
+              >
+                {% with contract=row.contract company=row.contract.company %}
+                  <div class="clients-section-head">
+                    <div>
+                      <h2>Detalhes do cliente</h2>
+                      <p>Ações completas e contexto operacional de {{ company.name }}.</p>
+                    </div>
+                    <span class="client-status {{ row.status.tone }}">{{ row.status.label }}</span>
+                  </div>
+
+                  <div class="client-detail-grid">
+                    <article class="client-detail-box">
+                      <h3>Dados do cliente</h3>
+                      <div class="client-detail-list">
+                        <div class="client-detail-item"><span>Nome</span><strong>{{ company.name }}</strong></div>
+                        <div class="client-detail-item"><span>Status</span><strong>{{ row.status.label }}</strong></div>
+                        <div class="client-detail-item"><span>Valor/hora</span><strong>R$ {{ contract.hourly_rate }}/h</strong></div>
+                        <div class="client-detail-item"><span>Data de início</span><strong>{{ contract.start_date|date:"d/m/Y"|default:"-" }}</strong></div>
+                        <div class="client-detail-item"><span>Fechamento</span><strong>{{ contract.get_closure_type_display }}</strong></div>
+                        <div class="client-detail-item"><span>Contato</span><strong>{{ company.contact_name|default:"-" }}</strong></div>
+                        <div class="client-detail-item"><span>WhatsApp</span><strong>{{ company.whatsapp|default:company.phone|default:"-" }}</strong></div>
+                        <div class="client-detail-item"><span>Observações</span><strong>{{ contract.notes|default:"-" }}</strong></div>
+                      </div>
+                    </article>
+
+                    <article class="client-detail-box">
+                      <h3>Resumo</h3>
+                      <div class="client-detail-list">
+                        <div class="client-detail-item"><span>Horas no mês</span><strong>{{ row.total_hours_month }}</strong></div>
+                        <div class="client-detail-item"><span>Valor estimado</span><strong>{{ row.estimated_value_brl }}</strong></div>
+                        <div class="client-detail-item"><span>Último registro</span><strong>{{ row.last_punch_label }}</strong></div>
+                        <div class="client-detail-item"><span>Relatórios gerados</span><strong>{{ row.reports_count }}</strong></div>
+                      </div>
+                    </article>
+                  </div>
+
+                  <div class="client-actions client-actions--detail">
+                    <a class="btn" href="{{ row.edit_url }}">Editar contrato</a>
+                    <a class="btn" href="{{ row.history_url }}">Ver histórico</a>
+                    <a class="btn primary" href="{{ row.report_url }}">Gerar relatório de horas</a>
+                    <a class="btn" href="{{ row.service_report_url }}">Gerar relatório de serviço</a>
+                    <span class="btn" aria-disabled="true" title="Em breve: pausa de cliente pelo profissional.">Pausar cliente</span>
+                    <span class="btn" aria-disabled="true" title="Em breve: encerramento de contrato pelo profissional.">Encerrar contrato</span>
+                    <button class="btn" type="button" data-client-details-close data-client-id="{{ row.contract.id }}">Fechar detalhes</button>
+                  </div>
+                {% endwith %}
+              </section>
             </article>
           {% endfor %}
         </div>
       </section>
 
-      {% if selected_client_row %}
-        {% with row=selected_client_row contract=selected_client_row.contract company=selected_client_row.contract.company %}
-          <section class="clients-panel">
-            <div class="clients-section-head">
-              <div>
-                <h2>Detalhes do cliente</h2>
-                <p>Ações completas e contexto operacional de {{ company.name }}.</p>
-              </div>
-              <span class="client-status {{ row.status.tone }}">{{ row.status.label }}</span>
-            </div>
-
-            <div class="client-detail-grid">
-              <article class="client-detail-box">
-                <h3>Dados do cliente</h3>
-                <div class="client-detail-list">
-                  <div class="client-detail-item"><span>Nome</span><strong>{{ company.name }}</strong></div>
-                  <div class="client-detail-item"><span>Status</span><strong>{{ row.status.label }}</strong></div>
-                  <div class="client-detail-item"><span>Valor/hora</span><strong>R$ {{ contract.hourly_rate }}/h</strong></div>
-                  <div class="client-detail-item"><span>Data de início</span><strong>{{ contract.start_date|date:"d/m/Y"|default:"-" }}</strong></div>
-                  <div class="client-detail-item"><span>Fechamento</span><strong>{{ contract.get_closure_type_display }}</strong></div>
-                  <div class="client-detail-item"><span>Contato</span><strong>{{ company.contact_name|default:"-" }}</strong></div>
-                  <div class="client-detail-item"><span>WhatsApp</span><strong>{{ company.whatsapp|default:company.phone|default:"-" }}</strong></div>
-                  <div class="client-detail-item"><span>Observações</span><strong>{{ contract.notes|default:"-" }}</strong></div>
-                </div>
-              </article>
-
-              <article class="client-detail-box">
-                <h3>Resumo</h3>
-                <div class="client-detail-list">
-                  <div class="client-detail-item"><span>Horas no mês</span><strong>{{ row.total_hours_month }}</strong></div>
-                  <div class="client-detail-item"><span>Valor estimado</span><strong>{{ row.estimated_value_brl }}</strong></div>
-                  <div class="client-detail-item"><span>Último registro</span><strong>{{ row.last_punch_label }}</strong></div>
-                  <div class="client-detail-item"><span>Relatórios gerados</span><strong>{{ row.reports_count }}</strong></div>
-                </div>
-              </article>
-            </div>
-
-            <div class="client-actions client-actions--detail">
-              <a class="btn" href="{{ row.edit_url }}">Editar contrato</a>
-              <a class="btn" href="{{ row.history_url }}">Ver histórico</a>
-              <a class="btn primary" href="{{ row.report_url }}">Gerar relatório de horas</a>
-              <a class="btn" href="{{ row.service_report_url }}">Gerar relatório de serviço</a>
-              <span class="btn" aria-disabled="true" title="Em breve: pausa de cliente pelo profissional.">Pausar cliente</span>
-              <span class="btn" aria-disabled="true" title="Em breve: encerramento de contrato pelo profissional.">Encerrar contrato</span>
-            </div>
-          </section>
-        {% endwith %}
-      {% endif %}
     {% else %}
       <section class="clients-panel">
         <div class="clients-empty">
@@ -195,4 +222,56 @@
       </section>
     {% endif %}
   </div>
+
+  <script>
+    (function () {
+      var cards = Array.prototype.slice.call(document.querySelectorAll("[data-client-details-card]"));
+      var toggles = Array.prototype.slice.call(document.querySelectorAll("[data-client-details-toggle]"));
+      var closeButtons = Array.prototype.slice.call(document.querySelectorAll("[data-client-details-close]"));
+
+      function findByClient(selector, clientId) {
+        return document.querySelector(selector + '[data-client-id="' + clientId + '"]');
+      }
+
+      function setOpen(clientId, shouldOpen) {
+        var panel = findByClient("[data-client-details-panel]", clientId);
+        var toggle = findByClient("[data-client-details-toggle]", clientId);
+        var card = findByClient("[data-client-details-card]", clientId);
+        if (!panel || !toggle || !card) return;
+
+        panel.hidden = !shouldOpen;
+        panel.classList.toggle("is-open", shouldOpen);
+        card.classList.toggle("is-details-open", shouldOpen);
+        card.classList.toggle("is-selected", shouldOpen);
+        toggle.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
+        toggle.textContent = shouldOpen ? "Fechar detalhes" : "Ver detalhes";
+      }
+
+      function closeOthers(clientId) {
+        cards.forEach(function (card) {
+          var otherId = card.getAttribute("data-client-id");
+          if (otherId && otherId !== clientId) setOpen(otherId, false);
+        });
+      }
+
+      toggles.forEach(function (toggle) {
+        toggle.addEventListener("click", function (event) {
+          event.preventDefault();
+          var clientId = toggle.getAttribute("data-client-id");
+          var isOpen = toggle.getAttribute("aria-expanded") === "true";
+          closeOthers(clientId);
+          setOpen(clientId, !isOpen);
+        });
+      });
+
+      closeButtons.forEach(function (button) {
+        button.addEventListener("click", function () {
+          var clientId = button.getAttribute("data-client-id");
+          setOpen(clientId, false);
+          var toggle = findByClient("[data-client-details-toggle]", clientId);
+          if (toggle) toggle.focus();
+        });
+      });
+    })();
+  </script>
 {% endblock %}
