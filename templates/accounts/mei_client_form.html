@@ -9,10 +9,8 @@
       border:1px solid var(--border);
       border-radius:var(--radius);
       padding:16px;
-      background:
-        radial-gradient(circle at 12% 0, var(--color-primary-soft), transparent 42%),
-        linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
-      box-shadow:var(--shadow);
+      background:var(--gradient-panel);
+      box-shadow:var(--shadow-soft);
     }
     .client-form-head{ display:flex; justify-content:space-between; gap:12px; align-items:flex-start; flex-wrap:wrap; margin-bottom:14px; }
     .client-form-head h1{ margin:0; font-size:clamp(22px,4vw,30px); line-height:1.1; }
@@ -20,15 +18,15 @@
     .client-form-grid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
     .client-form-field{ display:grid; gap:6px; }
     .client-form-field.full{ grid-column:1 / -1; }
-    .client-form-field label{ color:#dbe7ff; font-size:12px; font-weight:900; }
+    .client-form-field label{ color:var(--color-text-strong); font-size:12px; font-weight:900; }
     .client-form-field input,
     .client-form-field select,
     .client-form-field textarea{
       width:100%;
-      border:1px solid rgba(129,171,255,.28);
+      border:1px solid var(--field-border);
       border-radius:12px;
       padding:11px 12px;
-      background:#101a2d;
+      background:var(--field-bg);
       color:var(--text);
       font:inherit;
       outline:none;
@@ -36,8 +34,8 @@
     .client-form-field input:focus,
     .client-form-field select:focus,
     .client-form-field textarea:focus{
-      border-color:rgba(45,211,145,.65);
-      box-shadow:0 0 0 3px rgba(45,211,145,.14);
+      border-color:var(--border-brand);
+      box-shadow:var(--focus-ring);
     }
     .client-form-check{
       display:flex;

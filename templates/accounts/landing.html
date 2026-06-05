@@ -1,5 +1,6 @@
+{% load static %}
 <!doctype html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="{% if request.user.is_authenticated %}{{ header_user_theme|default:'graphite-premium' }}{% else %}graphite-premium{% endif %}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,17 +9,15 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/design_tokens.css' %}">
   <style>
     :root {
-      --bg-1: #040c1c;
-      --bg-2: #071224;
-      --bg-3: #0a1630;
-      --panel: color-mix(in oklab, var(--color-card) 86%, transparent);
-      --panel-strong: rgba(8, 17, 33, 0.94);
-      --line: rgba(255, 255, 255, 0.12);
-      --line-soft: rgba(255, 255, 255, 0.07);
-      --text: #eef5ff;
-      --muted: #9eb2cc;
+--panel: color-mix(in oklab, var(--color-card) 86%, transparent);
+      --panel-strong: color-mix(in oklab, var(--color-card-strong) 94%, transparent);
+      --line: var(--color-border);
+      --line-soft: color-mix(in oklab, var(--color-border) 60%, transparent);
+      --text: var(--color-text);
+      --muted: var(--color-text-muted);
       --landing-primary: var(--color-primary);
       --landing-accent: var(--color-accent);
       --landing-primary-strong: var(--color-primary-strong);
@@ -38,10 +37,7 @@
       min-height: 100%;
       font-family: "Manrope", "Segoe UI", sans-serif;
       color: var(--text);
-      background:
-        radial-gradient(820px 360px at 10% -3%, var(--color-primary-soft), transparent 56%),
-        radial-gradient(950px 400px at 94% 1%, var(--color-primary-soft), transparent 54%),
-        linear-gradient(180deg, var(--bg-1), var(--bg-2) 40%, var(--bg-3));
+      background: var(--gradient-hero);
     }
 
     body {
@@ -66,7 +62,7 @@
       border: 1px solid var(--line);
       border-radius: 18px;
       padding: 12px 14px;
-      background: rgba(7, 16, 32, 0.72);
+      background: color-mix(in oklab, var(--color-card) 72%, transparent);
       backdrop-filter: blur(10px);
       box-shadow: var(--shadow-soft);
     }
@@ -90,12 +86,12 @@
       height: 38px;
       border-radius: 12px;
       border: 1px solid rgba(255, 255, 255, 0.16);
-      background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary-soft));
+      background: var(--gradient-button);
       display: grid;
       place-items: center;
       font-size: 15px;
       font-weight: 800;
-      color: #deefff;
+      color: var(--text-inverse);
       flex: 0 0 auto;
     }
 
@@ -189,9 +185,9 @@
       align-items: center;
       gap: 8px;
       border-radius: 999px;
-      border: 1px solid rgba(116, 198, 255, 0.28);
-      background: rgba(116, 198, 255, 0.1);
-      color: #d8ecff;
+      border: 1px solid var(--border-brand);
+      background: var(--surface-brand-soft);
+      color: var(--menu-active-text);
       font-size: 0.8rem;
       font-weight: 700;
       text-transform: uppercase;
@@ -235,7 +231,7 @@
       border-radius: 12px;
       background: rgba(255, 255, 255, 0.03);
       padding: 11px 12px;
-      color: #dce9fb;
+      color: var(--color-text);
     }
 
     .hero-preview {
@@ -301,7 +297,7 @@
       justify-content: space-between;
       gap: 10px;
       font-size: 0.88rem;
-      color: #d6e5f9;
+      color: var(--color-text);
       background: rgba(255, 255, 255, 0.02);
     }
 
@@ -367,8 +363,8 @@
       margin-bottom: 10px;
       font-size: 0.84rem;
       font-weight: 800;
-      border: 1px solid rgba(116, 198, 255, 0.25);
-      background: linear-gradient(130deg, var(--color-primary-soft), var(--color-primary-soft));
+      border: 1px solid var(--border-brand);
+      background: var(--surface-brand-soft);
     }
 
     .list {
@@ -384,7 +380,7 @@
       margin: 0 auto;
       border-radius: 30px;
       border: 1px solid rgba(255, 255, 255, 0.2);
-      background: #09152c;
+      background: var(--color-card-strong);
       padding: 14px;
       box-shadow: var(--shadow-strong);
     }
@@ -392,7 +388,7 @@
     .phone-screen {
       border-radius: 22px;
       border: 1px solid var(--line);
-      background: rgba(8, 16, 32, 0.96);
+      background: color-mix(in oklab, var(--color-surface) 96%, transparent);
       padding: 12px;
       display: grid;
       gap: 8px;
@@ -412,10 +408,7 @@
       border: 1px solid rgba(255, 255, 255, 0.14);
       padding: 30px 20px;
       text-align: center;
-      background:
-        radial-gradient(circle at 0% 0%, var(--color-primary-soft), transparent 34%),
-        radial-gradient(circle at 100% 100%, var(--color-primary-soft), transparent 34%),
-        linear-gradient(180deg, color-mix(in oklab, var(--color-card) 86%, transparent), rgba(7, 14, 28, 0.98));
+      background: var(--gradient-panel);
       box-shadow: var(--shadow-strong);
     }
 
@@ -498,7 +491,12 @@
     }
   </style>
 </head>
-<body>
+<body
+  data-theme="{% if request.user.is_authenticated %}{{ header_user_theme|default:'graphite-premium' }}{% else %}graphite-premium{% endif %}"
+  data-default-theme="graphite-premium"
+  data-theme-company="{{ header_company_theme|default:'' }}"
+  data-theme-user="{{ header_user_theme|default:'' }}"
+  data-authenticated="{% if request.user.is_authenticated %}true{% else %}false{% endif %}">
   <header class="site-header-wrap">
     <div class="container">
       <nav class="site-header" id="siteHeader" aria-label="Navegacao principal">
@@ -746,7 +744,7 @@
 
   <footer>
     <div class="container footer-row">
-      <span>© 2026 HoraCerta | Plataforma para controle de horas de prestadores e profissionais MEI.</span>
+      <span>Â© 2026 HoraCerta | Plataforma para controle de horas de prestadores e profissionais MEI.</span>
       <span><a href="/help/">Ajuda</a> | <a href="/terms/">Termos</a></span>
     </div>
   </footer>
@@ -770,6 +768,7 @@
       });
     })();
   </script>
+  <script src="{% static 'js/theme_engine.js' %}"></script>
 </body>
 </html>
 

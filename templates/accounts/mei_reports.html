@@ -5,14 +5,14 @@
 {% block content %}
 <style>
   .reports-page{display:grid;gap:14px;width:100%;max-width:100%;min-width:0}
-  .reports-panel{border:1px solid var(--border);border-radius:var(--radius);padding:14px;background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));box-shadow:var(--shadow);min-width:0}
+  .reports-panel{border:1px solid var(--border);border-radius:var(--radius);padding:14px;background:var(--gradient-panel);box-shadow:var(--shadow-soft);min-width:0}
   .reports-head{display:grid;gap:6px}
   .reports-title{margin:0;font-size:clamp(21px,5vw,30px);line-height:1.1}
   .reports-sub{margin:0;color:var(--muted);line-height:1.45}
   .reports-form{display:grid;gap:12px;margin-top:12px}
   .reports-field{display:grid;gap:6px;min-width:0}
-  .reports-field label{color:#dbe7ff;font-size:12px;font-weight:900}
-  .reports-field input,.reports-field select,.reports-field textarea{width:100%;box-sizing:border-box;border:1px solid rgba(129,171,255,.28);border-radius:12px;padding:12px;background:#101a2d;color:var(--text);font:inherit;min-height:46px}
+  .reports-field label{color:var(--color-text-strong);font-size:12px;font-weight:900}
+  .reports-field input,.reports-field select,.reports-field textarea{width:100%;box-sizing:border-box;border:1px solid var(--field-border);border-radius:12px;padding:12px;background:var(--field-bg);color:var(--text);font:inherit;min-height:46px}
   .reports-field textarea{min-height:104px;resize:vertical}
   .reports-actions{display:grid;gap:8px}
   .reports-actions .btn{width:100%;justify-content:center;min-height:44px}
