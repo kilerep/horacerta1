@@ -924,15 +924,15 @@ def _service_report_period_display(report):
 def _service_report_received_label(report):
     if report.payment_status == ServiceReport.PaymentStatus.PAID:
         if report.paid_at:
-            return f"Recebido em {timezone.localtime(report.paid_at).strftime('%d/%m/%Y as %H:%M')}"
+            return f"Recebido: {timezone.localtime(report.paid_at).strftime('%d/%m/%Y %H:%M')}"
         return "Recebido"
     return "Pendente"
 
 
 def _service_report_view_label(report):
     if report.conference_first_viewed_at:
-        return f"Visualizado em {timezone.localtime(report.conference_first_viewed_at).strftime('%d/%m/%Y as %H:%M')}"
-    return "Ainda nao visualizado"
+        return f"Visto: {timezone.localtime(report.conference_first_viewed_at).strftime('%d/%m/%Y %H:%M')}"
+    return "Nao visualizado"
 
 
 def _service_report_status_label(report):

@@ -11,7 +11,7 @@
   .reports-sub{margin:0;color:var(--muted);line-height:1.45}
   .reports-form{display:grid;gap:12px;margin-top:12px}
   .reports-field{display:grid;gap:6px;min-width:0}
-  .reports-field label{color:var(--color-text-strong);font-size:12px;font-weight:900}
+  .reports-field label{color:var(--color-text-strong);font-size:12px;font-weight:900;line-height:1.25;overflow-wrap:anywhere}
   .reports-field input,.reports-field select,.reports-field textarea{width:100%;box-sizing:border-box;border:1px solid var(--field-border);border-radius:12px;padding:12px;background:var(--field-bg);color:var(--text);font:inherit;min-height:46px}
   .reports-field textarea{min-height:104px;resize:vertical}
   .reports-actions{display:grid;gap:8px}
@@ -20,7 +20,7 @@
   .report-card{border:1px solid var(--line-soft);border-radius:12px;padding:12px;background:color-mix(in oklab,var(--surface-soft) 68%,transparent);display:grid;gap:10px;min-width:0}
   .report-card__head{display:grid;gap:5px}
   .report-card__title{margin:0;font-size:17px;line-height:1.25;overflow-wrap:anywhere}
-  .report-card__meta{color:var(--muted);font-size:12px;line-height:1.45}
+  .report-card__meta{color:var(--muted);font-size:12px;line-height:1.45;overflow-wrap:anywhere}
   .report-view-status{color:var(--muted);font-size:12px;line-height:1.45;padding-top:8px;border-top:1px solid var(--line-soft)}
   .report-view-status strong{color:var(--color-text-strong)}
   .report-metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -31,7 +31,7 @@
   .report-card__actions form{display:grid}
   .report-card__actions .btn{width:100%;justify-content:center;min-height:42px}
   .report-statuses{display:flex;gap:6px;flex-wrap:wrap}
-  .status-pill{display:inline-flex;width:max-content;max-width:100%;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:900;border:1px solid var(--line-soft);background:var(--surface-raised);color:var(--muted)}
+  .status-pill{display:inline-flex;width:max-content;max-width:100%;min-width:0;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:900;line-height:1.25;border:1px solid var(--line-soft);background:var(--surface-raised);color:var(--muted);white-space:normal;overflow-wrap:anywhere}
   .status-pill.success{color:var(--color-success);border-color:var(--border-brand);background:var(--surface-brand-soft)}
   .status-pill.pending{color:var(--muted)}
   .empty{border:1px dashed rgba(255,255,255,.18);border-radius:12px;padding:14px;background:rgba(255,255,255,.03);color:var(--muted);line-height:1.45}
@@ -198,13 +198,13 @@
               <div class="report-metric"><span>Envio</span><strong>{% if report.whatsapp_sent_attempted_at %}{{ report.whatsapp_sent_attempted_at|date:"d/m/Y H:i" }}{% else %}-{% endif %}</strong></div>
             </div>
             <div class="report-statuses">
-              <span class="status-pill {{ row.view_tone }}">Visualizacao: {{ row.view_label }}</span>
-              <span class="status-pill {{ row.received_tone }}">Recebimento: {{ row.received_label }}</span>
+              <span class="status-pill {{ row.view_tone }}">{{ row.view_label }}</span>
+              <span class="status-pill {{ row.received_tone }}">{{ row.received_label }}</span>
             </div>
             <div class="report-card__actions">
               <a class="btn" href="{{ row.detail_url }}">Ver</a>
               {% if row.conference_url %}
-                <button class="btn" type="button" data-copy-text="{{ row.conference_url }}">Copiar link</button>
+                <button class="btn" type="button" data-copy-text="{{ row.conference_url }}">Link</button>
                 <a class="btn primary" href="{{ row.whatsapp_url }}" target="_blank" rel="noopener">Enviar WhatsApp</a>
               {% else %}
                 <form method="post" data-submit-once="true">
@@ -221,7 +221,7 @@
                   <input type="hidden" name="action" value="set_payment_status">
                   <input type="hidden" name="report_id" value="{{ report.id }}">
                   <input type="hidden" name="payment_status" value="paid">
-                  <button class="btn" type="submit">Marcar como recebido</button>
+                  <button class="btn" type="submit">Recebido</button>
                 </form>
               {% else %}
                 <form method="post" data-submit-once="true" onsubmit="return confirm('Voltar este relatorio para pendente?')">
@@ -229,7 +229,7 @@
                   <input type="hidden" name="action" value="set_payment_status">
                   <input type="hidden" name="report_id" value="{{ report.id }}">
                   <input type="hidden" name="payment_status" value="pending">
-                  <button class="btn" type="submit">Voltar para pendente</button>
+                  <button class="btn" type="submit">Marcar pendente</button>
                 </form>
               {% endif %}
             </div>

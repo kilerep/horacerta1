@@ -599,7 +599,7 @@ class CompanyContractForm(forms.ModelForm):
             "start_date": "Inicio da vigencia",
             "end_date": "Fim da vigencia (opcional)",
             "contract_file": "PDF do contrato (opcional)",
-            "notes": "Observacoes internas (opcional)",
+            "notes": "Observacoes (opcional)",
         }
 
     def __init__(self, *args, company=None, request=None, **kwargs):
@@ -697,7 +697,7 @@ class CompanyProfileForm(forms.ModelForm):
 class MEIClientForm(forms.Form):
     name = forms.CharField(label="Nome do cliente/empresa", max_length=120)
     cnpj = forms.CharField(label="CNPJ (opcional)", max_length=18, required=False)
-    contact_name = forms.CharField(label="Contato responsavel (opcional)", max_length=120, required=False)
+    contact_name = forms.CharField(label="Contato (opcional)", max_length=120, required=False)
     whatsapp = forms.CharField(label="WhatsApp (opcional)", max_length=30, required=False)
     email = forms.EmailField(label="E-mail (opcional)", required=False)
     hourly_rate = forms.DecimalField(
@@ -712,12 +712,12 @@ class MEIClientForm(forms.Form):
         widget=forms.DateInput(attrs={"type": "date"}),
     )
     closure_type = forms.ChoiceField(
-        label="Tipo de fechamento",
+        label="Frequencia",
         choices=Contract.ClosureType.choices,
     )
     require_location = forms.BooleanField(label="Exige localizacao no registro", required=False)
     notes = forms.CharField(
-        label="Observacoes internas",
+        label="Observacoes",
         required=False,
         widget=forms.Textarea(attrs={"rows": 4, "placeholder": "Informacoes internas sobre o atendimento, combinados ou faturamento."}),
     )

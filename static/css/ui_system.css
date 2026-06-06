@@ -44,6 +44,12 @@ a {
   background: var(--btn-bg);
   color: var(--btn-text);
   font-weight: 700;
+  max-width: 100%;
+  min-width: 0;
+  line-height: 1.2;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
   cursor: pointer;
   transition: background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease, transform 0.08s ease;
 }
@@ -83,6 +89,8 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="
 select,
 textarea {
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   min-height: 42px;
   padding: 10px 12px;
   border-radius: 12px;
@@ -185,6 +193,8 @@ tbody tr:hover td {
 .badge {
   display: inline-flex;
   align-items: center;
+  max-width: 100%;
+  min-width: 0;
   border-radius: 999px;
   border: 1px solid var(--badge-border);
   background: var(--badge-bg);
@@ -192,6 +202,9 @@ tbody tr:hover td {
   padding: 4px 10px;
   font-size: 12px;
   font-weight: 700;
+  line-height: 1.25;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .pill.success,
@@ -262,10 +275,60 @@ tbody tr:hover td {
 
 .theme-switch__select {
   min-width: 170px;
+  max-width: 100%;
   min-height: 36px;
   padding: 7px 34px 7px 10px;
   border-radius: 10px;
   font-size: 13px;
+}
+
+label,
+.text-safe,
+.compact-meta,
+.status-line {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.badge-wrap,
+.report-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.responsive-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  gap: 10px;
+  min-width: 0;
+}
+
+.mobile-stack {
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  .theme-switch {
+    width: 100%;
+  }
+
+  .theme-switch__select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .mobile-stack {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  .report-actions .btn,
+  .report-actions form {
+    max-width: 100%;
+  }
 }
 
 .theme-switch__premium-note {

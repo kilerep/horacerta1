@@ -33,7 +33,7 @@
     .client-card__head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
     .client-name{margin:0;font-size:19px;line-height:1.2;overflow-wrap:anywhere}
     .client-period{margin:4px 0 0;color:var(--muted);font-size:12px}
-    .client-status,.mini-badge{display:inline-flex;align-items:center;width:max-content;max-width:100%;border-radius:999px;padding:5px 9px;font-size:12px;font-weight:900;border:1px solid var(--line-soft);background:var(--surface-soft);color:var(--muted)}
+    .client-status,.mini-badge{display:inline-flex;align-items:center;width:max-content;max-width:100%;min-width:0;border-radius:999px;padding:5px 9px;font-size:12px;font-weight:900;line-height:1.25;border:1px solid var(--line-soft);background:var(--surface-soft);color:var(--muted);white-space:normal;overflow-wrap:anywhere}
     .client-status.success,.mini-badge.success{color:var(--color-success);border-color:var(--border-brand);background:var(--surface-brand-soft)}
     .client-status.pending,.mini-badge.pending{color:var(--muted)}
     .client-status.warn{color:var(--danger-text);background:var(--danger-bg)}
@@ -46,7 +46,7 @@
     .client-detail-box h3{margin:0 0 10px;font-size:16px}
     .client-detail-list{display:grid;gap:8px}
     .client-detail-item{display:grid;grid-template-columns:minmax(120px,.5fr) 1fr;gap:8px}
-    .client-detail-item span{color:var(--muted);font-size:12px;font-weight:800}
+    .client-detail-item span{color:var(--muted);font-size:12px;font-weight:800;line-height:1.25;overflow-wrap:anywhere}
     .client-detail-item strong{font-size:14px;overflow-wrap:anywhere}
     .quick-closure-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
     .client-actions--detail{margin-top:4px}
@@ -55,7 +55,7 @@
     .client-report-card{border:1px solid var(--line-soft);border-radius:12px;padding:10px;background:var(--surface-raised);display:grid;gap:8px;min-width:0}
     .client-report-head{display:grid;gap:3px;padding-bottom:8px;border-bottom:1px solid var(--line-soft)}
     .client-report-title{margin:0;font-size:15px;line-height:1.25;overflow-wrap:anywhere}
-    .client-report-meta{color:var(--muted);font-size:12px;line-height:1.45}
+    .client-report-meta{color:var(--muted);font-size:12px;line-height:1.45;overflow-wrap:anywhere}
     .client-report-totals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
     .client-report-statuses{display:flex;gap:6px;flex-wrap:wrap}
     .client-report-footer{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap;padding-top:8px;border-top:1px solid var(--line-soft)}
@@ -72,7 +72,8 @@
       .clients-hero__top,.client-card__head{display:grid}
       .clients-actions .btn,.client-actions .btn{width:100%;justify-content:center}
       .clients-summary,.client-metrics,.client-detail-grid,.quick-closure-grid,.client-detail-item,.client-report-totals{grid-template-columns:1fr}
-      .client-report-actions,.client-report-actions form,.client-report-actions .btn,.client-report-actions form .btn{width:100%;justify-content:center}
+      .client-report-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}
+      .client-report-actions form,.client-report-actions .btn,.client-report-actions form .btn{width:100%;justify-content:center}
     }
   </style>
 
@@ -194,7 +195,7 @@
                     <h3>Fechamento rapido</h3>
                     <div class="quick-closure-grid">
                       <div class="client-metric"><span>Frequencia</span><strong>{{ contract.get_closure_type_display }}</strong></div>
-                      <div class="client-metric"><span>Periodo sugerido</span><strong>{{ row.quick_closure.period_label }}</strong></div>
+                      <div class="client-metric"><span>Periodo</span><strong>{{ row.quick_closure.period_label }}</strong></div>
                       <div class="client-metric"><span>Horas no periodo</span><strong>{{ row.quick_closure.total_hours }}</strong></div>
                       <div class="client-metric"><span>Valor estimado</span><strong>{{ row.quick_closure.estimated_value_brl }}</strong></div>
                     </div>
@@ -204,7 +205,7 @@
                       <p class="clients-note">O relatorio so sera criado depois da revisao e confirmacao na tela Relatorios.</p>
                     {% endif %}
                     <div class="quick-closure-actions" style="margin-top:10px">
-                      <a class="btn primary" href="{{ row.quick_closure.report_url }}">Gerar relatorio deste periodo</a>
+                      <a class="btn primary" href="{{ row.quick_closure.report_url }}">Gerar relatorio</a>
                     </div>
                   </article>
 
@@ -218,7 +219,7 @@
                       data-client-id="{{ row.contract.id }}"
                       aria-controls="client-reports-{{ row.contract.id }}"
                       aria-expanded="false"
-                    >Ver fechamentos e relatorios</button>
+                    >Ver fechamentos</button>
                   </div>
 
                   <article
@@ -230,8 +231,8 @@
                   >
                     <div class="clients-section-head">
                       <div>
-                        <h3>Fechamentos e relatorios</h3>
-                        <p>Ultimos 3 deste cliente. A lista completa fica em Relatorios.</p>
+                        <h3>Ultimos fechamentos</h3>
+                        <p>Ultimos 3. Lista completa em Relatorios.</p>
                       </div>
                     </div>
                     <div class="client-report-list">
@@ -247,15 +248,15 @@
                               <div class="client-metric"><span>Valor</span><strong>{{ report.summary_payload.estimated_value_brl|default:"-" }}</strong></div>
                             </div>
                             <div class="client-report-statuses">
-                              <span class="mini-badge {{ report_row.view_tone }}">Visualizacao: {{ report_row.view_label }}</span>
-                              <span class="mini-badge {{ report_row.received_tone }}">Recebimento: {{ report_row.received_label }}</span>
+                              <span class="mini-badge {{ report_row.view_tone }}">{{ report_row.view_label }}</span>
+                              <span class="mini-badge {{ report_row.received_tone }}">{{ report_row.received_label }}</span>
                             </div>
                             <div class="client-report-footer">
                               <div class="client-report-actions">
                                 <a class="btn" href="{{ report_row.detail_url }}">Ver</a>
                                 {% if report_row.conference_url %}
                                   <a class="btn primary" href="{{ report_row.whatsapp_url }}" target="_blank" rel="noopener">WhatsApp</a>
-                                  <button class="btn" type="button" data-copy-text="{{ report_row.conference_url }}">Copiar link</button>
+                                  <button class="btn" type="button" data-copy-text="{{ report_row.conference_url }}">Link</button>
                                 {% endif %}
                                 <a class="btn" href="{{ report_row.pdf_url }}">PDF</a>
                               </div>
@@ -266,7 +267,7 @@
                                     <input type="hidden" name="action" value="set_payment_status">
                                     <input type="hidden" name="report_id" value="{{ report.id }}">
                                     <input type="hidden" name="payment_status" value="paid">
-                                    <button class="btn" type="submit">Marcar como recebido</button>
+                                    <button class="btn" type="submit">Recebido</button>
                                   </form>
                                 {% else %}
                                   <form method="post" data-submit-once="true" onsubmit="return confirm('Voltar este relatorio para pendente?')">
@@ -274,7 +275,7 @@
                                     <input type="hidden" name="action" value="set_payment_status">
                                     <input type="hidden" name="report_id" value="{{ report.id }}">
                                     <input type="hidden" name="payment_status" value="pending">
-                                    <button class="btn" type="submit">Voltar para pendente</button>
+                                    <button class="btn" type="submit">Marcar pendente</button>
                                   </form>
                                 {% endif %}
                               </div>
@@ -358,7 +359,7 @@
           var shouldOpen = reportsToggle.getAttribute("aria-expanded") !== "true";
           reportsPanel.hidden = !shouldOpen;
           reportsToggle.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
-          reportsToggle.textContent = shouldOpen ? "Ocultar fechamentos e relatorios" : "Ver fechamentos e relatorios";
+          reportsToggle.textContent = shouldOpen ? "Ocultar fechamentos" : "Ver fechamentos";
           return;
         }
 
