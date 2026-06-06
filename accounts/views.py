@@ -55,6 +55,7 @@ from timeclock.models import (
 )
 from timeclock.notifications import (
     acknowledge_company_notification,
+    create_internal_notification,
     notify_correction_request_created,
     notify_correction_request_status_changed,
     notify_punch_admin_action,
@@ -919,6 +920,263 @@ def _service_report_period_display(report):
     start_label = report.date_from.strftime("%d/%m/%Y") if report.date_from else "-"
     end_label = report.date_to.strftime("%d/%m/%Y") if report.date_to else "-"
     return f"{start_label} ate {end_label}"
+
+
+def _notification_card(
+    *,
+    title,
+    message,
+    category="Sistema",
+    priority="normal",
+    created_at=None,
+    client_name="",
+    action_label="",
+    action_url="",
+    is_read=True,
+    notification=None,
+    source="dynamic",
+):
+    return {
+        "title": title,
+        "message": message,
+        "category": category,
+        "priority": priority,
+        "created_at": created_at,
+        "client_name": client_name,
+        "action_label": action_label,
+        "action_url": action_url,
+        "is_read": is_read,
+        "notification": notification,
+        "source": source,
+    }
+
+
+def _notification_category_for_title(title):
+    title = (title or "").lower()
+    if "relatorio" in title or "recebimento" in title or "periodo fechado" in title:
+        return "Relatorios"
+    if "fechamento" in title:
+        return "Fechamentos"
+    if "incompleto" in title or "valor/hora" in title:
+        return "Pendencias"
+    return "Sistema"
+
+
+def _notification_action_label(title, target_url):
+    title = (title or "").lower()
+    if not target_url:
+        return ""
+    if "dia incompleto" in title:
+        return "Revisar horario"
+    if "valor/hora" in title:
+        return "Editar cliente"
+    if "fechamento" in title:
+        return "Gerar relatorio"
+    if "relatorio" in title or "periodo fechado" in title or "recebimento" in title:
+        return "Ver relatorio"
+    return "Abrir"
+
+
+def _persistent_notification_exists(*, user, title, target_url):
+    return InternalNotification.objects.filter(
+        recipient_user=user,
+        audience=InternalNotification.Audience.MEI,
+        title=title,
+        target_url=target_url or "",
+    ).exists()
+
+
+def _create_mei_report_notification(*, report, title, message, target_url):
+    user = getattr(getattr(report, "employee", None), "user", None)
+    if not user or _persistent_notification_exists(user=user, title=title, target_url=target_url):
+        return None
+    return create_internal_notification(
+        recipient_user=user,
+        audience=InternalNotification.Audience.MEI,
+        notification_type=InternalNotification.NotificationType.ADMIN_NOTE_ADDED,
+        title=title,
+        message=message,
+        target_url=target_url,
+    )
+
+
+def _notify_service_report_created(report):
+    if not report.pk:
+        return None
+    period_label = _service_report_period_display(report)
+    company_name = getattr(getattr(report, "company", None), "name", "cliente")
+    return _create_mei_report_notification(
+        report=report,
+        title="Periodo fechado",
+        message=(
+            f"O relatorio da {company_name} foi gerado. "
+            f"Os dias de {period_label} foram bloqueados para preservar o fechamento."
+        ),
+        target_url=reverse("mei_service_report_detail", args=[report.id]),
+    )
+
+
+def _notify_service_report_viewed(report, viewed_at=None):
+    if not report.pk:
+        return None
+    viewed_at = viewed_at or report.conference_first_viewed_at or timezone.now()
+    company_name = getattr(getattr(report, "company", None), "name", "cliente")
+    local_viewed_at = timezone.localtime(viewed_at).strftime("%d/%m/%Y %H:%M")
+    return _create_mei_report_notification(
+        report=report,
+        title="Relatorio visualizado",
+        message=f"O relatorio da {company_name} foi aberto pelo cliente em {local_viewed_at}.",
+        target_url=reverse("mei_service_report_detail", args=[report.id]),
+    )
+
+
+def _build_mei_dynamic_notifications(user):
+    today = timezone.localdate()
+    recent_start = today - timedelta(days=6)
+    recent_start_dt = timezone.make_aware(datetime.combine(recent_start, time.min))
+    today_end_dt = timezone.make_aware(datetime.combine(today, time.max))
+    contracts = list(
+        mei_contracts_for_user(user, include_inactive_contracts=False)
+        .select_related("company", "employee", "employee__user")
+        .order_by("company__name")
+    )
+    contract_ids = [contract.id for contract in contracts]
+    cards = []
+    if contract_ids:
+        punches = (
+            Punch.objects.filter(contract_id__in=contract_ids, timestamp__range=(recent_start_dt, today_end_dt))
+            .select_related("contract", "contract__company")
+            .order_by("timestamp")
+        )
+        punches_by_contract_day = defaultdict(list)
+        for punch in punches:
+            punches_by_contract_day[(punch.contract_id, timezone.localtime(punch.timestamp).date())].append(punch)
+        for contract in contracts:
+            company_name = contract.company.name
+            today_punches = punches_by_contract_day.get((contract.id, today), [])
+            if today_punches and len(today_punches) % 2 == 1:
+                cards.append(
+                    _notification_card(
+                        title="Dia incompleto",
+                        message=(
+                            f"Voce registrou {len(today_punches)} horarios hoje na {company_name}. "
+                            "Confira antes de gerar relatorio."
+                        ),
+                        category="Pendencias",
+                        priority="high",
+                        created_at=timezone.now(),
+                        client_name=company_name,
+                        action_label="Revisar horario",
+                        action_url=f"{reverse('mei_edit_today_punches')}?contract={contract.id}",
+                    )
+                )
+                continue
+            for offset in range(1, 7):
+                day = today - timedelta(days=offset)
+                day_punches = punches_by_contract_day.get((contract.id, day), [])
+                if day_punches and len(day_punches) % 2 == 1:
+                    cards.append(
+                        _notification_card(
+                            title="Dia incompleto",
+                            message=(
+                                f"Voce registrou {len(day_punches)} horarios em {day:%d/%m/%Y} na {company_name}. "
+                                "Confira para evitar relatorio com erro."
+                            ),
+                            category="Pendencias",
+                            priority="high",
+                            client_name=company_name,
+                            action_label="Revisar horario",
+                            action_url=f"{reverse('mei_history')}?contract={contract.id}&date_from={day:%Y-%m-%d}&date_to={day:%Y-%m-%d}",
+                        )
+                    )
+                    break
+
+            if not contract.hourly_rate or contract.hourly_rate <= Decimal("0"):
+                cards.append(
+                    _notification_card(
+                        title="Cliente sem valor/hora",
+                        message=(
+                            f"O cliente {company_name} esta sem valor/hora definido. "
+                            "O valor estimado pode ficar zerado no relatorio."
+                        ),
+                        category="Pendencias",
+                        priority="high",
+                        client_name=company_name,
+                        action_label="Editar cliente",
+                        action_url=reverse("mei_client_edit", args=[contract.id]),
+                    )
+                )
+
+            if contract.closure_type != Contract.ClosureType.CUSTOM:
+                close_from, close_to = _suggest_closure_period(contract, today)
+                if 0 <= (close_to - today).days <= 2 or today >= close_to:
+                    query = urlencode(
+                        {
+                            "contract": str(contract.id),
+                            "date_from": close_from.isoformat(),
+                            "date_to": close_to.isoformat(),
+                        }
+                    )
+                    cards.append(
+                        _notification_card(
+                            title="Fechamento proximo",
+                            message=(
+                                f"O fechamento da {company_name} esta no periodo de "
+                                f"{close_from:%d/%m/%Y} ate {close_to:%d/%m/%Y}. "
+                                "Voce ja pode revisar as horas e gerar o relatorio."
+                            ),
+                            category="Fechamentos",
+                            priority="normal",
+                            client_name=company_name,
+                            action_label="Gerar relatorio",
+                            action_url=f"{reverse('mei_reports')}?{query}",
+                        )
+                    )
+
+    viewed_pending_reports = (
+        ServiceReport.objects.filter(
+            employee__user=user,
+            conference_first_viewed_at__isnull=False,
+            payment_status=ServiceReport.PaymentStatus.PENDING,
+        )
+        .select_related("company")
+        .order_by("-conference_first_viewed_at")[:5]
+    )
+    for report in viewed_pending_reports:
+        company_name = report.company.name
+        cards.append(
+            _notification_card(
+                title="Recebimento pendente",
+                message=(
+                    f"O relatorio da {company_name} ja foi visualizado, "
+                    "mas ainda esta como pendente no seu controle interno."
+                ),
+                category="Relatorios",
+                priority="normal",
+                created_at=report.conference_first_viewed_at,
+                client_name=company_name,
+                action_label="Ver relatorio",
+                action_url=reverse("mei_service_report_detail", args=[report.id]),
+            )
+        )
+    return cards
+
+
+def _build_mei_persistent_notification_card(notification):
+    category = _notification_category_for_title(notification.title)
+    return _notification_card(
+        title=notification.title,
+        message=notification.message,
+        category=category,
+        priority="normal" if notification.is_read else "new",
+        created_at=notification.created_at,
+        client_name=getattr(notification.recipient_company, "name", ""),
+        action_label=_notification_action_label(notification.title, notification.target_url),
+        action_url=notification.target_url,
+        is_read=notification.is_read,
+        notification=notification,
+        source="persistent",
+    )
 
 
 def _service_report_received_label(report):
@@ -5201,23 +5459,63 @@ def mei_notifications(request):
     denied = _redirect_if_not_mei(request)
     if denied:
         return denied
-    notifications = InternalNotification.objects.filter(
+    persistent_notifications = InternalNotification.objects.filter(
         recipient_user=request.user,
         audience=InternalNotification.Audience.MEI,
     ).select_related(
         "actor_user",
         "recipient_company",
     )
+    persistent_cards = [_build_mei_persistent_notification_card(notification) for notification in persistent_notifications[:160]]
+    dynamic_cards = _build_mei_dynamic_notifications(request.user)
+    priority_order = {"high": 0, "new": 1, "normal": 2}
+    attention_cards = sorted(
+        [card for card in [*dynamic_cards, *persistent_cards] if card["priority"] in {"high", "new", "normal"}],
+        key=lambda item: (
+            priority_order.get(item["priority"], 3),
+            -(timezone.localtime(item["created_at"]).timestamp() if item["created_at"] else 0),
+        ),
+    )[:5]
+    all_cards = sorted(
+        [*dynamic_cards, *persistent_cards],
+        key=lambda item: (
+            priority_order.get(item["priority"], 3),
+            -(timezone.localtime(item["created_at"]).timestamp() if item["created_at"] else 0),
+        ),
+    )[:200]
+    unread_count = sum(1 for card in persistent_cards if not card["is_read"])
     return render(
         request,
         "accounts/mei_notifications.html",
         {
-            "rows": [
-                {"notification": notification, "tone": _notification_tone(notification)}
-                for notification in notifications[:200]
-            ],
+            "attention_cards": attention_cards,
+            "cards": all_cards,
+            "unread_count": unread_count,
         },
     )
+
+
+@login_required
+@require_POST
+def mei_notifications_bulk_action(request):
+    denied = _redirect_if_not_mei(request)
+    if denied:
+        return denied
+    action = (request.POST.get("action") or "").strip()
+    if action == "read_all":
+        now = timezone.now()
+        updated = InternalNotification.objects.filter(
+            recipient_user=request.user,
+            audience=InternalNotification.Audience.MEI,
+            is_read=False,
+        ).update(is_read=True, read_at=now)
+        if updated:
+            messages.success(request, "Notificacoes marcadas como lidas.")
+        else:
+            messages.info(request, "Nao havia notificacoes novas.")
+    else:
+        messages.error(request, "Acao invalida para notificacoes.")
+    return redirect("mei_notifications")
 
 
 @login_required
@@ -5623,6 +5921,7 @@ def mei_reports(request):
                 )
                 report.ensure_conference_link()
                 report.save()
+                _notify_service_report_created(report)
                 redirect_url = f"{reverse('mei_reports')}?event=report_created"
                 if not report.summary_payload.get("total_seconds"):
                     redirect_url = f"{reverse('mei_reports')}?event=report_created_empty"
@@ -6079,9 +6378,11 @@ def public_service_report_conference(request, token):
         )
 
     update_fields = []
+    first_viewed_now = False
     if not report.conference_first_viewed_at:
         report.conference_first_viewed_at = now
         update_fields.append("conference_first_viewed_at")
+        first_viewed_now = True
     if report.conference_final_status == ServiceReport.ConferenceStatus.PENDING:
         report.conference_final_status = ServiceReport.ConferenceStatus.VIEWED
         update_fields.append("conference_final_status")
@@ -6091,6 +6392,8 @@ def public_service_report_conference(request, token):
     if update_fields:
         update_fields.append("updated_at")
         report.save(update_fields=update_fields)
+        if first_viewed_now:
+            _notify_service_report_viewed(report, now)
 
     public_pdf_url = reverse("public_service_report_pdf", args=[report.conference_token])
     public_xlsx_url = reverse("public_service_report_xlsx", args=[report.conference_token])
@@ -6119,8 +6422,10 @@ def public_service_report_pdf(request, token):
         report.save(update_fields=["conference_final_status", "updated_at"])
         raise PermissionDenied("Link de conferencia expirado.")
     if not report.conference_first_viewed_at:
-        report.conference_first_viewed_at = timezone.now()
+        viewed_at = timezone.now()
+        report.conference_first_viewed_at = viewed_at
         report.save(update_fields=["conference_first_viewed_at", "updated_at"])
+        _notify_service_report_viewed(report, viewed_at)
     return _service_report_pdf_response(report)
 
 
@@ -6136,8 +6441,10 @@ def public_service_report_xlsx(request, token):
         report.save(update_fields=["conference_final_status", "updated_at"])
         raise PermissionDenied("Link de conferencia expirado.")
     if not report.conference_first_viewed_at:
-        report.conference_first_viewed_at = timezone.now()
+        viewed_at = timezone.now()
+        report.conference_first_viewed_at = viewed_at
         report.save(update_fields=["conference_first_viewed_at", "updated_at"])
+        _notify_service_report_viewed(report, viewed_at)
     return _service_report_xlsx_response(report)
 
 
@@ -6203,7 +6510,9 @@ def mei_service_report_request_detail(request, request_id):
                     report.date_from,
                     report.date_to,
                 )
+                report.ensure_conference_link()
                 report.save()
+                _notify_service_report_created(report)
                 report_request.response_report = report
                 report_request.response_text = report.description
                 report_request.status = ActivityReportRequest.Status.RESPONDED

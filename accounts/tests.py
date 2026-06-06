@@ -1339,6 +1339,14 @@ class MeiMultiCompanyContextTests(TestCase):
         self.assertIsNone(report.paid_at)
         self.assertIsNotNone(report.conference_token)
         self.assertEqual(report.summary_payload["company"], self.company_b.name)
+        self.assertTrue(
+            InternalNotification.objects.filter(
+                recipient_user=self.mei_user,
+                audience=InternalNotification.Audience.MEI,
+                title="Periodo fechado",
+                target_url=reverse("mei_service_report_detail", args=[report.id]),
+            ).exists()
+        )
 
         reports_response = self.client.get(reverse("mei_reports"), {"contract": str(self.contract_b.id)})
         self.assertEqual(reports_response.status_code, 200)
@@ -1471,6 +1479,14 @@ class MeiMultiCompanyContextTests(TestCase):
         report.refresh_from_db()
         self.assertIsNotNone(report.conference_first_viewed_at)
         self.assertEqual(report.status, ServiceReport.Status.VIEWED)
+        self.assertTrue(
+            InternalNotification.objects.filter(
+                recipient_user=self.mei_user,
+                audience=InternalNotification.Audience.MEI,
+                title="Relatorio visualizado",
+                target_url=reverse("mei_service_report_detail", args=[report.id]),
+            ).exists()
+        )
         viewed_filter_response = self.client.get(reverse("mei_reports"), {"view": "viewed", "q": "sob demanda"})
         self.assertEqual([row["report"].id for row in viewed_filter_response.context["report_rows"]], [report.id])
 
@@ -1492,6 +1508,79 @@ class MeiMultiCompanyContextTests(TestCase):
         self.assertIn(
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             public_xlsx_response["Content-Type"],
+        )
+
+    def test_mei_notifications_center_shows_smart_cards_and_is_scoped(self):
+        today = timezone.localdate()
+        start = timezone.make_aware(datetime.combine(today, datetime.min.time()))
+        self.contract_a.hourly_rate = "0.00"
+        self.contract_a.closure_type = Contract.ClosureType.WEEKLY
+        self.contract_a.save(update_fields=["hourly_rate", "closure_type"])
+        self.contract_b.closure_type = Contract.ClosureType.WEEKLY
+        self.contract_b.save(update_fields=["closure_type"])
+        for hour in [8, 12, 13]:
+            Punch.objects.create(contract=self.contract_b, timestamp=start + timedelta(hours=hour))
+
+        report = ServiceReport.objects.create(
+            company=self.company_b,
+            employee=self.employee_b,
+            contract=self.contract_b,
+            report_date=today,
+            date_from=today,
+            date_to=today,
+            title="Relatorio visualizado teste",
+            status=ServiceReport.Status.VIEWED,
+            payment_status=ServiceReport.PaymentStatus.PENDING,
+            conference_first_viewed_at=timezone.now(),
+            summary_payload={"period": {"label": f"{today:%d/%m/%Y} ate {today:%d/%m/%Y}"}},
+        )
+        InternalNotification.objects.create(
+            recipient_user=self.mei_user,
+            audience=InternalNotification.Audience.MEI,
+            notification_type=InternalNotification.NotificationType.ADMIN_NOTE_ADDED,
+            title="Relatorio visualizado",
+            message="O relatorio da Empresa B foi aberto pelo cliente.",
+            target_url=reverse("mei_service_report_detail", args=[report.id]),
+        )
+        other_user = User.objects.create_user(
+            username="mei.notifications.other@example.com",
+            email="mei.notifications.other@example.com",
+            password="Senha@12345",
+            role=User.Role.FUNCIONARIO,
+        )
+        InternalNotification.objects.create(
+            recipient_user=other_user,
+            audience=InternalNotification.Audience.MEI,
+            notification_type=InternalNotification.NotificationType.ADMIN_NOTE_ADDED,
+            title="Aviso de outro usuario",
+            message="Nao deve aparecer.",
+        )
+
+        response = self.client.get(reverse("mei_notifications"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Atencao hoje")
+        self.assertContains(response, "Dia incompleto")
+        self.assertContains(response, "Voce registrou 3 horarios hoje na Empresa B")
+        self.assertContains(response, "Cliente sem valor/hora")
+        self.assertContains(response, "Fechamento proximo")
+        self.assertContains(response, "Relatorio visualizado")
+        self.assertContains(response, "Recebimento pendente")
+        self.assertContains(response, "Revisar horario")
+        self.assertContains(response, "Editar cliente")
+        self.assertContains(response, "Gerar relatorio")
+        self.assertContains(response, "Ver relatorio")
+        self.assertContains(response, "Marcar todas como lidas")
+        self.assertNotContains(response, "Aviso de outro usuario")
+
+        read_response = self.client.post(reverse("mei_notifications_bulk_action"), {"action": "read_all"})
+        self.assertEqual(read_response.status_code, 302)
+        self.assertFalse(
+            InternalNotification.objects.filter(
+                recipient_user=self.mei_user,
+                audience=InternalNotification.Audience.MEI,
+                is_read=False,
+            ).exists()
         )
 
     def test_company_cannot_access_other_company_mei_profile(self):

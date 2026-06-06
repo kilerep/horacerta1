@@ -1,55 +1,157 @@
 {% extends "accounts/base.html" %}
-{% block title %}HoraCerta - Minhas notificacoes{% endblock %}
-{% block page_title %}Minhas notificacoes{% endblock %}
+{% block title %}HoraCerta - Notificacoes{% endblock %}
+{% block page_title %}Notificacoes{% endblock %}
 
 {% block content %}
 <style>
-  .nt-wrap{ display:grid; gap:14px; }
-  .nt-panel{ border:1px solid var(--border); border-radius:var(--radius); padding:16px; background:var(--surface-raised); }
-  .nt-title{ margin:0; font-size:22px; }
-  .nt-sub{ margin:6px 0 0; color:var(--muted); font-size:13px; }
-  .nt-list{ display:grid; gap:10px; margin-top:14px; }
-  .nt-item{ border:1px solid var(--border); border-radius:12px; padding:12px; background:rgba(255,255,255,.03); display:grid; gap:10px; }
-  .nt-item.warn{ border-color:rgba(255,176,32,.36); }
-  .nt-row{ display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; }
-  .nt-name{ margin:0; font-weight:800; }
-  .nt-meta{ color:var(--muted); font-size:12px; }
+  .nt-page{display:grid;gap:14px;min-width:0;max-width:100%;overflow-x:hidden}
+  .nt-hero,.nt-panel,.nt-card{
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    background:radial-gradient(circle at 12% 0,var(--color-primary-soft),transparent 42%),linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02));
+    box-shadow:var(--shadow-soft);
+    min-width:0;
+  }
+  .nt-hero{padding:16px;display:grid;gap:12px}
+  .nt-hero__top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+  .nt-title{margin:0;font-size:clamp(23px,5vw,32px);line-height:1.1;overflow-wrap:anywhere}
+  .nt-sub{margin:6px 0 0;color:var(--muted);font-size:13px;line-height:1.45;max-width:720px;overflow-wrap:anywhere}
+  .nt-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .nt-actions .btn{min-height:42px}
+  .nt-layout{display:grid;gap:14px}
+  .nt-panel{padding:14px}
+  .nt-panel__head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;margin-bottom:10px}
+  .nt-panel__head h2{margin:0;font-size:18px;line-height:1.2}
+  .nt-panel__head p{margin:4px 0 0;color:var(--muted);font-size:12px;line-height:1.4}
+  .nt-list{display:grid;gap:10px}
+  .nt-card{padding:12px;background:var(--surface-raised);display:grid;gap:10px}
+  .nt-card.is-new,.nt-card.is-high{border-color:var(--border-brand);box-shadow:0 0 0 2px var(--color-primary-soft),var(--shadow-xs)}
+  .nt-card__top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
+  .nt-card__title{margin:0;font-size:16px;line-height:1.25;overflow-wrap:anywhere}
+  .nt-card__message{margin:0;color:var(--color-text-strong);font-size:14px;line-height:1.45;overflow-wrap:anywhere}
+  .nt-meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center;color:var(--muted);font-size:12px;line-height:1.35}
+  .nt-badge{display:inline-flex;align-items:center;max-width:100%;min-width:0;border:1px solid var(--line-soft);border-radius:999px;padding:4px 9px;background:var(--surface-soft);color:var(--muted);font-size:11px;font-weight:900;line-height:1.2;white-space:normal;overflow-wrap:anywhere}
+  .nt-badge.new,.nt-badge.high{border-color:var(--border-brand);background:var(--surface-brand-soft);color:var(--menu-active-text)}
+  .nt-badge.success{border-color:var(--success-border);background:var(--success-bg);color:var(--success-text)}
+  .nt-card__actions{display:flex;gap:8px;flex-wrap:wrap;padding-top:8px;border-top:1px solid var(--line-soft)}
+  .nt-card__actions form{display:flex}
+  .nt-card__actions .btn{min-height:40px}
+  .nt-empty{border:1px dashed var(--line-soft);border-radius:14px;padding:16px;background:color-mix(in oklab,var(--surface-soft) 64%,transparent);color:var(--muted);line-height:1.45}
+  .nt-empty strong{display:block;color:var(--color-text-strong);margin-bottom:4px}
+  @media (min-width:1040px){
+    .nt-layout{grid-template-columns:minmax(320px,.82fr) minmax(0,1.18fr);align-items:start}
+    .nt-panel--attention{position:sticky;top:18px}
+  }
+  @media (max-width:640px){
+    .nt-hero,.nt-panel{padding:12px}
+    .nt-hero__top{display:grid}
+    .nt-actions,.nt-actions form,.nt-actions .btn,.nt-card__actions,.nt-card__actions form,.nt-card__actions .btn{width:100%;justify-content:center}
+    .nt-card__actions{display:grid;grid-template-columns:1fr}
+  }
 </style>
 
-<div class="nt-wrap">
-  <section class="nt-panel">
-    <h2 class="nt-title">Minhas notificacoes</h2>
-    <p class="nt-sub">Avisos sobre solicitacoes e alteracoes em seus horarios.</p>
-
-    <div class="nt-list">
-      {% for row in rows %}
-        {% with item=row.notification %}
-          <article class="nt-item {{ row.tone }}">
-            <div class="nt-row">
-              <div>
-                <p class="nt-name">{{ item.title }}</p>
-                <div class="nt-meta">{{ item.get_notification_type_display }} | {{ item.created_at|date:"d/m/Y H:i" }}</div>
-              </div>
-              {% if not item.is_read %}
-                <form method="post" action="{% url 'mei_notification_action' item.id %}" data-submit-once="true">
-                  {% csrf_token %}
-                  <input type="hidden" name="action" value="read">
-                  <button class="btn secondary" type="submit">Marcar lida</button>
-                </form>
-              {% else %}
-                <span class="pill neutral">Lida</span>
-              {% endif %}
-            </div>
-            <div>{{ item.message }}</div>
-            {% if item.target_url %}
-              <div><a class="strong-link" href="{{ item.target_url }}">Abrir relacionado</a></div>
-            {% endif %}
-          </article>
-        {% endwith %}
-      {% empty %}
-        <div class="empty-state">Voce ainda nao tem notificacoes.</div>
-      {% endfor %}
+<div class="nt-page">
+  <section class="nt-hero">
+    <div class="nt-hero__top">
+      <div>
+        <h1 class="nt-title">Notificacoes</h1>
+        <p class="nt-sub">Acompanhe pendencias, relatorios e avisos importantes da sua rotina.</p>
+      </div>
+      {% if unread_count %}
+        <form method="post" action="{% url 'mei_notifications_bulk_action' %}" class="nt-actions" data-submit-once="true">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="read_all">
+          <button class="btn" type="submit">Marcar todas como lidas</button>
+        </form>
+      {% endif %}
     </div>
   </section>
+
+  <div class="nt-layout">
+    <section class="nt-panel nt-panel--attention">
+      <div class="nt-panel__head">
+        <div>
+          <h2>Atencao hoje</h2>
+          <p>Avisos prioritarios para revisar antes de fechar ou enviar relatorios.</p>
+        </div>
+      </div>
+      <div class="nt-list">
+        {% for card in attention_cards %}
+          <article class="nt-card {% if card.priority == 'high' %}is-high{% elif card.priority == 'new' %}is-new{% endif %}">
+            <div class="nt-card__top">
+              <div>
+                <div class="nt-meta">
+                  <span class="nt-badge {% if card.priority == 'high' %}high{% elif card.priority == 'new' %}new{% endif %}">{{ card.category }}</span>
+                  {% if not card.is_read %}<span class="nt-badge new">Nova</span>{% endif %}
+                </div>
+                <h3 class="nt-card__title">{{ card.title }}</h3>
+              </div>
+            </div>
+            <p class="nt-card__message">{{ card.message }}</p>
+            <div class="nt-meta">
+              {% if card.client_name %}<span>{{ card.client_name }}</span>{% endif %}
+              {% if card.created_at %}<span>{{ card.created_at|date:"d/m/Y H:i" }}</span>{% else %}<span>Hoje</span>{% endif %}
+            </div>
+            {% if card.action_url %}
+              <div class="nt-card__actions">
+                <a class="btn primary" href="{{ card.action_url }}">{{ card.action_label|default:"Abrir" }}</a>
+              </div>
+            {% endif %}
+          </article>
+        {% empty %}
+          <div class="nt-empty">
+            <strong>Tudo certo por enquanto.</strong>
+            Quando houver pendencias, fechamentos ou visualizacoes de relatorios, elas aparecerao aqui.
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="nt-panel">
+      <div class="nt-panel__head">
+        <div>
+          <h2>Historico de notificacoes</h2>
+          <p>Pendencias, relatorios, fechamentos e eventos do sistema em um so lugar.</p>
+        </div>
+      </div>
+      <div class="nt-list">
+        {% for card in cards %}
+          <article class="nt-card {% if card.priority == 'high' %}is-high{% elif card.priority == 'new' %}is-new{% endif %}">
+            <div class="nt-card__top">
+              <div>
+                <div class="nt-meta">
+                  <span class="nt-badge {% if card.priority == 'high' %}high{% elif card.priority == 'new' %}new{% endif %}">{{ card.category }}</span>
+                  {% if not card.is_read %}<span class="nt-badge new">Nova</span>{% elif card.source == "persistent" %}<span class="nt-badge success">Lida</span>{% endif %}
+                </div>
+                <h3 class="nt-card__title">{{ card.title }}</h3>
+              </div>
+            </div>
+            <p class="nt-card__message">{{ card.message }}</p>
+            <div class="nt-meta">
+              {% if card.client_name %}<span>{{ card.client_name }}</span>{% endif %}
+              {% if card.created_at %}<span>{{ card.created_at|date:"d/m/Y H:i" }}</span>{% else %}<span>Dinamica</span>{% endif %}
+            </div>
+            <div class="nt-card__actions">
+              {% if card.action_url %}
+                <a class="btn primary" href="{{ card.action_url }}">{{ card.action_label|default:"Abrir" }}</a>
+              {% endif %}
+              {% if card.notification and not card.notification.is_read %}
+                <form method="post" action="{% url 'mei_notification_action' card.notification.id %}" data-submit-once="true">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="read">
+                  <button class="btn" type="submit">Marcar lida</button>
+                </form>
+              {% endif %}
+            </div>
+          </article>
+        {% empty %}
+          <div class="nt-empty">
+            <strong>Sem notificacoes ainda.</strong>
+            Quando algo importante acontecer, a central vai mostrar o aviso e a acao indicada.
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+  </div>
 </div>
 {% endblock %}

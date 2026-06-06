@@ -108,6 +108,7 @@ urlpatterns = [
     path("me/editar-horarios-hoje/", views.mei_edit_today_punches, name="mei_edit_today_punches"),
     path("me/reportar-problema-ponto/", views.mei_punch_correction_request, name="mei_punch_correction_request"),
     path("me/notificacoes/", views.mei_notifications, name="mei_notifications"),
+    path("me/notificacoes/acao/", views.mei_notifications_bulk_action, name="mei_notifications_bulk_action"),
     path("me/notificacoes/<uuid:notification_id>/acao/", views.mei_notification_action, name="mei_notification_action"),
     path("me/exportar/", views.mei_export, name="mei_export"),
     path("me/contract/", views.mei_contract, name="mei_contract_en"),
