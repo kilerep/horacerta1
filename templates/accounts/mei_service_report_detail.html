@@ -43,7 +43,7 @@
     <div class="detail-head">
       <div>
         <h1 class="detail-title">{{ report.title }}</h1>
-        <p class="detail-sub">{{ report.company.name }} | {{ report.date_from|date:"d/m/Y" }} até {{ report.date_to|date:"d/m/Y" }} | {{ report.get_status_display }}</p>
+        <p class="detail-sub">{{ report.company.name }} | {{ report.date_from|date:"d/m/Y" }} até {{ report.date_to|date:"d/m/Y" }} | {{ status_label }}</p>
       </div>
       {% if not public_view %}
         <div class="detail-actions">
@@ -84,9 +84,9 @@
           {% if report.whatsapp_sent_attempted_at %} | Envio WhatsApp iniciado em {{ report.whatsapp_sent_attempted_at|date:"d/m/Y" }} às {{ report.whatsapp_sent_attempted_at|date:"H:i" }}{% endif %}
         </div>
         <div class="detail-sub">
-          Pagamento:
+          Recebimento:
           {% if report.payment_status == "paid" %}
-            <strong>Pago{% if report.paid_at %} em {{ report.paid_at|date:"d/m/Y" }} às {{ report.paid_at|date:"H:i" }}{% endif %}</strong>
+            <strong>Recebido{% if report.paid_at %} em {{ report.paid_at|date:"d/m/Y" }} as {{ report.paid_at|date:"H:i" }}{% endif %}</strong>
           {% else %}
             <strong>Pendente</strong>
           {% endif %}

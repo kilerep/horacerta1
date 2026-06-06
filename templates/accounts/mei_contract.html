@@ -64,14 +64,25 @@
     .client-detail-item{ display:grid; grid-template-columns:minmax(120px,.5fr) 1fr; gap:8px; }
     .client-detail-item span{ color:var(--muted); font-size:12px; font-weight:800; }
     .client-detail-item strong{ font-size:14px; overflow-wrap:anywhere; }
+    .quick-closure-grid{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
+    .quick-closure-actions,
+    .client-report-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+    .client-report-list{ display:grid; gap:8px; }
+    .client-report-card{ border:1px solid rgba(255,255,255,.09); border-radius:12px; padding:10px; background:rgba(255,255,255,.03); display:grid; gap:8px; min-width:0; }
+    .client-report-head{ display:flex; justify-content:space-between; gap:10px; align-items:flex-start; flex-wrap:wrap; }
+    .client-report-title{ margin:0; font-size:15px; line-height:1.25; overflow-wrap:anywhere; }
+    .client-report-meta{ color:var(--muted); font-size:12px; line-height:1.45; }
     .clients-empty{ border:1px dashed rgba(255,255,255,.18); border-radius:14px; padding:18px; background:rgba(255,255,255,.03); }
     .clients-empty h2{ margin:0; font-size:20px; }
     .clients-empty p{ margin:8px 0 0; color:var(--muted); }
     .clients-note{ color:var(--muted); font-size:12px; margin:10px 0 0; }
+    .feedback{border:1px solid rgba(45,211,145,.36);background:rgba(45,211,145,.1);border-radius:12px;padding:11px;color:#d9ffec}
+    .copy-status{min-height:18px;color:var(--muted);font-size:12px}
     @media (max-width: 900px){
       .clients-summary,
       .client-metrics,
-      .client-detail-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .client-detail-grid,
+      .quick-closure-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); }
     }
     @media (max-width: 640px){
       .clients-hero__top,
@@ -81,11 +92,18 @@
       .clients-summary,
       .client-metrics,
       .client-detail-grid,
+      .quick-closure-grid,
       .client-detail-item{ grid-template-columns:1fr; }
     }
   </style>
 
   <div class="clients-page">
+    {% if request.GET.event == "report_received" %}
+      <section class="feedback" role="status">Relatorio marcado como recebido.</section>
+    {% elif request.GET.event == "report_receive_pending" %}
+      <section class="feedback" role="status">Relatorio voltou para pendente.</section>
+    {% endif %}
+
     <section class="clients-hero">
       <div class="clients-hero__top">
         <div>
@@ -193,6 +211,77 @@
                     </article>
                   </div>
 
+                  <article class="client-detail-box">
+                    <h3>Fechamento rápido</h3>
+                    <div class="quick-closure-grid">
+                      <div class="client-metric"><span>Frequência</span><strong>{{ contract.get_closure_type_display }}</strong></div>
+                      <div class="client-metric"><span>Período sugerido</span><strong>{{ row.quick_closure.period_label }}</strong></div>
+                      <div class="client-metric"><span>Horas no período</span><strong>{{ row.quick_closure.total_hours }}</strong></div>
+                      <div class="client-metric"><span>Valor estimado</span><strong>{{ row.quick_closure.estimated_value_brl }}</strong></div>
+                    </div>
+                    {% if row.quick_closure.is_custom %}
+                      <p class="clients-note">Este cliente usa fechamento personalizado. Revise as datas manualmente antes de gerar.</p>
+                    {% else %}
+                      <p class="clients-note">O relatorio so sera criado depois da revisao e confirmacao na tela Relatorios.</p>
+                    {% endif %}
+                    <div class="quick-closure-actions" style="margin-top:10px">
+                      <a class="btn primary" href="{{ row.quick_closure.report_url }}">Gerar relatório deste período</a>
+                    </div>
+                  </article>
+
+                  <article class="client-detail-box">
+                    <h3>Últimos relatórios deste cliente</h3>
+                    <div class="client-report-list">
+                      {% for report_row in row.recent_reports %}
+                        {% with report=report_row.report %}
+                          <div class="client-report-card">
+                            <div class="client-report-head">
+                              <div>
+                                <h4 class="client-report-title">{{ report.title }}</h4>
+                                <div class="client-report-meta">{{ report_row.period_label }}</div>
+                              </div>
+                              <span class="client-status muted">{{ report_row.status_label }}</span>
+                            </div>
+                            <div class="client-detail-list">
+                              <div class="client-detail-item"><span>Total</span><strong>{{ report.summary_payload.total_hours|default:"-" }}</strong></div>
+                              <div class="client-detail-item"><span>Valor estimado</span><strong>{{ report.summary_payload.estimated_value_brl|default:"-" }}</strong></div>
+                              <div class="client-detail-item"><span>Visualização</span><strong>{% if report.conference_first_viewed_at %}Visualizado em {{ report.conference_first_viewed_at|date:"d/m/Y" }} às {{ report.conference_first_viewed_at|date:"H:i" }}{% else %}Ainda não visualizado{% endif %}</strong></div>
+                              <div class="client-detail-item"><span>Recebimento</span><strong>{{ report_row.received_label }}</strong></div>
+                            </div>
+                            <div class="client-report-actions">
+                              <a class="btn" href="{{ report_row.detail_url }}">Ver</a>
+                              {% if report_row.conference_url %}
+                                <a class="btn primary" href="{{ report_row.whatsapp_url }}" target="_blank" rel="noopener">Enviar WhatsApp</a>
+                                <button class="btn" type="button" data-copy-text="{{ report_row.conference_url }}">Copiar link</button>
+                              {% endif %}
+                              <a class="btn" href="{{ report_row.pdf_url }}">PDF</a>
+                              {% if report.payment_status != "paid" %}
+                                <form method="post" data-submit-once="true">
+                                  {% csrf_token %}
+                                  <input type="hidden" name="action" value="set_payment_status">
+                                  <input type="hidden" name="report_id" value="{{ report.id }}">
+                                  <input type="hidden" name="payment_status" value="paid">
+                                  <button class="btn" type="submit">Marcar como recebido</button>
+                                </form>
+                              {% else %}
+                                <form method="post" data-submit-once="true" onsubmit="return confirm('Voltar este relatorio para pendente?')">
+                                  {% csrf_token %}
+                                  <input type="hidden" name="action" value="set_payment_status">
+                                  <input type="hidden" name="report_id" value="{{ report.id }}">
+                                  <input type="hidden" name="payment_status" value="pending">
+                                  <button class="btn" type="submit">Voltar para pendente</button>
+                                </form>
+                              {% endif %}
+                            </div>
+                          </div>
+                        {% endwith %}
+                      {% empty %}
+                        <div class="clients-empty">Nenhum relatorio gerado para este cliente ainda.</div>
+                      {% endfor %}
+                    </div>
+                    <div class="copy-status" data-copy-status></div>
+                  </article>
+
                   <div class="client-actions client-actions--detail">
                     <a class="btn" href="{{ row.edit_url }}">Editar contrato</a>
                     <a class="btn" href="{{ row.history_url }}">Ver histórico</a>
@@ -271,6 +360,26 @@
           var toggle = findByClient("[data-client-details-toggle]", clientId);
           if (toggle) toggle.focus();
         });
+      });
+
+      var statusNode = document.querySelector("[data-copy-status]");
+      function setCopyStatus(message) {
+        if (statusNode) statusNode.textContent = message;
+      }
+      document.addEventListener("click", function (event) {
+        var button = event.target.closest("[data-copy-text]");
+        if (!button) return;
+        var value = button.getAttribute("data-copy-text") || "";
+        if (!value) return;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(value).then(function () {
+            setCopyStatus("Link copiado.");
+          }).catch(function () {
+            setCopyStatus("Nao foi possivel copiar automaticamente. Abra o relatorio e copie o link.");
+          });
+          return;
+        }
+        setCopyStatus("Abra o relatorio e copie o link.");
       });
     })();
   </script>

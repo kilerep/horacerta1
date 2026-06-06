@@ -872,6 +872,69 @@ def _build_service_report_payload(contract, date_from, date_to):
     }
 
 
+def _suggest_closure_period(contract, today=None):
+    today = today or timezone.localdate()
+    closure_type = getattr(contract, "closure_type", Contract.ClosureType.MONTHLY)
+    if closure_type == Contract.ClosureType.WEEKLY:
+        start = today - timedelta(days=today.weekday())
+        end = start + timedelta(days=6)
+    elif closure_type == Contract.ClosureType.BIWEEKLY:
+        if today.day <= 15:
+            start = today.replace(day=1)
+            end = today.replace(day=15)
+        else:
+            last_day = monthrange(today.year, today.month)[1]
+            start = today.replace(day=16)
+            end = today.replace(day=last_day)
+    else:
+        start = today.replace(day=1)
+        last_day = monthrange(today.year, today.month)[1]
+        end = today.replace(day=last_day)
+    return start, end
+
+
+def _compute_contract_period_totals(contract, date_from, date_to):
+    tz = timezone.get_current_timezone()
+    start_dt = timezone.make_aware(datetime.combine(date_from, time.min), tz)
+    end_dt = timezone.make_aware(datetime.combine(date_to, time.max), tz)
+    punches = list(Punch.objects.filter(contract=contract, timestamp__range=(start_dt, end_dt)).order_by("timestamp"))
+    daily_rows, _max_cols = build_daily_summary(punches, min_punch_columns=4)
+    total_seconds = sum(row["total_seconds"] for row in daily_rows)
+    estimated_value = ((Decimal(total_seconds) / Decimal("3600")) * (contract.hourly_rate or Decimal("0"))).quantize(
+        Decimal("0.01")
+    )
+    return {
+        "total_seconds": total_seconds,
+        "total_hours": format_hhmm(total_seconds),
+        "estimated_value": estimated_value,
+        "estimated_value_brl": _format_brl(estimated_value),
+    }
+
+
+def _service_report_period_display(report):
+    payload = report.summary_payload or {}
+    period_label = (payload.get("period") or {}).get("label")
+    if period_label:
+        return period_label
+    start_label = report.date_from.strftime("%d/%m/%Y") if report.date_from else "-"
+    end_label = report.date_to.strftime("%d/%m/%Y") if report.date_to else "-"
+    return f"{start_label} ate {end_label}"
+
+
+def _service_report_received_label(report):
+    if report.payment_status == ServiceReport.PaymentStatus.PAID:
+        if report.paid_at:
+            return f"Recebido em {timezone.localtime(report.paid_at).strftime('%d/%m/%Y as %H:%M')}"
+        return "Recebido"
+    return "Pendente"
+
+
+def _service_report_status_label(report):
+    if report.status == ServiceReport.Status.PAID:
+        return "Recebido"
+    return report.get_status_display()
+
+
 def _service_report_period_label(report):
     payload = report.summary_payload or {}
     period = payload.get("period") or {}
@@ -5198,6 +5261,33 @@ def mei_contract(request):
         if not active_contract:
             active_contract = active_contracts[0] if active_contracts else all_contracts[0]
 
+    if request.method == "POST":
+        action = (request.POST.get("action") or "").strip().lower()
+        if action == "set_payment_status":
+            report_id = (request.POST.get("report_id") or "").strip()
+            payment_status = (request.POST.get("payment_status") or "").strip()
+            report = get_object_or_404(
+                ServiceReport.objects.select_related("contract"),
+                id=report_id,
+                employee__user=request.user,
+            )
+            if payment_status == ServiceReport.PaymentStatus.PAID:
+                report.payment_status = ServiceReport.PaymentStatus.PAID
+                report.paid_at = timezone.now()
+                report.paid_note = ""
+                report.save(update_fields=["payment_status", "paid_at", "paid_note", "updated_at"])
+                event = "report_received"
+            elif payment_status == ServiceReport.PaymentStatus.PENDING:
+                report.payment_status = ServiceReport.PaymentStatus.PENDING
+                report.paid_at = None
+                report.paid_note = ""
+                report.save(update_fields=["payment_status", "paid_at", "paid_note", "updated_at"])
+                event = "report_receive_pending"
+            else:
+                messages.error(request, "Status de recebimento invalido.")
+                event = "receive_invalid"
+            return redirect(f"{reverse('mei_contract')}?contract={report.contract_id}&event={event}")
+
     today = timezone.localdate()
     month_start = today.replace(day=1)
     month_start_dt = timezone.make_aware(datetime.combine(month_start, time.min))
@@ -5241,6 +5331,38 @@ def mei_contract(request):
         estimated_value = ((Decimal(month_seconds) / Decimal("3600")) * (contract.hourly_rate or Decimal("0"))).quantize(
             Decimal("0.01")
         )
+        quick_date_from = None
+        quick_date_to = None
+        quick_metrics = None
+        quick_period_label = "Definir manualmente em Relatorios"
+        if contract.closure_type != Contract.ClosureType.CUSTOM:
+            quick_date_from, quick_date_to = _suggest_closure_period(contract, today)
+            quick_metrics = _compute_contract_period_totals(contract, quick_date_from, quick_date_to)
+            quick_period_label = f"{quick_date_from:%d/%m/%Y} ate {quick_date_to:%d/%m/%Y}"
+        quick_query = {"contract": str(contract.id)}
+        if quick_date_from and quick_date_to:
+            quick_query["date_from"] = quick_date_from.isoformat()
+            quick_query["date_to"] = quick_date_to.isoformat()
+        quick_report_url = f"{reverse('mei_reports')}?{urlencode(quick_query)}"
+        recent_reports = []
+        for report in ServiceReport.objects.filter(contract=contract, employee__user=request.user).order_by("-report_date", "-created_at")[:5]:
+            conference_url = ""
+            whatsapp_url = ""
+            if report.conference_is_accessible:
+                conference_url = request.build_absolute_uri(reverse("public_service_report_conference", args=[report.conference_token]))
+                whatsapp_url = reverse("mei_service_report_whatsapp", args=[report.id])
+            recent_reports.append(
+                {
+                    "report": report,
+                    "period_label": _service_report_period_display(report),
+                    "status_label": _service_report_status_label(report),
+                    "received_label": _service_report_received_label(report),
+                    "conference_url": conference_url,
+                    "whatsapp_url": whatsapp_url,
+                    "pdf_url": reverse("mei_service_report_pdf", args=[report.id]),
+                    "detail_url": reverse("mei_service_report_detail", args=[report.id]),
+                }
+            )
         total_month_seconds += month_seconds
         total_estimated_value += estimated_value
         last_punch = last_punch_by_contract.get(contract.id)
@@ -5255,6 +5377,14 @@ def mei_contract(request):
             if last_punch
             else "Sem registros",
             "reports_count": report_counts_by_contract.get(contract.id, 0),
+            "quick_closure": {
+                "period_label": quick_period_label,
+                "total_hours": quick_metrics["total_hours"] if quick_metrics else "-",
+                "estimated_value_brl": quick_metrics["estimated_value_brl"] if quick_metrics else "-",
+                "report_url": quick_report_url,
+                "is_custom": contract.closure_type == Contract.ClosureType.CUSTOM,
+            },
+            "recent_reports": recent_reports,
             "details_url": f"{reverse('mei_contract')}?contract={contract.id}",
             "history_url": f"{reverse('mei_history')}?contract={contract.id}",
             "report_url": f"{reverse('mei_reports')}?contract={contract.id}",
@@ -5380,14 +5510,16 @@ def mei_reports(request):
 
     selected_contract_id = (request.GET.get("contract") or request.POST.get("selected_contract") or "").strip()
     selected_contract = None
-    if selected_contract_id:
+    if selected_contract_id and selected_contract_id != "all":
         selected_contract = next((item for item in contracts_list if str(item.id) == selected_contract_id), None)
-    if not selected_contract:
-        selected_contract = contracts_list[0]
+    form_contract = selected_contract or contracts_list[0]
 
     date_from_raw = (request.GET.get("date_from") or "").strip()
     date_to_raw = (request.GET.get("date_to") or "").strip()
     status_filter = (request.GET.get("status") or "").strip()
+    search_query = (request.GET.get("q") or "").strip()
+    view_filter = (request.GET.get("view") or "all").strip()
+    receive_filter = (request.GET.get("receive") or "all").strip()
 
     reports_qs = (
         ServiceReport.objects.filter(employee__user=request.user)
@@ -5404,6 +5536,12 @@ def mei_reports(request):
         requests_qs = requests_qs.filter(
             Q(contract=selected_contract)
             | Q(contract__isnull=True, company=selected_contract.company)
+        )
+    if search_query:
+        reports_qs = reports_qs.filter(
+            Q(title__icontains=search_query)
+            | Q(description__icontains=search_query)
+            | Q(company__name__icontains=search_query)
         )
     date_from = None
     date_to = None
@@ -5426,12 +5564,28 @@ def mei_reports(request):
     valid_statuses = {choice[0] for choice in ServiceReport.Status.choices}
     if status_filter in valid_statuses:
         reports_qs = reports_qs.filter(status=status_filter)
+    if view_filter == "viewed":
+        reports_qs = reports_qs.filter(conference_first_viewed_at__isnull=False)
+    elif view_filter == "unviewed":
+        reports_qs = reports_qs.filter(conference_first_viewed_at__isnull=True)
+    else:
+        view_filter = "all"
+    if receive_filter == "received":
+        reports_qs = reports_qs.filter(payment_status=ServiceReport.PaymentStatus.PAID)
+    elif receive_filter == "pending":
+        reports_qs = reports_qs.filter(payment_status=ServiceReport.PaymentStatus.PENDING)
+    else:
+        receive_filter = "all"
 
     pending_requests = [item for item in requests_qs[:300] if item.status == ActivityReportRequest.Status.PENDING]
     responded_requests = [item for item in requests_qs[:300] if item.status != ActivityReportRequest.Status.PENDING]
-    report_form = ServiceReportCreateForm(user=request.user)
-    if selected_contract:
-        report_form.fields["contract"].initial = selected_contract
+    form_initial = {"contract": form_contract}
+    if date_from:
+        form_initial["date_from"] = date_from
+    if date_to:
+        form_initial["date_to"] = date_to
+    report_form = ServiceReportCreateForm(user=request.user, initial=form_initial)
+    report_form.fields["contract"].initial = form_contract
 
     if request.method == "POST":
         action = (request.POST.get("action") or "").strip().lower()
@@ -5488,16 +5642,16 @@ def mei_reports(request):
                 report.paid_at = timezone.now()
                 report.paid_note = (request.POST.get("paid_note") or "").strip()[:1000]
                 report.save(update_fields=["payment_status", "paid_at", "paid_note", "updated_at"])
-                event = "report_paid"
+                event = "report_received"
             elif payment_status == ServiceReport.PaymentStatus.PENDING:
                 report.payment_status = ServiceReport.PaymentStatus.PENDING
                 report.paid_at = None
                 report.paid_note = (request.POST.get("paid_note") or "").strip()[:1000]
                 report.save(update_fields=["payment_status", "paid_at", "paid_note", "updated_at"])
-                event = "report_payment_pending"
+                event = "report_receive_pending"
             else:
-                messages.error(request, "Status de pagamento invalido.")
-                event = "payment_invalid"
+                messages.error(request, "Status de recebimento invalido.")
+                event = "receive_invalid"
             redirect_url = f"{reverse('mei_reports')}?event={event}&contract={report.contract_id}"
             return redirect(redirect_url)
 
@@ -5516,6 +5670,9 @@ def mei_reports(request):
                 "whatsapp_url": whatsapp_url,
                 "pdf_url": reverse("mei_service_report_pdf", args=[report.id]),
                 "detail_url": reverse("mei_service_report_detail", args=[report.id]),
+                "period_label": _service_report_period_display(report),
+                "status_label": _service_report_status_label(report),
+                "received_label": _service_report_received_label(report),
             }
         )
     csv_query = {}
@@ -5540,9 +5697,15 @@ def mei_reports(request):
             "pending_requests": pending_requests,
             "responded_requests": responded_requests,
             "status_filter": status_filter,
+            "search_query": search_query,
+            "view_filter": view_filter,
+            "receive_filter": receive_filter,
             "date_from": date_from_raw,
             "date_to": date_to_raw,
-            "status_choices": ServiceReport.Status.choices,
+            "status_choices": [
+                (value, "Recebido" if value == ServiceReport.Status.PAID else label)
+                for value, label in ServiceReport.Status.choices
+            ],
             "csv_url": csv_url,
         },
     )
@@ -5647,6 +5810,7 @@ def mei_service_report_detail(request, report_id):
             "whatsapp_message": whatsapp_message if conference_url else "",
             "whatsapp_url": whatsapp_url,
             "pdf_url": reverse("mei_service_report_pdf", args=[report.id]),
+            "status_label": _service_report_status_label(report),
         },
     )
 

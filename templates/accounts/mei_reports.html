@@ -1,6 +1,6 @@
 {% extends "accounts/base.html" %}
-{% block title %}Relatórios{% endblock %}
-{% block page_title %}Relatórios{% endblock %}
+{% block title %}Relatorios{% endblock %}
+{% block page_title %}Relatorios{% endblock %}
 
 {% block content %}
 <style>
@@ -26,7 +26,7 @@
   .report-metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   .report-metric{border:1px solid rgba(255,255,255,.09);border-radius:10px;padding:9px;background:rgba(255,255,255,.03)}
   .report-metric span{display:block;color:var(--muted);font-size:11px}
-  .report-metric strong{display:block;margin-top:3px}
+  .report-metric strong{display:block;margin-top:3px;overflow-wrap:anywhere}
   .report-card__actions{display:grid;gap:8px}
   .report-card__actions form{display:grid}
   .report-card__actions .btn{width:100%;justify-content:center;min-height:42px}
@@ -47,7 +47,7 @@
     .report-card__actions form .btn{width:auto}
   }
   @media (min-width: 1040px){
-    .reports-form{grid-template-columns:1.2fr 1fr 1fr}
+    .reports-form{grid-template-columns:1.2fr 1fr 1fr 1fr}
     .reports-field.full{grid-column:1 / -1}
     .report-metrics{grid-template-columns:repeat(4,minmax(0,1fr))}
   }
@@ -55,28 +55,28 @@
 
 <div class="reports-page">
   {% if request.GET.event == "report_created" %}
-    <section class="feedback" role="status">Relatório gerado e pronto para envio.</section>
+    <section class="feedback" role="status">Relatorio gerado e pronto para envio.</section>
   {% elif request.GET.event == "report_created_empty" %}
-    <section class="feedback warn" role="status">Relatório gerado, mas não havia horários registrados no período selecionado.</section>
+    <section class="feedback warn" role="status">Relatorio gerado, mas nao havia horarios registrados no periodo selecionado.</section>
   {% elif request.GET.event == "link_created" %}
-    <section class="feedback" role="status">Link de conferência gerado.</section>
-  {% elif request.GET.event == "report_paid" %}
-    <section class="feedback" role="status">Pagamento marcado como pago.</section>
-  {% elif request.GET.event == "report_payment_pending" %}
-    <section class="feedback" role="status">Pagamento voltou para pendente.</section>
+    <section class="feedback" role="status">Link de conferencia gerado.</section>
+  {% elif request.GET.event == "report_received" %}
+    <section class="feedback" role="status">Relatorio marcado como recebido.</section>
+  {% elif request.GET.event == "report_receive_pending" %}
+    <section class="feedback" role="status">Relatorio voltou para pendente.</section>
   {% endif %}
 
   <section class="reports-panel">
     <div class="reports-head">
-      <h1 class="reports-title">Criar relatório</h1>
-      <p class="reports-sub">Escolha o cliente, informe o período e gere um relatório para conferência externa.</p>
+      <h1 class="reports-title">Criar relatorio</h1>
+      <p class="reports-sub">Escolha o cliente, revise o periodo e gere um relatorio para conferencia externa.</p>
     </div>
     <form method="post" class="reports-form" data-submit-once="true">
       {% csrf_token %}
       <input type="hidden" name="action" value="create_report">
       <input type="hidden" name="status" value="DRAFT">
       <div class="reports-field full">
-        <span class="reports-sub">Ao gerar este relatório, os dias incluídos no período serão bloqueados para edição.</span>
+        <span class="reports-sub">Ao gerar este relatorio, os dias incluidos no periodo serao bloqueados para edicao.</span>
       </div>
       <div class="reports-field">
         {{ report_form.contract.label_tag }}
@@ -106,15 +106,74 @@
       </div>
       {% if report_form.non_field_errors %}<div class="error full">{{ report_form.non_field_errors }}</div>{% endif %}
       <div class="reports-actions full">
-        <button class="btn primary" type="submit">Gerar relatório</button>
+        <button class="btn primary" type="submit">Gerar relatorio</button>
       </div>
     </form>
   </section>
 
   <section class="reports-panel">
     <div class="reports-head">
-      <h2 class="reports-title">Relatórios gerados</h2>
-      <p class="reports-sub">Acesse, compartilhe, baixe PDF ou exporte os horários filtrados.</p>
+      <h2 class="reports-title">Filtrar relatorios</h2>
+      <p class="reports-sub">Busque por titulo, cliente ou observacao e filtre por periodo, visualizacao e recebimento.</p>
+    </div>
+    <form method="get" class="reports-form">
+      <div class="reports-field">
+        <label for="filter-q">Busca</label>
+        <input id="filter-q" type="search" name="q" value="{{ search_query }}" placeholder="Titulo, cliente ou observacao">
+      </div>
+      <div class="reports-field">
+        <label for="filter-contract">Cliente</label>
+        <select id="filter-contract" name="contract">
+          <option value="all" {% if not selected_contract %}selected{% endif %}>Todos os clientes</option>
+          {% for c in contracts %}
+            <option value="{{ c.id }}" {% if selected_contract and c.id == selected_contract.id %}selected{% endif %}>{{ c.company.name }} | R$ {{ c.hourly_rate }}/h</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="reports-field">
+        <label for="filter-date-from">Data inicial</label>
+        <input id="filter-date-from" type="date" name="date_from" value="{{ date_from }}">
+      </div>
+      <div class="reports-field">
+        <label for="filter-date-to">Data final</label>
+        <input id="filter-date-to" type="date" name="date_to" value="{{ date_to }}">
+      </div>
+      <div class="reports-field">
+        <label for="filter-status">Status de envio</label>
+        <select id="filter-status" name="status">
+          <option value="">Todos</option>
+          {% for value,label in status_choices %}
+            <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="reports-field">
+        <label for="filter-view">Visualizacao</label>
+        <select id="filter-view" name="view">
+          <option value="all" {% if view_filter == "all" %}selected{% endif %}>Todos</option>
+          <option value="unviewed" {% if view_filter == "unviewed" %}selected{% endif %}>Nao visualizado</option>
+          <option value="viewed" {% if view_filter == "viewed" %}selected{% endif %}>Visualizado</option>
+        </select>
+      </div>
+      <div class="reports-field">
+        <label for="filter-receive">Recebimento</label>
+        <select id="filter-receive" name="receive">
+          <option value="all" {% if receive_filter == "all" %}selected{% endif %}>Todos</option>
+          <option value="pending" {% if receive_filter == "pending" %}selected{% endif %}>Pendente</option>
+          <option value="received" {% if receive_filter == "received" %}selected{% endif %}>Recebido</option>
+        </select>
+      </div>
+      <div class="reports-actions full">
+        <button class="btn primary" type="submit">Filtrar</button>
+        <a class="btn" href="{% url 'mei_reports' %}">Limpar filtros</a>
+      </div>
+    </form>
+  </section>
+
+  <section class="reports-panel">
+    <div class="reports-head">
+      <h2 class="reports-title">Relatorios gerados</h2>
+      <p class="reports-sub">Acesse, compartilhe, baixe PDF ou acompanhe visualizacao e recebimento interno.</p>
     </div>
     <div class="reports-actions" style="margin-top:12px">
       <a class="btn" href="{{ csv_url }}">Exportar CSV</a>
@@ -126,34 +185,21 @@
             <header class="report-card__head">
               <div>
                 <h3 class="report-card__title">{{ report.title }}</h3>
-                <div class="report-card__meta">{{ report.company.name }} | {{ report.date_from|date:"d/m/Y" }} até {{ report.date_to|date:"d/m/Y" }}</div>
+                <div class="report-card__meta">{{ report.company.name }} | {{ row.period_label }}</div>
               </div>
-              <span class="status-pill">{{ report.get_status_display }}</span>
+              <span class="status-pill">{{ row.status_label }}</span>
             </header>
             <div class="report-metrics">
               <div class="report-metric"><span>Total</span><strong>{{ report.summary_payload.total_hours|default:"-" }}</strong></div>
               <div class="report-metric"><span>Valor estimado</span><strong>{{ report.summary_payload.estimated_value_brl|default:"-" }}</strong></div>
-              <div class="report-metric"><span>Dias incompletos</span><strong>{{ report.summary_payload.incomplete_days|default:0 }}</strong></div>
-            </div>
-            <div class="report-view-status">
-              Status do relatório: <strong>{{ report.get_status_display }}</strong>
-            </div>
-            <div class="report-view-status">
-              {% if report.payment_status == "paid" %}
-                Pagamento: <strong>Pago{% if report.paid_at %} em {{ report.paid_at|date:"d/m/Y" }} às {{ report.paid_at|date:"H:i" }}{% endif %}</strong>
-              {% else %}
-                Pagamento: <strong>Pendente</strong>
-              {% endif %}
-              {% if report.paid_note %} | {{ report.paid_note }}{% endif %}
+              <div class="report-metric"><span>Envio</span><strong>{% if report.whatsapp_sent_attempted_at %}{{ report.whatsapp_sent_attempted_at|date:"d/m/Y H:i" }}{% else %}-{% endif %}</strong></div>
+              <div class="report-metric"><span>Recebimento</span><strong>{{ row.received_label }}</strong></div>
             </div>
             <div class="report-view-status">
               {% if report.conference_first_viewed_at %}
-                <strong>Visualizado em {{ report.conference_first_viewed_at|date:"d/m/Y" }} às {{ report.conference_first_viewed_at|date:"H:i" }}</strong>
+                <strong>Visualizado em {{ report.conference_first_viewed_at|date:"d/m/Y" }} as {{ report.conference_first_viewed_at|date:"H:i" }}</strong>
               {% else %}
-                Ainda não visualizado
-              {% endif %}
-              {% if report.whatsapp_sent_attempted_at %}
-                | Envio WhatsApp iniciado em {{ report.whatsapp_sent_attempted_at|date:"d/m/Y" }} às {{ report.whatsapp_sent_attempted_at|date:"H:i" }}
+                Ainda nao visualizado
               {% endif %}
             </div>
             <div class="report-card__actions">
@@ -176,10 +222,10 @@
                   <input type="hidden" name="action" value="set_payment_status">
                   <input type="hidden" name="report_id" value="{{ report.id }}">
                   <input type="hidden" name="payment_status" value="paid">
-                  <button class="btn" type="submit">Marcar como pago</button>
+                  <button class="btn" type="submit">Marcar como recebido</button>
                 </form>
               {% else %}
-                <form method="post" data-submit-once="true" onsubmit="return confirm('Voltar este pagamento para pendente?')">
+                <form method="post" data-submit-once="true" onsubmit="return confirm('Voltar este relatorio para pendente?')">
                   {% csrf_token %}
                   <input type="hidden" name="action" value="set_payment_status">
                   <input type="hidden" name="report_id" value="{{ report.id }}">
@@ -191,61 +237,23 @@
           </article>
         {% endwith %}
       {% empty %}
-        <div class="empty">Nenhum relatório gerado para os filtros atuais.</div>
+        <div class="empty">Nenhum relatorio gerado para os filtros atuais.</div>
       {% endfor %}
     </div>
     <div class="copy-status" data-copy-status></div>
   </section>
 
-  <section class="reports-panel">
-    <div class="reports-head">
-      <h2 class="reports-title">Filtrar relatórios gerados</h2>
-      <p class="reports-sub">Use os filtros para consultar relatórios e exportar CSV do mesmo cliente e período.</p>
-    </div>
-    <form method="get" class="reports-form">
-      <div class="reports-field">
-        <label for="filter-contract">Cliente</label>
-        <select id="filter-contract" name="contract">
-          {% for c in contracts %}
-            <option value="{{ c.id }}" {% if selected_contract and c.id == selected_contract.id %}selected{% endif %}>{{ c.company.name }} | R$ {{ c.hourly_rate }}/h</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="reports-field">
-        <label for="filter-date-from">Data inicial</label>
-        <input id="filter-date-from" type="date" name="date_from" value="{{ date_from }}">
-      </div>
-      <div class="reports-field">
-        <label for="filter-date-to">Data final</label>
-        <input id="filter-date-to" type="date" name="date_to" value="{{ date_to }}">
-      </div>
-      <div class="reports-field">
-        <label for="filter-status">Status</label>
-        <select id="filter-status" name="status">
-          <option value="">Todos</option>
-          {% for value,label in status_choices %}
-            <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="reports-actions full">
-        <button class="btn primary" type="submit">Filtrar</button>
-        <a class="btn" href="{% url 'mei_reports' %}">Limpar filtros</a>
-      </div>
-    </form>
-  </section>
-
   {% if pending_requests %}
     <section class="reports-panel">
       <div class="reports-head">
-        <h2 class="reports-title">Solicitações pendentes</h2>
-        <p class="reports-sub">Pedidos de relatório feitos por clientes.</p>
+        <h2 class="reports-title">Solicitacoes pendentes</h2>
+        <p class="reports-sub">Pedidos de relatorio feitos por clientes.</p>
       </div>
       <div class="reports-list">
         {% for item in pending_requests %}
           <article class="report-card">
-            <h3 class="report-card__title">{{ item.subject|default:"Solicitação de relatório" }}</h3>
-            <div class="report-card__meta">{{ item.company.name }} | {{ item.date_from|date:"d/m/Y"|default:"-" }} até {{ item.date_to|date:"d/m/Y"|default:"-" }}</div>
+            <h3 class="report-card__title">{{ item.subject|default:"Solicitacao de relatorio" }}</h3>
+            <div class="report-card__meta">{{ item.company.name }} | {{ item.date_from|date:"d/m/Y"|default:"-" }} ate {{ item.date_to|date:"d/m/Y"|default:"-" }}</div>
             <div class="report-card__actions">
               <a class="btn primary" href="{% url 'mei_service_report_request_detail' item.id %}">Responder</a>
             </div>
@@ -271,11 +279,11 @@
         navigator.clipboard.writeText(value).then(function () {
           setStatus("Link copiado.");
         }).catch(function () {
-          setStatus("Não foi possível copiar automaticamente. Copie pelo detalhe do relatório.");
+          setStatus("Nao foi possivel copiar automaticamente. Copie pelo detalhe do relatorio.");
         });
         return;
       }
-      setStatus("Copie o link pelo detalhe do relatório.");
+      setStatus("Copie o link pelo detalhe do relatorio.");
     });
   })();
 </script>

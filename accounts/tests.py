@@ -869,6 +869,54 @@ class MeiMultiCompanyContextTests(TestCase):
         self.assertEqual(response_zero_rate.context["summary_estimated_value_brl"], "R$ 0,00")
         self.assertEqual(response_zero_rate.context["history_rows"][0]["estimated_value_brl"], "R$ 0,00")
 
+    def test_mei_client_detail_shows_quick_closure_and_recent_reports(self):
+        today = timezone.localdate()
+        week_start = today - timedelta(days=today.weekday())
+        week_end = week_start + timedelta(days=6)
+        self.contract_b.closure_type = Contract.ClosureType.WEEKLY
+        self.contract_b.save(update_fields=["closure_type"])
+        start = timezone.make_aware(datetime.combine(week_start, datetime.min.time()))
+        Punch.objects.create(contract=self.contract_b, timestamp=start + timedelta(hours=8))
+        Punch.objects.create(contract=self.contract_b, timestamp=start + timedelta(hours=12))
+        report = ServiceReport.objects.create(
+            company=self.company_b,
+            employee=self.employee_b,
+            contract=self.contract_b,
+            report_date=today,
+            date_from=week_start,
+            date_to=week_end,
+            title="Relatorio semanal Empresa B",
+            status=ServiceReport.Status.SENT,
+            summary_payload={
+                "company": self.company_b.name,
+                "period": {"label": f"{week_start:%d/%m/%Y} ate {week_end:%d/%m/%Y}"},
+                "total_hours": "04:00",
+                "estimated_value_brl": "R$ 480,00",
+            },
+        )
+        report.ensure_conference_link()
+        report.save()
+
+        response = self.client.get(reverse("mei_contract"), {"contract": str(self.contract_b.id)})
+
+        self.assertEqual(response.status_code, 200)
+        row = response.context["selected_client_row"]
+        self.assertEqual(row["quick_closure"]["period_label"], f"{week_start:%d/%m/%Y} ate {week_end:%d/%m/%Y}")
+        self.assertEqual(row["quick_closure"]["total_hours"], "04:00")
+        self.assertEqual(row["quick_closure"]["estimated_value_brl"], "R$ 480,00")
+        self.assertIn(f"date_from={week_start.isoformat()}", row["quick_closure"]["report_url"])
+        self.assertContains(response, "Fechamento rápido")
+        self.assertContains(response, "Gerar relatório deste período")
+        self.assertContains(response, "Últimos relatórios deste cliente")
+        self.assertContains(response, "Ainda não visualizado")
+        self.assertContains(response, "Recebimento")
+
+        reports_response = self.client.get(row["quick_closure"]["report_url"])
+        self.assertEqual(reports_response.status_code, 200)
+        self.assertEqual(reports_response.context["selected_contract"].id, self.contract_b.id)
+        self.assertEqual(reports_response.context["date_from"], week_start.isoformat())
+        self.assertEqual(reports_response.context["date_to"], week_end.isoformat())
+
     def test_mei_clients_listing_is_clean_and_detail_holds_actions(self):
         ServiceReport.objects.create(
             company=self.company_a,
@@ -1270,8 +1318,15 @@ class MeiMultiCompanyContextTests(TestCase):
         self.assertContains(reports_response, "Copiar link")
         self.assertContains(reports_response, "Enviar WhatsApp")
         self.assertContains(reports_response, "PDF")
-        self.assertContains(reports_response, "Pagamento:")
+        self.assertContains(reports_response, "Recebimento")
         self.assertContains(reports_response, "Pendente")
+
+        filter_response = self.client.get(
+            reverse("mei_reports"),
+            {"contract": "all", "q": "sob demanda", "view": "unviewed", "receive": "pending"},
+        )
+        self.assertEqual(filter_response.status_code, 200)
+        self.assertEqual([row["report"].id for row in filter_response.context["report_rows"]], [report.id])
 
         paid_response = self.client.post(
             reverse("mei_reports"),
@@ -1289,9 +1344,13 @@ class MeiMultiCompanyContextTests(TestCase):
         self.assertNotEqual(report.status, ServiceReport.Status.PAID)
 
         paid_reports_response = self.client.get(reverse("mei_reports"), {"contract": str(self.contract_b.id)})
-        self.assertContains(paid_reports_response, "Pagamento:")
-        self.assertContains(paid_reports_response, "Pago")
+        self.assertContains(paid_reports_response, "Recebimento")
+        self.assertContains(paid_reports_response, "Recebido")
+        self.assertNotContains(paid_reports_response, "Pagamento:")
+        self.assertNotContains(paid_reports_response, "Pago")
         self.assertContains(paid_reports_response, "Voltar para pendente")
+        received_filter_response = self.client.get(reverse("mei_reports"), {"receive": "received", "q": "sob demanda"})
+        self.assertEqual([row["report"].id for row in received_filter_response.context["report_rows"]], [report.id])
 
         pending_response = self.client.post(
             reverse("mei_reports"),
@@ -1346,6 +1405,8 @@ class MeiMultiCompanyContextTests(TestCase):
         self.assertEqual(pdf_response["Content-Type"], "application/pdf")
         self.assertTrue(pdf_response.content.startswith(b"%PDF-"))
         self.assertIn("horacerta_relatorio_", pdf_response["Content-Disposition"])
+        self.assertNotIn(b"Recebido", pdf_response.content)
+        self.assertNotIn(b"Pendente", pdf_response.content)
 
         csv_response = self.client.get(
             reverse("export_csv"),
@@ -1384,6 +1445,8 @@ class MeiMultiCompanyContextTests(TestCase):
         report.refresh_from_db()
         self.assertIsNotNone(report.conference_first_viewed_at)
         self.assertEqual(report.status, ServiceReport.Status.VIEWED)
+        viewed_filter_response = self.client.get(reverse("mei_reports"), {"view": "viewed", "q": "sob demanda"})
+        self.assertEqual([row["report"].id for row in viewed_filter_response.context["report_rows"]], [report.id])
 
         review_response = self.client.post(
             public_url,
