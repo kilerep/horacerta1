@@ -1365,13 +1365,22 @@ class MeiMultiCompanyContextTests(TestCase):
         self.assertEqual(public_response.status_code, 200)
         self.assertNotContains(public_response, "manual")
         self.assertNotContains(public_response, "Manual")
+        self.assertNotContains(public_response, "editado")
+        self.assertNotContains(public_response, "GPS")
         self.assertNotContains(public_response, "Localizacao")
         self.assertNotContains(public_response, "Localização")
         self.assertNotContains(public_response, "Alterações de horários")
         self.assertNotContains(public_response, "Antes")
         self.assertNotContains(public_response, "Depois")
         self.assertNotContains(public_response, "Pagamento:")
+        self.assertNotContains(public_response, "Pago")
+        self.assertNotContains(public_response, "Recebido")
+        self.assertNotContains(public_response, "Primeira visualizacao")
         self.assertNotContains(public_response, "Marcar como pago")
+        self.assertContains(public_response, "Relatorio de horas")
+        self.assertContains(public_response, "Imprimir PDF")
+        self.assertContains(public_response, "Baixar Excel")
+        self.assertContains(public_response, "Dias trabalhados")
         report.refresh_from_db()
         self.assertIsNotNone(report.conference_first_viewed_at)
         self.assertEqual(report.status, ServiceReport.Status.VIEWED)
@@ -1383,11 +1392,18 @@ class MeiMultiCompanyContextTests(TestCase):
                 "conference_comment": "Conferido pelo cliente.",
             },
         )
-        self.assertEqual(review_response.status_code, 200)
+        self.assertEqual(review_response.status_code, 405)
         report.refresh_from_db()
         self.assertEqual(report.status, ServiceReport.Status.VIEWED)
         self.assertEqual(report.conference_final_status, ServiceReport.ConferenceStatus.VIEWED)
         self.assertEqual(report.conference_comment, "")
+
+        public_xlsx_response = self.client.get(reverse("public_service_report_xlsx", args=[report.conference_token]))
+        self.assertEqual(public_xlsx_response.status_code, 200)
+        self.assertIn(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            public_xlsx_response["Content-Type"],
+        )
 
     def test_company_cannot_access_other_company_mei_profile(self):
         self.client.force_login(self.owner_a)

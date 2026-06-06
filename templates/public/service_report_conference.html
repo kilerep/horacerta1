@@ -1,116 +1,328 @@
-{% extends "public/base_public.html" %}
-{% block title %}Conferencia de relatorio | HoraCerta{% endblock %}
-{% block meta_description %}Conferencia publica e segura de relatorio HoraCerta.{% endblock %}
+{% load static %}
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Relatorio de horas | HoraCerta</title>
+  <meta name="description" content="Relatorio publico de horas HoraCerta.">
+  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'pwa/favicon-32.png' %}">
+  <style>
+    :root{
+      color-scheme:light;
+      --bg:#f4f7fb;
+      --card:#ffffff;
+      --card-soft:#f8fafc;
+      --text:#132033;
+      --muted:#64748b;
+      --line:#dbe4ef;
+      --brand:#2563eb;
+      --brand-strong:#1d4ed8;
+      --accent:#12b981;
+      --warn:#b45309;
+      --danger:#b42318;
+      --shadow:0 18px 45px rgba(15,23,42,.08);
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;min-width:0}
+    body{
+      font-family:Arial,"Segoe UI",sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      font-size:16px;
+      line-height:1.5;
+    }
+    a{color:inherit;text-decoration:none}
+    .page{
+      width:min(100% - 24px,980px);
+      margin:0 auto;
+      padding:18px 0 28px;
+    }
+    .report-shell{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:12px;
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .hero{
+      display:grid;
+      gap:18px;
+      padding:20px;
+      border-bottom:1px solid var(--line);
+      background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%);
+    }
+    .brand-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      flex-wrap:wrap;
+    }
+    .brand{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      min-width:0;
+    }
+    .brand-mark{
+      width:38px;
+      height:38px;
+      border-radius:8px;
+      display:grid;
+      place-items:center;
+      flex:0 0 auto;
+      color:#fff;
+      font-weight:800;
+      background:linear-gradient(135deg,var(--brand),var(--accent));
+    }
+    .brand-name{font-size:18px;font-weight:800;letter-spacing:0}
+    .issued{color:var(--muted);font-size:13px}
+    .title-block{display:grid;gap:6px}
+    h1{margin:0;font-size:28px;line-height:1.12;letter-spacing:0}
+    .subtitle{margin:0;color:var(--muted)}
+    .actions{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:10px;
+    }
+    .btn{
+      min-height:46px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      border-radius:8px;
+      border:1px solid var(--line);
+      background:#fff;
+      color:var(--text);
+      font-weight:700;
+      padding:10px 14px;
+    }
+    .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+    .btn:focus-visible{outline:3px solid rgba(37,99,235,.25);outline-offset:2px}
+    .content{display:grid;gap:18px;padding:18px}
+    .section{display:grid;gap:12px}
+    .section-head{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    h2{margin:0;font-size:18px;line-height:1.25;letter-spacing:0}
+    .summary-grid{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:10px;
+    }
+    .metric{
+      min-width:0;
+      border:1px solid var(--line);
+      border-radius:8px;
+      background:var(--card-soft);
+      padding:12px;
+    }
+    .metric span,.label{
+      display:block;
+      color:var(--muted);
+      font-size:12px;
+      font-weight:700;
+      text-transform:uppercase;
+      letter-spacing:0;
+    }
+    .metric strong{
+      display:block;
+      margin-top:4px;
+      font-size:17px;
+      overflow-wrap:anywhere;
+    }
+    .days{
+      display:grid;
+      gap:10px;
+    }
+    .day-card{
+      min-width:0;
+      border:1px solid var(--line);
+      border-radius:8px;
+      background:#fff;
+      padding:13px;
+      display:grid;
+      gap:11px;
+    }
+    .day-top{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .day-date{font-size:18px;font-weight:800}
+    .status{
+      min-height:30px;
+      display:inline-flex;
+      align-items:center;
+      border-radius:999px;
+      border:1px solid rgba(18,185,129,.35);
+      background:rgba(18,185,129,.09);
+      color:#047857;
+      font-size:13px;
+      font-weight:800;
+      padding:4px 10px;
+    }
+    .status.warn{border-color:rgba(180,83,9,.35);background:rgba(245,158,11,.12);color:var(--warn)}
+    .day-info{
+      display:grid;
+      gap:10px;
+    }
+    .value{margin-top:3px;font-weight:700;overflow-wrap:anywhere}
+    .note{
+      margin:0;
+      color:var(--text);
+      white-space:pre-wrap;
+      overflow-wrap:anywhere;
+    }
+    .empty{
+      border:1px dashed var(--line);
+      border-radius:8px;
+      padding:18px;
+      color:var(--muted);
+      background:var(--card-soft);
+    }
+    .unavailable{
+      min-height:60vh;
+      display:grid;
+      align-content:center;
+      gap:14px;
+      padding:22px;
+    }
+    .unavailable .status{justify-self:start;border-color:rgba(180,35,24,.28);background:rgba(180,35,24,.08);color:var(--danger)}
+    .footer-note{
+      padding:14px 18px 18px;
+      color:var(--muted);
+      font-size:12px;
+      text-align:center;
+    }
+    @media (min-width:560px){
+      .page{width:min(100% - 36px,980px);padding:26px 0 38px}
+      .actions{grid-template-columns:repeat(2,minmax(0,180px));justify-content:start}
+      .summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .day-info{grid-template-columns:1.6fr .7fr}
+      .day-info .full{grid-column:1 / -1}
+    }
+    @media (min-width:860px){
+      .hero{grid-template-columns:1fr auto;align-items:end;padding:26px}
+      .brand-row,.title-block{grid-column:1 / -1}
+      h1{font-size:34px}
+      .content{padding:24px;gap:22px}
+      .summary-grid{grid-template-columns:repeat(5,minmax(0,1fr))}
+      .days{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .day-card{align-content:start}
+    }
+    @media print{
+      body{background:#fff}
+      .page{width:100%;padding:0}
+      .report-shell{border:0;box-shadow:none;border-radius:0}
+      .actions{display:none}
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="report-shell">
+      {% if unavailable_reason %}
+        <section class="unavailable">
+          <span class="status">Link indisponivel</span>
+          <div class="brand">
+            <span class="brand-mark">HC</span>
+            <span class="brand-name">HoraCerta</span>
+          </div>
+          <div class="title-block">
+            <h1>Relatorio indisponivel</h1>
+            <p class="subtitle">{{ unavailable_reason }}</p>
+          </div>
+        </section>
+      {% else %}
+        <header class="hero">
+          <div class="brand-row">
+            <div class="brand" aria-label="HoraCerta">
+              <span class="brand-mark">HC</span>
+              <span class="brand-name">HoraCerta</span>
+            </div>
+            <span class="issued">Emitido em {{ report.created_at|date:"d/m/Y H:i" }}</span>
+          </div>
+          <div class="title-block">
+            <h1>Relatorio de horas</h1>
+            <p class="subtitle">{{ payload.professional|default:report.employee.full_name }} para {{ payload.company|default:report.company.name }}</p>
+          </div>
+          <nav class="actions" aria-label="Exportacoes do relatorio">
+            <a class="btn primary" href="{{ pdf_url }}">Imprimir PDF</a>
+            <a class="btn" href="{{ xlsx_url }}">Baixar Excel</a>
+          </nav>
+        </header>
 
-{% block content %}
-<style>
-  .conference-page{width:min(1120px,92vw);margin:0 auto;display:grid;gap:14px}
-  .conference-top{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap}
-  .conference-title{margin:0;font-size:clamp(26px,4vw,38px);line-height:1.05}
-  .conference-sub{margin:8px 0 0;color:var(--muted);line-height:1.5;max-width:760px}
-  .status-pill{display:inline-flex;align-items:center;min-height:34px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface-raised);font-weight:800;font-size:13px}
-  .status-pill.ok{border-color:color-mix(in oklab, var(--color-success) 42%, var(--line));color:var(--color-success)}
-  .status-pill.warn{border-color:color-mix(in oklab, var(--color-warning) 44%, var(--line));color:var(--color-warning)}
-  .public-panel{border:1px solid var(--line);border-radius:8px;background:var(--surface-raised);box-shadow:var(--shadow-sm);padding:18px}
-  .summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
-  .metric{border:1px solid var(--line);border-radius:8px;padding:12px;background:var(--surface)}
-  .metric span{display:block;color:var(--muted);font-size:12px}
-  .metric strong{display:block;margin-top:5px;font-size:18px;overflow-wrap:anywhere}
-  .section-title{margin:0 0 10px;font-size:18px}
-  .table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
-  .report-table{width:100%;border-collapse:collapse;min-width:820px;background:var(--surface)}
-  .report-table th,.report-table td{padding:11px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
-  .report-table th{font-size:12px;color:var(--muted);font-weight:800}
-  .report-table tr:last-child td{border-bottom:0}
-  .note{white-space:pre-wrap;color:var(--muted);line-height:1.55}
-  .actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-  .message-list{display:grid;gap:8px;margin:0;padding:0;list-style:none}
-  .message-list li{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--surface)}
-  .unavailable{min-height:44vh;display:grid;align-content:center;gap:12px}
-  @media (max-width:920px){.summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-  @media (max-width:640px){.summary-grid{grid-template-columns:1fr}.actions .btn{width:100%;justify-content:center}.public-panel{padding:14px}}
-</style>
+        <div class="content">
+          <section class="section" aria-labelledby="resumo-title">
+            <div class="section-head">
+              <h2 id="resumo-title">Resumo</h2>
+            </div>
+            <div class="summary-grid">
+              <article class="metric"><span>Profissional</span><strong>{{ payload.professional|default:report.employee.full_name }}</strong></article>
+              <article class="metric"><span>Cliente</span><strong>{{ payload.company|default:report.company.name }}</strong></article>
+              <article class="metric"><span>Periodo</span><strong>{% if payload.period.label %}{{ payload.period.label }}{% else %}{{ report.date_from|date:"d/m/Y" }} a {{ report.date_to|date:"d/m/Y" }}{% endif %}</strong></article>
+              <article class="metric"><span>Total de horas</span><strong>{{ payload.total_hours|default:"-" }}</strong></article>
+              <article class="metric"><span>Valor estimado</span><strong>{{ payload.estimated_value_brl|default:"-" }}</strong></article>
+            </div>
+          </section>
 
-<div class="conference-page">
-  {% if messages %}
-    <ul class="message-list">
-      {% for message in messages %}
-        <li>{{ message }}</li>
-      {% endfor %}
-    </ul>
-  {% endif %}
+          <section class="section" aria-labelledby="dias-title">
+            <div class="section-head">
+              <h2 id="dias-title">Dias trabalhados</h2>
+            </div>
+            <div class="days">
+              {% for day in payload.days %}
+                <article class="day-card">
+                  <div class="day-top">
+                    <div class="day-date">{{ day.date_label }}</div>
+                    {% if day.punch_times %}
+                      {% if day.is_incomplete %}
+                        <span class="status warn">Incompleto</span>
+                      {% else %}
+                        <span class="status">OK</span>
+                      {% endif %}
+                    {% else %}
+                      <span class="status warn">Pendente</span>
+                    {% endif %}
+                  </div>
+                  <div class="day-info">
+                    <div>
+                      <span class="label">Horarios</span>
+                      <div class="value">{{ day.punch_times|join:", "|default:"-" }}</div>
+                    </div>
+                    <div>
+                      <span class="label">Total do dia</span>
+                      <div class="value">{{ day.total_hours|default:"-" }}</div>
+                    </div>
+                    <div class="full">
+                      <span class="label">Observacao</span>
+                      <p class="note">{{ day.notes|join:"; "|default:"-" }}</p>
+                    </div>
+                  </div>
+                </article>
+              {% empty %}
+                <div class="empty">Sem registros no periodo.</div>
+              {% endfor %}
+            </div>
+          </section>
 
-  {% if unavailable_reason %}
-    <section class="public-panel unavailable">
-      <span class="status-pill warn">Link indisponivel</span>
-      <h1 class="conference-title">Conferencia indisponivel</h1>
-      <p class="conference-sub">{{ unavailable_reason }}</p>
-    </section>
-  {% else %}
-    <section class="public-panel">
-      <div class="conference-top">
-        <div>
-          <h1 class="conference-title">{{ report.title }}</h1>
-          <p class="conference-sub">
-            Relatorio enviado por {{ payload.professional|default:report.employee.full_name }} para {{ payload.company|default:report.company.name }}.
-            Acesso publico restrito ao token deste relatorio.
-          </p>
+          <section class="section" aria-labelledby="obs-title">
+            <h2 id="obs-title">Observacoes gerais</h2>
+            <div class="empty">{{ report.description|default:"Sem observacoes gerais."|linebreaksbr }}</div>
+          </section>
         </div>
-        <span class="status-pill {% if report.conference_final_status == "VIEWED" %}ok{% endif %}">{{ report.get_conference_final_status_display }}</span>
-      </div>
-      <div class="actions" style="margin-top:14px">
-        <a class="btn" href="{{ pdf_url }}">Baixar PDF</a>
-        {% if report.conference_expires_at %}
-          <span class="conference-sub">Expira em {{ report.conference_expires_at|date:"d/m/Y H:i" }}</span>
-        {% endif %}
-      </div>
-    </section>
-
-    <section class="public-panel">
-      <div class="summary-grid">
-        <article class="metric"><span>Periodo</span><strong>{% if payload.period.label %}{{ payload.period.label }}{% else %}{{ report.date_from|date:"d/m/Y" }} a {{ report.date_to|date:"d/m/Y" }}{% endif %}</strong></article>
-        <article class="metric"><span>Total de horas</span><strong>{{ payload.total_hours|default:"-" }}</strong></article>
-        <article class="metric"><span>Valor estimado</span><strong>{{ payload.estimated_value_brl|default:"-" }}</strong></article>
-        <article class="metric"><span>Dias incompletos</span><strong>{{ payload.incomplete_days|default:0 }}</strong></article>
-        <article class="metric"><span>Primeira visualizacao</span><strong>{{ report.conference_first_viewed_at|date:"d/m/Y H:i"|default:"Registrando..." }}</strong></article>
-      </div>
-    </section>
-
-    <section class="public-panel">
-      <h2 class="section-title">Dias do periodo</h2>
-      <div class="table-wrap">
-        <table class="report-table">
-          <thead>
-            <tr>
-              <th>Dia</th>
-              <th>Horarios</th>
-              <th>Total</th>
-              <th>Status</th>
-              <th>Observacoes</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for day in payload.days %}
-              <tr>
-                <td>{{ day.date_label }}</td>
-                <td>{{ day.punch_times|join:", "|default:"-" }}</td>
-                <td>{{ day.total_hours }}</td>
-                <td>{% if day.is_incomplete %}Incompleto{% else %}OK{% endif %}</td>
-                <td>{{ day.notes|join:"; "|default:"-" }}</td>
-              </tr>
-            {% empty %}
-              <tr><td colspan="5">Sem registros no periodo.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="public-panel">
-      <h2 class="section-title">Observacoes gerais</h2>
-      <p class="note">{{ report.description|default:"Sem observacoes gerais." }}</p>
-    </section>
-
-  {% endif %}
-</div>
-{% endblock %}
+      {% endif %}
+    </div>
+    <div class="footer-note">HoraCerta - relatorio publico por token seguro.</div>
+  </main>
+</body>
+</html>

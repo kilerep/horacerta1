@@ -5803,6 +5803,64 @@ def _service_report_pdf_response(report):
     return response
 
 
+def _service_report_filename(report, extension):
+    payload = report.summary_payload or {}
+
+    def filename_part(value):
+        text = (str(value or "").strip().lower())
+        text = re.sub(r"[^a-z0-9]+", "-", text)
+        return text.strip("-") or "relatorio"
+
+    client_name = payload.get("company") or report.company.name
+    period_file_label = "periodo"
+    if report.date_from and report.date_to:
+        period_file_label = f"{report.date_from:%Y%m%d}-{report.date_to:%Y%m%d}"
+    return f"horacerta_relatorio_{filename_part(client_name)}_{period_file_label}.{extension}"
+
+
+def _service_report_xlsx_response(report):
+    payload = report.summary_payload or {}
+    period_label = (payload.get("period") or {}).get("label")
+    if not period_label:
+        start_label = report.date_from.strftime("%d/%m/%Y") if report.date_from else "-"
+        end_label = report.date_to.strftime("%d/%m/%Y") if report.date_to else "-"
+        period_label = f"{start_label} a {end_label}"
+
+    summary_rows = [
+        ["Profissional", payload.get("professional") or report.employee.full_name],
+        ["Cliente", payload.get("company") or report.company.name],
+        ["Periodo", period_label],
+        ["Total de horas", payload.get("total_hours") or "-"],
+        ["Valor estimado", payload.get("estimated_value_brl") or "-"],
+        [],
+        ["Dia", "Horarios", "Total", "Status", "Observacoes"],
+    ]
+    day_rows = []
+    for day in payload.get("days") or []:
+        punch_times = day.get("punch_times") or []
+        if not punch_times:
+            status_label = "Pendente"
+        elif day.get("is_incomplete"):
+            status_label = "Incompleto"
+        else:
+            status_label = "OK"
+        day_rows.append(
+            [
+                day.get("date_label") or "-",
+                ", ".join(punch_times) or "-",
+                day.get("total_hours") or "-",
+                status_label,
+                "; ".join(day.get("notes") or []) or "-",
+            ]
+        )
+    if not day_rows:
+        day_rows.append(["-", "Sem registros no periodo.", "-", "-", "-"])
+
+    filename = _service_report_filename(report, "xlsx")
+    return _build_xlsx_response(filename, ["Campo", "Valor"], summary_rows + day_rows)
+
+
+@require_GET
 def public_service_report_conference(request, token):
     report = get_object_or_404(
         ServiceReport.objects.select_related("company", "contract", "employee", "employee__user"),
@@ -5845,6 +5903,7 @@ def public_service_report_conference(request, token):
         report.save(update_fields=update_fields)
 
     public_pdf_url = reverse("public_service_report_pdf", args=[report.conference_token])
+    public_xlsx_url = reverse("public_service_report_xlsx", args=[report.conference_token])
     return render(
         request,
         "public/service_report_conference.html",
@@ -5853,10 +5912,12 @@ def public_service_report_conference(request, token):
             "payload": report.summary_payload or {},
             "conference_url": request.build_absolute_uri(),
             "pdf_url": public_pdf_url,
+            "xlsx_url": public_xlsx_url,
         },
     )
 
 
+@require_GET
 def public_service_report_pdf(request, token):
     report = get_object_or_404(
         ServiceReport.objects.select_related("company", "contract", "employee", "employee__user"),
@@ -5871,6 +5932,23 @@ def public_service_report_pdf(request, token):
         report.conference_first_viewed_at = timezone.now()
         report.save(update_fields=["conference_first_viewed_at", "updated_at"])
     return _service_report_pdf_response(report)
+
+
+@require_GET
+def public_service_report_xlsx(request, token):
+    report = get_object_or_404(
+        ServiceReport.objects.select_related("company", "contract", "employee", "employee__user"),
+        conference_token=token,
+        conference_revoked_at__isnull=True,
+    )
+    if report.conference_is_expired:
+        report.conference_final_status = ServiceReport.ConferenceStatus.EXPIRED
+        report.save(update_fields=["conference_final_status", "updated_at"])
+        raise PermissionDenied("Link de conferencia expirado.")
+    if not report.conference_first_viewed_at:
+        report.conference_first_viewed_at = timezone.now()
+        report.save(update_fields=["conference_first_viewed_at", "updated_at"])
+    return _service_report_xlsx_response(report)
 
 
 @login_required
