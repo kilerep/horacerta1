@@ -929,6 +929,12 @@ def _service_report_received_label(report):
     return "Pendente"
 
 
+def _service_report_view_label(report):
+    if report.conference_first_viewed_at:
+        return f"Visualizado em {timezone.localtime(report.conference_first_viewed_at).strftime('%d/%m/%Y as %H:%M')}"
+    return "Ainda nao visualizado"
+
+
 def _service_report_status_label(report):
     if report.status == ServiceReport.Status.PAID:
         return "Recebido"
@@ -5345,7 +5351,11 @@ def mei_contract(request):
             quick_query["date_to"] = quick_date_to.isoformat()
         quick_report_url = f"{reverse('mei_reports')}?{urlencode(quick_query)}"
         recent_reports = []
-        for report in ServiceReport.objects.filter(contract=contract, employee__user=request.user).order_by("-report_date", "-created_at")[:5]:
+        recent_reports_qs = ServiceReport.objects.filter(contract=contract, employee__user=request.user).order_by(
+            "-report_date", "-created_at"
+        )
+        recent_reports_sample = list(recent_reports_qs[:4])
+        for report in recent_reports_sample[:3]:
             conference_url = ""
             whatsapp_url = ""
             if report.conference_is_accessible:
@@ -5356,7 +5366,10 @@ def mei_contract(request):
                     "report": report,
                     "period_label": _service_report_period_display(report),
                     "status_label": _service_report_status_label(report),
+                    "view_label": _service_report_view_label(report),
+                    "view_tone": "success" if report.conference_first_viewed_at else "pending",
                     "received_label": _service_report_received_label(report),
+                    "received_tone": "success" if report.payment_status == ServiceReport.PaymentStatus.PAID else "pending",
                     "conference_url": conference_url,
                     "whatsapp_url": whatsapp_url,
                     "pdf_url": reverse("mei_service_report_pdf", args=[report.id]),
@@ -5385,9 +5398,11 @@ def mei_contract(request):
                 "is_custom": contract.closure_type == Contract.ClosureType.CUSTOM,
             },
             "recent_reports": recent_reports,
+            "has_more_reports": len(recent_reports_sample) > 3,
             "details_url": f"{reverse('mei_contract')}?contract={contract.id}",
             "history_url": f"{reverse('mei_history')}?contract={contract.id}",
             "report_url": f"{reverse('mei_reports')}?contract={contract.id}",
+            "reports_all_url": f"{reverse('mei_reports')}?contract={contract.id}",
             "service_report_url": reverse("mei_service_report_prepare", args=[contract.id]),
             "edit_url": reverse("mei_client_edit", args=[contract.id]),
         }
@@ -5538,11 +5553,19 @@ def mei_reports(request):
             | Q(contract__isnull=True, company=selected_contract.company)
         )
     if search_query:
-        reports_qs = reports_qs.filter(
+        search_filter = (
             Q(title__icontains=search_query)
             | Q(description__icontains=search_query)
             | Q(company__name__icontains=search_query)
         )
+        for date_format in ("%d/%m/%Y", "%Y-%m-%d"):
+            try:
+                searched_date = datetime.strptime(search_query, date_format).date()
+            except ValueError:
+                continue
+            search_filter |= Q(date_from__lte=searched_date, date_to__gte=searched_date)
+            break
+        reports_qs = reports_qs.filter(search_filter)
     date_from = None
     date_to = None
     if date_from_raw:
@@ -5672,7 +5695,10 @@ def mei_reports(request):
                 "detail_url": reverse("mei_service_report_detail", args=[report.id]),
                 "period_label": _service_report_period_display(report),
                 "status_label": _service_report_status_label(report),
+                "view_label": _service_report_view_label(report),
+                "view_tone": "success" if report.conference_first_viewed_at else "pending",
                 "received_label": _service_report_received_label(report),
+                "received_tone": "success" if report.payment_status == ServiceReport.PaymentStatus.PAID else "pending",
             }
         )
     csv_query = {}

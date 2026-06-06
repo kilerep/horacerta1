@@ -896,6 +896,27 @@ class MeiMultiCompanyContextTests(TestCase):
         )
         report.ensure_conference_link()
         report.save()
+        for index in range(1, 4):
+            older_report = ServiceReport.objects.create(
+                company=self.company_b,
+                employee=self.employee_b,
+                contract=self.contract_b,
+                report_date=today - timedelta(days=index),
+                date_from=week_start - timedelta(days=7 * index),
+                date_to=week_end - timedelta(days=7 * index),
+                title=f"Relatorio antigo {index}",
+                status=ServiceReport.Status.SENT,
+                summary_payload={
+                    "company": self.company_b.name,
+                    "period": {
+                        "label": f"{week_start - timedelta(days=7 * index):%d/%m/%Y} ate {week_end - timedelta(days=7 * index):%d/%m/%Y}"
+                    },
+                    "total_hours": "02:00",
+                    "estimated_value_brl": "R$ 240,00",
+                },
+            )
+            older_report.ensure_conference_link()
+            older_report.save()
 
         response = self.client.get(reverse("mei_contract"), {"contract": str(self.contract_b.id)})
 
@@ -905,11 +926,18 @@ class MeiMultiCompanyContextTests(TestCase):
         self.assertEqual(row["quick_closure"]["total_hours"], "04:00")
         self.assertEqual(row["quick_closure"]["estimated_value_brl"], "R$ 480,00")
         self.assertIn(f"date_from={week_start.isoformat()}", row["quick_closure"]["report_url"])
-        self.assertContains(response, "Fechamento rápido")
-        self.assertContains(response, "Gerar relatório deste período")
-        self.assertContains(response, "Últimos relatórios deste cliente")
-        self.assertContains(response, "Ainda não visualizado")
+        self.assertEqual(len(row["recent_reports"]), 3)
+        self.assertTrue(row["has_more_reports"])
+        self.assertContains(response, "Fechamento rapido")
+        self.assertContains(response, "Gerar relatorio deste periodo")
+        self.assertContains(response, "Ver fechamentos e relatorios")
+        self.assertContains(response, "data-client-reports-panel")
+        self.assertContains(response, "hidden")
+        self.assertContains(response, "Ultimos 3 deste cliente")
+        self.assertContains(response, "Ainda nao visualizado")
         self.assertContains(response, "Recebimento")
+        self.assertContains(response, "Ver todos em Relatorios")
+        self.assertNotContains(response, "Relatorio antigo 3")
 
         reports_response = self.client.get(row["quick_closure"]["report_url"])
         self.assertEqual(reports_response.status_code, 200)
@@ -935,12 +963,12 @@ class MeiMultiCompanyContextTests(TestCase):
         self.assertEqual(response.context["selected_client_row"]["reports_count"], 1)
         self.assertContains(response, "Ver detalhes")
         self.assertContains(response, "Detalhes do cliente")
-        self.assertContains(response, "Editar contrato")
-        self.assertContains(response, "Ver histórico")
-        self.assertContains(response, "Gerar relatório de horas")
-        self.assertContains(response, "Gerar relatório de serviço")
-        self.assertContains(response, "Pausar cliente")
-        self.assertContains(response, "Encerrar contrato")
+        self.assertContains(response, "Editar cliente/contrato")
+        self.assertContains(response, "Ver historico")
+        self.assertContains(response, "Ver fechamentos e relatorios")
+        self.assertNotContains(response, "Gerar relatorio de servico")
+        self.assertNotContains(response, "Pausar cliente")
+        self.assertNotContains(response, "Encerrar contrato")
         self.assertNotContains(response, "Editar dados")
 
     def test_mei_service_report_prepare_page_is_future_ready(self):

@@ -4,96 +4,75 @@
 
 {% block content %}
   <style>
-    .clients-page{ display:grid; gap:14px; }
-    .clients-hero,
-    .clients-panel,
-    .client-card{
+    .clients-page{display:grid;gap:14px;min-width:0}
+    .clients-hero,.clients-panel,.client-card{
       border:1px solid var(--border);
       border-radius:var(--radius);
-      background:
-        radial-gradient(circle at 12% 0, var(--color-primary-soft), transparent 42%),
-        linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      background:radial-gradient(circle at 12% 0,var(--color-primary-soft),transparent 42%),linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02));
       box-shadow:var(--shadow);
+      min-width:0;
     }
-    .clients-hero{ padding:16px; display:grid; gap:14px; }
-    .clients-hero__top{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; }
-    .clients-eyebrow{ margin:0 0 4px; color:var(--muted); font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; }
-    .clients-title{ margin:0; font-size:clamp(22px, 4vw, 32px); line-height:1.1; }
-    .clients-subtitle{ margin:6px 0 0; color:var(--muted); max-width:680px; }
-    .clients-actions{ display:flex; gap:8px; flex-wrap:wrap; }
-    .clients-summary{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
-    .clients-stat{ border:1px solid rgba(255,255,255,.1); border-radius:12px; padding:12px; background:rgba(255,255,255,.035); }
-    .clients-stat span{ display:block; color:var(--muted); font-size:12px; }
-    .clients-stat strong{ display:block; margin-top:4px; font-size:20px; }
-    .clients-panel{ padding:14px; }
-    .clients-section-head{ display:flex; justify-content:space-between; gap:10px; align-items:center; margin-bottom:10px; }
-    .clients-section-head h2{ margin:0; font-size:18px; }
-    .clients-section-head p{ margin:3px 0 0; color:var(--muted); font-size:13px; }
-    .client-list{ display:grid; gap:10px; }
-    .client-card{ padding:14px; display:grid; gap:12px; }
-    .client-card.is-selected,
-    .client-card.is-details-open{
-      border-color:var(--border-brand);
-      box-shadow:0 0 0 2px var(--color-primary-soft), var(--shadow);
-    }
-    .client-card__head{ display:flex; justify-content:space-between; gap:12px; align-items:flex-start; }
-    .client-name{ margin:0; font-size:19px; line-height:1.2; overflow-wrap:anywhere; }
-    .client-period{ margin:4px 0 0; color:var(--muted); font-size:12px; }
-    .client-status{ flex:0 0 auto; border-radius:999px; padding:5px 9px; font-size:12px; font-weight:900; border:1px solid rgba(255,255,255,.12); }
-    .client-status.success{ color:#dcffe9; border-color:rgba(45,211,145,.42); background:rgba(45,211,145,.13); }
-    .client-status.pending{ color:#ffe7ad; border-color:rgba(255,176,32,.42); background:rgba(255,176,32,.12); }
-    .client-status.warn{ color:#ffd8d8; border-color:rgba(255,94,94,.38); background:rgba(255,94,94,.12); }
-    .client-status.muted{ color:var(--muted); background:rgba(255,255,255,.05); }
-    .client-metrics{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
-    .client-metric{ border:1px solid rgba(255,255,255,.09); border-radius:12px; padding:10px; background:rgba(255,255,255,.03); }
-    .client-metric span{ display:block; color:var(--muted); font-size:11px; }
-    .client-metric strong{ display:block; margin-top:3px; font-size:15px; }
-    .client-actions{ display:flex; gap:8px; flex-wrap:wrap; }
-    .client-actions--detail{ margin-top:12px; }
-    .btn[aria-disabled="true"]{ opacity:.48; cursor:not-allowed; }
-    .client-detail-panel{
-      border-top:1px solid var(--line-soft);
-      padding-top:12px;
-    }
-    .client-detail-panel[hidden]{ display:none; }
-    .client-detail-panel.is-open{ display:grid; gap:12px; }
-    .client-detail-grid{ display:grid; grid-template-columns:1.1fr .9fr; gap:12px; }
-    .client-detail-box{ border:1px solid rgba(255,255,255,.09); border-radius:12px; padding:12px; background:rgba(255,255,255,.03); min-width:0; }
-    .client-detail-box h3{ margin:0 0 10px; font-size:16px; }
-    .client-detail-list{ display:grid; gap:8px; }
-    .client-detail-item{ display:grid; grid-template-columns:minmax(120px,.5fr) 1fr; gap:8px; }
-    .client-detail-item span{ color:var(--muted); font-size:12px; font-weight:800; }
-    .client-detail-item strong{ font-size:14px; overflow-wrap:anywhere; }
-    .quick-closure-grid{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
-    .quick-closure-actions,
-    .client-report-actions{ display:flex; gap:8px; flex-wrap:wrap; }
-    .client-report-list{ display:grid; gap:8px; }
-    .client-report-card{ border:1px solid rgba(255,255,255,.09); border-radius:12px; padding:10px; background:rgba(255,255,255,.03); display:grid; gap:8px; min-width:0; }
-    .client-report-head{ display:flex; justify-content:space-between; gap:10px; align-items:flex-start; flex-wrap:wrap; }
-    .client-report-title{ margin:0; font-size:15px; line-height:1.25; overflow-wrap:anywhere; }
-    .client-report-meta{ color:var(--muted); font-size:12px; line-height:1.45; }
-    .clients-empty{ border:1px dashed rgba(255,255,255,.18); border-radius:14px; padding:18px; background:rgba(255,255,255,.03); }
-    .clients-empty h2{ margin:0; font-size:20px; }
-    .clients-empty p{ margin:8px 0 0; color:var(--muted); }
-    .clients-note{ color:var(--muted); font-size:12px; margin:10px 0 0; }
-    .feedback{border:1px solid rgba(45,211,145,.36);background:rgba(45,211,145,.1);border-radius:12px;padding:11px;color:#d9ffec}
+    .clients-hero{padding:16px;display:grid;gap:14px}
+    .clients-hero__top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+    .clients-eyebrow{margin:0 0 4px;color:var(--muted);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+    .clients-title{margin:0;font-size:clamp(22px,4vw,32px);line-height:1.1}
+    .clients-subtitle{margin:6px 0 0;color:var(--muted);max-width:680px}
+    .clients-actions,.client-actions,.quick-closure-actions,.client-report-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .clients-summary,.client-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+    .clients-stat,.client-metric{border:1px solid var(--line-soft);border-radius:12px;padding:10px;background:color-mix(in oklab,var(--surface-soft) 72%,transparent);min-width:0}
+    .clients-stat span,.client-metric span{display:block;color:var(--muted);font-size:11px;font-weight:800}
+    .clients-stat strong{display:block;margin-top:4px;font-size:20px;overflow-wrap:anywhere}
+    .client-metric strong{display:block;margin-top:3px;font-size:15px;overflow-wrap:anywhere}
+    .clients-panel{padding:14px}
+    .clients-section-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+    .clients-section-head h2,.clients-section-head h3{margin:0;font-size:18px}
+    .clients-section-head p{margin:3px 0 0;color:var(--muted);font-size:13px}
+    .client-list{display:grid;gap:10px}
+    .client-card{padding:14px;display:grid;gap:12px}
+    .client-card.is-selected,.client-card.is-details-open{border-color:var(--border-brand);box-shadow:0 0 0 2px var(--color-primary-soft),var(--shadow)}
+    .client-card__head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+    .client-name{margin:0;font-size:19px;line-height:1.2;overflow-wrap:anywhere}
+    .client-period{margin:4px 0 0;color:var(--muted);font-size:12px}
+    .client-status,.mini-badge{display:inline-flex;align-items:center;width:max-content;max-width:100%;border-radius:999px;padding:5px 9px;font-size:12px;font-weight:900;border:1px solid var(--line-soft);background:var(--surface-soft);color:var(--muted)}
+    .client-status.success,.mini-badge.success{color:var(--color-success);border-color:var(--border-brand);background:var(--surface-brand-soft)}
+    .client-status.pending,.mini-badge.pending{color:var(--muted)}
+    .client-status.warn{color:var(--danger-text);background:var(--danger-bg)}
+    .btn[aria-disabled="true"]{opacity:.48;cursor:not-allowed}
+    .client-detail-panel{border-top:1px solid var(--line-soft);padding-top:12px}
+    .client-detail-panel[hidden],.client-reports-panel[hidden]{display:none}
+    .client-detail-panel.is-open{display:grid;gap:12px}
+    .client-detail-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:12px}
+    .client-detail-box{border:1px solid var(--line-soft);border-radius:12px;padding:12px;background:color-mix(in oklab,var(--surface-soft) 68%,transparent);min-width:0}
+    .client-detail-box h3{margin:0 0 10px;font-size:16px}
+    .client-detail-list{display:grid;gap:8px}
+    .client-detail-item{display:grid;grid-template-columns:minmax(120px,.5fr) 1fr;gap:8px}
+    .client-detail-item span{color:var(--muted);font-size:12px;font-weight:800}
+    .client-detail-item strong{font-size:14px;overflow-wrap:anywhere}
+    .quick-closure-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+    .client-actions--detail{margin-top:4px}
+    .client-reports-panel{display:grid;gap:10px}
+    .client-report-list{display:grid;gap:8px}
+    .client-report-card{border:1px solid var(--line-soft);border-radius:12px;padding:10px;background:var(--surface-raised);display:grid;gap:8px;min-width:0}
+    .client-report-head{display:grid;gap:3px;padding-bottom:8px;border-bottom:1px solid var(--line-soft)}
+    .client-report-title{margin:0;font-size:15px;line-height:1.25;overflow-wrap:anywhere}
+    .client-report-meta{color:var(--muted);font-size:12px;line-height:1.45}
+    .client-report-totals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+    .client-report-statuses{display:flex;gap:6px;flex-wrap:wrap}
+    .client-report-footer{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap;padding-top:8px;border-top:1px solid var(--line-soft)}
+    .clients-empty{border:1px dashed var(--line-soft);border-radius:14px;padding:18px;background:color-mix(in oklab,var(--surface-soft) 64%,transparent);color:var(--muted)}
+    .clients-empty h2{margin:0;font-size:20px;color:var(--color-text-strong)}
+    .clients-empty p{margin:8px 0 0;color:var(--muted)}
+    .clients-note{color:var(--muted);font-size:12px;margin:10px 0 0}
+    .feedback{border:1px solid var(--border-brand);background:var(--surface-brand-soft);border-radius:12px;padding:11px;color:var(--color-text-strong)}
     .copy-status{min-height:18px;color:var(--muted);font-size:12px}
-    @media (max-width: 900px){
-      .clients-summary,
-      .client-metrics,
-      .client-detail-grid,
-      .quick-closure-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+    @media (max-width:900px){
+      .clients-summary,.client-metrics,.client-detail-grid,.quick-closure-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
     }
-    @media (max-width: 640px){
-      .clients-hero__top,
-      .client-card__head{ display:grid; }
-      .clients-actions .btn,
-      .client-actions .btn{ width:100%; justify-content:center; }
-      .clients-summary,
-      .client-metrics,
-      .client-detail-grid,
-      .quick-closure-grid,
-      .client-detail-item{ grid-template-columns:1fr; }
+    @media (max-width:640px){
+      .clients-hero__top,.client-card__head{display:grid}
+      .clients-actions .btn,.client-actions .btn{width:100%;justify-content:center}
+      .clients-summary,.client-metrics,.client-detail-grid,.quick-closure-grid,.client-detail-item,.client-report-totals{grid-template-columns:1fr}
+      .client-report-actions,.client-report-actions form,.client-report-actions .btn,.client-report-actions form .btn{width:100%;justify-content:center}
     }
   </style>
 
@@ -109,11 +88,11 @@
         <div>
           <p class="clients-eyebrow">Carteira de clientes</p>
           <h1 class="clients-title">Meus clientes</h1>
-          <p class="clients-subtitle">Acompanhe contratos, horas registradas e valores estimados por cliente no mês atual.</p>
+          <p class="clients-subtitle">Acompanhe contratos, horas registradas e valores estimados por cliente no mes atual.</p>
         </div>
         <div class="clients-actions">
           <a class="btn primary" href="{% url 'mei_client_create' %}">Adicionar cliente</a>
-          <a class="btn" href="{% url 'mei_reports' %}">Gerar relatório</a>
+          <a class="btn" href="{% url 'mei_reports' %}">Gerar relatorio</a>
         </div>
       </div>
 
@@ -154,7 +133,7 @@
 
               <div class="client-metrics">
                 <div class="client-metric"><span>Valor por hora</span><strong>R$ {{ row.contract.hourly_rate }}/h</strong></div>
-                <div class="client-metric"><span>Horas no mês</span><strong>{{ row.total_hours_month }}</strong></div>
+                <div class="client-metric"><span>Horas no mes</span><strong>{{ row.total_hours_month }}</strong></div>
                 <div class="client-metric"><span>Valor estimado</span><strong>{{ row.estimated_value_brl }}</strong></div>
               </div>
 
@@ -180,7 +159,7 @@
                   <div class="clients-section-head">
                     <div>
                       <h2>Detalhes do cliente</h2>
-                      <p>Ações completas e contexto operacional de {{ company.name }}.</p>
+                      <p>Dados, resumo e fechamento rapido de {{ company.name }}.</p>
                     </div>
                     <span class="client-status {{ row.status.tone }}">{{ row.status.label }}</span>
                   </div>
@@ -192,31 +171,31 @@
                         <div class="client-detail-item"><span>Nome</span><strong>{{ company.name }}</strong></div>
                         <div class="client-detail-item"><span>Status</span><strong>{{ row.status.label }}</strong></div>
                         <div class="client-detail-item"><span>Valor/hora</span><strong>R$ {{ contract.hourly_rate }}/h</strong></div>
-                        <div class="client-detail-item"><span>Data de início</span><strong>{{ contract.start_date|date:"d/m/Y"|default:"-" }}</strong></div>
-                        <div class="client-detail-item"><span>Fechamento</span><strong>{{ contract.get_closure_type_display }}</strong></div>
-                        <div class="client-detail-item"><span>Contato</span><strong>{{ company.contact_name|default:"-" }}</strong></div>
-                        <div class="client-detail-item"><span>WhatsApp</span><strong>{{ company.whatsapp|default:company.phone|default:"-" }}</strong></div>
-                        <div class="client-detail-item"><span>Observações</span><strong>{{ contract.notes|default:"-" }}</strong></div>
+                        <div class="client-detail-item"><span>Data de inicio</span><strong>{{ contract.start_date|date:"d/m/Y"|default:"-" }}</strong></div>
+                        <div class="client-detail-item"><span>Frequencia</span><strong>{{ contract.get_closure_type_display }}</strong></div>
+                        {% if company.contact_name %}<div class="client-detail-item"><span>Contato</span><strong>{{ company.contact_name }}</strong></div>{% endif %}
+                        {% if company.whatsapp or company.phone %}<div class="client-detail-item"><span>WhatsApp</span><strong>{{ company.whatsapp|default:company.phone }}</strong></div>{% endif %}
+                        {% if contract.notes %}<div class="client-detail-item"><span>Observacoes</span><strong>{{ contract.notes }}</strong></div>{% endif %}
                       </div>
                     </article>
 
                     <article class="client-detail-box">
                       <h3>Resumo</h3>
                       <div class="client-detail-list">
-                        <div class="client-detail-item"><span>Horas no mês</span><strong>{{ row.total_hours_month }}</strong></div>
+                        <div class="client-detail-item"><span>Horas no mes</span><strong>{{ row.total_hours_month }}</strong></div>
                         <div class="client-detail-item"><span>Valor estimado</span><strong>{{ row.estimated_value_brl }}</strong></div>
-                        <div class="client-detail-item"><span>Último registro</span><strong>{{ row.last_punch_label }}</strong></div>
-                        <div class="client-detail-item"><span>Relatórios gerados</span><strong>{{ row.reports_count }}</strong></div>
+                        <div class="client-detail-item"><span>Ultimo registro</span><strong>{{ row.last_punch_label }}</strong></div>
+                        <div class="client-detail-item"><span>Relatorios gerados</span><strong>{{ row.reports_count }}</strong></div>
                       </div>
                     </article>
                   </div>
 
                   <article class="client-detail-box">
-                    <h3>Fechamento rápido</h3>
+                    <h3>Fechamento rapido</h3>
                     <div class="quick-closure-grid">
-                      <div class="client-metric"><span>Frequência</span><strong>{{ contract.get_closure_type_display }}</strong></div>
-                      <div class="client-metric"><span>Período sugerido</span><strong>{{ row.quick_closure.period_label }}</strong></div>
-                      <div class="client-metric"><span>Horas no período</span><strong>{{ row.quick_closure.total_hours }}</strong></div>
+                      <div class="client-metric"><span>Frequencia</span><strong>{{ contract.get_closure_type_display }}</strong></div>
+                      <div class="client-metric"><span>Periodo sugerido</span><strong>{{ row.quick_closure.period_label }}</strong></div>
+                      <div class="client-metric"><span>Horas no periodo</span><strong>{{ row.quick_closure.total_hours }}</strong></div>
                       <div class="client-metric"><span>Valor estimado</span><strong>{{ row.quick_closure.estimated_value_brl }}</strong></div>
                     </div>
                     {% if row.quick_closure.is_custom %}
@@ -225,53 +204,80 @@
                       <p class="clients-note">O relatorio so sera criado depois da revisao e confirmacao na tela Relatorios.</p>
                     {% endif %}
                     <div class="quick-closure-actions" style="margin-top:10px">
-                      <a class="btn primary" href="{{ row.quick_closure.report_url }}">Gerar relatório deste período</a>
+                      <a class="btn primary" href="{{ row.quick_closure.report_url }}">Gerar relatorio deste periodo</a>
                     </div>
                   </article>
 
-                  <article class="client-detail-box">
-                    <h3>Últimos relatórios deste cliente</h3>
+                  <div class="client-actions client-actions--detail">
+                    <a class="btn" href="{{ row.edit_url }}">Editar cliente/contrato</a>
+                    <a class="btn" href="{{ row.history_url }}">Ver historico</a>
+                    <button
+                      class="btn"
+                      type="button"
+                      data-client-reports-toggle
+                      data-client-id="{{ row.contract.id }}"
+                      aria-controls="client-reports-{{ row.contract.id }}"
+                      aria-expanded="false"
+                    >Ver fechamentos e relatorios</button>
+                  </div>
+
+                  <article
+                    id="client-reports-{{ row.contract.id }}"
+                    class="client-detail-box client-reports-panel"
+                    data-client-reports-panel
+                    data-client-id="{{ row.contract.id }}"
+                    hidden
+                  >
+                    <div class="clients-section-head">
+                      <div>
+                        <h3>Fechamentos e relatorios</h3>
+                        <p>Ultimos 3 deste cliente. A lista completa fica em Relatorios.</p>
+                      </div>
+                    </div>
                     <div class="client-report-list">
                       {% for report_row in row.recent_reports %}
                         {% with report=report_row.report %}
                           <div class="client-report-card">
                             <div class="client-report-head">
-                              <div>
-                                <h4 class="client-report-title">{{ report.title }}</h4>
-                                <div class="client-report-meta">{{ report_row.period_label }}</div>
+                              <h4 class="client-report-title">{{ report.title }}</h4>
+                              <div class="client-report-meta">{{ report_row.period_label }}</div>
+                            </div>
+                            <div class="client-report-totals">
+                              <div class="client-metric"><span>Total</span><strong>{{ report.summary_payload.total_hours|default:"-" }}</strong></div>
+                              <div class="client-metric"><span>Valor</span><strong>{{ report.summary_payload.estimated_value_brl|default:"-" }}</strong></div>
+                            </div>
+                            <div class="client-report-statuses">
+                              <span class="mini-badge {{ report_row.view_tone }}">Visualizacao: {{ report_row.view_label }}</span>
+                              <span class="mini-badge {{ report_row.received_tone }}">Recebimento: {{ report_row.received_label }}</span>
+                            </div>
+                            <div class="client-report-footer">
+                              <div class="client-report-actions">
+                                <a class="btn" href="{{ report_row.detail_url }}">Ver</a>
+                                {% if report_row.conference_url %}
+                                  <a class="btn primary" href="{{ report_row.whatsapp_url }}" target="_blank" rel="noopener">WhatsApp</a>
+                                  <button class="btn" type="button" data-copy-text="{{ report_row.conference_url }}">Copiar link</button>
+                                {% endif %}
+                                <a class="btn" href="{{ report_row.pdf_url }}">PDF</a>
                               </div>
-                              <span class="client-status muted">{{ report_row.status_label }}</span>
-                            </div>
-                            <div class="client-detail-list">
-                              <div class="client-detail-item"><span>Total</span><strong>{{ report.summary_payload.total_hours|default:"-" }}</strong></div>
-                              <div class="client-detail-item"><span>Valor estimado</span><strong>{{ report.summary_payload.estimated_value_brl|default:"-" }}</strong></div>
-                              <div class="client-detail-item"><span>Visualização</span><strong>{% if report.conference_first_viewed_at %}Visualizado em {{ report.conference_first_viewed_at|date:"d/m/Y" }} às {{ report.conference_first_viewed_at|date:"H:i" }}{% else %}Ainda não visualizado{% endif %}</strong></div>
-                              <div class="client-detail-item"><span>Recebimento</span><strong>{{ report_row.received_label }}</strong></div>
-                            </div>
-                            <div class="client-report-actions">
-                              <a class="btn" href="{{ report_row.detail_url }}">Ver</a>
-                              {% if report_row.conference_url %}
-                                <a class="btn primary" href="{{ report_row.whatsapp_url }}" target="_blank" rel="noopener">Enviar WhatsApp</a>
-                                <button class="btn" type="button" data-copy-text="{{ report_row.conference_url }}">Copiar link</button>
-                              {% endif %}
-                              <a class="btn" href="{{ report_row.pdf_url }}">PDF</a>
-                              {% if report.payment_status != "paid" %}
-                                <form method="post" data-submit-once="true">
-                                  {% csrf_token %}
-                                  <input type="hidden" name="action" value="set_payment_status">
-                                  <input type="hidden" name="report_id" value="{{ report.id }}">
-                                  <input type="hidden" name="payment_status" value="paid">
-                                  <button class="btn" type="submit">Marcar como recebido</button>
-                                </form>
-                              {% else %}
-                                <form method="post" data-submit-once="true" onsubmit="return confirm('Voltar este relatorio para pendente?')">
-                                  {% csrf_token %}
-                                  <input type="hidden" name="action" value="set_payment_status">
-                                  <input type="hidden" name="report_id" value="{{ report.id }}">
-                                  <input type="hidden" name="payment_status" value="pending">
-                                  <button class="btn" type="submit">Voltar para pendente</button>
-                                </form>
-                              {% endif %}
+                              <div class="client-report-actions">
+                                {% if report.payment_status != "paid" %}
+                                  <form method="post" data-submit-once="true">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="set_payment_status">
+                                    <input type="hidden" name="report_id" value="{{ report.id }}">
+                                    <input type="hidden" name="payment_status" value="paid">
+                                    <button class="btn" type="submit">Marcar como recebido</button>
+                                  </form>
+                                {% else %}
+                                  <form method="post" data-submit-once="true" onsubmit="return confirm('Voltar este relatorio para pendente?')">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="set_payment_status">
+                                    <input type="hidden" name="report_id" value="{{ report.id }}">
+                                    <input type="hidden" name="payment_status" value="pending">
+                                    <button class="btn" type="submit">Voltar para pendente</button>
+                                  </form>
+                                {% endif %}
+                              </div>
                             </div>
                           </div>
                         {% endwith %}
@@ -279,30 +285,22 @@
                         <div class="clients-empty">Nenhum relatorio gerado para este cliente ainda.</div>
                       {% endfor %}
                     </div>
+                    <div class="quick-closure-actions">
+                      <a class="btn" href="{{ row.reports_all_url }}">{% if row.has_more_reports %}Ver todos em Relatorios{% else %}Abrir em Relatorios{% endif %}</a>
+                    </div>
                     <div class="copy-status" data-copy-status></div>
                   </article>
-
-                  <div class="client-actions client-actions--detail">
-                    <a class="btn" href="{{ row.edit_url }}">Editar contrato</a>
-                    <a class="btn" href="{{ row.history_url }}">Ver histórico</a>
-                    <a class="btn primary" href="{{ row.report_url }}">Gerar relatório de horas</a>
-                    <a class="btn" href="{{ row.service_report_url }}">Gerar relatório de serviço</a>
-                    <span class="btn" aria-disabled="true" title="Em breve: pausa de cliente pelo profissional.">Pausar cliente</span>
-                    <span class="btn" aria-disabled="true" title="Em breve: encerramento de contrato pelo profissional.">Encerrar contrato</span>
-                    <button class="btn" type="button" data-client-details-close data-client-id="{{ row.contract.id }}">Fechar detalhes</button>
-                  </div>
                 {% endwith %}
               </section>
             </article>
           {% endfor %}
         </div>
       </section>
-
     {% else %}
       <section class="clients-panel">
         <div class="clients-empty">
           <h2>Nenhum cliente cadastrado ainda</h2>
-          <p>Quando um cliente estiver vinculado à sua conta, ele aparecerá aqui com contrato, valor por hora, horas do mês e histórico de registros.</p>
+          <p>Quando um cliente estiver vinculado a sua conta, ele aparecera aqui com contrato, valor por hora, horas do mes e historico de registros.</p>
           <div class="clients-actions" style="margin-top:12px;">
             <a class="btn primary" href="{% url 'mei_client_create' %}">Adicionar cliente</a>
             <a class="btn" href="{% url 'mei_panel' %}">Voltar ao painel</a>
@@ -316,7 +314,6 @@
     (function () {
       var cards = Array.prototype.slice.call(document.querySelectorAll("[data-client-details-card]"));
       var toggles = Array.prototype.slice.call(document.querySelectorAll("[data-client-details-toggle]"));
-      var closeButtons = Array.prototype.slice.call(document.querySelectorAll("[data-client-details-close]"));
 
       function findByClient(selector, clientId) {
         return document.querySelector(selector + '[data-client-id="' + clientId + '"]');
@@ -327,7 +324,6 @@
         var toggle = findByClient("[data-client-details-toggle]", clientId);
         var card = findByClient("[data-client-details-card]", clientId);
         if (!panel || !toggle || !card) return;
-
         panel.hidden = !shouldOpen;
         panel.classList.toggle("is-open", shouldOpen);
         card.classList.toggle("is-details-open", shouldOpen);
@@ -353,24 +349,28 @@
         });
       });
 
-      closeButtons.forEach(function (button) {
-        button.addEventListener("click", function () {
-          var clientId = button.getAttribute("data-client-id");
-          setOpen(clientId, false);
-          var toggle = findByClient("[data-client-details-toggle]", clientId);
-          if (toggle) toggle.focus();
-        });
-      });
-
-      var statusNode = document.querySelector("[data-copy-status]");
-      function setCopyStatus(message) {
-        if (statusNode) statusNode.textContent = message;
-      }
       document.addEventListener("click", function (event) {
-        var button = event.target.closest("[data-copy-text]");
-        if (!button) return;
-        var value = button.getAttribute("data-copy-text") || "";
+        var reportsToggle = event.target.closest("[data-client-reports-toggle]");
+        if (reportsToggle) {
+          var clientId = reportsToggle.getAttribute("data-client-id");
+          var reportsPanel = findByClient("[data-client-reports-panel]", clientId);
+          if (!reportsPanel) return;
+          var shouldOpen = reportsToggle.getAttribute("aria-expanded") !== "true";
+          reportsPanel.hidden = !shouldOpen;
+          reportsToggle.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
+          reportsToggle.textContent = shouldOpen ? "Ocultar fechamentos e relatorios" : "Ver fechamentos e relatorios";
+          return;
+        }
+
+        var copyButton = event.target.closest("[data-copy-text]");
+        if (!copyButton) return;
+        var value = copyButton.getAttribute("data-copy-text") || "";
         if (!value) return;
+        var container = copyButton.closest("[data-client-reports-panel]") || document;
+        var statusNode = container.querySelector("[data-copy-status]");
+        function setCopyStatus(message) {
+          if (statusNode) statusNode.textContent = message;
+        }
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(value).then(function () {
             setCopyStatus("Link copiado.");
