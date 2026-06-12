@@ -119,6 +119,10 @@
                   <div class="icon">C</div>
                   <div><strong>Meus clientes</strong><div class="muted item-sub">cliente, contrato e valor</div></div>
                 </a>
+                <a class="item {% if current == 'service_job_list' or current == 'service_job_create' or current == 'service_job_detail' %}is-active{% endif %}" href="{% url 'service_job_list' %}">
+                  <div class="icon">S</div>
+                  <div><strong>Serviços</strong><div class="muted item-sub">trabalhos avulsos</div></div>
+                </a>
                 <a class="item {% if current == 'mei_history' %}is-active{% endif %}" href="{% url 'mei_history' %}">
                   <div class="icon">H</div>
                   <div><strong>Histórico</strong><div class="muted item-sub">por período</div></div>

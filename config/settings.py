@@ -101,6 +101,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'accounts',
     'companies',
+    'services',
     'timeclock',
 
 ]

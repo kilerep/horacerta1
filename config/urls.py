@@ -16,6 +16,7 @@ urlpatterns = [
 
     # Accounts (login, signup, dashboard, help, terms)
     path("", include("accounts.urls")),
+    path("", include("services.urls")),
 
     # Timeclock (dashboard MEI /me/, exportação, notas)
     path("", include("timeclock.urls")),

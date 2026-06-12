@@ -1,0 +1,58 @@
+{% extends "accounts/base.html" %}
+
+{% block title %}Novo serviço{% endblock %}
+{% block page_title %}Novo serviço{% endblock %}
+
+{% block extra_head %}
+<style>
+  .service-form-page{display:grid;gap:16px;max-width:980px}
+  .service-form-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+  .service-form-head h1{margin:0;font-size:26px;line-height:1.1}
+  .service-form-head p{margin:7px 0 0;color:var(--color-text-muted);line-height:1.45}
+  .service-form{display:grid;gap:14px}
+  .service-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .service-form-field label{display:block;margin-bottom:5px;color:var(--color-text-muted);font-size:12px;font-weight:800}
+  .service-form-field.full{grid-column:1 / -1}
+  .service-help{margin-top:5px;color:var(--color-text-muted);font-size:12px;line-height:1.35}
+  .service-errors{display:grid;gap:6px;margin-top:6px}
+  .service-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+  @media (max-width: 720px){
+    .service-form-head,.service-form-grid{grid-template-columns:1fr;display:grid}
+    .service-form-field.full{grid-column:auto}
+    .service-actions .btn{width:100%}
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="service-form-page">
+  <section class="card service-form-head">
+    <div>
+      <h1>Novo serviço</h1>
+      <p>Cadastre um trabalho avulso em uma área própria, separada do histórico normal de horários.</p>
+    </div>
+    <a class="btn" href="{% url 'service_job_list' %}">Voltar</a>
+  </section>
+
+  <form class="card service-form" method="post">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="alert danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+    <div class="service-form-grid">
+      {% for field in form %}
+        <div class="service-form-field {% if field.name == 'description' or field.name == 'notes' %}full{% endif %}">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<div class="service-help">{{ field.help_text }}</div>{% endif %}
+          {% if field.errors %}<div class="service-errors">{{ field.errors }}</div>{% endif %}
+        </div>
+      {% endfor %}
+    </div>
+    <div class="service-actions">
+      <a class="btn" href="{% url 'service_job_list' %}">Cancelar</a>
+      <button class="btn primary" type="submit">Salvar serviço</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

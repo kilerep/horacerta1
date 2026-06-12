@@ -1,0 +1,66 @@
+{% extends "accounts/base.html" %}
+
+{% block title %}{{ job.title }}{% endblock %}
+{% block page_title %}Serviço{% endblock %}
+
+{% block extra_head %}
+<style>
+  .service-detail{display:grid;gap:16px}
+  .service-detail-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+  .service-detail-head h1{margin:0;font-size:28px;line-height:1.1;overflow-wrap:anywhere}
+  .service-detail-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .service-detail-grid{display:grid;grid-template-columns:1.3fr .7fr;gap:14px}
+  .service-box h2{margin:0 0 10px;font-size:18px}
+  .service-box p{margin:0;color:var(--color-text-muted);line-height:1.5;overflow-wrap:anywhere}
+  .service-data{display:grid;gap:8px}
+  .service-data div{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid var(--color-border);padding-bottom:8px}
+  .service-data span{color:var(--color-text-muted)}
+  .service-data strong{text-align:right;overflow-wrap:anywhere}
+  @media (max-width: 760px){
+    .service-detail-head,.service-detail-grid{display:grid;grid-template-columns:1fr}
+    .service-detail-head .btn{width:100%}
+    .service-data div{display:grid}
+    .service-data strong{text-align:left}
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="service-detail">
+  <section class="card service-detail-head">
+    <div>
+      <h1>{{ job.title }}</h1>
+      <div class="service-detail-meta">
+        <span class="pill">{{ job.client_display_name }}</span>
+        <span class="pill">{{ job.category.name }}</span>
+        <span class="pill {% if job.status == 'IN_PROGRESS' %}success{% elif job.status == 'DRAFT' %}warn{% endif %}">{{ job.get_status_display }}</span>
+      </div>
+    </div>
+    <a class="btn" href="{% url 'service_job_list' %}">Voltar</a>
+  </section>
+
+  <section class="service-detail-grid">
+    <article class="card service-box">
+      <h2>Escopo</h2>
+      <p>{{ job.description|default:"Sem descrição registrada." }}</p>
+    </article>
+    <aside class="card service-box">
+      <h2>Dados do serviço</h2>
+      <div class="service-data">
+        <div><span>Local</span><strong>{{ job.service_location|default:"-" }}</strong></div>
+        <div><span>Data inicial</span><strong>{{ job.start_date|date:"d/m/Y"|default:"-" }}</strong></div>
+        <div><span>Data final</span><strong>{{ job.end_date|date:"d/m/Y"|default:"-" }}</strong></div>
+        <div><span>Valor/hora</span><strong>R$ {{ job.hourly_rate_snapshot }}</strong></div>
+        <div><span>Mão de obra fixa</span><strong>{% if job.fixed_labor_value %}R$ {{ job.fixed_labor_value }}{% else %}-{% endif %}</strong></div>
+        <div><span>Horas do serviço</span><strong>00:00</strong></div>
+        <div><span>Itens/despesas</span><strong>R$ 0,00</strong></div>
+      </div>
+    </aside>
+  </section>
+
+  <section class="card service-box">
+    <h2>Anotações</h2>
+    <p>{{ job.notes|default:"Sem anotações internas." }}</p>
+  </section>
+</div>
+{% endblock %}

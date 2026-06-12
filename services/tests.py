@@ -1,0 +1,250 @@
+from datetime import datetime, timedelta
+
+from django.test import TestCase, override_settings
+from django.urls import reverse
+from django.utils import timezone
+
+from accounts.models import User
+from companies.models import Company, Employee
+from timeclock.models import Contract, Punch, ServiceReport
+
+from .models import ServiceCategory, ServiceJob
+
+
+@override_settings(
+    ALLOWED_HOSTS=["testserver", "localhost", "127.0.0.1"],
+    SECURE_SSL_REDIRECT=False,
+)
+class ServiceJobAreaTests(TestCase):
+    def setUp(self):
+        self.mei_user = User.objects.create_user(
+            username="mei.services@example.com",
+            email="mei.services@example.com",
+            password="Senha@12345",
+            role=User.Role.FUNCIONARIO,
+        )
+        self.other_user = User.objects.create_user(
+            username="other.services@example.com",
+            email="other.services@example.com",
+            password="Senha@12345",
+            role=User.Role.FUNCIONARIO,
+        )
+        self.company_owner = User.objects.create_user(
+            username="company.services@example.com",
+            email="company.services@example.com",
+            password="Senha@12345",
+            role=User.Role.EMPRESA,
+        )
+        self.company = Company.objects.create(
+            name="Cliente Servicos A",
+            owner=self.company_owner,
+            email="cliente-a@example.com",
+        )
+        self.employee = Employee.objects.create(
+            user=self.mei_user,
+            company=self.company,
+            full_name="MEI Servicos",
+            is_active=True,
+        )
+        self.contract = Contract.objects.create(
+            employee=self.employee,
+            company=self.company,
+            hourly_rate="95.00",
+            start_date=timezone.localdate() - timedelta(days=5),
+            is_active=True,
+        )
+        self.other_company = Company.objects.create(
+            name="Cliente Servicos B",
+            owner=self.company_owner,
+            email="cliente-b@example.com",
+        )
+        self.other_employee = Employee.objects.create(
+            user=self.other_user,
+            company=self.other_company,
+            full_name="Outro MEI",
+            is_active=True,
+        )
+        self.other_contract = Contract.objects.create(
+            employee=self.other_employee,
+            company=self.other_company,
+            hourly_rate="130.00",
+            start_date=timezone.localdate() - timedelta(days=3),
+            is_active=True,
+        )
+        self.category = ServiceCategory.objects.get(slug="eletrica")
+        self.client.force_login(self.mei_user)
+
+    def test_default_categories_are_seeded_once(self):
+        expected_slugs = {
+            "servico-geral",
+            "eletrica",
+            "hidraulica",
+            "manutencao",
+            "ar-condicionado",
+            "montagem-instalacao",
+            "informatica-ti",
+            "pintura-e-reparos",
+            "entrega-viagem",
+            "visita-tecnica",
+            "outros",
+        }
+        self.assertEqual(set(ServiceCategory.objects.values_list("slug", flat=True)), expected_slugs)
+
+    def test_services_tab_opens_with_empty_state(self):
+        response = self.client.get(reverse("service_job_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Serviços")
+        self.assertContains(response, "Nenhum serviço cadastrado ainda.")
+        self.assertContains(response, "sem alterar seu histórico normal")
+
+    def test_create_draft_service_with_category_and_existing_client(self):
+        response = self.client.post(
+            reverse("service_job_create"),
+            {
+                "contract": str(self.contract.id),
+                "manual_client_name": "",
+                "category": str(self.category.id),
+                "title": "Troca de disjuntor",
+                "description": "Trocar disjuntor e revisar tomadas.",
+                "service_location": "Rua A, 123",
+                "start_date": timezone.localdate().isoformat(),
+                "end_date": "",
+                "status": ServiceJob.Status.DRAFT,
+                "hourly_rate_snapshot": "0",
+                "fixed_labor_value": "250.00",
+                "notes": "Cliente pediu orçamento separado de materiais.",
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        job = ServiceJob.objects.get(title="Troca de disjuntor")
+        self.assertEqual(job.professional, self.mei_user)
+        self.assertEqual(job.contract, self.contract)
+        self.assertEqual(job.client, self.company)
+        self.assertEqual(job.category, self.category)
+        self.assertEqual(job.status, ServiceJob.Status.DRAFT)
+        self.assertEqual(job.hourly_rate_snapshot, self.contract.hourly_rate)
+        self.assertContains(response, "Troca de disjuntor")
+
+    def test_create_in_progress_service_without_fixed_client(self):
+        category = ServiceCategory.objects.get(slug="visita-tecnica")
+        response = self.client.post(
+            reverse("service_job_create"),
+            {
+                "contract": "",
+                "manual_client_name": "Cliente avulso",
+                "category": str(category.id),
+                "title": "Vistoria inicial",
+                "description": "Avaliar local antes da execução.",
+                "service_location": "",
+                "start_date": "",
+                "end_date": "",
+                "status": ServiceJob.Status.IN_PROGRESS,
+                "hourly_rate_snapshot": "80.00",
+                "fixed_labor_value": "",
+                "notes": "",
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        job = ServiceJob.objects.get(title="Vistoria inicial")
+        self.assertIsNone(job.contract)
+        self.assertIsNone(job.client)
+        self.assertEqual(job.manual_client_name, "Cliente avulso")
+        self.assertEqual(job.status, ServiceJob.Status.IN_PROGRESS)
+
+    def test_list_and_filters_by_status_and_category(self):
+        draft = ServiceJob.objects.create(
+            professional=self.mei_user,
+            contract=self.contract,
+            category=self.category,
+            title="Rascunho eletrica",
+            status=ServiceJob.Status.DRAFT,
+        )
+        finished = ServiceJob.objects.create(
+            professional=self.mei_user,
+            contract=self.contract,
+            category=ServiceCategory.objects.get(slug="hidraulica"),
+            title="Finalizado hidraulica",
+            status=ServiceJob.Status.FINISHED,
+        )
+
+        status_response = self.client.get(reverse("service_job_list"), {"status": ServiceJob.Status.DRAFT})
+        self.assertContains(status_response, draft.title)
+        self.assertNotContains(status_response, finished.title)
+
+        category_response = self.client.get(reverse("service_job_list"), {"category": "hidraulica"})
+        self.assertContains(category_response, finished.title)
+        self.assertNotContains(category_response, draft.title)
+
+    def test_user_cannot_see_or_open_other_users_service(self):
+        other_job = ServiceJob.objects.create(
+            professional=self.other_user,
+            contract=self.other_contract,
+            category=self.category,
+            title="Servico de outro usuario",
+            status=ServiceJob.Status.IN_PROGRESS,
+        )
+
+        list_response = self.client.get(reverse("service_job_list"))
+        self.assertNotContains(list_response, other_job.title)
+
+        detail_response = self.client.get(reverse("service_job_detail", args=[other_job.id]))
+        self.assertEqual(detail_response.status_code, 404)
+
+    def test_service_creation_does_not_change_normal_history(self):
+        start = timezone.make_aware(datetime.combine(timezone.localdate(), datetime.min.time()))
+        Punch.objects.create(contract=self.contract, timestamp=start + timedelta(hours=8))
+        Punch.objects.create(contract=self.contract, timestamp=start + timedelta(hours=10))
+        before_count = Punch.objects.count()
+
+        ServiceJob.objects.create(
+            professional=self.mei_user,
+            contract=self.contract,
+            category=self.category,
+            title="Servico separado do historico",
+            status=ServiceJob.Status.IN_PROGRESS,
+        )
+
+        self.assertEqual(Punch.objects.count(), before_count)
+        history_response = self.client.get(reverse("mei_history"), {"contract": str(self.contract.id)})
+        self.assertEqual(history_response.status_code, 200)
+        self.assertEqual(history_response.context["summary_total_punches"], 2)
+        self.assertNotContains(history_response, "Servico separado do historico")
+
+    def test_existing_reports_pdf_and_whatsapp_still_work(self):
+        today = timezone.localdate()
+        report = ServiceReport.objects.create(
+            company=self.company,
+            employee=self.employee,
+            contract=self.contract,
+            report_date=today,
+            date_from=today,
+            date_to=today,
+            title="Relatorio de horas preservado",
+            status=ServiceReport.Status.SENT,
+            summary_payload={
+                "company": self.company.name,
+                "professional": self.employee.full_name,
+                "period": {"label": f"{today:%d/%m/%Y}"},
+                "total_hours": "02:00",
+                "estimated_value_brl": "R$ 190,00",
+                "days": [],
+            },
+        )
+        report.ensure_conference_link()
+        report.save()
+
+        reports_response = self.client.get(reverse("mei_reports"), {"contract": str(self.contract.id)})
+        pdf_response = self.client.get(reverse("mei_service_report_pdf", args=[report.id]))
+        whatsapp_response = self.client.get(reverse("mei_service_report_whatsapp", args=[report.id]))
+
+        self.assertEqual(reports_response.status_code, 200)
+        self.assertContains(reports_response, "Relatorio de horas preservado")
+        self.assertEqual(pdf_response.status_code, 200)
+        self.assertEqual(pdf_response["Content-Type"], "application/pdf")
+        self.assertEqual(whatsapp_response.status_code, 302)
+
