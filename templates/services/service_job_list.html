@@ -112,8 +112,8 @@
               {% if job.description %} · {{ job.description|truncatechars:140 }}{% endif %}
             </p>
             <div class="service-metrics">
-              <div class="service-metric"><span>Horas do serviço</span><strong>00:00</strong></div>
-              <div class="service-metric"><span>Itens/despesas</span><strong>R$ 0,00</strong></div>
+              <div class="service-metric"><span>Horas do serviço</span><strong>{{ job.total_hours_label }}</strong></div>
+              <div class="service-metric"><span>Itens/despesas usados</span><strong>R$ {{ job.used_items_total }}</strong></div>
               <div class="service-metric"><span>Mão de obra fixa</span><strong>{% if job.fixed_labor_value %}R$ {{ job.fixed_labor_value }}{% else %}-{% endif %}</strong></div>
             </div>
           </div>

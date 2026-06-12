@@ -3,7 +3,7 @@ from django import forms
 from accounts.mei_context import mei_contracts_for_user
 from timeclock.models import Contract
 
-from .models import ServiceCategory, ServiceJob
+from .models import ServiceCategory, ServiceItemExpense, ServiceJob, ServiceWorkLog
 
 
 class ServiceJobForm(forms.ModelForm):
@@ -93,6 +93,91 @@ class ServiceJobForm(forms.ModelForm):
         else:
             instance.contract = None
             instance.client = None
+        if commit:
+            instance.save()
+        return instance
+
+
+class ServiceWorkLogForm(forms.ModelForm):
+    class Meta:
+        model = ServiceWorkLog
+        fields = ["work_date", "start_time", "end_time", "description"]
+        labels = {
+            "work_date": "Data",
+            "start_time": "Inicio",
+            "end_time": "Fim",
+            "description": "Descricao",
+        }
+        widgets = {
+            "work_date": forms.DateInput(attrs={"type": "date"}),
+            "start_time": forms.TimeInput(attrs={"type": "time"}),
+            "end_time": forms.TimeInput(attrs={"type": "time"}),
+            "description": forms.TextInput(attrs={"placeholder": "Ex.: Troca das tomadas da sala"}),
+        }
+
+    def __init__(self, *args, service_job=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.service_job = service_job
+        for field in self.fields.values():
+            field.widget.attrs.setdefault("class", "hc-input")
+
+    def clean_description(self):
+        return (self.cleaned_data.get("description") or "").strip()
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.service_job = self.service_job
+        if commit:
+            instance.save()
+        return instance
+
+
+class ServiceItemExpenseForm(forms.ModelForm):
+    class Meta:
+        model = ServiceItemExpense
+        fields = [
+            "type",
+            "name",
+            "description",
+            "quantity",
+            "unit_value",
+            "usage_status",
+            "receipt_note",
+        ]
+        labels = {
+            "type": "Tipo",
+            "name": "Nome",
+            "description": "Descricao",
+            "quantity": "Quantidade",
+            "unit_value": "Valor unitario",
+            "usage_status": "Status de uso",
+            "receipt_note": "Nota/recibo",
+        }
+        widgets = {
+            "description": forms.Textarea(attrs={"rows": 2}),
+            "quantity": forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
+            "unit_value": forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
+            "receipt_note": forms.TextInput(attrs={"placeholder": "Ex.: cupom, NF ou observacao"}),
+        }
+
+    def __init__(self, *args, service_job=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.service_job = service_job
+        for field in self.fields.values():
+            field.widget.attrs.setdefault("class", "hc-input")
+
+    def clean_name(self):
+        return (self.cleaned_data.get("name") or "").strip()
+
+    def clean_description(self):
+        return (self.cleaned_data.get("description") or "").strip()
+
+    def clean_receipt_note(self):
+        return (self.cleaned_data.get("receipt_note") or "").strip()
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.service_job = self.service_job
         if commit:
             instance.save()
         return instance

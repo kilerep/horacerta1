@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import ServiceCategory, ServiceJob
+from .models import ServiceCategory, ServiceItemExpense, ServiceJob, ServiceWorkLog
 
 
 @admin.register(ServiceCategory)
@@ -17,3 +17,19 @@ class ServiceJobAdmin(admin.ModelAdmin):
     list_filter = ("status", "category")
     search_fields = ("title", "description", "manual_client_name", "client__name", "professional__email")
     readonly_fields = ("public_token", "created_at", "updated_at", "finished_at")
+
+
+@admin.register(ServiceWorkLog)
+class ServiceWorkLogAdmin(admin.ModelAdmin):
+    list_display = ("service_job", "work_date", "start_time", "end_time", "duration_minutes")
+    list_filter = ("work_date",)
+    search_fields = ("service_job__title", "description")
+    readonly_fields = ("duration_minutes", "created_at", "updated_at")
+
+
+@admin.register(ServiceItemExpense)
+class ServiceItemExpenseAdmin(admin.ModelAdmin):
+    list_display = ("name", "service_job", "type", "usage_status", "quantity", "unit_value", "total_value")
+    list_filter = ("type", "usage_status")
+    search_fields = ("name", "description", "receipt_note", "service_job__title")
+    readonly_fields = ("total_value", "created_at", "updated_at")

@@ -1,4 +1,5 @@
 import uuid
+from decimal import Decimal
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -92,6 +93,43 @@ class ServiceJob(models.Model):
             return self.client.name
         return self.manual_client_name or "Cliente nao informado"
 
+    @property
+    def total_work_minutes(self):
+        if hasattr(self, "_prefetched_objects_cache") and "work_logs" in self._prefetched_objects_cache:
+            return sum(log.duration_minutes or 0 for log in self.work_logs.all())
+        return self.work_logs.aggregate(total=models.Sum("duration_minutes"))["total"] or 0
+
+    @property
+    def total_hours_decimal(self):
+        return (Decimal(self.total_work_minutes) / Decimal("60")).quantize(Decimal("0.01"))
+
+    @property
+    def total_hours_label(self):
+        minutes = self.total_work_minutes
+        return f"{minutes // 60:02d}:{minutes % 60:02d}"
+
+    @property
+    def labor_total(self):
+        if self.fixed_labor_value is not None:
+            return self.fixed_labor_value
+        return (self.total_hours_decimal * (self.hourly_rate_snapshot or Decimal("0"))).quantize(Decimal("0.01"))
+
+    @property
+    def used_items_total(self):
+        return self.item_expenses.filter(
+            usage_status__in=ServiceItemExpense.CHARGEABLE_USAGE_STATUSES
+        ).aggregate(total=models.Sum("total_value"))["total"] or Decimal("0.00")
+
+    @property
+    def not_used_items_total(self):
+        return self.item_expenses.filter(
+            usage_status__in=ServiceItemExpense.NON_CHARGEABLE_USAGE_STATUSES
+        ).aggregate(total=models.Sum("total_value"))["total"] or Decimal("0.00")
+
+    @property
+    def estimated_total(self):
+        return (self.labor_total + self.used_items_total).quantize(Decimal("0.01"))
+
     def clean(self):
         errors = {}
         if self.contract_id:
@@ -121,5 +159,132 @@ class ServiceJob(models.Model):
             self.finished_at = timezone.now()
         if self.status != self.Status.FINISHED:
             self.finished_at = None
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+
+class ServiceWorkLog(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    service_job = models.ForeignKey(
+        ServiceJob,
+        on_delete=models.CASCADE,
+        related_name="work_logs",
+    )
+    work_date = models.DateField()
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+    duration_minutes = models.PositiveIntegerField(default=0)
+    description = models.CharField(max_length=180, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-work_date", "-start_time", "-created_at"]
+        indexes = [
+            models.Index(fields=["service_job", "-work_date", "-start_time"]),
+        ]
+        verbose_name = "Horario do servico"
+        verbose_name_plural = "Horarios do servico"
+
+    def __str__(self):
+        return f"{self.service_job_id} {self.work_date} {self.start_time}-{self.end_time}"
+
+    @property
+    def duration_label(self):
+        minutes = self.duration_minutes or 0
+        return f"{minutes // 60:02d}:{minutes % 60:02d}"
+
+    def clean(self):
+        errors = {}
+        if self.start_time and self.end_time and self.end_time <= self.start_time:
+            errors["end_time"] = "Horario final precisa ser maior que o inicial."
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        if self.start_time and self.end_time:
+            start_minutes = self.start_time.hour * 60 + self.start_time.minute
+            end_minutes = self.end_time.hour * 60 + self.end_time.minute
+            self.duration_minutes = max(end_minutes - start_minutes, 0)
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+
+class ServiceItemExpense(models.Model):
+    class ItemType(models.TextChoices):
+        MATERIAL = "MATERIAL", "Material"
+        EXPENSE = "EXPENSE", "Despesa"
+        PART = "PART", "Peca"
+        TOLL = "TOLL", "Pedagio"
+        FUEL = "FUEL", "Combustivel"
+        PARKING = "PARKING", "Estacionamento"
+        FOOD = "FOOD", "Alimentacao"
+        OTHER = "OTHER", "Outro"
+
+    class UsageStatus(models.TextChoices):
+        PLANNED = "PLANNED", "Previsto"
+        PURCHASED = "PURCHASED", "Comprado"
+        USED = "USED", "Usado"
+        PARTIALLY_USED = "PARTIALLY_USED", "Parcialmente usado"
+        NOT_USED = "NOT_USED", "Nao usado"
+        RETURNED = "RETURNED", "Devolvido"
+
+    CHARGEABLE_USAGE_STATUSES = (UsageStatus.USED, UsageStatus.PARTIALLY_USED)
+    NON_CHARGEABLE_USAGE_STATUSES = (UsageStatus.NOT_USED, UsageStatus.RETURNED)
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    service_job = models.ForeignKey(
+        ServiceJob,
+        on_delete=models.CASCADE,
+        related_name="item_expenses",
+    )
+    type = models.CharField(max_length=20, choices=ItemType.choices, default=ItemType.MATERIAL)
+    name = models.CharField(max_length=140)
+    description = models.TextField(blank=True, default="")
+    quantity = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("1.00"))
+    unit_value = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))
+    total_value = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
+    usage_status = models.CharField(max_length=24, choices=UsageStatus.choices, default=UsageStatus.PLANNED)
+    receipt_note = models.CharField(max_length=180, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["service_job", "usage_status", "-created_at"]),
+            models.Index(fields=["service_job", "type", "-created_at"]),
+        ]
+        verbose_name = "Item/despesa do servico"
+        verbose_name_plural = "Itens/despesas do servico"
+
+    def __str__(self):
+        return f"{self.name} ({self.get_usage_status_display()})"
+
+    @property
+    def is_chargeable(self):
+        return self.usage_status in self.CHARGEABLE_USAGE_STATUSES
+
+    @property
+    def short_usage_status(self):
+        labels = {
+            self.UsageStatus.PARTIALLY_USED: "Parcial",
+            self.UsageStatus.NOT_USED: "Nao usado",
+        }
+        return labels.get(self.usage_status, self.get_usage_status_display())
+
+    def clean(self):
+        errors = {}
+        if self.quantity is not None and self.quantity < 0:
+            errors["quantity"] = "Quantidade nao pode ser negativa."
+        if self.unit_value is not None and self.unit_value < 0:
+            errors["unit_value"] = "Valor unitario nao pode ser negativo."
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        quantity = self.quantity or Decimal("0")
+        unit_value = self.unit_value or Decimal("0")
+        self.total_value = (quantity * unit_value).quantize(Decimal("0.01"))
         self.full_clean()
         return super().save(*args, **kwargs)

@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from decimal import Decimal
 
 from django.test import TestCase, override_settings
 from django.urls import reverse
@@ -8,7 +9,7 @@ from accounts.models import User
 from companies.models import Company, Employee
 from timeclock.models import Contract, Punch, ServiceReport
 
-from .models import ServiceCategory, ServiceJob
+from .models import ServiceCategory, ServiceItemExpense, ServiceJob, ServiceWorkLog
 
 
 @override_settings(
@@ -155,6 +156,176 @@ class ServiceJobAreaTests(TestCase):
         self.assertIsNone(job.client)
         self.assertEqual(job.manual_client_name, "Cliente avulso")
         self.assertEqual(job.status, ServiceJob.Status.IN_PROGRESS)
+
+    def test_add_service_work_log_and_calculate_total_hours(self):
+        job = ServiceJob.objects.create(
+            professional=self.mei_user,
+            contract=self.contract,
+            category=self.category,
+            title="Servico com horarios",
+            status=ServiceJob.Status.IN_PROGRESS,
+        )
+
+        response = self.client.post(
+            reverse("service_work_log_create", args=[job.id]),
+            {
+                "work_date": "2026-06-10",
+                "start_time": "08:00",
+                "end_time": "11:30",
+                "description": "Troca de tomadas",
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        log = ServiceWorkLog.objects.get(service_job=job)
+        self.assertEqual(log.duration_minutes, 210)
+        job.refresh_from_db()
+        self.assertEqual(job.total_hours_label, "03:30")
+        self.assertEqual(job.labor_total, self.contract.hourly_rate * job.total_hours_decimal)
+        self.assertContains(response, "03:30")
+        self.assertContains(response, "Troca de tomadas")
+
+    def test_work_log_rejects_end_time_before_start_time(self):
+        job = ServiceJob.objects.create(
+            professional=self.mei_user,
+            contract=self.contract,
+            category=self.category,
+            title="Servico horario invalido",
+            status=ServiceJob.Status.IN_PROGRESS,
+        )
+
+        response = self.client.post(
+            reverse("service_work_log_create", args=[job.id]),
+            {
+                "work_date": "2026-06-10",
+                "start_time": "11:30",
+                "end_time": "08:00",
+                "description": "Horario invertido",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(ServiceWorkLog.objects.filter(service_job=job).exists())
+        self.assertContains(response, "Horario final precisa ser maior que o inicial")
+
+    def test_add_items_and_calculate_chargeable_and_non_chargeable_totals(self):
+        job = ServiceJob.objects.create(
+            professional=self.mei_user,
+            contract=self.contract,
+            category=self.category,
+            title="Servico com itens",
+            status=ServiceJob.Status.IN_PROGRESS,
+        )
+
+        used_response = self.client.post(
+            reverse("service_item_expense_create", args=[job.id]),
+            {
+                "type": ServiceItemExpense.ItemType.MATERIAL,
+                "name": "Tomada 10A",
+                "description": "",
+                "quantity": "2",
+                "unit_value": "15.00",
+                "usage_status": ServiceItemExpense.UsageStatus.USED,
+                "receipt_note": "",
+            },
+            follow=True,
+        )
+        not_used_response = self.client.post(
+            reverse("service_item_expense_create", args=[job.id]),
+            {
+                "type": ServiceItemExpense.ItemType.MATERIAL,
+                "name": "Cabo 2,5mm",
+                "description": "",
+                "quantity": "1",
+                "unit_value": "40.00",
+                "usage_status": ServiceItemExpense.UsageStatus.NOT_USED,
+                "receipt_note": "Sera devolvido",
+            },
+            follow=True,
+        )
+        toll_response = self.client.post(
+            reverse("service_item_expense_create", args=[job.id]),
+            {
+                "type": ServiceItemExpense.ItemType.TOLL,
+                "name": "Pedagio",
+                "description": "Viagem ate Sao Paulo",
+                "quantity": "1",
+                "unit_value": "42.00",
+                "usage_status": ServiceItemExpense.UsageStatus.USED,
+                "receipt_note": "",
+            },
+            follow=True,
+        )
+
+        self.assertEqual(used_response.status_code, 200)
+        self.assertEqual(not_used_response.status_code, 200)
+        self.assertEqual(toll_response.status_code, 200)
+        job.refresh_from_db()
+        self.assertEqual(ServiceItemExpense.objects.get(name="Tomada 10A").total_value, Decimal("30.00"))
+        self.assertEqual(ServiceItemExpense.objects.get(name="Cabo 2,5mm").total_value, Decimal("40.00"))
+        self.assertEqual(ServiceItemExpense.objects.get(name="Pedagio").total_value, Decimal("42.00"))
+        self.assertEqual(job.used_items_total, Decimal("72.00"))
+        self.assertEqual(job.not_used_items_total, Decimal("40.00"))
+        self.assertEqual(job.estimated_total, Decimal("72.00"))
+        self.assertContains(toll_response, "Itens usados")
+        self.assertContains(toll_response, "Itens não usados/devolvidos")
+
+    def test_finished_service_blocks_new_work_logs_and_items_then_reopens(self):
+        job = ServiceJob.objects.create(
+            professional=self.mei_user,
+            contract=self.contract,
+            category=self.category,
+            title="Servico para finalizar",
+            status=ServiceJob.Status.IN_PROGRESS,
+        )
+
+        finish_response = self.client.post(
+            reverse("service_job_status_action", args=[job.id]),
+            {"action": "finish"},
+            follow=True,
+        )
+        job.refresh_from_db()
+        self.assertEqual(finish_response.status_code, 200)
+        self.assertEqual(job.status, ServiceJob.Status.FINISHED)
+        self.assertIsNotNone(job.finished_at)
+        self.assertContains(finish_response, "Serviço finalizado")
+
+        blocked_log_response = self.client.post(
+            reverse("service_work_log_create", args=[job.id]),
+            {
+                "work_date": "2026-06-10",
+                "start_time": "08:00",
+                "end_time": "09:00",
+                "description": "Bloqueado",
+            },
+            follow=True,
+        )
+        blocked_item_response = self.client.post(
+            reverse("service_item_expense_create", args=[job.id]),
+            {
+                "type": ServiceItemExpense.ItemType.OTHER,
+                "name": "Bloqueado",
+                "quantity": "1",
+                "unit_value": "1",
+                "usage_status": ServiceItemExpense.UsageStatus.USED,
+            },
+            follow=True,
+        )
+        self.assertFalse(ServiceWorkLog.objects.filter(service_job=job).exists())
+        self.assertFalse(ServiceItemExpense.objects.filter(service_job=job).exists())
+        self.assertContains(blocked_log_response, "Reabra o servico")
+        self.assertContains(blocked_item_response, "Reabra o servico")
+
+        reopen_response = self.client.post(
+            reverse("service_job_status_action", args=[job.id]),
+            {"action": "reopen"},
+            follow=True,
+        )
+        job.refresh_from_db()
+        self.assertEqual(reopen_response.status_code, 200)
+        self.assertEqual(job.status, ServiceJob.Status.IN_PROGRESS)
+        self.assertIsNone(job.finished_at)
 
     def test_list_and_filters_by_status_and_category(self):
         draft = ServiceJob.objects.create(
