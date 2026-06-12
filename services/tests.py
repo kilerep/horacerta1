@@ -484,7 +484,7 @@ class ServiceJobAreaTests(TestCase):
         self.assertContains(response, "Pendentes de confirmação")
         self.assertContains(response, "Pedagio")
         self.assertContains(response, "R$ 370,00")
-        self.assertContains(response, "Finalize o serviço para gerar o relatório final")
+        self.assertContains(response, "Finalize o serviço para gerar o relatório de serviço")
         self.assertEqual(Punch.objects.count(), before_punch_count)
 
         finish_response = self.client.post(
@@ -492,10 +492,10 @@ class ServiceJobAreaTests(TestCase):
             {"action": "finish"},
             follow=True,
         )
-        self.assertContains(finish_response, "Gerar relatório")
-        self.assertContains(finish_response, "Ver relatório")
+        self.assertContains(finish_response, "Gerar relatório de serviço")
+        self.assertContains(finish_response, "Ver relatório de serviço")
         self.assertContains(finish_response, "Enviar WhatsApp")
-        self.assertContains(finish_response, "PDF")
+        self.assertContains(finish_response, "PDF do serviço")
 
     def test_finished_service_blocks_new_work_logs_and_items_then_reopens(self):
         job = ServiceJob.objects.create(
@@ -552,6 +552,44 @@ class ServiceJobAreaTests(TestCase):
         self.assertEqual(reopen_response.status_code, 200)
         self.assertEqual(job.status, ServiceJob.Status.IN_PROGRESS)
         self.assertIsNone(job.finished_at)
+
+    def test_service_status_flow_can_start_archive_and_reopen(self):
+        job = ServiceJob.objects.create(
+            professional=self.mei_user,
+            contract=self.contract,
+            category=self.category,
+            title="Fluxo de status",
+            status=ServiceJob.Status.DRAFT,
+        )
+
+        start_response = self.client.post(
+            reverse("service_job_status_action", args=[job.id]),
+            {"action": "start"},
+            follow=True,
+        )
+        job.refresh_from_db()
+        self.assertEqual(start_response.status_code, 200)
+        self.assertEqual(job.status, ServiceJob.Status.IN_PROGRESS)
+        self.assertContains(start_response, "Finalizar serviço")
+
+        archive_response = self.client.post(
+            reverse("service_job_status_action", args=[job.id]),
+            {"action": "archive"},
+            follow=True,
+        )
+        job.refresh_from_db()
+        self.assertEqual(archive_response.status_code, 200)
+        self.assertEqual(job.status, ServiceJob.Status.ARCHIVED)
+        self.assertContains(archive_response, "Reabrir serviço")
+
+        reopen_response = self.client.post(
+            reverse("service_job_status_action", args=[job.id]),
+            {"action": "reopen"},
+            follow=True,
+        )
+        job.refresh_from_db()
+        self.assertEqual(reopen_response.status_code, 200)
+        self.assertEqual(job.status, ServiceJob.Status.IN_PROGRESS)
 
     def test_list_and_filters_by_status_and_category(self):
         draft = ServiceJob.objects.create(
@@ -710,7 +748,7 @@ class ServiceJobAreaTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response["Content-Type"], "application/pdf")
-        self.assertIn("relatorio_servico_", response["Content-Disposition"])
+        self.assertIn("horacerta_servico_", response["Content-Disposition"])
         self.assertEqual(public_response.status_code, 200)
         self.assertEqual(public_response["Content-Type"], "application/pdf")
 
@@ -723,10 +761,10 @@ class ServiceJobAreaTests(TestCase):
         location = response["Location"]
         self.assertIn("https://wa.me/?text=", location)
         self.assertIn("Instalacao%20eletrica%20sala", location)
-        self.assertIn("Total%20de%20horas%3A%2003%3A30", location)
-        self.assertIn("Itens%2Fdespesas%20usados%3A%20R%24%2030%2C00", location)
+        self.assertIn("Horas%20realizadas%3A%2003%3A30", location)
         self.assertIn("M%C3%A3o%20de%20obra%3A%20R%24%20332%2C50", location)
-        self.assertIn("Total%20geral%3A%20R%24%20362%2C50", location)
+        self.assertIn("Itens%2Fdespesas%3A%20R%24%2030%2C00", location)
+        self.assertIn("Total%20do%20servi%C3%A7o%3A%20R%24%20362%2C50", location)
 
     def test_other_user_cannot_open_internal_service_report_actions(self):
         job = self._create_finished_report_ready_service()

@@ -67,7 +67,7 @@ class ServiceJobForm(forms.ModelForm):
             "billing_mode": "Modo de cobranca",
             "hourly_rate_snapshot": "Valor por hora",
             "fixed_labor_value": "Valor fixo da mao de obra",
-            "notes": "Observacoes iniciais",
+            "notes": "Observacoes finais do prestador",
         }
         widgets = {
             "manual_client_whatsapp": forms.TextInput(attrs={"placeholder": "Opcional"}),
@@ -87,7 +87,7 @@ class ServiceJobForm(forms.ModelForm):
                     "placeholder": "Ex.: Troca de disjuntores, revisão de tomadas e teste do quadro elétrico.",
                 }
             ),
-            "notes": forms.Textarea(attrs={"rows": 3, "placeholder": "Combinados iniciais, pendências ou contexto do atendimento."}),
+            "notes": forms.Textarea(attrs={"rows": 3, "placeholder": "Observacoes finais, combinados ou pendencias do atendimento."}),
             "start_date": forms.DateInput(attrs={"type": "date"}),
             "planned_start_time": forms.TimeInput(attrs={"type": "time"}),
             "planned_end_time": forms.TimeInput(attrs={"type": "time"}),

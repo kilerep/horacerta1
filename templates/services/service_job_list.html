@@ -9,14 +9,14 @@
   .services-hero{display:flex;justify-content:space-between;align-items:flex-start;gap:14px}
   .services-hero h1{margin:0;font-size:28px;line-height:1.1;overflow-wrap:anywhere}
   .services-hero p{margin:7px 0 0;color:var(--color-text-muted);max-width:760px;line-height:1.45}
-  .services-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+  .services-summary{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
   .services-stat{border:1px solid var(--color-border);border-radius:12px;background:var(--surface-soft);padding:14px;min-width:0}
   .services-stat span{display:block;color:var(--color-text-muted);font-size:12px;line-height:1.3}
   .services-stat strong{display:block;margin-top:5px;font-size:22px;line-height:1.1;overflow-wrap:anywhere}
   .services-filters{display:grid;grid-template-columns:repeat(5,minmax(0,1fr)) auto;gap:10px;align-items:end}
   .services-field label{display:block;margin-bottom:5px;color:var(--color-text-muted);font-size:12px;font-weight:700}
   .services-list{display:grid;gap:12px}
-  .service-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:start;border:1px solid var(--color-border);border-radius:14px;background:var(--gradient-card);box-shadow:var(--shadow-soft);padding:16px}
+  .service-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:start;border:1px solid var(--color-border);border-radius:8px;background:var(--gradient-card);box-shadow:var(--shadow-soft);padding:16px}
   .service-card h2{margin:0;font-size:18px;line-height:1.2;overflow-wrap:anywhere}
   .service-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:9px}
   .service-muted{margin-top:10px;color:var(--color-text-muted);font-size:13px;line-height:1.4;overflow-wrap:anywhere}
@@ -54,6 +54,7 @@
     <article class="services-stat"><span>Em andamento</span><strong>{{ summary.in_progress }}</strong></article>
     <article class="services-stat"><span>Finalizados</span><strong>{{ summary.finished }}</strong></article>
     <article class="services-stat"><span>Rascunhos</span><strong>{{ summary.drafts }}</strong></article>
+    <article class="services-stat"><span>Arquivados</span><strong>{{ summary.archived }}</strong></article>
     <article class="services-stat"><span>Total estimado em serviços</span><strong>{{ summary.fixed_total_brl }}</strong></article>
   </section>
 

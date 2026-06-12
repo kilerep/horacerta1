@@ -11,6 +11,7 @@
   .service-head__line{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;color:var(--color-text-muted);line-height:1.4}
   .service-head__meta{display:grid;gap:5px;margin-top:10px;color:var(--color-text-muted);font-size:13px}
   .service-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+  .service-actions form{margin:0}
   .summary-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
   .summary-card{border:1px solid var(--color-border);border-radius:12px;background:var(--surface-soft);padding:12px;min-width:0}
   .summary-card span{display:block;color:var(--color-text-muted);font-size:12px;line-height:1.25}
@@ -32,7 +33,7 @@
   .field-errors{margin-top:5px;color:var(--danger-text);font-size:12px}
   .entry-list{display:grid;gap:10px;margin-top:12px}
   .entry-group-title{margin:8px 0 0;font-size:15px;line-height:1.2}
-  .entry-card{border:1px solid var(--color-border);border-radius:12px;background:var(--surface-soft);padding:12px;display:grid;gap:8px;min-width:0}
+  .entry-card{border:1px solid var(--color-border);border-radius:8px;background:var(--surface-soft);padding:12px;display:grid;gap:8px;min-width:0}
   .entry-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
   .entry-title{font-weight:900;overflow-wrap:anywhere}
   .entry-meta{display:flex;flex-wrap:wrap;gap:7px;color:var(--color-text-muted);font-size:13px}
@@ -83,13 +84,40 @@
     </div>
     <div class="service-actions">
       <a class="btn" href="{% url 'service_job_update' job.id %}">Editar dados</a>
-      {% if is_finished %}
-        <a class="btn primary" href="{{ report_public_url }}" target="_blank" rel="noopener">Gerar relatório</a>
+      {% if is_draft %}
+        <form method="post" action="{% url 'service_job_status_action' job.id %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="start">
+          <button class="btn primary" type="submit">Iniciar serviço</button>
+        </form>
+      {% elif is_finished %}
+        <a class="btn primary" href="{{ report_public_url }}" target="_blank" rel="noopener">Gerar relatório de serviço</a>
+        <form method="post" action="{% url 'service_job_status_action' job.id %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="reopen">
+          <button class="btn" type="submit">Reabrir serviço</button>
+        </form>
+        <form method="post" action="{% url 'service_job_status_action' job.id %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="archive">
+          <button class="btn" type="submit">Arquivar</button>
+        </form>
+      {% elif is_archived %}
+        <form method="post" action="{% url 'service_job_status_action' job.id %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="reopen">
+          <button class="btn primary" type="submit">Reabrir serviço</button>
+        </form>
       {% else %}
         <form method="post" action="{% url 'service_job_status_action' job.id %}">
           {% csrf_token %}
           <input type="hidden" name="action" value="finish">
           <button class="btn primary" type="submit">Finalizar serviço</button>
+        </form>
+        <form method="post" action="{% url 'service_job_status_action' job.id %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="archive">
+          <button class="btn" type="submit">Arquivar</button>
         </form>
       {% endif %}
       <a class="btn" href="{% url 'service_job_list' %}">Voltar</a>
@@ -109,10 +137,8 @@
     <div class="service-stack">
       <article class="card service-block">
         <h2>Horas realizadas</h2>
-        <p class="block-sub">Registre aqui o tempo realmente trabalhado neste serviço. Esses horários não entram no histórico normal.</p>
-        {% if is_finished %}
-          <div class="finished-note">Serviço finalizado. Reabra para adicionar ou ajustar horas realizadas.</div>
-        {% else %}
+        <p class="block-sub">Registre aqui o tempo realmente trabalhado neste serviço. Essas horas realizadas não entram no histórico normal.</p>
+        {% if can_edit_entries %}
           <form class="inline-form" method="post" action="{% url 'service_work_log_create' job.id %}">
             {% csrf_token %}
             <div class="form-grid">
@@ -126,6 +152,8 @@
             </div>
             <button class="btn" type="submit">Adicionar hora trabalhada</button>
           </form>
+        {% else %}
+          <div class="finished-note">Serviço {{ job.get_status_display|lower }}. Reabra para adicionar ou ajustar horas realizadas.</div>
         {% endif %}
         <div class="entry-list">
           {% for log in work_logs %}
@@ -148,9 +176,7 @@
       <article class="card service-block">
         <h2>Itens e despesas</h2>
         <p class="block-sub">Adicione materiais, peças, pedágios, combustível, estacionamento ou outros custos deste serviço.</p>
-        {% if is_finished %}
-          <div class="finished-note">Serviço finalizado. Reabra para adicionar ou ajustar itens e despesas.</div>
-        {% else %}
+        {% if can_edit_entries %}
           <form class="inline-form" method="post" action="{% url 'service_item_expense_create' job.id %}">
             {% csrf_token %}
             <div class="form-grid">
@@ -164,6 +190,8 @@
             </div>
             <button class="btn" type="submit">Adicionar item/despesa</button>
           </form>
+        {% else %}
+          <div class="finished-note">Serviço {{ job.get_status_display|lower }}. Reabra para adicionar ou ajustar itens e despesas.</div>
         {% endif %}
 
         <div class="entry-list">
@@ -230,7 +258,7 @@
             <div><span>Endereço completo</span><strong>{{ job.full_service_address|default:"-" }}</strong></div>
             <div><span>Categoria</span><strong>{{ job.category.name }}</strong></div>
             <div><span>Descrição</span><strong>{{ job.description|default:"-" }}</strong></div>
-            <div><span>Observações iniciais</span><strong>{{ job.notes|default:"-" }}</strong></div>
+            <div><span>Observações finais</span><strong>{{ job.notes|default:"-" }}</strong></div>
             <div><span>Modo de cobrança</span><strong>{{ job.get_billing_mode_display }}</strong></div>
             <div>
               <span>Valor</span>
@@ -245,21 +273,21 @@
       </details>
 
       <article class="card service-block">
-        <h2>Relatório</h2>
+        <h2>Relatório de serviço</h2>
         {% if is_finished %}
-          <p>Serviço finalizado. Gere e envie o relatório final com horas, itens usados e itens não usados/devolvidos.</p>
+          <p>Serviço finalizado. Gere e envie o relatório final com horas realizadas, itens usados/cobrados e itens não usados/devolvidos.</p>
           <div class="service-actions" style="margin-top:12px;justify-content:flex-start;">
-            <a class="btn primary" href="{{ report_public_url }}" target="_blank" rel="noopener">Gerar relatório</a>
-            <a class="btn" href="{{ report_public_url }}" target="_blank" rel="noopener">Ver relatório</a>
+            <a class="btn primary" href="{{ report_public_url }}" target="_blank" rel="noopener">Gerar relatório de serviço</a>
+            <a class="btn" href="{{ report_public_url }}" target="_blank" rel="noopener">Ver relatório de serviço</a>
             <a class="btn" href="{{ report_whatsapp_url }}" target="_blank" rel="noopener">Enviar WhatsApp</a>
-            <a class="btn" href="{{ report_pdf_url }}">PDF</a>
+            <a class="btn" href="{{ report_pdf_url }}">PDF do serviço</a>
           </div>
           {% if public_report_first_viewed_at %}
             <p style="margin-top:10px;">Visto em {{ public_report_first_viewed_at|date:"d/m/Y" }} às {{ public_report_first_viewed_at|time:"H:i" }}</p>
           {% endif %}
         {% else %}
-          <div class="finished-note">Finalize o serviço para gerar o relatório final com horas, itens usados e itens não usados/devolvidos.</div>
-          <p style="margin-top:10px;">Finalize o serviço para preparar o relatório.</p>
+          <div class="finished-note">Finalize o serviço para gerar o relatório de serviço com horas realizadas, itens usados/cobrados e itens não usados/devolvidos.</div>
+          <p style="margin-top:10px;">Este relatório é separado do relatório normal de horas.</p>
         {% endif %}
       </article>
     </aside>

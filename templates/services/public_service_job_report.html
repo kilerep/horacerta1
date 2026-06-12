@@ -8,7 +8,7 @@
     *{box-sizing:border-box}
     body{margin:0;font-family:"Segoe UI",Arial,sans-serif;background:#f3f4f6;color:#111827}
     .page{max-width:980px;margin:0 auto;padding:18px;display:grid;gap:14px}
-    .card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;box-shadow:0 8px 20px rgba(15,23,42,.06)}
+    .card{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:16px;box-shadow:0 8px 20px rgba(15,23,42,.06)}
     .head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}
     .brand{font-weight:900;font-size:18px}
     h1{margin:6px 0 0;font-size:28px;line-height:1.1;overflow-wrap:anywhere}
@@ -51,41 +51,42 @@
         <h1>Relatório de serviço</h1>
         <div class="meta">
           <span class="pill">{{ job.get_status_display }}</span>
-          <span class="pill">Emitido em {{ emitted_at|date:"d/m/Y" }} às {{ emitted_at|time:"H:i" }}</span>
+          <span class="pill">Data de emissão: {{ emitted_at|date:"d/m/Y" }} às {{ emitted_at|time:"H:i" }}</span>
         </div>
       </div>
     </section>
 
     <section class="grid">
       <article class="card">
-        <h2>Dados</h2>
+        <h2>Prestador</h2>
         <div class="data">
           <div><span>Prestador</span><strong>{{ professional_name }}</strong></div>
-          <div><span>Cliente</span><strong>{{ client_name }}</strong></div>
-          <div><span>Categoria</span><strong>{{ job.category.name }}</strong></div>
-          <div><span>Local</span><strong>{{ job.service_location|default:"-" }}</strong></div>
-          <div><span>Período</span><strong>{{ period_label }}</strong></div>
+          <div><span>E-mail ou contato</span><strong>{{ professional_contact|default:"-" }}</strong></div>
         </div>
       </article>
       <article class="card">
-        <h2>Resumo</h2>
-        <div class="summary">
-          <div class="cell"><span>Total de horas</span><strong>{{ summary.total_hours }}</strong></div>
-          <div class="cell"><span>Mão de obra</span><strong>{{ summary.labor_total_brl }}</strong></div>
-          <div class="cell"><span>Itens/despesas usados</span><strong>{{ summary.used_items_total_brl }}</strong></div>
-          <div class="cell"><span>Itens não usados/devolvidos</span><strong>{{ summary.not_used_items_total_brl }}</strong></div>
-          <div class="cell total"><span>Total geral do serviço</span><strong>{{ summary.estimated_total_brl }}</strong></div>
+        <h2>Cliente</h2>
+        <div class="data">
+          <div><span>Nome do cliente</span><strong>{{ client_name }}</strong></div>
+          <div><span>WhatsApp</span><strong>{{ client_whatsapp|default:"-" }}</strong></div>
+          <div><span>Endereço/local do serviço</span><strong>{{ service_address|default:"-" }}</strong></div>
         </div>
       </article>
     </section>
 
     <section class="card">
-      <h2>{{ job.title }}</h2>
-      <p>{{ job.description|default:"Sem descrição registrada." }}</p>
+      <h2>Serviço</h2>
+      <div class="data">
+        <div><span>Título</span><strong>{{ job.title }}</strong></div>
+        <div><span>Categoria</span><strong>{{ job.category.name }}</strong></div>
+        <div><span>Data prevista</span><strong>{{ period_label }}</strong></div>
+        <div><span>Status</span><strong>{{ job.get_status_display }}</strong></div>
+      </div>
+      <p style="margin-top:10px;">{{ job.description|default:"Sem descrição registrada." }}</p>
     </section>
 
     <section class="card">
-      <h2>Horários do serviço</h2>
+      <h2>Horas realizadas</h2>
       <div class="list">
         {% for log in work_logs %}
           <article class="entry">
@@ -99,13 +100,13 @@
             {% if log.description %}<p>{{ log.description }}</p>{% endif %}
           </article>
         {% empty %}
-          <p>Nenhum horário registrado.</p>
+          <p>Nenhuma hora realizada registrada.</p>
         {% endfor %}
       </div>
     </section>
 
     <section class="card">
-      <h2>Itens/despesas usados</h2>
+      <h2>Itens usados/cobrados</h2>
       <div class="list">
         {% for item in used_items %}
           <article class="entry">
@@ -118,7 +119,7 @@
             </div>
           </article>
         {% empty %}
-          <p>Nenhum item/despesa usado registrado.</p>
+          <p>Nenhum item usado/cobrado registrado.</p>
         {% endfor %}
       </div>
     </section>
@@ -131,7 +132,7 @@
             <div class="entry-head">
               <div>
                 <div class="entry-title">{{ item.name }}</div>
-                <div class="entry-meta"><span>{{ item.short_usage_status }}</span><span>{{ item.quantity }} x R$ {{ item.unit_value }}</span></div>
+                <div class="entry-meta"><span>{{ item.get_type_display }}</span><span>{{ item.short_usage_status }}</span><span>{{ item.quantity }} x R$ {{ item.unit_value }}</span></div>
               </div>
               <div class="entry-total">Informado: R$ {{ item.total_value }}</div>
             </div>
@@ -140,6 +141,16 @@
         {% empty %}
           <p>Nenhum item não usado ou devolvido registrado.</p>
         {% endfor %}
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Resumo</h2>
+      <div class="summary">
+        <div class="cell"><span>Total de horas</span><strong>{{ summary.total_hours }}</strong></div>
+        <div class="cell"><span>Mão de obra</span><strong>{{ summary.labor_total_brl }}</strong></div>
+        <div class="cell"><span>Itens/despesas usados</span><strong>{{ summary.used_items_total_brl }}</strong></div>
+        <div class="cell total"><span>Total do serviço</span><strong>{{ summary.estimated_total_brl }}</strong></div>
       </div>
     </section>
 

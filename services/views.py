@@ -62,6 +62,7 @@ def _service_report_context(job, request=None):
         or job.professional.email
         or job.professional.username
     )
+    professional_contact = job.professional.email or getattr(job.professional, "username", "")
     period_start = job.start_date
     period_end = job.end_date
     if work_logs:
@@ -81,7 +82,10 @@ def _service_report_context(job, request=None):
     return {
         "job": job,
         "professional_name": professional_name,
+        "professional_contact": professional_contact,
         "client_name": job.client_display_name,
+        "client_whatsapp": job.client_whatsapp,
+        "service_address": job.full_service_address,
         "period_label": period_label,
         "work_logs": work_logs,
         "used_items": used_items,
@@ -123,6 +127,9 @@ def _service_job_detail_context(job, *, work_log_form=None, item_form=None):
         "work_log_form": work_log_form or ServiceWorkLogForm(service_job=job),
         "item_form": item_form or ServiceItemExpenseForm(service_job=job),
         "is_finished": job.status == ServiceJob.Status.FINISHED,
+        "is_draft": job.status == ServiceJob.Status.DRAFT,
+        "is_archived": job.status == ServiceJob.Status.ARCHIVED,
+        "can_edit_entries": job.status in (ServiceJob.Status.DRAFT, ServiceJob.Status.IN_PROGRESS),
         "summary": report_context["summary"],
         "report_public_url": reverse("public_service_job_report", args=[job.public_token]),
         "report_pdf_url": reverse("service_job_report_pdf", args=[job.id]),
@@ -163,6 +170,7 @@ def service_job_list(request):
         in_progress=Count("id", filter=Q(status=ServiceJob.Status.IN_PROGRESS)),
         finished=Count("id", filter=Q(status=ServiceJob.Status.FINISHED)),
         drafts=Count("id", filter=Q(status=ServiceJob.Status.DRAFT)),
+        archived=Count("id", filter=Q(status=ServiceJob.Status.ARCHIVED)),
     )
     fixed_total = all_jobs.aggregate(total=Sum("fixed_labor_value"))["total"] or Decimal("0.00")
 
@@ -180,6 +188,7 @@ def service_job_list(request):
             "in_progress": status_counts["in_progress"] or 0,
             "finished": status_counts["finished"] or 0,
             "drafts": status_counts["drafts"] or 0,
+            "archived": status_counts["archived"] or 0,
             "fixed_total_brl": _format_brl(fixed_total),
         },
     }
@@ -270,7 +279,7 @@ def service_work_log_create(request, job_id):
         return denied
 
     job = get_object_or_404(_service_jobs_for_user(request.user), id=job_id)
-    if job.status == ServiceJob.Status.FINISHED:
+    if job.status not in (ServiceJob.Status.DRAFT, ServiceJob.Status.IN_PROGRESS):
         messages.error(request, "Reabra o servico antes de alterar horarios.")
         return redirect("service_job_detail", job_id=job.id)
 
@@ -294,7 +303,7 @@ def service_item_expense_create(request, job_id):
         return denied
 
     job = get_object_or_404(_service_jobs_for_user(request.user), id=job_id)
-    if job.status == ServiceJob.Status.FINISHED:
+    if job.status not in (ServiceJob.Status.DRAFT, ServiceJob.Status.IN_PROGRESS):
         messages.error(request, "Reabra o servico antes de alterar itens e despesas.")
         return redirect("service_job_detail", job_id=job.id)
 
@@ -323,14 +332,22 @@ def service_job_status_action(request, job_id):
 
     action = (request.POST.get("action") or "").strip()
     with transaction.atomic():
-        if action == "finish":
+        if action == "start" and job.status == ServiceJob.Status.DRAFT:
+            job.status = ServiceJob.Status.IN_PROGRESS
+            job.save(update_fields=["status", "finished_at", "updated_at"])
+            messages.success(request, "Servico iniciado.")
+        elif action == "finish" and job.status == ServiceJob.Status.IN_PROGRESS:
             job.status = ServiceJob.Status.FINISHED
             job.save(update_fields=["status", "finished_at", "updated_at"])
             messages.success(request, "Servico finalizado. Agora voce pode gerar o relatorio para o cliente.")
-        elif action == "reopen":
+        elif action == "reopen" and job.status in (ServiceJob.Status.FINISHED, ServiceJob.Status.ARCHIVED):
             job.status = ServiceJob.Status.IN_PROGRESS
             job.save(update_fields=["status", "finished_at", "updated_at"])
             messages.success(request, "Servico reaberto para ajustes.")
+        elif action == "archive" and job.status != ServiceJob.Status.ARCHIVED:
+            job.status = ServiceJob.Status.ARCHIVED
+            job.save(update_fields=["status", "finished_at", "updated_at"])
+            messages.success(request, "Servico arquivado.")
         else:
             messages.error(request, "Acao invalida para este servico.")
 
@@ -347,6 +364,9 @@ def service_job_report_pdf(request, job_id):
         _service_jobs_for_user(request.user).prefetch_related("work_logs", "item_expenses"),
         id=job_id,
     )
+    if job.status != ServiceJob.Status.FINISHED:
+        messages.error(request, "Finalize o servico antes de gerar o PDF do servico.")
+        return redirect("service_job_detail", job_id=job.id)
     return _service_job_pdf_response(job)
 
 
@@ -360,18 +380,21 @@ def service_job_report_whatsapp(request, job_id):
         _service_jobs_for_user(request.user).prefetch_related("work_logs", "item_expenses"),
         id=job_id,
     )
+    if job.status != ServiceJob.Status.FINISHED:
+        messages.error(request, "Finalize o servico antes de enviar o relatorio pelo WhatsApp.")
+        return redirect("service_job_detail", job_id=job.id)
     public_url = request.build_absolute_uri(reverse("public_service_job_report", args=[job.public_token]))
     report = _service_report_context(job, request=request)
     message = "\n".join(
         [
-            "Olá, segue o relatório do serviço realizado:",
+            "Olá, segue o relatório do serviço:",
             "",
             f"Serviço: {job.title}",
             f"Cliente: {report['client_name']}",
-            f"Total de horas: {report['summary']['total_hours']}",
-            f"Itens/despesas usados: {report['summary']['used_items_total_brl']}",
+            f"Horas realizadas: {report['summary']['total_hours']}",
             f"Mão de obra: {report['summary']['labor_total_brl']}",
-            f"Total geral: {report['summary']['estimated_total_brl']}",
+            f"Itens/despesas: {report['summary']['used_items_total_brl']}",
+            f"Total do serviço: {report['summary']['estimated_total_brl']}",
             "",
             "Acesse o relatório:",
             public_url,
@@ -385,6 +408,7 @@ def public_service_job_report(request, token):
         ServiceJob.objects.select_related("professional", "category", "client", "contract", "contract__employee")
         .prefetch_related("work_logs", "item_expenses"),
         public_token=token,
+        status=ServiceJob.Status.FINISHED,
     )
     if not job.public_report_first_viewed_at:
         job.public_report_first_viewed_at = timezone.now()
@@ -397,6 +421,7 @@ def public_service_job_report_pdf(request, token):
         ServiceJob.objects.select_related("professional", "category", "client", "contract", "contract__employee")
         .prefetch_related("work_logs", "item_expenses"),
         public_token=token,
+        status=ServiceJob.Status.FINISHED,
     )
     return _service_job_pdf_response(job)
 
@@ -450,17 +475,19 @@ def _service_job_pdf_response(job):
     story = [
         Paragraph("HoraCerta", styles["Title"]),
         Paragraph("Relatório de serviço", styles["Heading2"]),
-        Paragraph(f"Emitido em {timezone.localtime():%d/%m/%Y %H:%M}", styles["Small"]),
+        Paragraph(f"Data de emissao: {timezone.localtime():%d/%m/%Y %H:%M}", styles["Small"]),
         Spacer(1, 10),
     ]
 
     summary_rows = [
         ["Status", job.get_status_display()],
         ["Prestador", report["professional_name"]],
+        ["Contato", report["professional_contact"] or "-"],
         ["Cliente", report["client_name"]],
+        ["WhatsApp", report["client_whatsapp"] or "-"],
         ["Categoria", job.category.name],
-        ["Local", job.service_location or "-"],
-        ["Período", report["period_label"]],
+        ["Endereco/local", report["service_address"] or "-"],
+        ["Data prevista", report["period_label"]],
         ["Serviço", job.title],
     ]
     story.extend([
@@ -469,10 +496,10 @@ def _service_job_pdf_response(job):
         Paragraph("Descrição", styles["Heading2"]),
         Paragraph(_pdf_text(job.description or "Sem descrição registrada."), styles["Normal"]),
         Spacer(1, 10),
-        Paragraph("Horários do serviço", styles["Heading2"]),
+        Paragraph("Horas realizadas", styles["Heading2"]),
     ])
 
-    work_rows = [["Data", "Início", "Fim", "Descrição", "Total"]]
+    work_rows = [["Data", "Início", "Fim", "Atividade", "Total"]]
     for log in report["work_logs"]:
         work_rows.append([
             f"{log.work_date:%d/%m/%Y}",
@@ -482,10 +509,10 @@ def _service_job_pdf_response(job):
             log.duration_label,
         ])
     if len(work_rows) == 1:
-        work_rows.append(["-", "-", "-", "Nenhum horário registrado.", "-"])
+        work_rows.append(["-", "-", "-", "Nenhuma hora realizada registrada.", "-"])
     story.extend([_pdf_table(work_rows, [2.5 * cm, 2 * cm, 2 * cm, 7.5 * cm, 2.2 * cm]), Spacer(1, 10)])
 
-    story.append(Paragraph("Itens/despesas usados", styles["Heading2"]))
+    story.append(Paragraph("Itens usados/cobrados", styles["Heading2"]))
     used_rows = [["Nome", "Tipo", "Qtd.", "Unitário", "Total"]]
     for item in report["used_items"]:
         used_rows.append([
@@ -500,27 +527,27 @@ def _service_job_pdf_response(job):
     story.extend([_pdf_table(used_rows, [6 * cm, 3.2 * cm, 2 * cm, 2.5 * cm, 2.7 * cm]), Spacer(1, 10)])
 
     story.append(Paragraph("Itens não usados/devolvidos", styles["Heading2"]))
-    not_used_rows = [["Nome", "Qtd.", "Valor", "Status", "Observação"]]
+    not_used_rows = [["Nome", "Tipo", "Qtd.", "Valor", "Status"]]
     for item in report["not_used_items"]:
         not_used_rows.append([
             Paragraph(_pdf_text(item.name), styles["Small"]),
+            item.get_type_display(),
             str(item.quantity),
             _format_brl(item.total_value),
             item.short_usage_status,
-            Paragraph(_pdf_text(item.receipt_note or item.description), styles["Small"]),
         ])
     if len(not_used_rows) == 1:
-        not_used_rows.append(["-", "-", "R$ 0,00", "-", "-"])
-    story.extend([_pdf_table(not_used_rows, [5.2 * cm, 1.8 * cm, 2.4 * cm, 2.7 * cm, 4.3 * cm]), Spacer(1, 10)])
+        not_used_rows.append(["-", "-", "-", "R$ 0,00", "-"])
+    story.extend([_pdf_table(not_used_rows, [5.2 * cm, 3 * cm, 1.8 * cm, 2.5 * cm, 3.9 * cm]), Spacer(1, 10)])
 
     totals_rows = [
         ["Total de horas", report["summary"]["total_hours"]],
-        ["Valor da mão de obra", report["summary"]["labor_total_brl"]],
+        ["Mão de obra", report["summary"]["labor_total_brl"]],
         ["Total de itens/despesas usados", report["summary"]["used_items_total_brl"]],
-        ["Total geral do serviço", report["summary"]["estimated_total_brl"]],
+        ["Total do serviço", report["summary"]["estimated_total_brl"]],
     ]
     story.extend([
-        Paragraph("Resumo de valores", styles["Heading2"]),
+        Paragraph("Resumo", styles["Heading2"]),
         _pdf_table(totals_rows, [7 * cm, 9.5 * cm], header=False),
         Spacer(1, 10),
         Paragraph("Observações finais", styles["Heading2"]),
@@ -533,6 +560,6 @@ def _service_job_pdf_response(job):
     client_part = _filename_part(report["client_name"])
     date_part = timezone.localdate().strftime("%Y%m%d")
     response = HttpResponse(buffer.getvalue(), content_type="application/pdf")
-    response["Content-Disposition"] = f'attachment; filename="relatorio_servico_{client_part}_{date_part}.pdf"'
+    response["Content-Disposition"] = f'attachment; filename="horacerta_servico_{client_part}_{date_part}.pdf"'
     return response
 
