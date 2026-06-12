@@ -5,21 +5,35 @@
 
 {% block extra_head %}
 <style>
-  .service-form-page{display:grid;gap:16px;max-width:980px}
+  .service-form-page{display:grid;gap:16px;max-width:1080px}
   .service-form-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
-  .service-form-head h1{margin:0;font-size:26px;line-height:1.1}
-  .service-form-head p{margin:7px 0 0;color:var(--color-text-muted);line-height:1.45}
-  .service-form{display:grid;gap:14px}
-  .service-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-  .service-form-field label{display:block;margin-bottom:5px;color:var(--color-text-muted);font-size:12px;font-weight:800}
-  .service-form-field.full{grid-column:1 / -1}
-  .service-help{margin-top:5px;color:var(--color-text-muted);font-size:12px;line-height:1.35}
-  .service-errors{display:grid;gap:6px;margin-top:6px}
-  .service-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
-  @media (max-width: 720px){
-    .service-form-head,.service-form-grid{grid-template-columns:1fr;display:grid}
-    .service-form-field.full{grid-column:auto}
-    .service-actions .btn{width:100%}
+  .service-form-head h1{margin:0;font-size:28px;line-height:1.1}
+  .service-form-head p{margin:7px 0 0;color:var(--color-text-muted);line-height:1.45;max-width:720px}
+  .os-form{display:grid;gap:14px}
+  .os-section{border:1px solid var(--color-border);border-radius:14px;background:var(--gradient-card);box-shadow:var(--shadow-soft);padding:16px;display:grid;gap:12px}
+  .os-section h2{margin:0;font-size:18px;line-height:1.2}
+  .os-section__hint{margin:0;color:var(--color-text-muted);font-size:13px;line-height:1.45}
+  .os-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .os-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .os-field.full{grid-column:1 / -1}
+  .os-field label{display:block;margin-bottom:5px;color:var(--color-text-muted);font-size:12px;font-weight:800}
+  .os-field .help{margin-top:5px;color:var(--color-text-muted);font-size:12px;line-height:1.35}
+  .os-errors{display:grid;gap:6px;margin-top:6px;color:var(--danger-text);font-size:12px}
+  .client-mode{display:flex;gap:10px;flex-wrap:wrap}
+  .client-mode label{display:flex;align-items:center;gap:8px;border:1px solid var(--color-border);border-radius:12px;padding:10px 12px;background:var(--surface-soft);font-weight:800}
+  .cep-row{display:flex;gap:10px;align-items:end}
+  .cep-row .os-field{flex:1;min-width:0}
+  .category-description{border:1px solid var(--color-border);border-radius:12px;background:var(--surface-soft);padding:10px 12px;color:var(--color-text-muted);font-size:13px;line-height:1.4}
+  .billing-panel{display:none}
+  .billing-panel.is-visible{display:block}
+  .os-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+  .maps-link{display:none}
+  .maps-link.is-visible{display:inline-flex}
+  @media (max-width: 760px){
+    .service-form-head,.os-grid,.os-grid.three{display:grid;grid-template-columns:1fr}
+    .os-field.full{grid-column:auto}
+    .cep-row{display:grid}
+    .os-actions .btn,.os-actions button,.client-mode label{width:100%}
   }
 </style>
 {% endblock %}
@@ -29,30 +43,260 @@
   <section class="card service-form-head">
     <div>
       <h1>Novo serviço</h1>
-      <p>Cadastre um trabalho avulso em uma área própria, separada do histórico normal de horários.</p>
+      <p>Cadastre um trabalho específico com cliente, local, previsão de atendimento, itens e relatório final.</p>
     </div>
     <a class="btn" href="{% url 'service_job_list' %}">Voltar</a>
   </section>
 
-  <form class="card service-form" method="post">
+  <form class="os-form" method="post" data-service-form>
     {% csrf_token %}
     {% if form.non_field_errors %}
       <div class="alert danger">{{ form.non_field_errors }}</div>
     {% endif %}
-    <div class="service-form-grid">
-      {% for field in form %}
-        <div class="service-form-field {% if field.name == 'description' or field.name == 'notes' %}full{% endif %}">
-          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-          {{ field }}
-          {% if field.help_text %}<div class="service-help">{{ field.help_text }}</div>{% endif %}
-          {% if field.errors %}<div class="service-errors">{{ field.errors }}</div>{% endif %}
+
+    <section class="os-section">
+      <h2>Cliente do serviço</h2>
+      <p class="os-section__hint">Escolha um cliente já cadastrado ou informe um cliente avulso apenas para este serviço.</p>
+      <div class="client-mode" data-client-mode>
+        {% for radio in form.client_mode %}
+          <label>{{ radio.tag }} <span>{{ radio.choice_label }}</span></label>
+        {% endfor %}
+      </div>
+      <div class="os-grid">
+        <div class="os-field" data-registered-client>
+          <label for="{{ form.contract.id_for_label }}">{{ form.contract.label }}</label>
+          {{ form.contract }}
+          {% if form.contract.errors %}<div class="os-errors">{{ form.contract.errors }}</div>{% endif %}
         </div>
-      {% endfor %}
-    </div>
-    <div class="service-actions">
-      <a class="btn" href="{% url 'service_job_list' %}">Cancelar</a>
-      <button class="btn primary" type="submit">Salvar serviço</button>
+        <div class="os-field" data-casual-client>
+          <label for="{{ form.manual_client_name.id_for_label }}">{{ form.manual_client_name.label }}</label>
+          {{ form.manual_client_name }}
+          {% if form.manual_client_name.help_text %}<div class="help">{{ form.manual_client_name.help_text }}</div>{% endif %}
+          {% if form.manual_client_name.errors %}<div class="os-errors">{{ form.manual_client_name.errors }}</div>{% endif %}
+        </div>
+        <div class="os-field" data-casual-client>
+          <label for="{{ form.manual_client_whatsapp.id_for_label }}">{{ form.manual_client_whatsapp.label }}</label>
+          {{ form.manual_client_whatsapp }}
+          {% if form.manual_client_whatsapp.errors %}<div class="os-errors">{{ form.manual_client_whatsapp.errors }}</div>{% endif %}
+        </div>
+        <div class="os-field" data-casual-client>
+          <label for="{{ form.manual_client_email.id_for_label }}">{{ form.manual_client_email.label }}</label>
+          {{ form.manual_client_email }}
+          {% if form.manual_client_email.errors %}<div class="os-errors">{{ form.manual_client_email.errors }}</div>{% endif %}
+        </div>
+      </div>
+    </section>
+
+    <section class="os-section">
+      <h2>Local do serviço</h2>
+      <p class="os-section__hint">Informe o endereço de atendimento. A busca por CEP é apenas uma ajuda; revise os dados antes de salvar.</p>
+      <div class="cep-row">
+        <div class="os-field">
+          <label for="{{ form.service_zip_code.id_for_label }}">{{ form.service_zip_code.label }}</label>
+          {{ form.service_zip_code }}
+          {% if form.service_zip_code.errors %}<div class="os-errors">{{ form.service_zip_code.errors }}</div>{% endif %}
+        </div>
+        <button class="btn" type="button" data-cep-search>Buscar pelo CEP</button>
+        <a class="btn maps-link" href="#" target="_blank" rel="noopener" data-maps-link>Abrir no Maps</a>
+      </div>
+      <div class="os-grid">
+        <div class="os-field full">
+          <label for="{{ form.service_street.id_for_label }}">{{ form.service_street.label }}</label>
+          {{ form.service_street }}
+          {% if form.service_street.errors %}<div class="os-errors">{{ form.service_street.errors }}</div>{% endif %}
+        </div>
+        <div class="os-field">
+          <label for="{{ form.service_number.id_for_label }}">{{ form.service_number.label }}</label>
+          {{ form.service_number }}
+        </div>
+        <div class="os-field">
+          <label for="{{ form.service_complement.id_for_label }}">{{ form.service_complement.label }}</label>
+          {{ form.service_complement }}
+        </div>
+        <div class="os-field">
+          <label for="{{ form.service_district.id_for_label }}">{{ form.service_district.label }}</label>
+          {{ form.service_district }}
+        </div>
+        <div class="os-field">
+          <label for="{{ form.service_city.id_for_label }}">{{ form.service_city.label }}</label>
+          {{ form.service_city }}
+        </div>
+        <div class="os-field">
+          <label for="{{ form.service_state.id_for_label }}">{{ form.service_state.label }}</label>
+          {{ form.service_state }}
+        </div>
+        <div class="os-field full">
+          <label for="{{ form.service_reference.id_for_label }}">{{ form.service_reference.label }}</label>
+          {{ form.service_reference }}
+        </div>
+      </div>
+    </section>
+
+    <section class="os-section">
+      <h2>Sobre o serviço</h2>
+      <div class="os-grid">
+        <div class="os-field">
+          <label for="{{ form.category.id_for_label }}">{{ form.category.label }}</label>
+          <select name="{{ form.category.html_name }}" id="{{ form.category.id_for_label }}" class="hc-input" data-category-select>
+            <option value="">Selecione uma categoria</option>
+            {% for category in form.fields.category.queryset %}
+              <option value="{{ category.id }}" data-description="{{ category.description }}" {% if form.category.value|stringformat:"s" == category.id|stringformat:"s" %}selected{% endif %}>{{ category.name }}</option>
+            {% endfor %}
+          </select>
+          {% if form.category.errors %}<div class="os-errors">{{ form.category.errors }}</div>{% endif %}
+        </div>
+        <div class="os-field">
+          <label for="{{ form.title.id_for_label }}">{{ form.title.label }}</label>
+          {{ form.title }}
+          {% if form.title.errors %}<div class="os-errors">{{ form.title.errors }}</div>{% endif %}
+        </div>
+        <div class="os-field full">
+          <div class="category-description" data-category-description>Escolha uma categoria para ver uma descrição rápida.</div>
+        </div>
+        <div class="os-field full">
+          <label for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
+          {{ form.description }}
+          {% if form.description.errors %}<div class="os-errors">{{ form.description.errors }}</div>{% endif %}
+        </div>
+        <div class="os-field full">
+          <label for="{{ form.notes.id_for_label }}">{{ form.notes.label }}</label>
+          {{ form.notes }}
+        </div>
+      </div>
+    </section>
+
+    <section class="os-section">
+      <h2>Previsão de atendimento</h2>
+      <p class="os-section__hint">Use a previsão para organizar o atendimento. As horas realizadas serão registradas dentro do serviço.</p>
+      <div class="os-grid three">
+        <div class="os-field">
+          <label for="{{ form.start_date.id_for_label }}">{{ form.start_date.label }}</label>
+          {{ form.start_date }}
+        </div>
+        <div class="os-field">
+          <label for="{{ form.planned_start_time.id_for_label }}">{{ form.planned_start_time.label }}</label>
+          {{ form.planned_start_time }}
+        </div>
+        <div class="os-field">
+          <label for="{{ form.planned_end_time.id_for_label }}">{{ form.planned_end_time.label }}</label>
+          {{ form.planned_end_time }}
+          {% if form.planned_end_time.errors %}<div class="os-errors">{{ form.planned_end_time.errors }}</div>{% endif %}
+        </div>
+        <div class="os-field full">
+          <label for="{{ form.billing_mode.id_for_label }}">{{ form.billing_mode.label }}</label>
+          {{ form.billing_mode }}
+        </div>
+        <div class="os-field billing-panel" data-billing-panel="HOURLY">
+          <label for="{{ form.hourly_rate_snapshot.id_for_label }}">{{ form.hourly_rate_snapshot.label }}</label>
+          {{ form.hourly_rate_snapshot }}
+          {% if form.hourly_rate_snapshot.errors %}<div class="os-errors">{{ form.hourly_rate_snapshot.errors }}</div>{% endif %}
+        </div>
+        <div class="os-field billing-panel" data-billing-panel="FIXED">
+          <label for="{{ form.fixed_labor_value.id_for_label }}">{{ form.fixed_labor_value.label }}</label>
+          {{ form.fixed_labor_value }}
+          {% if form.fixed_labor_value.errors %}<div class="os-errors">{{ form.fixed_labor_value.errors }}</div>{% endif %}
+        </div>
+      </div>
+    </section>
+
+    <div class="os-actions">
+      <a class="btn" href="{% url 'service_job_list' %}">Voltar</a>
+      <button class="btn" type="submit" name="submit_action" value="draft">Salvar rascunho</button>
+      <button class="btn primary" type="submit" name="submit_action" value="create">Criar serviço</button>
     </div>
   </form>
 </div>
+
+<script>
+  (function(){
+    var form = document.querySelector("[data-service-form]");
+    if(!form) return;
+
+    var registeredBlocks = Array.prototype.slice.call(form.querySelectorAll("[data-registered-client]"));
+    var casualBlocks = Array.prototype.slice.call(form.querySelectorAll("[data-casual-client]"));
+    var modeInputs = Array.prototype.slice.call(form.querySelectorAll('input[name="client_mode"]'));
+    function selectedMode(){
+      var selected = modeInputs.find(function(input){ return input.checked; });
+      return selected ? selected.value : "registered";
+    }
+    function syncClientMode(){
+      var mode = selectedMode();
+      registeredBlocks.forEach(function(block){ block.style.display = mode === "registered" ? "" : "none"; });
+      casualBlocks.forEach(function(block){ block.style.display = mode === "casual" ? "" : "none"; });
+    }
+    modeInputs.forEach(function(input){ input.addEventListener("change", syncClientMode); });
+    syncClientMode();
+
+    var billingSelect = form.querySelector('select[name="billing_mode"]');
+    var billingPanels = Array.prototype.slice.call(form.querySelectorAll("[data-billing-panel]"));
+    function syncBilling(){
+      var value = billingSelect ? billingSelect.value : "UNDEFINED";
+      billingPanels.forEach(function(panel){ panel.classList.toggle("is-visible", panel.getAttribute("data-billing-panel") === value); });
+    }
+    if(billingSelect) billingSelect.addEventListener("change", syncBilling);
+    syncBilling();
+
+    var categorySelect = form.querySelector("[data-category-select]");
+    var categoryDescription = form.querySelector("[data-category-description]");
+    function syncCategory(){
+      if(!categorySelect || !categoryDescription) return;
+      var option = categorySelect.options[categorySelect.selectedIndex];
+      categoryDescription.textContent = option && option.getAttribute("data-description") ? option.getAttribute("data-description") : "Escolha uma categoria para ver uma descrição rápida.";
+    }
+    if(categorySelect) categorySelect.addEventListener("change", syncCategory);
+    syncCategory();
+
+    var cepButton = form.querySelector("[data-cep-search]");
+    var zipInput = form.querySelector('input[name="service_zip_code"]');
+    function setField(name, value){
+      var field = form.querySelector('[name="' + name + '"]');
+      if(field && value) field.value = value;
+    }
+    if(cepButton && zipInput){
+      cepButton.addEventListener("click", function(){
+        var digits = (zipInput.value || "").replace(/\D/g, "");
+        if(digits.length !== 8){
+          alert("Informe um CEP com 8 dígitos.");
+          return;
+        }
+        cepButton.disabled = true;
+        fetch("https://viacep.com.br/ws/" + digits + "/json/")
+          .then(function(response){ return response.json(); })
+          .then(function(data){
+            if(data.erro){
+              alert("CEP não encontrado. Preencha o endereço manualmente.");
+              return;
+            }
+            setField("service_street", data.logradouro);
+            setField("service_district", data.bairro);
+            setField("service_city", data.localidade);
+            setField("service_state", data.uf);
+            updateMapsLink();
+          })
+          .catch(function(){ alert("Não foi possível buscar o CEP agora. Preencha manualmente."); })
+          .finally(function(){ cepButton.disabled = false; });
+      });
+    }
+
+    var mapsLink = form.querySelector("[data-maps-link]");
+    function updateMapsLink(){
+      if(!mapsLink) return;
+      var parts = ["service_street","service_number","service_district","service_city","service_state"].map(function(name){
+        var field = form.querySelector('[name="' + name + '"]');
+        return field ? field.value : "";
+      }).filter(Boolean);
+      if(parts.length){
+        mapsLink.href = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(parts.join(", "));
+        mapsLink.classList.add("is-visible");
+      }else{
+        mapsLink.classList.remove("is-visible");
+      }
+    }
+    ["service_street","service_number","service_district","service_city","service_state"].forEach(function(name){
+      var field = form.querySelector('[name="' + name + '"]');
+      if(field) field.addEventListener("input", updateMapsLink);
+    });
+    updateMapsLink();
+  })();
+</script>
 {% endblock %}

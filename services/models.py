@@ -34,6 +34,11 @@ class ServiceJob(models.Model):
         FINISHED = "FINISHED", "Finalizado"
         ARCHIVED = "ARCHIVED", "Arquivado"
 
+    class BillingMode(models.TextChoices):
+        HOURLY = "HOURLY", "Por hora"
+        FIXED = "FIXED", "Valor fixo"
+        UNDEFINED = "UNDEFINED", "Sem valor definido ainda"
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     professional = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -55,6 +60,8 @@ class ServiceJob(models.Model):
         blank=True,
     )
     manual_client_name = models.CharField(max_length=120, blank=True, default="")
+    manual_client_whatsapp = models.CharField(max_length=30, blank=True, default="")
+    manual_client_email = models.EmailField(blank=True, null=True)
     category = models.ForeignKey(
         ServiceCategory,
         on_delete=models.PROTECT,
@@ -63,9 +70,20 @@ class ServiceJob(models.Model):
     title = models.CharField(max_length=140)
     description = models.TextField(blank=True, default="")
     service_location = models.CharField(max_length=180, blank=True, default="")
+    service_zip_code = models.CharField(max_length=9, blank=True, default="")
+    service_street = models.CharField(max_length=140, blank=True, default="")
+    service_number = models.CharField(max_length=20, blank=True, default="")
+    service_complement = models.CharField(max_length=80, blank=True, default="")
+    service_district = models.CharField(max_length=80, blank=True, default="")
+    service_city = models.CharField(max_length=80, blank=True, default="")
+    service_state = models.CharField(max_length=2, blank=True, default="")
+    service_reference = models.CharField(max_length=160, blank=True, default="")
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
+    planned_start_time = models.TimeField(null=True, blank=True)
+    planned_end_time = models.TimeField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
+    billing_mode = models.CharField(max_length=20, choices=BillingMode.choices, default=BillingMode.UNDEFINED)
     hourly_rate_snapshot = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     fixed_labor_value = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     notes = models.TextField(blank=True, default="")
@@ -148,14 +166,23 @@ class ServiceJob(models.Model):
                 errors["client"] = "Selecione um cliente da sua conta."
         if self.end_date and self.start_date and self.end_date < self.start_date:
             errors["end_date"] = "A data final nao pode ser anterior a data inicial."
+        if self.planned_start_time and self.planned_end_time and self.planned_end_time <= self.planned_start_time:
+            errors["planned_end_time"] = "Hora final prevista precisa ser maior que a inicial."
         if errors:
             raise ValidationError(errors)
 
     def save(self, *args, **kwargs):
         if self.contract_id:
             self.client = self.contract.company
-            if not self.hourly_rate_snapshot:
+            if self.billing_mode == self.BillingMode.HOURLY and not self.hourly_rate_snapshot:
                 self.hourly_rate_snapshot = self.contract.hourly_rate or 0
+        if self.billing_mode == self.BillingMode.FIXED:
+            self.hourly_rate_snapshot = Decimal("0.00")
+        elif self.billing_mode == self.BillingMode.UNDEFINED:
+            self.hourly_rate_snapshot = Decimal("0.00")
+            self.fixed_labor_value = None
+        elif self.billing_mode == self.BillingMode.HOURLY:
+            self.fixed_labor_value = None
         if self.status == self.Status.FINISHED and not self.finished_at:
             self.finished_at = timezone.now()
         if self.status != self.Status.FINISHED:

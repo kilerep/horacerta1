@@ -99,6 +99,131 @@ class ServiceJobAreaTests(TestCase):
         self.assertContains(response, "Nenhum serviço cadastrado ainda.")
         self.assertContains(response, "sem alterar seu histórico normal")
 
+    def test_new_service_page_has_legible_client_select_and_guidance(self):
+        response = self.client.get(reverse("service_job_create"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Cliente do serviço")
+        self.assertContains(response, "Local do serviço")
+        self.assertContains(response, "Previsão de atendimento")
+        self.assertContains(response, "Buscar pelo CEP")
+        self.assertContains(response, "Cliente Servicos A - R$ 95.00/h")
+        self.assertContains(response, "Trocas, instalações, manutenção elétrica")
+        self.assertNotContains(response, "Contract&lt;")
+
+    def test_create_registered_client_service_with_manual_address_and_hourly_billing(self):
+        before_punch_count = Punch.objects.count()
+
+        response = self.client.post(
+            reverse("service_job_create"),
+            {
+                "client_mode": "registered",
+                "contract": str(self.contract.id),
+                "manual_client_name": "",
+                "manual_client_whatsapp": "",
+                "manual_client_email": "",
+                "service_zip_code": "01001-000",
+                "service_street": "Praca da Se",
+                "service_number": "100",
+                "service_complement": "Sala 2",
+                "service_district": "Se",
+                "service_city": "Sao Paulo",
+                "service_state": "SP",
+                "service_reference": "Proximo ao metro",
+                "category": str(self.category.id),
+                "title": "Revisao eletrica",
+                "description": "Revisao de tomadas e quadro.",
+                "notes": "Levar testador.",
+                "start_date": "2026-06-10",
+                "planned_start_time": "08:00",
+                "planned_end_time": "11:30",
+                "billing_mode": ServiceJob.BillingMode.HOURLY,
+                "hourly_rate_snapshot": "120.00",
+                "fixed_labor_value": "",
+                "submit_action": "create",
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        job = ServiceJob.objects.get(title="Revisao eletrica")
+        self.assertEqual(job.status, ServiceJob.Status.IN_PROGRESS)
+        self.assertEqual(job.contract, self.contract)
+        self.assertEqual(job.client, self.company)
+        self.assertEqual(job.service_location, "Praca da Se, 100, Sala 2, Se, Sao Paulo, SP")
+        self.assertEqual(job.service_zip_code, "01001-000")
+        self.assertEqual(job.planned_start_time.strftime("%H:%M"), "08:00")
+        self.assertEqual(job.planned_end_time.strftime("%H:%M"), "11:30")
+        self.assertEqual(job.billing_mode, ServiceJob.BillingMode.HOURLY)
+        self.assertEqual(job.hourly_rate_snapshot, Decimal("120.00"))
+        self.assertEqual(Punch.objects.count(), before_punch_count)
+
+    def test_create_casual_client_service(self):
+        response = self.client.post(
+            reverse("service_job_create"),
+            {
+                "client_mode": "casual",
+                "contract": "",
+                "manual_client_name": "Maria Silva",
+                "manual_client_whatsapp": "11999999999",
+                "manual_client_email": "maria@example.com",
+                "service_street": "Rua das Flores",
+                "service_number": "45",
+                "service_district": "Centro",
+                "service_city": "Campinas",
+                "service_state": "SP",
+                "category": str(ServiceCategory.objects.get(slug="visita-tecnica").id),
+                "title": "Visita tecnica",
+                "description": "Avaliar instalacao.",
+                "notes": "",
+                "start_date": "2026-06-12",
+                "planned_start_time": "14:00",
+                "planned_end_time": "15:00",
+                "billing_mode": ServiceJob.BillingMode.UNDEFINED,
+                "hourly_rate_snapshot": "",
+                "fixed_labor_value": "",
+                "submit_action": "draft",
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        job = ServiceJob.objects.get(title="Visita tecnica")
+        self.assertEqual(job.status, ServiceJob.Status.DRAFT)
+        self.assertIsNone(job.contract)
+        self.assertIsNone(job.client)
+        self.assertEqual(job.manual_client_name, "Maria Silva")
+        self.assertEqual(job.manual_client_whatsapp, "11999999999")
+        self.assertEqual(job.manual_client_email, "maria@example.com")
+        self.assertEqual(job.billing_mode, ServiceJob.BillingMode.UNDEFINED)
+        self.assertEqual(job.hourly_rate_snapshot, Decimal("0.00"))
+        self.assertIsNone(job.fixed_labor_value)
+
+    def test_create_service_with_fixed_labor_value(self):
+        response = self.client.post(
+            reverse("service_job_create"),
+            {
+                "client_mode": "registered",
+                "contract": str(self.contract.id),
+                "category": str(ServiceCategory.objects.get(slug="manutencao").id),
+                "title": "Manutencao avulsa",
+                "description": "Ajustes gerais.",
+                "service_city": "Sao Paulo",
+                "service_state": "SP",
+                "billing_mode": ServiceJob.BillingMode.FIXED,
+                "fixed_labor_value": "350.00",
+                "hourly_rate_snapshot": "",
+                "submit_action": "create",
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        job = ServiceJob.objects.get(title="Manutencao avulsa")
+        self.assertEqual(job.billing_mode, ServiceJob.BillingMode.FIXED)
+        self.assertEqual(job.fixed_labor_value, Decimal("350.00"))
+        self.assertEqual(job.hourly_rate_snapshot, Decimal("0.00"))
+
     def test_create_draft_service_with_category_and_existing_client(self):
         response = self.client.post(
             reverse("service_job_create"),
@@ -112,8 +237,9 @@ class ServiceJobAreaTests(TestCase):
                 "start_date": timezone.localdate().isoformat(),
                 "end_date": "",
                 "status": ServiceJob.Status.DRAFT,
+                "billing_mode": ServiceJob.BillingMode.HOURLY,
                 "hourly_rate_snapshot": "0",
-                "fixed_labor_value": "250.00",
+                "fixed_labor_value": "",
                 "notes": "Cliente pediu orçamento separado de materiais.",
             },
             follow=True,
@@ -143,6 +269,7 @@ class ServiceJobAreaTests(TestCase):
                 "start_date": "",
                 "end_date": "",
                 "status": ServiceJob.Status.IN_PROGRESS,
+                "billing_mode": ServiceJob.BillingMode.HOURLY,
                 "hourly_rate_snapshot": "80.00",
                 "fixed_labor_value": "",
                 "notes": "",
@@ -164,6 +291,8 @@ class ServiceJobAreaTests(TestCase):
             category=self.category,
             title="Servico com horarios",
             status=ServiceJob.Status.IN_PROGRESS,
+            billing_mode=ServiceJob.BillingMode.HOURLY,
+            hourly_rate_snapshot=self.contract.hourly_rate,
         )
 
         response = self.client.post(
@@ -428,6 +557,8 @@ class ServiceJobAreaTests(TestCase):
             description="Troca de tomadas e revisao do quadro.",
             service_location="Rua A, 123",
             status=ServiceJob.Status.FINISHED,
+            billing_mode=ServiceJob.BillingMode.HOURLY,
+            hourly_rate_snapshot=self.contract.hourly_rate,
             notes="Servico finalizado sem pendencias.",
         )
         ServiceWorkLog.objects.create(

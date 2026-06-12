@@ -195,7 +195,15 @@ def service_job_create(request):
     if request.method == "POST":
         form = ServiceJobForm(request.POST, user=request.user)
         if form.is_valid():
-            job = form.save()
+            submit_action = (request.POST.get("submit_action") or "").strip()
+            posted_status = (request.POST.get("status") or "").strip()
+            if submit_action == "draft":
+                status = ServiceJob.Status.DRAFT
+            elif posted_status in ServiceJob.Status.values:
+                status = posted_status
+            else:
+                status = ServiceJob.Status.IN_PROGRESS
+            job = form.save(status=status)
             messages.success(request, "Servico salvo com sucesso.")
             return redirect("service_job_detail", job_id=job.id)
     else:
