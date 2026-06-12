@@ -6,29 +6,32 @@
 {% block extra_head %}
 <style>
   .service-detail{display:grid;gap:16px}
-  .service-detail-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
-  .service-detail-head h1{margin:0;font-size:28px;line-height:1.1;overflow-wrap:anywhere}
-  .service-detail-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .service-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:start}
+  .service-head h1{margin:0;font-size:28px;line-height:1.1;overflow-wrap:anywhere}
+  .service-head__line{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;color:var(--color-text-muted);line-height:1.4}
+  .service-head__meta{display:grid;gap:5px;margin-top:10px;color:var(--color-text-muted);font-size:13px}
   .service-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
-  .service-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(320px,.85fr);gap:14px;align-items:start}
+  .summary-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+  .summary-card{border:1px solid var(--color-border);border-radius:12px;background:var(--surface-soft);padding:12px;min-width:0}
+  .summary-card span{display:block;color:var(--color-text-muted);font-size:12px;line-height:1.25}
+  .summary-card strong{display:block;margin-top:5px;font-size:18px;line-height:1.15;overflow-wrap:anywhere}
+  .summary-card.total{background:var(--menu-active-bg);border-color:var(--menu-active-border)}
+  .service-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(320px,.75fr);gap:14px;align-items:start}
   .service-stack{display:grid;gap:14px}
-  .service-block h2{margin:0 0 10px;font-size:18px}
+  .service-block h2,.service-details summary{margin:0;font-size:18px;font-weight:900;line-height:1.2}
   .service-block p{margin:0;color:var(--color-text-muted);line-height:1.5;overflow-wrap:anywhere}
-  .summary-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-  .summary-cell{border:1px solid var(--color-border);border-radius:10px;padding:10px;background:var(--surface-soft);min-width:0}
-  .summary-cell span{display:block;color:var(--color-text-muted);font-size:12px}
-  .summary-cell strong{display:block;margin-top:4px;font-size:17px;overflow-wrap:anywhere}
-  .summary-cell.total{grid-column:1 / -1;background:var(--menu-active-bg);border-color:var(--menu-active-border)}
-  .service-data{display:grid;gap:8px}
-  .service-data div{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid var(--color-border);padding-bottom:8px}
+  .block-sub{margin:0 0 12px;color:var(--color-text-muted);font-size:13px;line-height:1.45}
+  .service-data{display:grid;gap:8px;margin-top:10px}
+  .service-data div{display:grid;grid-template-columns:minmax(120px,.45fr) minmax(0,1fr);gap:10px;border-bottom:1px solid var(--color-border);padding-bottom:8px}
   .service-data span{color:var(--color-text-muted)}
-  .service-data strong{text-align:right;overflow-wrap:anywhere}
+  .service-data strong{overflow-wrap:anywhere}
   .inline-form{display:grid;gap:10px;margin-top:12px}
   .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
   .field.full{grid-column:1 / -1}
   .field label{display:block;margin-bottom:5px;color:var(--color-text-muted);font-size:12px;font-weight:800}
   .field-errors{margin-top:5px;color:var(--danger-text);font-size:12px}
   .entry-list{display:grid;gap:10px;margin-top:12px}
+  .entry-group-title{margin:8px 0 0;font-size:15px;line-height:1.2}
   .entry-card{border:1px solid var(--color-border);border-radius:12px;background:var(--surface-soft);padding:12px;display:grid;gap:8px;min-width:0}
   .entry-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
   .entry-title{font-weight:900;overflow-wrap:anywhere}
@@ -36,16 +39,23 @@
   .entry-total{font-weight:900;text-align:right;white-space:nowrap}
   .empty-line{border:1px dashed var(--color-border);border-radius:12px;padding:12px;color:var(--color-text-muted);line-height:1.4}
   .finished-note{border:1px solid var(--warning-border);background:var(--warning-bg);color:var(--warning-text);border-radius:12px;padding:10px 12px;line-height:1.4}
+  .service-details{padding:0}
+  .service-details summary{cursor:pointer;list-style:none;padding:16px}
+  .service-details summary::-webkit-details-marker{display:none}
+  .service-details__body{padding:0 16px 16px}
+  @media (max-width: 1100px){
+    .summary-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  }
   @media (max-width: 900px){
-    .service-detail-head,.service-grid{display:grid;grid-template-columns:1fr}
+    .service-head,.service-grid{grid-template-columns:1fr}
     .service-actions{justify-content:stretch}
     .service-actions .btn,.service-actions button{width:100%}
   }
   @media (max-width: 680px){
     .summary-grid,.form-grid{grid-template-columns:1fr}
-    .summary-cell.total,.field.full{grid-column:auto}
-    .service-data div,.entry-head{display:grid}
-    .service-data strong,.entry-total{text-align:left}
+    .field.full{grid-column:auto}
+    .service-data div,.entry-head{display:grid;grid-template-columns:1fr}
+    .entry-total{text-align:left}
     .inline-form .btn{width:100%}
   }
 </style>
@@ -53,48 +63,55 @@
 
 {% block content %}
 <div class="service-detail">
-  <section class="card service-detail-head">
+  <section class="card service-head">
     <div>
       <h1>{{ job.title }}</h1>
-      <div class="service-detail-meta">
-        <span class="pill">{{ job.client_display_name }}</span>
-        <span class="pill">{{ job.category.name }}</span>
-        <span class="pill {% if job.status == 'IN_PROGRESS' %}success{% elif job.status == 'DRAFT' %}warn{% endif %}">{{ job.get_status_display }}</span>
-        <span class="pill">{% if job.start_date %}{{ job.start_date|date:"d/m/Y" }}{% else %}Criado em {{ job.created_at|date:"d/m/Y" }}{% endif %}</span>
+      <div class="service-head__line">
+        <span>{{ job.category.name }}</span>
+        <span>•</span>
+        <span>{{ job.get_status_display }}</span>
+      </div>
+      <div class="service-head__meta">
+        <div><strong>Cliente:</strong> {{ job.client_display_name }}</div>
+        <div><strong>Local:</strong> {{ job.service_location_summary|default:"Não informado" }}</div>
+        <div>
+          <strong>Previsão:</strong>
+          {% if job.start_date %}{{ job.start_date|date:"d/m/Y" }}{% else %}Data não definida{% endif %}
+          {% if job.planned_start_time and job.planned_end_time %}, {{ job.planned_start_time|time:"H:i" }} até {{ job.planned_end_time|time:"H:i" }}{% endif %}
+        </div>
       </div>
     </div>
     <div class="service-actions">
-      <a class="btn" href="{% url 'service_job_list' %}">Voltar</a>
-      <form method="post" action="{% url 'service_job_status_action' job.id %}">
-        {% csrf_token %}
-        {% if is_finished %}
-          <input type="hidden" name="action" value="reopen">
-          <button class="btn" type="submit">Reabrir serviço</button>
-        {% else %}
+      <a class="btn" href="{% url 'service_job_update' job.id %}">Editar dados</a>
+      {% if is_finished %}
+        <a class="btn primary" href="{{ report_public_url }}" target="_blank" rel="noopener">Gerar relatório</a>
+      {% else %}
+        <form method="post" action="{% url 'service_job_status_action' job.id %}">
+          {% csrf_token %}
           <input type="hidden" name="action" value="finish">
           <button class="btn primary" type="submit">Finalizar serviço</button>
-        {% endif %}
-      </form>
+        </form>
+      {% endif %}
+      <a class="btn" href="{% url 'service_job_list' %}">Voltar</a>
     </div>
+  </section>
+
+  <section class="summary-grid" aria-label="Resumo do serviço">
+    <article class="summary-card"><span>Horas previstas</span><strong>{{ job.planned_duration_label }}</strong></article>
+    <article class="summary-card"><span>Horas realizadas</span><strong>{{ summary.total_hours }}</strong></article>
+    <article class="summary-card"><span>Mão de obra</span><strong>{{ summary.labor_total_brl }}</strong></article>
+    <article class="summary-card"><span>Itens/despesas usados</span><strong>{{ summary.used_items_total_brl }}</strong></article>
+    <article class="summary-card"><span>Itens não usados/devolvidos</span><strong>{{ summary.not_used_items_total_brl }}</strong></article>
+    <article class="summary-card total"><span>Total do serviço</span><strong>{{ summary.estimated_total_brl }}</strong></article>
   </section>
 
   <section class="service-grid">
     <div class="service-stack">
       <article class="card service-block">
-        <h2>Resumo</h2>
-        <div class="summary-grid">
-          <div class="summary-cell"><span>Total de horas</span><strong>{{ summary.total_hours }}</strong></div>
-          <div class="summary-cell"><span>Mão de obra</span><strong>{{ summary.labor_total_brl }}</strong></div>
-          <div class="summary-cell"><span>Itens usados</span><strong>{{ summary.used_items_total_brl }}</strong></div>
-          <div class="summary-cell"><span>Itens não usados/devolvidos</span><strong>{{ summary.not_used_items_total_brl }}</strong></div>
-          <div class="summary-cell total"><span>Total do serviço</span><strong>{{ summary.estimated_total_brl }}</strong></div>
-        </div>
-      </article>
-
-      <article class="card service-block">
-        <h2>Horários do serviço</h2>
+        <h2>Horas realizadas</h2>
+        <p class="block-sub">Registre aqui o tempo realmente trabalhado neste serviço. Esses horários não entram no histórico normal.</p>
         {% if is_finished %}
-          <div class="finished-note">Serviço finalizado. Reabra para adicionar ou ajustar horários.</div>
+          <div class="finished-note">Serviço finalizado. Reabra para adicionar ou ajustar horas realizadas.</div>
         {% else %}
           <form class="inline-form" method="post" action="{% url 'service_work_log_create' job.id %}">
             {% csrf_token %}
@@ -107,7 +124,7 @@
                 </div>
               {% endfor %}
             </div>
-            <button class="btn" type="submit">Adicionar horário</button>
+            <button class="btn" type="submit">Adicionar hora trabalhada</button>
           </form>
         {% endif %}
         <div class="entry-list">
@@ -123,15 +140,16 @@
               {% if log.description %}<p>{{ log.description }}</p>{% endif %}
             </article>
           {% empty %}
-            <div class="empty-line">Nenhum horário lançado neste serviço.</div>
+            <div class="empty-line">Nenhuma hora trabalhada adicionada ainda.</div>
           {% endfor %}
         </div>
       </article>
 
       <article class="card service-block">
-        <h2>Itens/despesas</h2>
+        <h2>Itens e despesas</h2>
+        <p class="block-sub">Adicione materiais, peças, pedágios, combustível, estacionamento ou outros custos deste serviço.</p>
         {% if is_finished %}
-          <div class="finished-note">Serviço finalizado. Reabra para adicionar ou ajustar itens.</div>
+          <div class="finished-note">Serviço finalizado. Reabra para adicionar ou ajustar itens e despesas.</div>
         {% else %}
           <form class="inline-form" method="post" action="{% url 'service_item_expense_create' job.id %}">
             {% csrf_token %}
@@ -149,7 +167,7 @@
         {% endif %}
 
         <div class="entry-list">
-          <h3 style="margin:4px 0 0;font-size:15px;">Itens usados</h3>
+          <h3 class="entry-group-title">Itens usados/cobrados</h3>
           {% for item in used_items %}
             <article class="entry-card">
               <div class="entry-head">
@@ -163,10 +181,10 @@
               {% if item.description %}<p>{{ item.description }}</p>{% endif %}
             </article>
           {% empty %}
-            <div class="empty-line">Nenhum item usado registrado.</div>
+            <div class="empty-line">Nenhum item ou despesa adicionada ainda.</div>
           {% endfor %}
 
-          <h3 style="margin:4px 0 0;font-size:15px;">Itens não usados/devolvidos</h3>
+          <h3 class="entry-group-title">Itens não usados/devolvidos</h3>
           {% for item in not_used_items %}
             <article class="entry-card">
               <div class="entry-head">
@@ -177,63 +195,71 @@
                 </div>
                 <div class="entry-total">Informado: R$ {{ item.total_value }}</div>
               </div>
-              {% if item.description %}<p>{{ item.description }}</p>{% endif %}
+              {% if item.receipt_note or item.description %}<p>{{ item.receipt_note|default:item.description }}</p>{% endif %}
             </article>
           {% empty %}
             <div class="empty-line">Nenhum item não usado ou devolvido registrado.</div>
           {% endfor %}
 
-          {% if other_items %}
-            <h3 style="margin:4px 0 0;font-size:15px;">Itens informativos</h3>
-            {% for item in other_items %}
-              <article class="entry-card">
-                <div class="entry-head">
-                  <div>
-                    <div class="entry-title">{{ item.name }}</div>
-                    <div class="entry-meta"><span>{{ item.get_type_display }}</span><span>{{ item.short_usage_status }}</span></div>
-                    <div class="entry-meta"><span>{{ item.quantity }} x R$ {{ item.unit_value }}</span></div>
-                  </div>
-                  <div class="entry-total">Informado: R$ {{ item.total_value }}</div>
+          <h3 class="entry-group-title">Pendentes de confirmação</h3>
+          {% for item in pending_items %}
+            <article class="entry-card">
+              <div class="entry-head">
+                <div>
+                  <div class="entry-title">{{ item.name }}</div>
+                  <div class="entry-meta"><span>{{ item.get_type_display }}</span><span>{{ item.short_usage_status }}</span></div>
+                  <div class="entry-meta"><span>{{ item.quantity }} x R$ {{ item.unit_value }}</span></div>
                 </div>
-              </article>
-            {% endfor %}
-          {% endif %}
+                <div class="entry-total">Informado: R$ {{ item.total_value }}</div>
+              </div>
+            </article>
+          {% empty %}
+            <div class="empty-line">Nenhum item pendente de confirmação.</div>
+          {% endfor %}
         </div>
       </article>
     </div>
 
     <aside class="service-stack">
-      <article class="card service-block">
-        <h2>Dados do serviço</h2>
-        <div class="service-data">
-          <div><span>Local</span><strong>{{ job.service_location|default:"-" }}</strong></div>
-          <div><span>Data inicial</span><strong>{{ job.start_date|date:"d/m/Y"|default:"-" }}</strong></div>
-          <div><span>Data final</span><strong>{{ job.end_date|date:"d/m/Y"|default:"-" }}</strong></div>
-          <div><span>Valor/hora</span><strong>R$ {{ job.hourly_rate_snapshot }}</strong></div>
-          <div><span>Modo de mão de obra</span><strong>{{ summary.labor_mode }}</strong></div>
+      <details class="card service-details" id="dados-do-servico" open>
+        <summary>Dados do serviço</summary>
+        <div class="service-details__body">
+          <div class="service-data">
+            <div><span>Cliente</span><strong>{{ job.client_display_name }}</strong></div>
+            <div><span>WhatsApp</span><strong>{{ job.client_whatsapp|default:"-" }}</strong></div>
+            <div><span>Endereço completo</span><strong>{{ job.full_service_address|default:"-" }}</strong></div>
+            <div><span>Categoria</span><strong>{{ job.category.name }}</strong></div>
+            <div><span>Descrição</span><strong>{{ job.description|default:"-" }}</strong></div>
+            <div><span>Observações iniciais</span><strong>{{ job.notes|default:"-" }}</strong></div>
+            <div><span>Modo de cobrança</span><strong>{{ job.get_billing_mode_display }}</strong></div>
+            <div>
+              <span>Valor</span>
+              <strong>
+                {% if job.billing_mode == 'FIXED' %}R$ {{ job.fixed_labor_value|default:"0,00" }}
+                {% elif job.billing_mode == 'HOURLY' %}R$ {{ job.hourly_rate_snapshot }}/h
+                {% else %}Sem valor definido{% endif %}
+              </strong>
+            </div>
+          </div>
         </div>
-      </article>
-
-      <article class="card service-block">
-        <h2>Observações</h2>
-        <p>{{ job.notes|default:"Sem observações internas." }}</p>
-      </article>
+      </details>
 
       <article class="card service-block">
         <h2>Relatório</h2>
         {% if is_finished %}
-          <p>Serviço finalizado. Os dados desta tela já estão consolidados para o relatório final do cliente.</p>
+          <p>Serviço finalizado. Gere e envie o relatório final com horas, itens usados e itens não usados/devolvidos.</p>
+          <div class="service-actions" style="margin-top:12px;justify-content:flex-start;">
+            <a class="btn primary" href="{{ report_public_url }}" target="_blank" rel="noopener">Gerar relatório</a>
+            <a class="btn" href="{{ report_public_url }}" target="_blank" rel="noopener">Ver relatório</a>
+            <a class="btn" href="{{ report_whatsapp_url }}" target="_blank" rel="noopener">Enviar WhatsApp</a>
+            <a class="btn" href="{{ report_pdf_url }}">PDF</a>
+          </div>
+          {% if public_report_first_viewed_at %}
+            <p style="margin-top:10px;">Visto em {{ public_report_first_viewed_at|date:"d/m/Y" }} às {{ public_report_first_viewed_at|time:"H:i" }}</p>
+          {% endif %}
         {% else %}
-          <div class="finished-note">Este serviço ainda não foi finalizado.</div>
-          <p style="margin-top:10px;">Você pode gerar uma prévia, mas revise os dados antes de enviar ao cliente.</p>
-        {% endif %}
-        <div class="service-actions" style="margin-top:12px;justify-content:flex-start;">
-          <a class="btn primary" href="{{ report_public_url }}" target="_blank" rel="noopener">Gerar relatório de serviço</a>
-          <a class="btn" href="{{ report_pdf_url }}">Baixar PDF</a>
-          <a class="btn" href="{{ report_whatsapp_url }}" target="_blank" rel="noopener">Enviar pelo WhatsApp</a>
-        </div>
-        {% if public_report_first_viewed_at %}
-          <p style="margin-top:10px;">Visto em {{ public_report_first_viewed_at|date:"d/m/Y" }} às {{ public_report_first_viewed_at|time:"H:i" }}</p>
+          <div class="finished-note">Finalize o serviço para gerar o relatório final com horas, itens usados e itens não usados/devolvidos.</div>
+          <p style="margin-top:10px;">Finalize o serviço para preparar o relatório.</p>
         {% endif %}
       </article>
     </aside>

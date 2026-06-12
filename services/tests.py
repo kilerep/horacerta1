@@ -400,6 +400,103 @@ class ServiceJobAreaTests(TestCase):
         self.assertContains(toll_response, "Itens usados")
         self.assertContains(toll_response, "Itens não usados/devolvidos")
 
+    def test_service_detail_shows_professional_layout_totals_and_report_state(self):
+        before_punch_count = Punch.objects.count()
+        job = ServiceJob.objects.create(
+            professional=self.mei_user,
+            contract=self.contract,
+            category=self.category,
+            title="Troca de disjuntores",
+            description="Troca de disjuntores e teste do quadro.",
+            service_street="Rua X",
+            service_number="120",
+            service_city="Blumenau",
+            service_state="SC",
+            service_location="Rua X, 120, Blumenau, SC",
+            start_date=timezone.localdate(),
+            planned_start_time=datetime.strptime("08:00", "%H:%M").time(),
+            planned_end_time=datetime.strptime("11:00", "%H:%M").time(),
+            status=ServiceJob.Status.IN_PROGRESS,
+            billing_mode=ServiceJob.BillingMode.HOURLY,
+            hourly_rate_snapshot=Decimal("100.00"),
+            notes="Cliente pediu teste final.",
+        )
+
+        self.client.post(
+            reverse("service_work_log_create", args=[job.id]),
+            {
+                "work_date": "2026-06-11",
+                "start_time": "08:00",
+                "end_time": "10:30",
+                "description": "Troca de disjuntores",
+            },
+        )
+        self.client.post(
+            reverse("service_work_log_create", args=[job.id]),
+            {
+                "work_date": "2026-06-11",
+                "start_time": "10:45",
+                "end_time": "11:15",
+                "description": "Teste do quadro",
+            },
+        )
+        ServiceItemExpense.objects.create(
+            service_job=job,
+            type=ServiceItemExpense.ItemType.MATERIAL,
+            name="Disjuntor 20A",
+            quantity=Decimal("2"),
+            unit_value=Decimal("35.00"),
+            usage_status=ServiceItemExpense.UsageStatus.USED,
+        )
+        ServiceItemExpense.objects.create(
+            service_job=job,
+            type=ServiceItemExpense.ItemType.MATERIAL,
+            name="Cabo reserva",
+            quantity=Decimal("1"),
+            unit_value=Decimal("40.00"),
+            usage_status=ServiceItemExpense.UsageStatus.NOT_USED,
+        )
+        ServiceItemExpense.objects.create(
+            service_job=job,
+            type=ServiceItemExpense.ItemType.TOLL,
+            name="Pedagio",
+            quantity=Decimal("1"),
+            unit_value=Decimal("42.00"),
+            usage_status=ServiceItemExpense.UsageStatus.PURCHASED,
+        )
+
+        response = self.client.get(reverse("service_job_detail", args=[job.id]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Troca de disjuntores")
+        self.assertContains(response, "Cliente Servicos A")
+        self.assertContains(response, "Rua X 120 - Blumenau/SC")
+        self.assertContains(response, "Horas previstas")
+        self.assertContains(response, "03:00")
+        self.assertContains(response, "Horas realizadas")
+        self.assertContains(response, "03:00")
+        self.assertContains(response, "Mão de obra")
+        self.assertContains(response, "R$ 300,00")
+        self.assertContains(response, "Itens usados/cobrados")
+        self.assertContains(response, "Disjuntor 20A")
+        self.assertContains(response, "Itens não usados/devolvidos")
+        self.assertContains(response, "Cabo reserva")
+        self.assertContains(response, "Pendentes de confirmação")
+        self.assertContains(response, "Pedagio")
+        self.assertContains(response, "R$ 370,00")
+        self.assertContains(response, "Finalize o serviço para gerar o relatório final")
+        self.assertEqual(Punch.objects.count(), before_punch_count)
+
+        finish_response = self.client.post(
+            reverse("service_job_status_action", args=[job.id]),
+            {"action": "finish"},
+            follow=True,
+        )
+        self.assertContains(finish_response, "Gerar relatório")
+        self.assertContains(finish_response, "Ver relatório")
+        self.assertContains(finish_response, "Enviar WhatsApp")
+        self.assertContains(finish_response, "PDF")
+
     def test_finished_service_blocks_new_work_logs_and_items_then_reopens(self):
         job = ServiceJob.objects.create(
             professional=self.mei_user,

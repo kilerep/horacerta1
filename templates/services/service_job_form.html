@@ -1,7 +1,7 @@
 {% extends "accounts/base.html" %}
 
-{% block title %}Novo serviço{% endblock %}
-{% block page_title %}Novo serviço{% endblock %}
+{% block title %}{{ form_title|default:"Novo serviço" }}{% endblock %}
+{% block page_title %}{{ form_title|default:"Novo serviço" }}{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -42,8 +42,8 @@
 <div class="service-form-page">
   <section class="card service-form-head">
     <div>
-      <h1>Novo serviço</h1>
-      <p>Cadastre um trabalho específico com cliente, local, previsão de atendimento, itens e relatório final.</p>
+      <h1>{{ form_title|default:"Novo serviço" }}</h1>
+      <p>{{ form_subtitle|default:"Cadastre um trabalho específico com cliente, local, previsão de atendimento, itens e relatório final." }}</p>
     </div>
     <a class="btn" href="{% url 'service_job_list' %}">Voltar</a>
   </section>
@@ -201,8 +201,12 @@
 
     <div class="os-actions">
       <a class="btn" href="{% url 'service_job_list' %}">Voltar</a>
-      <button class="btn" type="submit" name="submit_action" value="draft">Salvar rascunho</button>
-      <button class="btn primary" type="submit" name="submit_action" value="create">Criar serviço</button>
+      {% if is_edit %}
+        <button class="btn primary" type="submit" name="submit_action" value="save">Salvar alterações</button>
+      {% else %}
+        <button class="btn" type="submit" name="submit_action" value="draft">Salvar rascunho</button>
+        <button class="btn primary" type="submit" name="submit_action" value="create">Criar serviço</button>
+      {% endif %}
     </div>
   </form>
 </div>

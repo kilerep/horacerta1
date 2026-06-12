@@ -113,6 +113,49 @@ class ServiceJob(models.Model):
         return self.manual_client_name or "Cliente nao informado"
 
     @property
+    def client_whatsapp(self):
+        if self.manual_client_whatsapp:
+            return self.manual_client_whatsapp
+        if self.client_id and self.client:
+            return self.client.whatsapp or self.client.phone or ""
+        return ""
+
+    @property
+    def full_service_address(self):
+        parts = [
+            self.service_street,
+            self.service_number,
+            self.service_complement,
+            self.service_district,
+            self.service_city,
+            self.service_state,
+        ]
+        return ", ".join(part for part in parts if part) or self.service_location
+
+    @property
+    def service_location_summary(self):
+        if self.service_street or self.service_city or self.service_state:
+            street = " ".join(part for part in [self.service_street, self.service_number] if part)
+            city_state = "/".join(part for part in [self.service_city, self.service_state] if part)
+            if street and city_state:
+                return f"{street} - {city_state}"
+            return street or city_state
+        return self.service_location
+
+    @property
+    def planned_duration_minutes(self):
+        if not (self.planned_start_time and self.planned_end_time):
+            return 0
+        start = self.planned_start_time.hour * 60 + self.planned_start_time.minute
+        end = self.planned_end_time.hour * 60 + self.planned_end_time.minute
+        return max(end - start, 0)
+
+    @property
+    def planned_duration_label(self):
+        minutes = self.planned_duration_minutes
+        return f"{minutes // 60:02d}:{minutes % 60:02d}"
+
+    @property
     def total_work_minutes(self):
         if hasattr(self, "_prefetched_objects_cache") and "work_logs" in self._prefetched_objects_cache:
             return sum(log.duration_minutes or 0 for log in self.work_logs.all())

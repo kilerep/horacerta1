@@ -102,6 +102,10 @@ class ServiceJobForm(forms.ModelForm):
             self.instance.professional = user
         self.fields["client_mode"].initial = "registered"
         self.fields["billing_mode"].initial = ServiceJob.BillingMode.UNDEFINED
+        if self.instance and self.instance.pk:
+            self.fields["client_mode"].initial = "registered" if self.instance.contract_id else "casual"
+            self.fields["billing_mode"].initial = self.instance.billing_mode
+            self.fields["contract"].initial = self.instance.contract
         self.fields["billing_mode"].required = False
         self.fields["hourly_rate_snapshot"].required = False
         self.fields["contract"].queryset = mei_contracts_for_user(
@@ -225,7 +229,7 @@ class ServiceWorkLogForm(forms.ModelForm):
             "work_date": "Data",
             "start_time": "Inicio",
             "end_time": "Fim",
-            "description": "Descricao",
+            "description": "Atividade realizada",
         }
         widgets = {
             "work_date": forms.DateInput(attrs={"type": "date"}),
@@ -266,11 +270,11 @@ class ServiceItemExpenseForm(forms.ModelForm):
         labels = {
             "type": "Tipo",
             "name": "Nome",
-            "description": "Descricao",
+            "description": "Observacao",
             "quantity": "Quantidade",
             "unit_value": "Valor unitario",
             "usage_status": "Status de uso",
-            "receipt_note": "Nota/recibo",
+            "receipt_note": "Observacao",
         }
         widgets = {
             "description": forms.Textarea(attrs={"rows": 2}),

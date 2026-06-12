@@ -108,7 +108,7 @@ def _service_job_detail_context(job, *, work_log_form=None, item_form=None):
         for item in items
         if item.usage_status in ServiceItemExpense.NON_CHARGEABLE_USAGE_STATUSES
     ]
-    other_items = [
+    pending_items = [
         item
         for item in items
         if item not in used_items and item not in not_used_items
@@ -119,7 +119,7 @@ def _service_job_detail_context(job, *, work_log_form=None, item_form=None):
         "work_logs": work_logs,
         "used_items": used_items,
         "not_used_items": not_used_items,
-        "other_items": other_items,
+        "pending_items": pending_items,
         "work_log_form": work_log_form or ServiceWorkLogForm(service_job=job),
         "item_form": item_form or ServiceItemExpenseForm(service_job=job),
         "is_finished": job.status == ServiceJob.Status.FINISHED,
@@ -209,7 +209,45 @@ def service_job_create(request):
     else:
         form = ServiceJobForm(user=request.user)
 
-    return render(request, "services/service_job_form.html", {"form": form})
+    return render(
+        request,
+        "services/service_job_form.html",
+        {
+            "form": form,
+            "form_title": "Novo serviço",
+            "form_subtitle": "Cadastre um trabalho específico com cliente, local, previsão de atendimento, itens e relatório final.",
+            "is_edit": False,
+        },
+    )
+
+
+@login_required
+def service_job_update(request, job_id):
+    denied = _redirect_if_not_mei(request)
+    if denied:
+        return denied
+
+    job = get_object_or_404(_service_jobs_for_user(request.user), id=job_id)
+    if request.method == "POST":
+        form = ServiceJobForm(request.POST, user=request.user, instance=job)
+        if form.is_valid():
+            form.save(status=job.status)
+            messages.success(request, "Dados do servico atualizados.")
+            return redirect("service_job_detail", job_id=job.id)
+    else:
+        form = ServiceJobForm(user=request.user, instance=job)
+
+    return render(
+        request,
+        "services/service_job_form.html",
+        {
+            "form": form,
+            "form_title": "Editar serviço",
+            "form_subtitle": "Atualize cliente, local, descrição e previsão deste serviço.",
+            "is_edit": True,
+            "job": job,
+        },
+    )
 
 
 @login_required
