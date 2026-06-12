@@ -419,3 +419,94 @@ class ServiceJobAreaTests(TestCase):
         self.assertEqual(pdf_response["Content-Type"], "application/pdf")
         self.assertEqual(whatsapp_response.status_code, 302)
 
+    def _create_finished_report_ready_service(self):
+        job = ServiceJob.objects.create(
+            professional=self.mei_user,
+            contract=self.contract,
+            category=self.category,
+            title="Instalacao eletrica sala",
+            description="Troca de tomadas e revisao do quadro.",
+            service_location="Rua A, 123",
+            status=ServiceJob.Status.FINISHED,
+            notes="Servico finalizado sem pendencias.",
+        )
+        ServiceWorkLog.objects.create(
+            service_job=job,
+            work_date=timezone.localdate(),
+            start_time=datetime.strptime("08:00", "%H:%M").time(),
+            end_time=datetime.strptime("11:30", "%H:%M").time(),
+            description="Troca de tomadas",
+        )
+        ServiceItemExpense.objects.create(
+            service_job=job,
+            type=ServiceItemExpense.ItemType.MATERIAL,
+            name="Tomada 10A",
+            quantity=Decimal("2"),
+            unit_value=Decimal("15.00"),
+            usage_status=ServiceItemExpense.UsageStatus.USED,
+        )
+        ServiceItemExpense.objects.create(
+            service_job=job,
+            type=ServiceItemExpense.ItemType.MATERIAL,
+            name="Cabo 2,5mm",
+            quantity=Decimal("1"),
+            unit_value=Decimal("40.00"),
+            usage_status=ServiceItemExpense.UsageStatus.NOT_USED,
+            receipt_note="Material sera devolvido.",
+        )
+        job.refresh_from_db()
+        return job
+
+    def test_public_service_report_opens_without_login_and_records_first_view(self):
+        job = self._create_finished_report_ready_service()
+        self.client.logout()
+
+        response = self.client.get(reverse("public_service_job_report", args=[job.public_token]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Relatório de serviço")
+        self.assertContains(response, "Instalacao eletrica sala")
+        self.assertContains(response, "03:30")
+        self.assertContains(response, "Tomada 10A")
+        self.assertContains(response, "Cabo 2,5mm")
+        self.assertContains(response, "R$ 362,50")
+        self.assertNotContains(response, "Registrar horario")
+        job.refresh_from_db()
+        self.assertIsNotNone(job.public_report_first_viewed_at)
+
+    def test_service_report_pdf_is_separate_pdf(self):
+        job = self._create_finished_report_ready_service()
+
+        response = self.client.get(reverse("service_job_report_pdf", args=[job.id]))
+        public_response = self.client.get(reverse("public_service_job_report_pdf", args=[job.public_token]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/pdf")
+        self.assertIn("relatorio_servico_", response["Content-Disposition"])
+        self.assertEqual(public_response.status_code, 200)
+        self.assertEqual(public_response["Content-Type"], "application/pdf")
+
+    def test_service_report_whatsapp_message_uses_real_totals(self):
+        job = self._create_finished_report_ready_service()
+
+        response = self.client.get(reverse("service_job_report_whatsapp", args=[job.id]))
+
+        self.assertEqual(response.status_code, 302)
+        location = response["Location"]
+        self.assertIn("https://wa.me/?text=", location)
+        self.assertIn("Instalacao%20eletrica%20sala", location)
+        self.assertIn("Total%20de%20horas%3A%2003%3A30", location)
+        self.assertIn("Itens%2Fdespesas%20usados%3A%20R%24%2030%2C00", location)
+        self.assertIn("M%C3%A3o%20de%20obra%3A%20R%24%20332%2C50", location)
+        self.assertIn("Total%20geral%3A%20R%24%20362%2C50", location)
+
+    def test_other_user_cannot_open_internal_service_report_actions(self):
+        job = self._create_finished_report_ready_service()
+        self.client.force_login(self.other_user)
+
+        pdf_response = self.client.get(reverse("service_job_report_pdf", args=[job.id]))
+        whatsapp_response = self.client.get(reverse("service_job_report_whatsapp", args=[job.id]))
+
+        self.assertEqual(pdf_response.status_code, 404)
+        self.assertEqual(whatsapp_response.status_code, 404)
+

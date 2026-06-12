@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Relatório de serviço - HoraCerta</title>
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;font-family:"Segoe UI",Arial,sans-serif;background:#f3f4f6;color:#111827}
+    .page{max-width:980px;margin:0 auto;padding:18px;display:grid;gap:14px}
+    .card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;box-shadow:0 8px 20px rgba(15,23,42,.06)}
+    .head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}
+    .brand{font-weight:900;font-size:18px}
+    h1{margin:6px 0 0;font-size:28px;line-height:1.1;overflow-wrap:anywhere}
+    h2{margin:0 0 10px;font-size:18px}
+    p{margin:0;color:#4b5563;line-height:1.5;overflow-wrap:anywhere}
+    .muted{color:#6b7280}
+    .pill{display:inline-flex;border:1px solid #d1d5db;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:700;color:#374151;background:#f9fafb}
+    .meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+    .cell{border:1px solid #e5e7eb;border-radius:10px;padding:10px;background:#f9fafb;min-width:0}
+    .cell span{display:block;color:#6b7280;font-size:12px}
+    .cell strong{display:block;margin-top:4px;font-size:17px;overflow-wrap:anywhere}
+    .cell.total{grid-column:1 / -1;background:#eef2ff;border-color:#c7d2fe}
+    .data{display:grid;gap:8px}
+    .data div{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid #e5e7eb;padding-bottom:8px}
+    .data span{color:#6b7280}
+    .data strong{text-align:right;overflow-wrap:anywhere}
+    .list{display:grid;gap:10px}
+    .entry{border:1px solid #e5e7eb;border-radius:10px;padding:12px;background:#f9fafb;display:grid;gap:7px}
+    .entry-head{display:flex;justify-content:space-between;gap:10px}
+    .entry-title{font-weight:900;overflow-wrap:anywhere}
+    .entry-meta{display:flex;flex-wrap:wrap;gap:7px;color:#6b7280;font-size:13px}
+    .entry-total{font-weight:900;text-align:right;white-space:nowrap}
+    .footer{text-align:center;color:#6b7280;font-size:12px}
+    @media (max-width:720px){
+      .page{padding:10px}
+      .head,.grid,.summary,.data div,.entry-head{display:grid;grid-template-columns:1fr}
+      .cell.total{grid-column:auto}
+      .data strong,.entry-total{text-align:left}
+      h1{font-size:24px}
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="card head">
+      <div>
+        <div class="brand">HoraCerta</div>
+        <h1>Relatório de serviço</h1>
+        <div class="meta">
+          <span class="pill">{{ job.get_status_display }}</span>
+          <span class="pill">Emitido em {{ emitted_at|date:"d/m/Y" }} às {{ emitted_at|time:"H:i" }}</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <article class="card">
+        <h2>Dados</h2>
+        <div class="data">
+          <div><span>Prestador</span><strong>{{ professional_name }}</strong></div>
+          <div><span>Cliente</span><strong>{{ client_name }}</strong></div>
+          <div><span>Categoria</span><strong>{{ job.category.name }}</strong></div>
+          <div><span>Local</span><strong>{{ job.service_location|default:"-" }}</strong></div>
+          <div><span>Período</span><strong>{{ period_label }}</strong></div>
+        </div>
+      </article>
+      <article class="card">
+        <h2>Resumo</h2>
+        <div class="summary">
+          <div class="cell"><span>Total de horas</span><strong>{{ summary.total_hours }}</strong></div>
+          <div class="cell"><span>Mão de obra</span><strong>{{ summary.labor_total_brl }}</strong></div>
+          <div class="cell"><span>Itens/despesas usados</span><strong>{{ summary.used_items_total_brl }}</strong></div>
+          <div class="cell"><span>Itens não usados/devolvidos</span><strong>{{ summary.not_used_items_total_brl }}</strong></div>
+          <div class="cell total"><span>Total geral do serviço</span><strong>{{ summary.estimated_total_brl }}</strong></div>
+        </div>
+      </article>
+    </section>
+
+    <section class="card">
+      <h2>{{ job.title }}</h2>
+      <p>{{ job.description|default:"Sem descrição registrada." }}</p>
+    </section>
+
+    <section class="card">
+      <h2>Horários do serviço</h2>
+      <div class="list">
+        {% for log in work_logs %}
+          <article class="entry">
+            <div class="entry-head">
+              <div>
+                <div class="entry-title">{{ log.work_date|date:"d/m/Y" }}</div>
+                <div class="entry-meta"><span>{{ log.start_time|time:"H:i" }} até {{ log.end_time|time:"H:i" }}</span></div>
+              </div>
+              <div class="entry-total">Total: {{ log.duration_label }}</div>
+            </div>
+            {% if log.description %}<p>{{ log.description }}</p>{% endif %}
+          </article>
+        {% empty %}
+          <p>Nenhum horário registrado.</p>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Itens/despesas usados</h2>
+      <div class="list">
+        {% for item in used_items %}
+          <article class="entry">
+            <div class="entry-head">
+              <div>
+                <div class="entry-title">{{ item.name }}</div>
+                <div class="entry-meta"><span>{{ item.get_type_display }}</span><span>{{ item.quantity }} x R$ {{ item.unit_value }}</span></div>
+              </div>
+              <div class="entry-total">Total: R$ {{ item.total_value }}</div>
+            </div>
+          </article>
+        {% empty %}
+          <p>Nenhum item/despesa usado registrado.</p>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Itens não usados/devolvidos</h2>
+      <div class="list">
+        {% for item in not_used_items %}
+          <article class="entry">
+            <div class="entry-head">
+              <div>
+                <div class="entry-title">{{ item.name }}</div>
+                <div class="entry-meta"><span>{{ item.short_usage_status }}</span><span>{{ item.quantity }} x R$ {{ item.unit_value }}</span></div>
+              </div>
+              <div class="entry-total">Informado: R$ {{ item.total_value }}</div>
+            </div>
+            {% if item.receipt_note or item.description %}<p>{{ item.receipt_note|default:item.description }}</p>{% endif %}
+          </article>
+        {% empty %}
+          <p>Nenhum item não usado ou devolvido registrado.</p>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Observações finais</h2>
+      <p>{{ job.notes|default:"Sem observações finais." }}</p>
+    </section>
+
+    <div class="footer">Relatório gerado pelo HoraCerta.</div>
+  </main>
+</body>
+</html>

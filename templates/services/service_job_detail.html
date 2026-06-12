@@ -224,7 +224,16 @@
         {% if is_finished %}
           <p>Serviço finalizado. Os dados desta tela já estão consolidados para o relatório final do cliente.</p>
         {% else %}
-          <p>Finalize o serviço para preparar o relatório final com horários, itens usados e itens não usados/devolvidos.</p>
+          <div class="finished-note">Este serviço ainda não foi finalizado.</div>
+          <p style="margin-top:10px;">Você pode gerar uma prévia, mas revise os dados antes de enviar ao cliente.</p>
+        {% endif %}
+        <div class="service-actions" style="margin-top:12px;justify-content:flex-start;">
+          <a class="btn primary" href="{{ report_public_url }}" target="_blank" rel="noopener">Gerar relatório de serviço</a>
+          <a class="btn" href="{{ report_pdf_url }}">Baixar PDF</a>
+          <a class="btn" href="{{ report_whatsapp_url }}" target="_blank" rel="noopener">Enviar pelo WhatsApp</a>
+        </div>
+        {% if public_report_first_viewed_at %}
+          <p style="margin-top:10px;">Visto em {{ public_report_first_viewed_at|date:"d/m/Y" }} às {{ public_report_first_viewed_at|time:"H:i" }}</p>
         {% endif %}
       </article>
     </aside>
