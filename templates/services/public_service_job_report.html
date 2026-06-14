@@ -1,3 +1,4 @@
+{% load service_format %}
 <!doctype html>
 <html lang="pt-br">
 <head>
@@ -96,9 +97,9 @@
               <div class="entry-head">
                 <div>
                   <div class="entry-title">{{ item.name }}</div>
-                  <div class="entry-meta"><span>{{ item.get_type_display }}</span><span>{{ item.short_usage_status }}</span><span>Quantidade: {{ item.quantity }}</span><span>Un.: R$ {{ item.unit_value }}</span></div>
+                  <div class="entry-meta"><span>{{ item.get_type_display }}</span><span>{{ item.short_usage_status }}</span><span>Quantidade: {{ item.quantity }}</span><span>Un.: {{ item.unit_value|brl }}</span></div>
                 </div>
-                <div class="entry-total">Estimado: R$ {{ item.total_value }}</div>
+                <div class="entry-total">Estimado: {{ item.total_value|brl }}</div>
               </div>
               {% if item.description %}<p>{{ item.description }}</p>{% endif %}
             </article>
@@ -146,9 +147,9 @@
               <div class="entry-head">
                 <div>
                   <div class="entry-title">{{ item.name }}</div>
-                  <div class="entry-meta"><span>{{ item.get_type_display }}</span><span>{{ item.quantity }} x R$ {{ item.unit_value }}</span></div>
+                  <div class="entry-meta"><span>{{ item.get_type_display }}</span><span>{{ item.quantity }} x {{ item.unit_value|brl }}</span></div>
                 </div>
-                <div class="entry-total">Total: R$ {{ item.total_value }}</div>
+                <div class="entry-total">Total: {{ item.total_value|brl }}</div>
               </div>
             </article>
           {% empty %}
@@ -165,9 +166,9 @@
               <div class="entry-head">
                 <div>
                   <div class="entry-title">{{ item.name }}</div>
-                  <div class="entry-meta"><span>{{ item.get_type_display }}</span><span>{{ item.short_usage_status }}</span><span>{{ item.quantity }} x R$ {{ item.unit_value }}</span></div>
+                  <div class="entry-meta"><span>{{ item.get_type_display }}</span><span>{{ item.short_usage_status }}</span><span>{{ item.quantity }} x {{ item.unit_value|brl }}</span></div>
                 </div>
-                <div class="entry-total">Fora do total: R$ {{ item.total_value }}</div>
+                <div class="entry-total">Fora do total: {{ item.total_value|brl }}</div>
               </div>
               {% if item.receipt_note or item.description %}<p>{{ item.receipt_note|default:item.description }}</p>{% endif %}
             </article>

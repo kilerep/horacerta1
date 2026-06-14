@@ -756,6 +756,87 @@ class ServiceJobAreaTests(TestCase):
         self.assertIsNotNone(job.preview_sent_at)
         self.assertEqual(Punch.objects.count(), before_punch_count)
 
+    def test_service_quote_whatsapp_message_and_quoted_item_update(self):
+        before_punch_count = Punch.objects.count()
+        job = ServiceJob.objects.create(
+            professional=self.mei_user,
+            manual_client_name="John",
+            category=self.category,
+            title="Troca de disjuntores",
+            description="Trocar disjuntores da casa.",
+            service_location="Rua X, 120",
+            start_date=timezone.localdate(),
+            planned_start_time=datetime.strptime("08:00", "%H:%M").time(),
+            status=ServiceJob.Status.PLANNED,
+            billing_mode=ServiceJob.BillingMode.UNDEFINED,
+        )
+        quoted_item = ServiceItemExpense.objects.create(
+            service_job=job,
+            type=ServiceItemExpense.ItemType.PART,
+            name="Disjuntor 20A",
+            description="marca/modelo se disponivel",
+            quantity=Decimal("2"),
+            unit_value=Decimal("35.00"),
+            usage_status=ServiceItemExpense.UsageStatus.PLANNED,
+        )
+        used_item = ServiceItemExpense.objects.create(
+            service_job=job,
+            type=ServiceItemExpense.ItemType.MATERIAL,
+            name="Fita isolante",
+            quantity=Decimal("1"),
+            unit_value=Decimal("15.00"),
+            usage_status=ServiceItemExpense.UsageStatus.USED,
+        )
+
+        detail_response = self.client.get(reverse("service_job_detail", args=[job.id]))
+        self.assertEqual(detail_response.status_code, 200)
+        self.assertContains(detail_response, "Pedir cotação")
+        self.assertContains(detail_response, "Copiar mensagem")
+        self.assertContains(detail_response, "Abrir WhatsApp")
+        self.assertContains(detail_response, "* 2 x Disjuntor 20A - marca/modelo se disponivel")
+
+        whatsapp_response = self.client.get(reverse("service_job_quote_whatsapp", args=[job.id]))
+        job.refresh_from_db()
+        self.assertEqual(whatsapp_response.status_code, 302)
+        self.assertIn("https://wa.me/?text=", whatsapp_response["Location"])
+        self.assertIn("Troca%20de%20disjuntores", whatsapp_response["Location"])
+        self.assertIn("Disjuntor%2020A", whatsapp_response["Location"])
+        self.assertIn("disponibilidade", whatsapp_response["Location"])
+        self.assertIsNotNone(job.quote_message_generated_at)
+        self.assertEqual(job.quote_item_count, 1)
+
+        update_response = self.client.post(
+            reverse("service_item_expense_update", args=[job.id, quoted_item.id]),
+            {
+                "type": ServiceItemExpense.ItemType.PART,
+                "name": "Disjuntor 20A",
+                "description": "Cotado na loja A",
+                "quantity": "3.00",
+                "unit_value": "42.00",
+                "usage_status": ServiceItemExpense.UsageStatus.QUOTED,
+                "receipt_note": "",
+            },
+            follow=True,
+        )
+        quoted_item.refresh_from_db()
+        job.refresh_from_db()
+        self.assertEqual(update_response.status_code, 200)
+        self.assertContains(update_response, "Cotado")
+        self.assertEqual(quoted_item.quantity, Decimal("3.00"))
+        self.assertEqual(quoted_item.unit_value, Decimal("42.00"))
+        self.assertEqual(quoted_item.total_value, Decimal("126.00"))
+        self.assertEqual(quoted_item.usage_status, ServiceItemExpense.UsageStatus.QUOTED)
+        self.assertEqual(job.used_items_total, used_item.total_value)
+
+        self.client.post(reverse("service_job_preview_generate", args=[job.id]), follow=True)
+        self.client.logout()
+        preview_response = self.client.get(reverse("public_service_job_preview", args=[job.public_token]))
+        self.assertEqual(preview_response.status_code, 200)
+        self.assertContains(preview_response, "Disjuntor 20A")
+        self.assertContains(preview_response, "Cotado")
+        self.assertContains(preview_response, "R$ 126,00")
+        self.assertEqual(Punch.objects.count(), before_punch_count)
+
     def _create_finished_report_ready_service(self):
         job = ServiceJob.objects.create(
             professional=self.mei_user,

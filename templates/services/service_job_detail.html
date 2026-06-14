@@ -1,4 +1,5 @@
 {% extends "accounts/base.html" %}
+{% load service_format %}
 
 {% block title %}{{ job.title }}{% endblock %}
 {% block page_title %}Serviço{% endblock %}
@@ -167,6 +168,25 @@
           </form>
         {% endif %}
 
+        <div class="quote-box">
+          {% if quote_items %}
+            <div>
+              <h3 class="entry-group-title">Pedir cotação</h3>
+              <p class="block-sub">Gere uma mensagem com os itens previstos para enviar manualmente a uma loja pelo WhatsApp.</p>
+              {% if job.quote_message_generated_at %}
+                <p class="block-sub">Última cotação gerada em {{ job.quote_message_generated_at|date:"d/m/Y" }} às {{ job.quote_message_generated_at|time:"H:i" }} com {{ job.quote_item_count }} itens.</p>
+              {% endif %}
+            </div>
+            <textarea data-quote-message hidden>{{ quote_message }}</textarea>
+            <div class="service-actions" style="justify-content:flex-start;margin-top:10px;">
+              <button class="btn" type="button" data-copy-quote>Copiar mensagem</button>
+              <a class="btn" href="{{ quote_whatsapp_url }}" target="_blank" rel="noopener">Abrir WhatsApp</a>
+            </div>
+          {% else %}
+            <div class="empty-line">Adicione itens previstos para gerar uma mensagem de cotação.</div>
+          {% endif %}
+        </div>
+
         <div class="entry-list">
           <h3 class="entry-group-title">Pendentes de confirmação</h3>
           {% for item in pending_items %}
@@ -174,18 +194,38 @@
               <div class="entry-head">
                 <div>
                   <div class="entry-title">{{ item.name }}</div>
-                  <div class="entry-meta"><span>{{ item.get_type_display }}</span><span>{{ item.short_usage_status }}</span><span>{{ item.quantity }} x R$ {{ item.unit_value }}</span></div>
+                  <div class="entry-meta"><span>{{ item.get_type_display }}</span><span>{{ item.short_usage_status }}</span><span>{{ item.quantity }} x {{ item.unit_value|brl }}</span></div>
                 </div>
-                <div class="entry-total">Previsto: R$ {{ item.total_value }}</div>
+                <div class="entry-total">Previsto: {{ item.total_value|brl }}</div>
               </div>
               {% if can_edit_entries %}
                 <form class="item-status-form" method="post" action="{% url 'service_item_expense_update' job.id item.id %}">
                   {% csrf_token %}
-                  <select name="usage_status">
-                    {% for value,label in item_form.fields.usage_status.choices %}
-                      <option value="{{ value }}" {% if item.usage_status == value %}selected{% endif %}>{{ label }}</option>
-                    {% endfor %}
-                  </select>
+                  <input type="hidden" name="type" value="{{ item.type }}">
+                  <input type="hidden" name="name" value="{{ item.name }}">
+                  <div class="form-grid">
+                    <div class="field">
+                      <label>Quantidade</label>
+                      <input class="hc-input" type="number" name="quantity" value="{{ item.quantity }}" min="0" step="0.01">
+                    </div>
+                    <div class="field">
+                      <label>Valor unitário</label>
+                      <input class="hc-input" type="number" name="unit_value" value="{{ item.unit_value }}" min="0" step="0.01">
+                    </div>
+                    <div class="field">
+                      <label>Status</label>
+                      <select class="hc-input" name="usage_status">
+                        {% for value,label in item_form.fields.usage_status.choices %}
+                          <option value="{{ value }}" {% if item.usage_status == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                    <div class="field full">
+                      <label>Observação</label>
+                      <textarea class="hc-input" name="description" rows="2">{{ item.description }}</textarea>
+                      <input type="hidden" name="receipt_note" value="{{ item.receipt_note }}">
+                    </div>
+                  </div>
                   <button class="btn" type="submit">Atualizar</button>
                 </form>
               {% endif %}
@@ -258,14 +298,20 @@
               <div class="entry-head">
                 <div>
                   <div class="entry-title">{{ item.name }}</div>
-                  <div class="entry-meta"><span>{{ item.get_type_display }}</span><span>{{ item.short_usage_status }}</span><span>{{ item.quantity }} x R$ {{ item.unit_value }}</span></div>
+                  <div class="entry-meta"><span>{{ item.get_type_display }}</span><span>{{ item.short_usage_status }}</span><span>{{ item.quantity }} x {{ item.unit_value|brl }}</span></div>
                 </div>
-                <div class="entry-total">Total: R$ {{ item.total_value }}</div>
+                <div class="entry-total">Total: {{ item.total_value|brl }}</div>
               </div>
               {% if can_edit_entries %}
                 <form class="item-status-form" method="post" action="{% url 'service_item_expense_update' job.id item.id %}">
                   {% csrf_token %}
-                  <select name="usage_status">
+                  <input type="hidden" name="type" value="{{ item.type }}">
+                  <input type="hidden" name="name" value="{{ item.name }}">
+                  <input type="hidden" name="quantity" value="{{ item.quantity }}">
+                  <input type="hidden" name="unit_value" value="{{ item.unit_value }}">
+                  <input type="hidden" name="description" value="{{ item.description }}">
+                  <input type="hidden" name="receipt_note" value="{{ item.receipt_note }}">
+                  <select class="hc-input" name="usage_status">
                     {% for value,label in item_form.fields.usage_status.choices %}
                       <option value="{{ value }}" {% if item.usage_status == value %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
@@ -288,15 +334,21 @@
               <div class="entry-head">
                 <div>
                   <div class="entry-title">{{ item.name }}</div>
-                  <div class="entry-meta"><span>{{ item.get_type_display }}</span><span>{{ item.short_usage_status }}</span><span>{{ item.quantity }} x R$ {{ item.unit_value }}</span></div>
+                  <div class="entry-meta"><span>{{ item.get_type_display }}</span><span>{{ item.short_usage_status }}</span><span>{{ item.quantity }} x {{ item.unit_value|brl }}</span></div>
                 </div>
-                <div class="entry-total">Fora do total: R$ {{ item.total_value }}</div>
+                <div class="entry-total">Fora do total: {{ item.total_value|brl }}</div>
               </div>
               {% if item.receipt_note or item.description %}<p>{{ item.receipt_note|default:item.description }}</p>{% endif %}
               {% if can_edit_entries %}
                 <form class="item-status-form" method="post" action="{% url 'service_item_expense_update' job.id item.id %}">
                   {% csrf_token %}
-                  <select name="usage_status">
+                  <input type="hidden" name="type" value="{{ item.type }}">
+                  <input type="hidden" name="name" value="{{ item.name }}">
+                  <input type="hidden" name="quantity" value="{{ item.quantity }}">
+                  <input type="hidden" name="unit_value" value="{{ item.unit_value }}">
+                  <input type="hidden" name="description" value="{{ item.description }}">
+                  <input type="hidden" name="receipt_note" value="{{ item.receipt_note }}">
+                  <select class="hc-input" name="usage_status">
                     {% for value,label in item_form.fields.usage_status.choices %}
                       <option value="{{ value }}" {% if item.usage_status == value %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
@@ -383,6 +435,18 @@
         navigator.clipboard.writeText(url).then(function(){
           button.textContent = "Link copiado";
           setTimeout(function(){ button.textContent = "Copiar link"; }, 1800);
+        });
+      });
+    });
+    document.querySelectorAll("[data-copy-quote]").forEach(function(button){
+      button.addEventListener("click", function(){
+        var quoteMessage = document.querySelector("[data-quote-message]");
+        if (!quoteMessage) {
+          return;
+        }
+        navigator.clipboard.writeText(quoteMessage.value).then(function(){
+          button.textContent = "Mensagem copiada";
+          setTimeout(function(){ button.textContent = "Copiar mensagem"; }, 1800);
         });
       });
     });

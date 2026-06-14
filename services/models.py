@@ -95,6 +95,8 @@ class ServiceJob(models.Model):
     preview_sent_at = models.DateTimeField(null=True, blank=True)
     preview_first_viewed_at = models.DateTimeField(null=True, blank=True)
     preview_updated_at = models.DateTimeField(null=True, blank=True)
+    quote_message_generated_at = models.DateTimeField(null=True, blank=True)
+    quote_item_count = models.PositiveIntegerField(default=0)
     public_report_first_viewed_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -341,6 +343,7 @@ class ServiceItemExpense(models.Model):
 
     class UsageStatus(models.TextChoices):
         PLANNED = "PLANNED", "Previsto"
+        QUOTED = "QUOTED", "Cotado"
         PURCHASED = "PURCHASED", "Comprado"
         USED = "USED", "Usado"
         PARTIALLY_USED = "PARTIALLY_USED", "Parcialmente usado"

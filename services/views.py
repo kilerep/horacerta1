@@ -42,6 +42,13 @@ def _format_optional_brl(value):
     return _format_brl(value)
 
 
+def _format_quantity(value):
+    value = Decimal(value or 0)
+    if value == value.to_integral():
+        return str(value.to_integral())
+    return f"{value.normalize()}".replace(".", ",")
+
+
 def _filename_part(value):
     text = "".join(ch.lower() if ch.isalnum() else "-" for ch in str(value or "").strip())
     while "--" in text:
@@ -89,6 +96,38 @@ def _mark_preview_updated(job):
         job.save(update_fields=["preview_updated_at", "updated_at"])
 
 
+def _quote_items_for_job(job):
+    return [
+        item
+        for item in job.item_expenses.all()
+        if item.usage_status in (ServiceItemExpense.UsageStatus.PLANNED, ServiceItemExpense.UsageStatus.QUOTED)
+    ]
+
+
+def _service_quote_message(job, quote_items):
+    lines = [
+        "Olá, preciso de uma cotação dos itens abaixo:",
+        "",
+        f"Serviço: {job.title}",
+        "",
+        "Itens:",
+        "",
+    ]
+    for item in quote_items:
+        note = (item.description or item.receipt_note or "").strip()
+        note_text = f" - {note[:90]}" if note else ""
+        lines.append(f"* {_format_quantity(item.quantity)} x {item.name}{note_text}")
+    lines.extend(
+        [
+            "",
+            "Pode me passar os valores e disponibilidade?",
+            "",
+            "Obrigado.",
+        ]
+    )
+    return "\n".join(lines)
+
+
 def _service_report_context(job, request=None):
     work_logs = list(job.work_logs.all())
     items = list(job.item_expenses.all())
@@ -96,7 +135,12 @@ def _service_report_context(job, request=None):
     planned_items = [
         item
         for item in items
-        if item.usage_status in (ServiceItemExpense.UsageStatus.PLANNED, ServiceItemExpense.UsageStatus.PURCHASED)
+        if item.usage_status
+        in (
+            ServiceItemExpense.UsageStatus.PLANNED,
+            ServiceItemExpense.UsageStatus.QUOTED,
+            ServiceItemExpense.UsageStatus.PURCHASED,
+        )
     ]
     not_used_items = [
         item
@@ -171,6 +215,8 @@ def _service_job_detail_context(job, *, work_log_form=None, item_form=None):
         for item in items
         if item not in used_items and item not in not_used_items
     ]
+    quote_items = _quote_items_for_job(job)
+    quote_message = _service_quote_message(job, quote_items) if quote_items else ""
     open_work_log = next((log for log in work_logs if log.end_time is None), None)
     report_context = _service_report_context(job)
     return {
@@ -179,6 +225,9 @@ def _service_job_detail_context(job, *, work_log_form=None, item_form=None):
         "used_items": used_items,
         "not_used_items": not_used_items,
         "pending_items": pending_items,
+        "quote_items": quote_items,
+        "quote_message": quote_message,
+        "quote_whatsapp_url": reverse("service_job_quote_whatsapp", args=[job.id]),
         "open_work_log": open_work_log,
         "work_log_form": work_log_form or ServiceWorkLogForm(service_job=job),
         "item_form": item_form or ServiceItemExpenseForm(service_job=job),
@@ -423,13 +472,33 @@ def service_item_expense_update(request, job_id, item_id):
         messages.error(request, "Reabra o servico antes de alterar itens.")
         return redirect("service_job_detail", job_id=job.id)
     if request.method == "POST":
-        usage_status = (request.POST.get("usage_status") or "").strip()
-        if usage_status in ServiceItemExpense.UsageStatus.values:
-            item.usage_status = usage_status
-            item.save(update_fields=["usage_status", "total_value", "updated_at"])
+        form = ServiceItemExpenseForm(request.POST, service_job=job, instance=item)
+        if form.is_valid():
+            form.save()
             _mark_preview_updated(job)
-            messages.success(request, "Status do item atualizado.")
+            messages.success(request, "Item atualizado.")
+        else:
+            messages.error(request, "Revise os dados do item.")
     return redirect("service_job_detail", job_id=job.id)
+
+
+@login_required
+def service_job_quote_whatsapp(request, job_id):
+    denied = _redirect_if_not_mei(request)
+    if denied:
+        return denied
+
+    job = get_object_or_404(_service_jobs_for_user(request.user).prefetch_related("item_expenses"), id=job_id)
+    quote_items = _quote_items_for_job(job)
+    if not quote_items:
+        messages.error(request, "Adicione itens previstos para gerar uma mensagem de cotacao.")
+        return redirect("service_job_detail", job_id=job.id)
+
+    message = _service_quote_message(job, quote_items)
+    job.quote_message_generated_at = timezone.now()
+    job.quote_item_count = len(quote_items)
+    job.save(update_fields=["quote_message_generated_at", "quote_item_count", "updated_at"])
+    return redirect(f"https://wa.me/?text={quote(message, safe='')}")
 
 
 @login_required
