@@ -683,6 +683,79 @@ class ServiceJobAreaTests(TestCase):
         self.assertEqual(pdf_response["Content-Type"], "application/pdf")
         self.assertEqual(whatsapp_response.status_code, 302)
 
+    def test_service_preview_flow_public_link_whatsapp_and_estimated_values(self):
+        before_punch_count = Punch.objects.count()
+        job = ServiceJob.objects.create(
+            professional=self.mei_user,
+            manual_client_name="John",
+            manual_client_whatsapp="11999999999",
+            category=self.category,
+            title="Troca de disjuntores",
+            description="Trocar disjuntores da casa e revisar quadro.",
+            service_street="Rua X",
+            service_number="120",
+            service_district="Centro",
+            service_city="Blumenau",
+            service_state="SC",
+            service_location="Rua X, 120, Centro, Blumenau, SC",
+            start_date=timezone.localdate(),
+            planned_start_time=datetime.strptime("08:00", "%H:%M").time(),
+            planned_end_time=datetime.strptime("11:00", "%H:%M").time(),
+            status=ServiceJob.Status.PLANNED,
+            billing_mode=ServiceJob.BillingMode.HOURLY,
+            hourly_rate_snapshot=Decimal("100.00"),
+            notes="Valores sujeitos a ajuste conforme compra real.",
+        )
+        ServiceItemExpense.objects.create(
+            service_job=job,
+            type=ServiceItemExpense.ItemType.PART,
+            name="Disjuntor 20A",
+            quantity=Decimal("2"),
+            unit_value=Decimal("35.00"),
+            usage_status=ServiceItemExpense.UsageStatus.PLANNED,
+        )
+        ServiceItemExpense.objects.create(
+            service_job=job,
+            type=ServiceItemExpense.ItemType.MATERIAL,
+            name="Fita isolante",
+            quantity=Decimal("2"),
+            unit_value=Decimal("8.00"),
+            usage_status=ServiceItemExpense.UsageStatus.PLANNED,
+        )
+
+        generate_response = self.client.post(reverse("service_job_preview_generate", args=[job.id]), follow=True)
+        job.refresh_from_db()
+        self.assertEqual(generate_response.status_code, 200)
+        self.assertIsNotNone(job.preview_generated_at)
+        self.assertContains(generate_response, "Status: Gerada")
+        self.assertContains(generate_response, "R$ 86,00")
+        self.assertContains(generate_response, "R$ 300,00")
+        self.assertContains(generate_response, "R$ 386,00")
+
+        self.client.logout()
+        preview_response = self.client.get(reverse("public_service_job_preview", args=[job.public_token]))
+        self.assertEqual(preview_response.status_code, 200)
+        self.assertContains(preview_response, "Prévia do serviço")
+        self.assertContains(preview_response, "John")
+        self.assertContains(preview_response, "Rua X, 120, Centro, Blumenau, SC")
+        self.assertContains(preview_response, "Disjuntor 20A")
+        self.assertContains(preview_response, "Total estimado do serviço")
+        self.assertContains(preview_response, "Os valores desta prévia podem ser ajustados")
+        self.assertNotContains(preview_response, "Registrar horario")
+        job.refresh_from_db()
+        self.assertIsNotNone(job.preview_first_viewed_at)
+
+        self.client.force_login(self.mei_user)
+        whatsapp_response = self.client.get(reverse("service_job_preview_whatsapp", args=[job.id]))
+        job.refresh_from_db()
+        self.assertEqual(whatsapp_response.status_code, 302)
+        self.assertIn("https://wa.me/?text=", whatsapp_response["Location"])
+        self.assertIn("Itens%20previstos%3A%20R%24%2086%2C00", whatsapp_response["Location"])
+        self.assertIn("M%C3%A3o%20de%20obra%20estimada%3A%20R%24%20300%2C00", whatsapp_response["Location"])
+        self.assertIn("Total%20estimado%3A%20R%24%20386%2C00", whatsapp_response["Location"])
+        self.assertIsNotNone(job.preview_sent_at)
+        self.assertEqual(Punch.objects.count(), before_punch_count)
+
     def _create_finished_report_ready_service(self):
         job = ServiceJob.objects.create(
             professional=self.mei_user,

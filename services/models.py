@@ -91,6 +91,10 @@ class ServiceJob(models.Model):
     fixed_labor_value = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     notes = models.TextField(blank=True, default="")
     public_token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    preview_generated_at = models.DateTimeField(null=True, blank=True)
+    preview_sent_at = models.DateTimeField(null=True, blank=True)
+    preview_first_viewed_at = models.DateTimeField(null=True, blank=True)
+    preview_updated_at = models.DateTimeField(null=True, blank=True)
     public_report_first_viewed_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -180,6 +184,17 @@ class ServiceJob(models.Model):
         return (self.total_hours_decimal * (self.hourly_rate_snapshot or Decimal("0"))).quantize(Decimal("0.01"))
 
     @property
+    def preview_labor_total(self):
+        if self.billing_mode == self.BillingMode.UNDEFINED:
+            return None
+        if self.fixed_labor_value is not None:
+            return self.fixed_labor_value
+        if self.billing_mode == self.BillingMode.HOURLY:
+            planned_hours = Decimal(self.planned_duration_minutes) / Decimal("60")
+            return (planned_hours * (self.hourly_rate_snapshot or Decimal("0"))).quantize(Decimal("0.01"))
+        return None
+
+    @property
     def used_items_total(self):
         return self.item_expenses.filter(
             usage_status__in=ServiceItemExpense.CHARGEABLE_USAGE_STATUSES
@@ -198,6 +213,25 @@ class ServiceJob(models.Model):
     @property
     def preview_items_total(self):
         return self.item_expenses.aggregate(total=models.Sum("total_value"))["total"] or Decimal("0.00")
+
+    @property
+    def preview_estimated_total(self):
+        labor_total = self.preview_labor_total
+        if labor_total is None:
+            return None
+        return (self.preview_items_total + labor_total).quantize(Decimal("0.01"))
+
+    @property
+    def preview_status_label(self):
+        if self.preview_first_viewed_at:
+            return "Visualizada"
+        if self.preview_sent_at:
+            return "Enviada"
+        if self.preview_updated_at and self.preview_generated_at and self.preview_updated_at > self.preview_generated_at:
+            return "Atualizada"
+        if self.preview_generated_at:
+            return "Gerada"
+        return "Não gerada"
 
     @property
     def has_open_work_log(self):

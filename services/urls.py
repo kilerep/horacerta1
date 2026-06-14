@@ -12,6 +12,7 @@ urlpatterns = [
     path("me/servicos/<uuid:job_id>/itens/novo/", views.service_item_expense_create, name="service_item_expense_create"),
     path("me/servicos/<uuid:job_id>/itens/<uuid:item_id>/", views.service_item_expense_update, name="service_item_expense_update"),
     path("me/servicos/<uuid:job_id>/status/", views.service_job_status_action, name="service_job_status_action"),
+    path("me/servicos/<uuid:job_id>/previa/gerar/", views.service_job_preview_generate, name="service_job_preview_generate"),
     path("me/servicos/<uuid:job_id>/previa/whatsapp/", views.service_job_preview_whatsapp, name="service_job_preview_whatsapp"),
     path("me/servicos/<uuid:job_id>/relatorio/pdf/", views.service_job_report_pdf, name="service_job_report_pdf"),
     path("me/servicos/<uuid:job_id>/relatorio/whatsapp/", views.service_job_report_whatsapp, name="service_job_report_whatsapp"),

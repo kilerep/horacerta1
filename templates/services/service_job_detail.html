@@ -72,19 +72,24 @@
       </div>
       <div class="service-head__meta">
         <div><strong>Cliente:</strong> {{ job.client_display_name }}</div>
-        <div><strong>Local:</strong> {{ job.service_location_summary|default:"Nao informado" }}</div>
+        <div><strong>Local:</strong> {{ job.service_location_summary|default:"Não informado" }}</div>
         <div>
-          <strong>Previsao:</strong>
-          {% if job.start_date %}{{ job.start_date|date:"d/m/Y" }}{% else %}Data nao definida{% endif %}
+          <strong>Previsão:</strong>
+          {% if job.start_date %}{{ job.start_date|date:"d/m/Y" }}{% else %}Data não definida{% endif %}
           {% if job.planned_start_time %}, {{ job.planned_start_time|time:"H:i" }}{% endif %}
-          {% if job.planned_end_time %} ate {{ job.planned_end_time|time:"H:i" }}{% endif %}
+          {% if job.planned_end_time %} até {{ job.planned_end_time|time:"H:i" }}{% endif %}
         </div>
       </div>
     </div>
     <div class="service-actions">
       <a class="btn" href="{% url 'service_job_update' job.id %}">Editar serviço</a>
-      <a class="btn" href="{{ preview_public_url }}" target="_blank" rel="noopener">Gerar prévia</a>
-      <a class="btn" href="{{ preview_whatsapp_url }}" target="_blank" rel="noopener">Enviar WhatsApp</a>
+      <form method="post" action="{{ preview_generate_url }}">
+        {% csrf_token %}
+        <button class="btn" type="submit">{% if preview_generated_at %}Atualizar prévia{% else %}Gerar prévia{% endif %}</button>
+      </form>
+      {% if preview_generated_at %}
+        <a class="btn" href="{{ preview_whatsapp_url }}" target="_blank" rel="noopener">Enviar prévia no WhatsApp</a>
+      {% endif %}
       {% if job.status == 'DRAFT' or job.status == 'PLANNED' or job.status == 'SENT' %}
         <form method="post" action="{% url 'service_job_status_action' job.id %}">
           {% csrf_token %}<input type="hidden" name="action" value="schedule">
@@ -200,9 +205,9 @@
               <div class="entry-head">
                 <div>
                   <div class="entry-title">{{ log.work_date|date:"d/m/Y" }}</div>
-                  <div class="entry-meta"><span>{{ log.start_time|time:"H:i" }} ate {% if log.end_time %}{{ log.end_time|time:"H:i" }}{% else %}em andamento{% endif %}</span></div>
+                  <div class="entry-meta"><span>{{ log.start_time|time:"H:i" }} até {% if log.end_time %}{{ log.end_time|time:"H:i" }}{% else %}em andamento{% endif %}</span></div>
                 </div>
-                <div class="entry-total">{% if log.end_time %}Total: {{ log.duration_label }}{% else %}Periodo aberto{% endif %}</div>
+                <div class="entry-total">{% if log.end_time %}Total: {{ log.duration_label }}{% else %}Período aberto{% endif %}</div>
               </div>
               {% if log.description %}<p>{{ log.description }}</p>{% endif %}
             </article>
@@ -323,10 +328,30 @@
 
       <article class="card service-block">
         <h2>Prévia do serviço</h2>
-        <p class="block-sub">A prévia é uma lista inicial para o cliente conferir antes da execução. Ela não é o relatório final.</p>
+        {% if preview_generated_at %}
+          <p class="block-sub">Status: {{ preview_status_label }}. Esta prévia é uma lista combinada antes da execução e não é o relatório final.</p>
+          <div class="service-data">
+            <div><span>Gerada em</span><strong>{{ preview_generated_at|date:"d/m/Y" }} às {{ preview_generated_at|time:"H:i" }}</strong></div>
+            {% if preview_updated_at %}<div><span>Atualizada em</span><strong>{{ preview_updated_at|date:"d/m/Y" }} às {{ preview_updated_at|time:"H:i" }}</strong></div>{% endif %}
+            {% if preview_sent_at %}<div><span>Enviada em</span><strong>{{ preview_sent_at|date:"d/m/Y" }} às {{ preview_sent_at|time:"H:i" }}</strong></div>{% endif %}
+            {% if preview_first_viewed_at %}<div><span>Visualizada em</span><strong>{{ preview_first_viewed_at|date:"d/m/Y" }} às {{ preview_first_viewed_at|time:"H:i" }}</strong></div>{% endif %}
+            <div><span>Total estimado de itens</span><strong>{{ summary.preview_items_total_brl }}</strong></div>
+            <div><span>Mão de obra estimada</span><strong>{{ summary.preview_labor_total_brl }}</strong></div>
+            <div><span>Total estimado</span><strong>{{ summary.preview_estimated_total_brl }}</strong></div>
+          </div>
+        {% else %}
+          <p class="block-sub">Gere uma prévia para enviar ao cliente antes da execução.</p>
+        {% endif %}
         <div class="service-actions" style="justify-content:flex-start;margin-top:12px;">
-          <a class="btn primary" href="{{ preview_public_url }}" target="_blank" rel="noopener">Ver prévia</a>
-          <a class="btn" href="{{ preview_whatsapp_url }}" target="_blank" rel="noopener">Enviar WhatsApp</a>
+          <form method="post" action="{{ preview_generate_url }}">
+            {% csrf_token %}
+            <button class="btn primary" type="submit">{% if preview_generated_at %}Atualizar prévia{% else %}Gerar prévia{% endif %}</button>
+          </form>
+          {% if preview_generated_at %}
+            <a class="btn" href="{{ preview_public_url }}" target="_blank" rel="noopener">Ver prévia</a>
+            <a class="btn" href="{{ preview_whatsapp_url }}" target="_blank" rel="noopener">Enviar prévia no WhatsApp</a>
+            <button class="btn" type="button" data-copy-url="{{ preview_public_url }}">Copiar link</button>
+          {% endif %}
         </div>
       </article>
 
@@ -340,7 +365,7 @@
             <a class="btn" href="{{ report_whatsapp_url }}" target="_blank" rel="noopener">Enviar WhatsApp</a>
           </div>
           {% if public_report_first_viewed_at %}
-            <p class="block-sub">Visto em {{ public_report_first_viewed_at|date:"d/m/Y" }} as {{ public_report_first_viewed_at|time:"H:i" }}</p>
+            <p class="block-sub">Visto em {{ public_report_first_viewed_at|date:"d/m/Y" }} às {{ public_report_first_viewed_at|time:"H:i" }}</p>
           {% endif %}
         {% else %}
           <div class="finished-note">Finalize o serviço para gerar o relatório de serviço final.</div>
@@ -349,4 +374,18 @@
     </aside>
   </section>
 </div>
+
+<script>
+  (function(){
+    document.querySelectorAll("[data-copy-url]").forEach(function(button){
+      button.addEventListener("click", function(){
+        var url = new URL(button.getAttribute("data-copy-url"), window.location.origin).href;
+        navigator.clipboard.writeText(url).then(function(){
+          button.textContent = "Link copiado";
+          setTimeout(function(){ button.textContent = "Copiar link"; }, 1800);
+        });
+      });
+    });
+  })();
+</script>
 {% endblock %}

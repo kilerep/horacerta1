@@ -78,10 +78,13 @@
       <div class="data">
         <div><span>Título</span><strong>{{ job.title }}</strong></div>
         <div><span>Categoria</span><strong>{{ job.category.name }}</strong></div>
-        <div><span>Data prevista</span><strong>{{ period_label }}</strong></div>
+        <div><span>Data prevista</span><strong>{% if job.start_date %}{{ job.start_date|date:"d/m/Y" }}{% else %}-{% endif %}</strong></div>
+        <div><span>Hora prevista de início</span><strong>{% if job.planned_start_time %}{{ job.planned_start_time|time:"H:i" }}{% else %}-{% endif %}</strong></div>
+        <div><span>Hora prevista de término</span><strong>{% if job.planned_end_time %}{{ job.planned_end_time|time:"H:i" }}{% else %}-{% endif %}</strong></div>
         <div><span>Status</span><strong>{{ job.get_status_display }}</strong></div>
       </div>
       <p style="margin-top:10px;">{{ job.description|default:"Sem descrição registrada." }}</p>
+      {% if job.notes %}<p style="margin-top:10px;">{{ job.notes }}</p>{% endif %}
     </section>
 
     {% if is_preview %}
@@ -93,7 +96,7 @@
               <div class="entry-head">
                 <div>
                   <div class="entry-title">{{ item.name }}</div>
-                  <div class="entry-meta"><span>{{ item.get_type_display }}</span><span>{{ item.short_usage_status }}</span><span>{{ item.quantity }} x R$ {{ item.unit_value }}</span></div>
+                  <div class="entry-meta"><span>{{ item.get_type_display }}</span><span>{{ item.short_usage_status }}</span><span>Quantidade: {{ item.quantity }}</span><span>Un.: R$ {{ item.unit_value }}</span></div>
                 </div>
                 <div class="entry-total">Estimado: R$ {{ item.total_value }}</div>
               </div>
@@ -107,10 +110,12 @@
       <section class="card">
         <h2>Valores estimados</h2>
         <div class="summary">
-          <div class="cell"><span>Itens previstos</span><strong>{{ summary.preview_items_total_brl }}</strong></div>
-          <div class="cell"><span>Mão de obra estimada</span><strong>{{ summary.labor_total_brl }}</strong></div>
+          <div class="cell"><span>Total estimado de itens</span><strong>{{ summary.preview_items_total_brl }}</strong></div>
+          <div class="cell"><span>Mão de obra estimada</span><strong>{{ summary.preview_labor_total_brl }}</strong></div>
+          <div class="cell total"><span>Total estimado do serviço</span><strong>{{ summary.preview_estimated_total_brl }}</strong></div>
         </div>
-        <p style="margin-top:10px;">Esta prévia serve para conferência antes da execução. Ela não é o relatório final.</p>
+        <p style="margin-top:10px;">Os valores desta prévia podem ser ajustados conforme compra real dos materiais e execução do serviço.</p>
+        <p style="margin-top:8px;">Esta prévia serve para conferência antes da execução. Ela não é o relatório final.</p>
       </section>
     {% else %}
       <section class="card">
@@ -121,9 +126,9 @@
               <div class="entry-head">
                 <div>
                   <div class="entry-title">{{ log.work_date|date:"d/m/Y" }}</div>
-                  <div class="entry-meta"><span>{{ log.start_time|time:"H:i" }} ate {% if log.end_time %}{{ log.end_time|time:"H:i" }}{% else %}em andamento{% endif %}</span></div>
+                  <div class="entry-meta"><span>{{ log.start_time|time:"H:i" }} até {% if log.end_time %}{{ log.end_time|time:"H:i" }}{% else %}em andamento{% endif %}</span></div>
                 </div>
-                <div class="entry-total">{% if log.end_time %}Total: {{ log.duration_label }}{% else %}Periodo aberto{% endif %}</div>
+                <div class="entry-total">{% if log.end_time %}Total: {{ log.duration_label }}{% else %}Período aberto{% endif %}</div>
               </div>
               {% if log.description %}<p>{{ log.description }}</p>{% endif %}
             </article>

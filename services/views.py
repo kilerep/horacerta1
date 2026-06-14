@@ -36,6 +36,12 @@ def _format_brl(value):
     return f"R$ {value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
+def _format_optional_brl(value):
+    if value is None:
+        return "Valor ainda não definido."
+    return _format_brl(value)
+
+
 def _filename_part(value):
     text = "".join(ch.lower() if ch.isalnum() else "-" for ch in str(value or "").strip())
     while "--" in text:
@@ -77,6 +83,12 @@ def _create_planned_items(job, rows):
             form.save()
 
 
+def _mark_preview_updated(job):
+    if job.preview_generated_at:
+        job.preview_updated_at = timezone.now()
+        job.save(update_fields=["preview_updated_at", "updated_at"])
+
+
 def _service_report_context(job, request=None):
     work_logs = list(job.work_logs.all())
     items = list(job.item_expenses.all())
@@ -111,8 +123,10 @@ def _service_report_context(job, request=None):
     else:
         period_label = "-"
     public_url = ""
+    preview_public_url = ""
     if request is not None:
         public_url = request.build_absolute_uri(reverse("public_service_job_report", args=[job.public_token]))
+        preview_public_url = request.build_absolute_uri(reverse("public_service_job_preview", args=[job.public_token]))
     emitted_at = timezone.localtime()
     return {
         "job": job,
@@ -128,12 +142,15 @@ def _service_report_context(job, request=None):
         "not_used_items": not_used_items,
         "emitted_at": emitted_at,
         "public_url": public_url,
+        "preview_public_url": preview_public_url,
         "summary": {
             "total_hours": job.total_hours_label,
             "labor_total_brl": _format_brl(job.labor_total),
             "used_items_total_brl": _format_brl(job.used_items_total),
             "not_used_items_total_brl": _format_brl(job.not_used_items_total),
             "preview_items_total_brl": _format_brl(job.preview_items_total),
+            "preview_labor_total_brl": _format_optional_brl(job.preview_labor_total),
+            "preview_estimated_total_brl": _format_optional_brl(job.preview_estimated_total),
             "estimated_total_brl": _format_brl(job.estimated_total),
             "labor_mode": "Valor fixo" if job.fixed_labor_value is not None else "Por hora",
         },
@@ -176,6 +193,12 @@ def _service_job_detail_context(job, *, work_log_form=None, item_form=None):
             ServiceJob.Status.IN_PROGRESS,
         ),
         "summary": report_context["summary"],
+        "preview_status_label": job.preview_status_label,
+        "preview_generated_at": job.preview_generated_at,
+        "preview_sent_at": job.preview_sent_at,
+        "preview_first_viewed_at": job.preview_first_viewed_at,
+        "preview_updated_at": job.preview_updated_at,
+        "preview_generate_url": reverse("service_job_preview_generate", args=[job.id]),
         "preview_public_url": reverse("public_service_job_preview", args=[job.public_token]),
         "preview_whatsapp_url": reverse("service_job_preview_whatsapp", args=[job.id]),
         "report_public_url": reverse("public_service_job_report", args=[job.public_token]),
@@ -290,7 +313,8 @@ def service_job_update(request, job_id):
     if request.method == "POST":
         form = ServiceJobForm(request.POST, user=request.user, instance=job)
         if form.is_valid():
-            form.save(status=job.status)
+            job = form.save(status=job.status)
+            _mark_preview_updated(job)
             messages.success(request, "Dados do servico atualizados.")
             return redirect("service_job_detail", job_id=job.id)
     else:
@@ -376,6 +400,7 @@ def service_item_expense_create(request, job_id):
     form = ServiceItemExpenseForm(request.POST or None, service_job=job)
     if request.method == "POST" and form.is_valid():
         form.save()
+        _mark_preview_updated(job)
         messages.success(request, "Item/despesa adicionado.")
         return redirect("service_job_detail", job_id=job.id)
 
@@ -402,6 +427,7 @@ def service_item_expense_update(request, job_id, item_id):
         if usage_status in ServiceItemExpense.UsageStatus.values:
             item.usage_status = usage_status
             item.save(update_fields=["usage_status", "total_value", "updated_at"])
+            _mark_preview_updated(job)
             messages.success(request, "Status do item atualizado.")
     return redirect("service_job_detail", job_id=job.id)
 
@@ -498,6 +524,30 @@ def service_job_status_action(request, job_id):
 
 
 @login_required
+def service_job_preview_generate(request, job_id):
+    denied = _redirect_if_not_mei(request)
+    if denied:
+        return denied
+
+    job = get_object_or_404(_service_jobs_for_user(request.user), id=job_id)
+    if request.method != "POST":
+        return redirect("service_job_detail", job_id=job.id)
+
+    now = timezone.now()
+    update_fields = ["updated_at"]
+    if not job.preview_generated_at:
+        job.preview_generated_at = now
+        update_fields.append("preview_generated_at")
+        messages.success(request, "Prévia gerada. O link público já pode ser enviado ao cliente.")
+    else:
+        job.preview_updated_at = now
+        update_fields.append("preview_updated_at")
+        messages.success(request, "Prévia atualizada.")
+    job.save(update_fields=update_fields)
+    return redirect("service_job_detail", job_id=job.id)
+
+
+@login_required
 def service_job_report_pdf(request, job_id):
     denied = _redirect_if_not_mei(request)
     if denied:
@@ -554,25 +604,36 @@ def service_job_preview_whatsapp(request, job_id):
 
     job = get_object_or_404(_service_jobs_for_user(request.user).prefetch_related("item_expenses"), id=job_id)
     public_url = request.build_absolute_uri(reverse("public_service_job_preview", args=[job.public_token]))
-    item_count = job.item_expenses.count()
+    report = _service_report_context(job, request=request)
     planned_date = f"{job.start_date:%d/%m/%Y}" if job.start_date else "a combinar"
-    planned_time = f" as {job.planned_start_time:%H:%M}" if job.planned_start_time else ""
+    planned_time = f" às {job.planned_start_time:%H:%M}" if job.planned_start_time else ""
     message = "\n".join(
         [
-            "Ola, segue a previa do servico combinado:",
+            "Olá, segue a prévia do serviço combinado:",
             "",
-            f"Servico: {job.title}",
+            f"Serviço: {job.title}",
             f"Data prevista: {planned_date}{planned_time}",
             f"Local: {job.service_location_summary or job.full_service_address or '-'}",
-            f"Itens previstos: {item_count}",
+            f"Itens previstos: {report['summary']['preview_items_total_brl']}",
+            f"Mão de obra estimada: {report['summary']['preview_labor_total_brl']}",
+            f"Total estimado: {report['summary']['preview_estimated_total_brl']}",
             "",
-            "Acesse a previa:",
+            "Acesse a prévia:",
             public_url,
+            "",
+            "Observação: os valores podem ser ajustados conforme compra real dos materiais e execução do serviço.",
         ]
     )
+    now = timezone.now()
+    update_fields = ["preview_sent_at", "updated_at"]
+    if not job.preview_generated_at:
+        job.preview_generated_at = now
+        update_fields.append("preview_generated_at")
+    job.preview_sent_at = now
     if job.status in (ServiceJob.Status.DRAFT, ServiceJob.Status.PLANNED):
         job.status = ServiceJob.Status.SENT
-        job.save(update_fields=["status", "finished_at", "updated_at"])
+        update_fields.extend(["status", "finished_at"])
+    job.save(update_fields=update_fields)
     return redirect(f"https://wa.me/?text={quote(message, safe='')}")
 
 
@@ -581,7 +642,11 @@ def public_service_job_preview(request, token):
         ServiceJob.objects.select_related("professional", "category", "client", "contract", "contract__employee")
         .prefetch_related("work_logs", "item_expenses"),
         public_token=token,
+        preview_generated_at__isnull=False,
     )
+    if not job.preview_first_viewed_at:
+        job.preview_first_viewed_at = timezone.now()
+        job.save(update_fields=["preview_first_viewed_at", "updated_at"])
     return render(
         request,
         "services/public_service_job_report.html",

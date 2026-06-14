@@ -16,7 +16,16 @@ class ServiceJobAdmin(admin.ModelAdmin):
     list_display = ("title", "professional", "client", "category", "status", "created_at")
     list_filter = ("status", "category")
     search_fields = ("title", "description", "manual_client_name", "client__name", "professional__email")
-    readonly_fields = ("public_token", "created_at", "updated_at", "finished_at")
+    readonly_fields = (
+        "public_token",
+        "preview_generated_at",
+        "preview_sent_at",
+        "preview_first_viewed_at",
+        "preview_updated_at",
+        "created_at",
+        "updated_at",
+        "finished_at",
+    )
 
 
 @admin.register(ServiceWorkLog)
