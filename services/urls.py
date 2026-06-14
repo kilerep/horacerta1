@@ -4,6 +4,13 @@ from . import views
 
 urlpatterns = [
     path("me/servicos/", views.service_job_list, name="service_job_list"),
+    path("me/servicos/catalogo/", views.service_item_catalog_list, name="service_item_catalog_list"),
+    path("me/servicos/catalogo/novo/", views.service_item_catalog_create, name="service_item_catalog_create"),
+    path("me/servicos/catalogo/busca/", views.service_item_catalog_search, name="service_item_catalog_search"),
+    path("me/servicos/catalogo/sugestoes/", views.service_item_catalog_seed_suggestions, name="service_item_catalog_seed_suggestions"),
+    path("me/servicos/catalogo/<uuid:item_id>/editar/", views.service_item_catalog_update, name="service_item_catalog_update"),
+    path("me/servicos/catalogo/<uuid:item_id>/favorito/", views.service_item_catalog_toggle_favorite, name="service_item_catalog_toggle_favorite"),
+    path("me/servicos/catalogo/<uuid:item_id>/desativar/", views.service_item_catalog_deactivate, name="service_item_catalog_deactivate"),
     path("me/servicos/novo/", views.service_job_create, name="service_job_create"),
     path("me/servicos/<uuid:job_id>/", views.service_job_detail, name="service_job_detail"),
     path("me/servicos/<uuid:job_id>/editar/", views.service_job_update, name="service_job_update"),

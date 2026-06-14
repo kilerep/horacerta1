@@ -27,6 +27,17 @@ class ServiceCategory(models.Model):
         return self.name
 
 
+class ServiceItemUnit(models.TextChoices):
+    UNIT = "UNIT", "unidade"
+    METER = "METER", "metro"
+    ROLL = "ROLL", "rolo"
+    PACKAGE = "PACKAGE", "pacote"
+    LITER = "LITER", "litro"
+    HOUR = "HOUR", "hora"
+    SERVICE = "SERVICE", "servico"
+    OTHER = "OTHER", "outro"
+
+
 class ServiceJob(models.Model):
     class Status(models.TextChoices):
         DRAFT = "DRAFT", "Rascunho"
@@ -359,9 +370,17 @@ class ServiceItemExpense(models.Model):
         on_delete=models.CASCADE,
         related_name="item_expenses",
     )
+    catalog_item = models.ForeignKey(
+        "ServiceItemCatalog",
+        on_delete=models.SET_NULL,
+        related_name="service_items",
+        null=True,
+        blank=True,
+    )
     type = models.CharField(max_length=20, choices=ItemType.choices, default=ItemType.MATERIAL)
     name = models.CharField(max_length=140)
     description = models.TextField(blank=True, default="")
+    unit = models.CharField(max_length=20, choices=ServiceItemUnit.choices, default=ServiceItemUnit.UNIT)
     quantity = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("1.00"))
     unit_value = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))
     total_value = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
@@ -375,6 +394,7 @@ class ServiceItemExpense(models.Model):
         indexes = [
             models.Index(fields=["service_job", "usage_status", "-created_at"]),
             models.Index(fields=["service_job", "type", "-created_at"]),
+            models.Index(fields=["catalog_item", "-created_at"]),
         ]
         verbose_name = "Item/despesa do servico"
         verbose_name_plural = "Itens/despesas do servico"
@@ -407,5 +427,62 @@ class ServiceItemExpense(models.Model):
         quantity = self.quantity or Decimal("0")
         unit_value = self.unit_value or Decimal("0")
         self.total_value = (quantity * unit_value).quantize(Decimal("0.01"))
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+
+class ServiceItemCatalog(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    professional = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="service_item_catalog",
+    )
+    category = models.ForeignKey(
+        ServiceCategory,
+        on_delete=models.SET_NULL,
+        related_name="catalog_items",
+        null=True,
+        blank=True,
+    )
+    item_type = models.CharField(max_length=20, choices=ServiceItemExpense.ItemType.choices, default=ServiceItemExpense.ItemType.MATERIAL)
+    name = models.CharField(max_length=140)
+    description = models.TextField(blank=True, default="")
+    unit = models.CharField(max_length=20, choices=ServiceItemUnit.choices, default=ServiceItemUnit.UNIT)
+    estimated_unit_value = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    last_used_value = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+    default_quantity = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("1.00"))
+    favorite = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-favorite", "name"]
+        indexes = [
+            models.Index(fields=["professional", "is_active", "name"]),
+            models.Index(fields=["professional", "favorite", "name"]),
+            models.Index(fields=["professional", "category", "name"]),
+        ]
+        verbose_name = "Item do catalogo"
+        verbose_name_plural = "Itens do catalogo"
+
+    def __str__(self):
+        return self.name
+
+    def clean(self):
+        errors = {}
+        if self.default_quantity is not None and self.default_quantity < 0:
+            errors["default_quantity"] = "Quantidade padrao nao pode ser negativa."
+        if self.estimated_unit_value is not None and self.estimated_unit_value < 0:
+            errors["estimated_unit_value"] = "Valor estimado nao pode ser negativo."
+        if self.last_used_value is not None and self.last_used_value < 0:
+            errors["last_used_value"] = "Ultimo valor usado nao pode ser negativo."
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.name = (self.name or "").strip()
         self.full_clean()
         return super().save(*args, **kwargs)

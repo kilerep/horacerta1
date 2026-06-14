@@ -27,13 +27,15 @@
   .services-empty{text-align:center;padding:28px 18px}
   .services-empty h2{margin:0 0 8px;font-size:22px}
   .services-empty p{margin:0 auto 14px;max-width:560px;color:var(--color-text-muted);line-height:1.45}
+  .catalog-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
   @media (max-width: 980px){
     .services-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
     .services-filters{grid-template-columns:repeat(2,minmax(0,1fr))}
   }
   @media (max-width: 680px){
     .services-hero{display:grid}
-    .services-hero .btn{width:100%}
+    .services-hero .btn,.catalog-actions{width:100%}
+    .catalog-actions{display:grid}
     .services-summary,.services-filters,.service-card,.service-metrics{grid-template-columns:1fr}
     .service-card .btn{width:100%}
   }
@@ -47,7 +49,10 @@
       <h1>Serviços</h1>
       <p>Organize trabalhos avulsos, itens, despesas e horas sem misturar com seu histórico normal.</p>
     </div>
-    <a class="btn primary" href="{% url 'service_job_create' %}">Novo serviço</a>
+    <div class="catalog-actions">
+      <a class="btn" href="{% url 'service_item_catalog_list' %}">Catálogo de itens</a>
+      <a class="btn primary" href="{% url 'service_job_create' %}">Novo serviço</a>
+    </div>
   </section>
 
   <section class="services-summary" aria-label="Resumo de serviços">

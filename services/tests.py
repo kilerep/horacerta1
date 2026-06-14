@@ -9,7 +9,7 @@ from accounts.models import User
 from companies.models import Company, Employee
 from timeclock.models import Contract, Punch, ServiceReport
 
-from .models import ServiceCategory, ServiceItemExpense, ServiceJob, ServiceWorkLog
+from .models import ServiceCategory, ServiceItemCatalog, ServiceItemExpense, ServiceJob, ServiceWorkLog
 
 
 @override_settings(
@@ -90,6 +90,192 @@ class ServiceJobAreaTests(TestCase):
             "outros",
         }
         self.assertEqual(set(ServiceCategory.objects.values_list("slug", flat=True)), expected_slugs)
+
+    def test_personal_catalog_crud_favorite_deactivate_and_user_isolation(self):
+        item = ServiceItemCatalog.objects.create(
+            professional=self.mei_user,
+            category=self.category,
+            item_type=ServiceItemExpense.ItemType.PART,
+            name="Disjuntor 20A",
+            unit="UNIT",
+            estimated_unit_value=Decimal("35.00"),
+            default_quantity=Decimal("2.00"),
+        )
+        other_item = ServiceItemCatalog.objects.create(
+            professional=self.other_user,
+            category=self.category,
+            item_type=ServiceItemExpense.ItemType.PART,
+            name="Disjuntor 32A",
+            unit="UNIT",
+            estimated_unit_value=Decimal("55.00"),
+        )
+
+        list_response = self.client.get(reverse("service_item_catalog_list"))
+        self.assertEqual(list_response.status_code, 200)
+        self.assertContains(list_response, "Disjuntor 20A")
+        self.assertNotContains(list_response, "Disjuntor 32A")
+        self.assertEqual(self.client.get(reverse("service_item_catalog_update", args=[other_item.id])).status_code, 404)
+
+        update_response = self.client.post(
+            reverse("service_item_catalog_update", args=[item.id]),
+            {
+                "category": self.category.id,
+                "item_type": ServiceItemExpense.ItemType.PART,
+                "name": "Disjuntor 20A bipolar",
+                "description": "Estimativa pessoal",
+                "unit": "UNIT",
+                "estimated_unit_value": "42.00",
+                "default_quantity": "1.00",
+                "favorite": "on",
+                "is_active": "on",
+            },
+            follow=True,
+        )
+        item.refresh_from_db()
+        self.assertEqual(update_response.status_code, 200)
+        self.assertEqual(item.name, "Disjuntor 20A bipolar")
+        self.assertEqual(item.estimated_unit_value, Decimal("42.00"))
+        self.assertTrue(item.favorite)
+
+        favorite_response = self.client.post(reverse("service_item_catalog_toggle_favorite", args=[item.id]), follow=True)
+        item.refresh_from_db()
+        self.assertEqual(favorite_response.status_code, 200)
+        self.assertFalse(item.favorite)
+
+        deactivate_response = self.client.post(reverse("service_item_catalog_deactivate", args=[item.id]), follow=True)
+        item.refresh_from_db()
+        self.assertEqual(deactivate_response.status_code, 200)
+        self.assertFalse(item.is_active)
+
+    def test_catalog_search_service_item_creation_preview_and_last_used_value(self):
+        before_punch_count = Punch.objects.count()
+        catalog_item = ServiceItemCatalog.objects.create(
+            professional=self.mei_user,
+            category=self.category,
+            item_type=ServiceItemExpense.ItemType.PART,
+            name="Disjuntor 20A",
+            description="Curva C",
+            unit="UNIT",
+            estimated_unit_value=Decimal("35.00"),
+            default_quantity=Decimal("2.00"),
+        )
+
+        search_response = self.client.get(reverse("service_item_catalog_search"), {"q": "disj"})
+        self.assertEqual(search_response.status_code, 200)
+        self.assertEqual(search_response.json()["items"][0]["name"], "Disjuntor 20A")
+
+        create_response = self.client.post(
+            reverse("service_job_create"),
+            {
+                "client_mode": "casual",
+                "manual_client_name": "John",
+                "manual_client_whatsapp": "11999999999",
+                "manual_client_email": "",
+                "service_zip_code": "89000000",
+                "service_street": "Rua X",
+                "service_number": "120",
+                "service_complement": "",
+                "service_district": "Centro",
+                "service_city": "Blumenau",
+                "service_state": "SC",
+                "service_reference": "",
+                "category": self.category.id,
+                "title": "Troca de disjuntores",
+                "description": "Trocar disjuntores.",
+                "start_date": timezone.localdate().isoformat(),
+                "planned_start_time": "08:00",
+                "planned_end_time": "",
+                "billing_mode": ServiceJob.BillingMode.UNDEFINED,
+                "hourly_rate_snapshot": "",
+                "fixed_labor_value": "",
+                "notes": "",
+                "planned_item_catalog_id": str(catalog_item.id),
+                "planned_item_name": "Disjuntor 20A",
+                "planned_item_type": ServiceItemExpense.ItemType.PART,
+                "planned_item_unit": "UNIT",
+                "planned_item_quantity": "3.00",
+                "planned_item_unit_value": "42.00",
+                "planned_item_description": "Valor ajustado antes da previa",
+                "planned_item_update_catalog_price": "0",
+            },
+            follow=True,
+        )
+        self.assertEqual(create_response.status_code, 200)
+        job = ServiceJob.objects.get(title="Troca de disjuntores")
+        service_item = job.item_expenses.get(name="Disjuntor 20A")
+        catalog_item.refresh_from_db()
+        self.assertEqual(service_item.catalog_item, catalog_item)
+        self.assertEqual(service_item.unit_value, Decimal("42.00"))
+        self.assertEqual(catalog_item.estimated_unit_value, Decimal("42.00"))
+        self.assertEqual(catalog_item.last_used_value, Decimal("42.00"))
+        self.assertIsNotNone(catalog_item.last_used_at)
+
+        self.client.post(reverse("service_job_preview_generate", args=[job.id]), follow=True)
+        self.client.logout()
+        preview_response = self.client.get(reverse("public_service_job_preview", args=[job.public_token]))
+        self.assertContains(preview_response, "Disjuntor 20A")
+        self.assertContains(preview_response, "R$ 126,00")
+        self.client.force_login(self.mei_user)
+
+        self.client.post(
+            reverse("service_item_expense_update", args=[job.id, service_item.id]),
+            {
+                "catalog_item": catalog_item.id,
+                "type": ServiceItemExpense.ItemType.PART,
+                "name": "Disjuntor 20A",
+                "description": "Valor real editado",
+                "unit": "UNIT",
+                "quantity": "3.00",
+                "unit_value": "45.00",
+                "usage_status": ServiceItemExpense.UsageStatus.USED,
+                "receipt_note": "",
+                "update_catalog_price": "on",
+            },
+            follow=True,
+        )
+        service_item.refresh_from_db()
+        catalog_item.refresh_from_db()
+        self.assertEqual(service_item.total_value, Decimal("135.00"))
+        self.assertEqual(job.item_expenses.get(id=service_item.id).usage_status, ServiceItemExpense.UsageStatus.USED)
+        self.assertEqual(catalog_item.last_used_value, Decimal("45.00"))
+        self.assertEqual(catalog_item.estimated_unit_value, Decimal("45.00"))
+        job.refresh_from_db()
+        self.assertEqual(job.used_items_total, Decimal("135.00"))
+        self.assertEqual(Punch.objects.count(), before_punch_count)
+
+    def test_save_new_service_item_to_catalog_from_service_detail(self):
+        job = ServiceJob.objects.create(
+            professional=self.mei_user,
+            manual_client_name="John",
+            category=self.category,
+            title="Visita eletrica",
+            description="Servico avulso.",
+            service_location="Rua A, 10",
+            status=ServiceJob.Status.PLANNED,
+            billing_mode=ServiceJob.BillingMode.UNDEFINED,
+        )
+
+        response = self.client.post(
+            reverse("service_item_expense_create", args=[job.id]),
+            {
+                "type": ServiceItemExpense.ItemType.MATERIAL,
+                "name": "Fita isolante premium",
+                "description": "Preta",
+                "unit": "ROLL",
+                "quantity": "1.00",
+                "unit_value": "12.00",
+                "usage_status": ServiceItemExpense.UsageStatus.PLANNED,
+                "receipt_note": "",
+                "save_to_catalog": "on",
+            },
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        catalog_item = ServiceItemCatalog.objects.get(professional=self.mei_user, name="Fita isolante premium")
+        service_item = job.item_expenses.get(name="Fita isolante premium")
+        self.assertEqual(service_item.catalog_item, catalog_item)
+        self.assertEqual(catalog_item.estimated_unit_value, Decimal("12.00"))
+        self.assertEqual(catalog_item.last_used_value, Decimal("12.00"))
 
     def test_services_tab_opens_with_empty_state(self):
         response = self.client.get(reverse("service_job_list"))

@@ -97,7 +97,7 @@
               <div class="entry-head">
                 <div>
                   <div class="entry-title">{{ item.name }}</div>
-                  <div class="entry-meta"><span>{{ item.get_type_display }}</span><span>{{ item.short_usage_status }}</span><span>Quantidade: {{ item.quantity }}</span><span>Un.: {{ item.unit_value|brl }}</span></div>
+                  <div class="entry-meta"><span>{{ item.get_type_display }}</span><span>{{ item.short_usage_status }}</span><span>Quantidade: {{ item.quantity }} {{ item.get_unit_display }}</span><span>Un.: {{ item.unit_value|brl }}</span></div>
                 </div>
                 <div class="entry-total">Estimado: {{ item.total_value|brl }}</div>
               </div>
@@ -147,7 +147,7 @@
               <div class="entry-head">
                 <div>
                   <div class="entry-title">{{ item.name }}</div>
-                  <div class="entry-meta"><span>{{ item.get_type_display }}</span><span>{{ item.quantity }} x {{ item.unit_value|brl }}</span></div>
+                  <div class="entry-meta"><span>{{ item.get_type_display }}</span><span>{{ item.quantity }} {{ item.get_unit_display }} x {{ item.unit_value|brl }}</span></div>
                 </div>
                 <div class="entry-total">Total: {{ item.total_value|brl }}</div>
               </div>
@@ -166,7 +166,7 @@
               <div class="entry-head">
                 <div>
                   <div class="entry-title">{{ item.name }}</div>
-                  <div class="entry-meta"><span>{{ item.get_type_display }}</span><span>{{ item.short_usage_status }}</span><span>{{ item.quantity }} x {{ item.unit_value|brl }}</span></div>
+                  <div class="entry-meta"><span>{{ item.get_type_display }}</span><span>{{ item.short_usage_status }}</span><span>{{ item.quantity }} {{ item.get_unit_display }} x {{ item.unit_value|brl }}</span></div>
                 </div>
                 <div class="entry-total">Fora do total: {{ item.total_value|brl }}</div>
               </div>

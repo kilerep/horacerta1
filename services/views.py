@@ -7,7 +7,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import Count, Q, Sum
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -20,8 +20,8 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, Tabl
 from accounts.models import User
 from accounts.mei_context import mei_contracts_for_user
 
-from .forms import PlannedServiceItemForm, ServiceItemExpenseForm, ServiceJobForm, ServiceWorkLogForm
-from .models import ServiceCategory, ServiceItemExpense, ServiceJob, ServiceWorkLog
+from .forms import PlannedServiceItemForm, ServiceItemCatalogForm, ServiceItemExpenseForm, ServiceJobForm, ServiceWorkLogForm
+from .models import ServiceCategory, ServiceItemCatalog, ServiceItemExpense, ServiceJob, ServiceWorkLog
 
 
 def _redirect_if_not_mei(request):
@@ -60,12 +60,20 @@ def _service_jobs_for_user(user):
     return ServiceJob.objects.filter(professional=user).select_related("category", "client", "contract")
 
 
+def _catalog_items_for_user(user):
+    return ServiceItemCatalog.objects.filter(professional=user).select_related("category")
+
+
 def _planned_item_rows_from_post(post_data):
     names = post_data.getlist("planned_item_name")
     types = post_data.getlist("planned_item_type")
     quantities = post_data.getlist("planned_item_quantity")
     values = post_data.getlist("planned_item_unit_value")
     descriptions = post_data.getlist("planned_item_description")
+    units = post_data.getlist("planned_item_unit")
+    catalog_ids = post_data.getlist("planned_item_catalog_id")
+    save_flags = set(post_data.getlist("planned_item_save_to_catalog"))
+    update_flags = set(post_data.getlist("planned_item_update_catalog_price"))
     rows = []
     for index, name in enumerate(names):
         name = (name or "").strip()
@@ -75,9 +83,13 @@ def _planned_item_rows_from_post(post_data):
             {
                 "name": name,
                 "type": types[index] if index < len(types) and types[index] else ServiceItemExpense.ItemType.MATERIAL,
+                "catalog_item": catalog_ids[index] if index < len(catalog_ids) else "",
+                "unit": units[index] if index < len(units) and units[index] else "UNIT",
                 "quantity": quantities[index] if index < len(quantities) and quantities[index] else "1",
                 "unit_value": values[index] if index < len(values) and values[index] else "0",
                 "description": descriptions[index] if index < len(descriptions) else "",
+                "save_to_catalog": "on" if str(index) in save_flags else "",
+                "update_catalog_price": "on" if str(index) in update_flags else "",
             }
         )
     return rows
@@ -315,6 +327,178 @@ def service_job_list(request):
 
 
 @login_required
+def service_item_catalog_list(request):
+    denied = _redirect_if_not_mei(request)
+    if denied:
+        return denied
+
+    q = (request.GET.get("q") or "").strip()
+    show_inactive = request.GET.get("inactive") == "1"
+    items = _catalog_items_for_user(request.user)
+    if not show_inactive:
+        items = items.filter(is_active=True)
+    if q:
+        items = items.filter(Q(name__icontains=q) | Q(description__icontains=q))
+    return render(
+        request,
+        "services/service_item_catalog_list.html",
+        {
+            "catalog_items": items,
+            "q": q,
+            "show_inactive": show_inactive,
+        },
+    )
+
+
+@login_required
+def service_item_catalog_create(request):
+    denied = _redirect_if_not_mei(request)
+    if denied:
+        return denied
+
+    if request.method == "POST":
+        form = ServiceItemCatalogForm(request.POST, user=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Item salvo no catalogo.")
+            return redirect("service_item_catalog_list")
+    else:
+        form = ServiceItemCatalogForm(user=request.user)
+    return render(
+        request,
+        "services/service_item_catalog_form.html",
+        {"form": form, "form_title": "Novo item do catalogo"},
+    )
+
+
+@login_required
+def service_item_catalog_update(request, item_id):
+    denied = _redirect_if_not_mei(request)
+    if denied:
+        return denied
+
+    item = get_object_or_404(_catalog_items_for_user(request.user), id=item_id)
+    if request.method == "POST":
+        form = ServiceItemCatalogForm(request.POST, user=request.user, instance=item)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Item do catalogo atualizado.")
+            return redirect("service_item_catalog_list")
+    else:
+        form = ServiceItemCatalogForm(user=request.user, instance=item)
+    return render(
+        request,
+        "services/service_item_catalog_form.html",
+        {"form": form, "form_title": "Editar item do catalogo", "catalog_item": item},
+    )
+
+
+@login_required
+def service_item_catalog_toggle_favorite(request, item_id):
+    denied = _redirect_if_not_mei(request)
+    if denied:
+        return denied
+
+    item = get_object_or_404(_catalog_items_for_user(request.user), id=item_id)
+    if request.method == "POST":
+        item.favorite = not item.favorite
+        item.save(update_fields=["favorite", "updated_at"])
+        messages.success(request, "Favorito atualizado.")
+    return redirect("service_item_catalog_list")
+
+
+@login_required
+def service_item_catalog_deactivate(request, item_id):
+    denied = _redirect_if_not_mei(request)
+    if denied:
+        return denied
+
+    item = get_object_or_404(_catalog_items_for_user(request.user), id=item_id)
+    if request.method == "POST":
+        item.is_active = False
+        item.save(update_fields=["is_active", "updated_at"])
+        messages.success(request, "Item desativado.")
+    return redirect("service_item_catalog_list")
+
+
+@login_required
+def service_item_catalog_seed_suggestions(request):
+    denied = _redirect_if_not_mei(request)
+    if denied:
+        return denied
+    if request.method != "POST":
+        return redirect("service_item_catalog_list")
+
+    categories = {category.slug: category for category in ServiceCategory.objects.filter(slug__in=["eletrica", "entrega-viagem"])}
+    suggestions = [
+        ("eletrica", ServiceItemExpense.ItemType.PART, "Disjuntor 20A", "UNIT"),
+        ("eletrica", ServiceItemExpense.ItemType.PART, "Disjuntor 32A", "UNIT"),
+        ("eletrica", ServiceItemExpense.ItemType.MATERIAL, "Tomada 10A", "UNIT"),
+        ("eletrica", ServiceItemExpense.ItemType.MATERIAL, "Tomada 20A", "UNIT"),
+        ("eletrica", ServiceItemExpense.ItemType.MATERIAL, "Fita isolante", "ROLL"),
+        ("eletrica", ServiceItemExpense.ItemType.MATERIAL, "Cabo 2,5mm", "METER"),
+        ("eletrica", ServiceItemExpense.ItemType.MATERIAL, "Cabo 4mm", "METER"),
+        ("entrega-viagem", ServiceItemExpense.ItemType.TOLL, "Pedagio", "UNIT"),
+        ("entrega-viagem", ServiceItemExpense.ItemType.FUEL, "Combustivel", "LITER"),
+        ("entrega-viagem", ServiceItemExpense.ItemType.PARKING, "Estacionamento", "UNIT"),
+        ("entrega-viagem", ServiceItemExpense.ItemType.FOOD, "Alimentacao", "UNIT"),
+        ("entrega-viagem", ServiceItemExpense.ItemType.EXPENSE, "Diaria/deslocamento", "SERVICE"),
+    ]
+    created = 0
+    for slug, item_type, name, unit in suggestions:
+        if ServiceItemCatalog.objects.filter(professional=request.user, name__iexact=name, is_active=True).exists():
+            continue
+        ServiceItemCatalog.objects.create(
+            professional=request.user,
+            category=categories.get(slug),
+            item_type=item_type,
+            name=name,
+            unit=unit,
+            estimated_unit_value=None,
+        )
+        created += 1
+    messages.success(request, f"{created} sugestoes adicionadas sem preco estimado.")
+    return redirect("service_item_catalog_list")
+
+
+@login_required
+def service_item_catalog_search(request):
+    denied = _redirect_if_not_mei(request)
+    if denied:
+        return denied
+
+    q = (request.GET.get("q") or "").strip()
+    category_id = (request.GET.get("category") or "").strip()
+    items = _catalog_items_for_user(request.user).filter(is_active=True)
+    if q:
+        items = items.filter(Q(name__icontains=q) | Q(description__icontains=q))
+    if category_id:
+        items = items.filter(Q(category_id=category_id) | Q(category__isnull=True))
+    items = items.order_by("-favorite", "name")[:10]
+    return JsonResponse(
+        {
+            "items": [
+                {
+                    "id": str(item.id),
+                    "name": item.name,
+                    "description": item.description,
+                    "item_type": item.item_type,
+                    "item_type_label": item.get_item_type_display(),
+                    "unit": item.unit,
+                    "unit_label": item.get_unit_display(),
+                    "estimated_unit_value": str(item.estimated_unit_value or ""),
+                    "last_used_value": str(item.last_used_value or ""),
+                    "last_used_at": timezone.localtime(item.last_used_at).strftime("%d/%m/%Y") if item.last_used_at else "",
+                    "default_quantity": str(item.default_quantity),
+                    "favorite": item.favorite,
+                }
+                for item in items
+            ]
+        }
+    )
+
+
+@login_required
 def service_job_create(request):
     denied = _redirect_if_not_mei(request)
     if denied:
@@ -348,6 +532,7 @@ def service_job_create(request):
             "form_subtitle": "Cadastre um trabalho específico com cliente, local, previsão de atendimento, itens e relatório final.",
             "is_edit": False,
             "item_type_choices": ServiceItemExpense.ItemType.choices,
+            "item_unit_choices": ServiceItemCatalog._meta.get_field("unit").choices,
         },
     )
 

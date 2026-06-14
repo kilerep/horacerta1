@@ -27,8 +27,18 @@
   .billing-panel{display:none}
   .billing-panel.is-visible{display:block}
   .planned-items{display:grid;gap:10px}
-  .planned-item-row{display:grid;grid-template-columns:1.2fr .8fr .5fr .7fr 1fr auto;gap:8px;align-items:end;border:1px solid var(--color-border);border-radius:8px;background:var(--surface-soft);padding:10px}
+  .planned-item-row{display:grid;grid-template-columns:1.1fr 1.1fr .7fr .55fr .65fr .75fr 1fr auto;gap:8px;align-items:end;border:1px solid var(--color-border);border-radius:8px;background:var(--surface-soft);padding:10px}
   .planned-item-row label{display:block;margin-bottom:5px;color:var(--color-text-muted);font-size:11px;font-weight:800}
+  .catalog-suggest{position:relative}
+  .catalog-results{display:none;position:absolute;z-index:20;top:100%;left:0;right:0;border:1px solid var(--color-border);border-radius:8px;background:var(--surface-card);box-shadow:var(--shadow-soft);max-height:220px;overflow:auto}
+  .catalog-results.is-visible{display:grid}
+  .catalog-result{border:0;background:transparent;text-align:left;padding:9px 10px;cursor:pointer;color:var(--color-text)}
+  .catalog-result:hover{background:var(--surface-soft)}
+  .catalog-result strong{display:block}
+  .catalog-result span{display:block;color:var(--color-text-muted);font-size:12px;margin-top:2px}
+  .catalog-options{grid-column:1 / -2;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+  .catalog-options label{display:flex;align-items:center;gap:7px;margin:0}
+  .last-used-hint{grid-column:1 / -2;color:var(--color-text-muted);font-size:12px;line-height:1.35}
   .os-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
   .maps-link{display:none}
   .maps-link.is-visible{display:inline-flex}
@@ -209,6 +219,12 @@
         <p class="os-section__hint">Adicione materiais, pecas ou despesas previstas para este servico. O status inicial sera Previsto.</p>
         <div class="planned-items" data-planned-items>
           <div class="planned-item-row" data-planned-item-row>
+            <div class="catalog-suggest">
+              <label>Buscar item do catálogo</label>
+              <input class="hc-input" type="search" data-catalog-search placeholder="Ex.: disj">
+              <input type="hidden" name="planned_item_catalog_id" data-catalog-id>
+              <div class="catalog-results" data-catalog-results></div>
+            </div>
             <div>
               <label>Nome do item</label>
               <input class="hc-input" type="text" name="planned_item_name" placeholder="Ex.: Disjuntor 20A">
@@ -217,6 +233,14 @@
               <label>Tipo</label>
               <select class="hc-input" name="planned_item_type">
                 {% for value,label in item_type_choices %}
+                  <option value="{{ value }}">{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div>
+              <label>Unidade</label>
+              <select class="hc-input" name="planned_item_unit">
+                {% for value,label in item_unit_choices %}
                   <option value="{{ value }}">{{ label }}</option>
                 {% endfor %}
               </select>
@@ -234,6 +258,11 @@
               <input class="hc-input" type="text" name="planned_item_description" placeholder="Opcional">
             </div>
             <button class="btn" type="button" data-remove-planned-item>Remover</button>
+            <div class="catalog-options">
+              <label><input type="checkbox" name="planned_item_save_to_catalog" value="0" data-save-catalog> Salvar este item no meu catálogo</label>
+              <label><input type="checkbox" name="planned_item_update_catalog_price" value="0" data-update-catalog-price> Atualizar preço estimado com este valor</label>
+            </div>
+            <div class="last-used-hint" data-last-used-hint>Confirme o valor antes de enviar ao cliente.</div>
           </div>
         </div>
         <button class="btn" type="button" data-add-planned-item>Adicionar item previsto</button>
@@ -345,27 +374,120 @@
 
     var plannedItems = form.querySelector("[data-planned-items]");
     var addPlannedItem = form.querySelector("[data-add-planned-item]");
+    var catalogSearchUrl = "{% url 'service_item_catalog_search' %}";
+    function activeCategoryId(){
+      return categorySelect && categorySelect.value ? categorySelect.value : "";
+    }
+    function rowIndex(row){
+      return Array.prototype.indexOf.call(plannedItems.querySelectorAll("[data-planned-item-row]"), row);
+    }
+    function reindexPlannedRows(){
+      if(!plannedItems) return;
+      plannedItems.querySelectorAll("[data-planned-item-row]").forEach(function(row, index){
+        var save = row.querySelector("[data-save-catalog]");
+        var update = row.querySelector("[data-update-catalog-price]");
+        if(save) save.value = String(index);
+        if(update) update.value = String(index);
+      });
+    }
+    function setRowValue(row, selector, value){
+      var field = row.querySelector(selector);
+      if(field) field.value = value || "";
+    }
+    function applyCatalogItem(row, item){
+      setRowValue(row, "[data-catalog-id]", item.id);
+      setRowValue(row, 'input[name="planned_item_name"]', item.name);
+      setRowValue(row, 'select[name="planned_item_type"]', item.item_type);
+      setRowValue(row, 'select[name="planned_item_unit"]', item.unit);
+      setRowValue(row, 'input[name="planned_item_quantity"]', item.default_quantity || "1");
+      setRowValue(row, 'input[name="planned_item_unit_value"]', item.estimated_unit_value || item.last_used_value || "");
+      setRowValue(row, 'input[name="planned_item_description"]', item.description);
+      var hint = row.querySelector("[data-last-used-hint]");
+      if(hint){
+        if(item.last_used_value){
+          hint.textContent = "Último valor usado: R$ " + item.last_used_value.replace(".", ",") + (item.last_used_at ? " em " + item.last_used_at : "") + ". Confirme o valor antes de enviar ao cliente.";
+        }else{
+          hint.textContent = "Sem último valor usado. Confirme o valor antes de enviar ao cliente.";
+        }
+      }
+      var results = row.querySelector("[data-catalog-results]");
+      if(results) results.classList.remove("is-visible");
+    }
+    function renderCatalogResults(row, items){
+      var results = row.querySelector("[data-catalog-results]");
+      if(!results) return;
+      results.innerHTML = "";
+      if(!items.length){
+        results.classList.remove("is-visible");
+        return;
+      }
+      items.forEach(function(item){
+        var button = document.createElement("button");
+        button.type = "button";
+        button.className = "catalog-result";
+        var price = item.estimated_unit_value ? "Estimado: R$ " + item.estimated_unit_value.replace(".", ",") : "Sem preço estimado";
+        button.innerHTML = "<strong></strong><span></span>";
+        button.querySelector("strong").textContent = item.name;
+        button.querySelector("span").textContent = item.item_type_label + " · " + item.unit_label + " · " + price;
+        button.addEventListener("click", function(){ applyCatalogItem(row, item); });
+        results.appendChild(button);
+      });
+      results.classList.add("is-visible");
+    }
+    function bindCatalogSearch(row){
+      var input = row.querySelector("[data-catalog-search]");
+      if(!input) return;
+      var timeout;
+      input.addEventListener("input", function(){
+        clearTimeout(timeout);
+        var q = input.value.trim();
+        if(q.length < 2){
+          renderCatalogResults(row, []);
+          return;
+        }
+        timeout = setTimeout(function(){
+          var url = catalogSearchUrl + "?q=" + encodeURIComponent(q) + "&category=" + encodeURIComponent(activeCategoryId());
+          fetch(url, {headers: {"X-Requested-With": "XMLHttpRequest"}})
+            .then(function(response){ return response.json(); })
+            .then(function(data){ renderCatalogResults(row, data.items || []); })
+            .catch(function(){ renderCatalogResults(row, []); });
+        }, 180);
+      });
+    }
     function bindPlannedItemRow(row){
+      bindCatalogSearch(row);
       var remove = row.querySelector("[data-remove-planned-item]");
       if(remove){
         remove.addEventListener("click", function(){
           var rows = plannedItems ? plannedItems.querySelectorAll("[data-planned-item-row]") : [];
           if(rows.length > 1){
             row.remove();
+            reindexPlannedRows();
           }else{
-            row.querySelectorAll("input").forEach(function(input){ input.value = input.name === "planned_item_quantity" ? "1" : ""; });
+            row.querySelectorAll("input").forEach(function(input){
+              if(input.type === "checkbox"){ input.checked = false; return; }
+              input.value = input.name === "planned_item_quantity" ? "1" : "";
+            });
+            setRowValue(row, "[data-catalog-id]", "");
           }
         });
       }
+      reindexPlannedRows();
     }
     if(plannedItems && addPlannedItem){
       bindPlannedItemRow(plannedItems.querySelector("[data-planned-item-row]"));
       addPlannedItem.addEventListener("click", function(){
         var first = plannedItems.querySelector("[data-planned-item-row]");
         var clone = first.cloneNode(true);
-        clone.querySelectorAll("input").forEach(function(input){ input.value = input.name === "planned_item_quantity" ? "1" : ""; });
+        clone.querySelectorAll("input").forEach(function(input){
+          if(input.type === "checkbox"){ input.checked = false; return; }
+          input.value = input.name === "planned_item_quantity" ? "1" : "";
+        });
+        var results = clone.querySelector("[data-catalog-results]");
+        if(results) results.innerHTML = "";
         bindPlannedItemRow(clone);
         plannedItems.appendChild(clone);
+        reindexPlannedRows();
       });
     }
   })();

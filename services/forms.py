@@ -1,9 +1,10 @@
 from django import forms
+from django.utils import timezone
 
 from accounts.mei_context import mei_contracts_for_user
 from timeclock.models import Contract
 
-from .models import ServiceCategory, ServiceItemExpense, ServiceJob, ServiceWorkLog
+from .models import ServiceCategory, ServiceItemCatalog, ServiceItemExpense, ServiceJob, ServiceWorkLog
 
 
 class ServiceJobForm(forms.ModelForm):
@@ -257,21 +258,40 @@ class ServiceWorkLogForm(forms.ModelForm):
 
 
 class ServiceItemExpenseForm(forms.ModelForm):
+    catalog_item = forms.ModelChoiceField(
+        queryset=ServiceItemCatalog.objects.none(),
+        required=False,
+        widget=forms.HiddenInput,
+    )
+    save_to_catalog = forms.BooleanField(
+        required=False,
+        label="Salvar este item no meu catalogo para usar depois",
+    )
+    update_catalog_price = forms.BooleanField(
+        required=False,
+        label="Atualizar preco estimado com este valor",
+    )
+
     class Meta:
         model = ServiceItemExpense
         fields = [
+            "catalog_item",
             "type",
             "name",
             "description",
+            "unit",
             "quantity",
             "unit_value",
             "usage_status",
             "receipt_note",
+            "save_to_catalog",
+            "update_catalog_price",
         ]
         labels = {
             "type": "Tipo",
             "name": "Nome",
             "description": "Observacao",
+            "unit": "Unidade",
             "quantity": "Quantidade",
             "unit_value": "Valor unitario",
             "usage_status": "Status de uso",
@@ -287,6 +307,12 @@ class ServiceItemExpenseForm(forms.ModelForm):
     def __init__(self, *args, service_job=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.service_job = service_job
+        if service_job is not None:
+            self.fields["catalog_item"].queryset = ServiceItemCatalog.objects.filter(
+                professional=service_job.professional,
+                is_active=True,
+            )
+        self.fields["unit"].required = False
         for field in self.fields.values():
             field.widget.attrs.setdefault("class", "hc-input")
 
@@ -296,24 +322,90 @@ class ServiceItemExpenseForm(forms.ModelForm):
     def clean_description(self):
         return (self.cleaned_data.get("description") or "").strip()
 
+    def clean_unit(self):
+        return self.cleaned_data.get("unit") or "UNIT"
+
     def clean_receipt_note(self):
         return (self.cleaned_data.get("receipt_note") or "").strip()
 
     def save(self, commit=True):
         instance = super().save(commit=False)
         instance.service_job = self.service_job
+        catalog_item = self.cleaned_data.get("catalog_item")
+        if catalog_item and self.service_job and catalog_item.professional_id == self.service_job.professional_id:
+            instance.catalog_item = catalog_item
         if commit:
             instance.save()
+            self._sync_catalog(instance)
         return instance
+
+    def _sync_catalog(self, instance):
+        if not self.service_job:
+            return
+        catalog_item = instance.catalog_item
+        if not catalog_item and self.cleaned_data.get("save_to_catalog"):
+            catalog_item = (
+                ServiceItemCatalog.objects.filter(
+                    professional=self.service_job.professional,
+                    name__iexact=instance.name,
+                    is_active=True,
+                )
+                .order_by("name")
+                .first()
+            )
+            if catalog_item is None:
+                catalog_item = ServiceItemCatalog.objects.create(
+                    professional=self.service_job.professional,
+                    category=self.service_job.category,
+                    item_type=instance.type,
+                    name=instance.name,
+                    description=instance.description,
+                    unit=instance.unit,
+                    estimated_unit_value=instance.unit_value if instance.unit_value else None,
+                    last_used_value=instance.unit_value if instance.unit_value else None,
+                    last_used_at=timezone.now() if instance.unit_value else None,
+                    default_quantity=instance.quantity or 1,
+                )
+            instance.catalog_item = catalog_item
+            instance.save(update_fields=["catalog_item", "updated_at"])
+        if not catalog_item:
+            return
+
+        update_fields = ["last_used_at", "updated_at"]
+        catalog_item.last_used_at = timezone.now()
+        if instance.unit_value:
+            catalog_item.last_used_value = instance.unit_value
+            update_fields.append("last_used_value")
+            if self.cleaned_data.get("update_catalog_price"):
+                catalog_item.estimated_unit_value = instance.unit_value
+                update_fields.append("estimated_unit_value")
+        if self.cleaned_data.get("update_catalog_price"):
+            catalog_item.item_type = instance.type
+            catalog_item.description = instance.description
+            catalog_item.unit = instance.unit
+            catalog_item.default_quantity = instance.quantity or catalog_item.default_quantity
+            update_fields.extend(["item_type", "description", "unit", "default_quantity"])
+        catalog_item.save(update_fields=sorted(set(update_fields)))
 
 
 class PlannedServiceItemForm(ServiceItemExpenseForm):
     class Meta(ServiceItemExpenseForm.Meta):
-        fields = ["type", "name", "description", "quantity", "unit_value"]
+        fields = [
+            "catalog_item",
+            "type",
+            "name",
+            "description",
+            "unit",
+            "quantity",
+            "unit_value",
+            "save_to_catalog",
+            "update_catalog_price",
+        ]
         labels = {
             "type": "Tipo",
             "name": "Nome do item",
             "description": "Observacao",
+            "unit": "Unidade",
             "quantity": "Quantidade",
             "unit_value": "Valor estimado/unidade",
         }
@@ -321,6 +413,61 @@ class PlannedServiceItemForm(ServiceItemExpenseForm):
     def save(self, commit=True):
         instance = super().save(commit=False)
         instance.usage_status = ServiceItemExpense.UsageStatus.PLANNED
+        if commit:
+            instance.save()
+            self._sync_catalog(instance)
+        return instance
+
+
+class ServiceItemCatalogForm(forms.ModelForm):
+    class Meta:
+        model = ServiceItemCatalog
+        fields = [
+            "category",
+            "item_type",
+            "name",
+            "description",
+            "unit",
+            "estimated_unit_value",
+            "default_quantity",
+            "favorite",
+            "is_active",
+        ]
+        labels = {
+            "category": "Categoria",
+            "item_type": "Tipo",
+            "name": "Nome",
+            "description": "Descricao",
+            "unit": "Unidade",
+            "estimated_unit_value": "Valor estimado/unidade",
+            "default_quantity": "Quantidade padrao",
+            "favorite": "Favorito",
+            "is_active": "Ativo",
+        }
+        widgets = {
+            "description": forms.Textarea(attrs={"rows": 3}),
+            "estimated_unit_value": forms.NumberInput(attrs={"step": "0.01", "min": "0", "placeholder": "Definido pelo prestador"}),
+            "default_quantity": forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
+        }
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user = user
+        self.fields["category"].queryset = ServiceCategory.objects.filter(is_active=True)
+        self.fields["category"].required = False
+        self.fields["estimated_unit_value"].required = False
+        for field in self.fields.values():
+            field.widget.attrs.setdefault("class", "hc-input")
+
+    def clean_name(self):
+        return (self.cleaned_data.get("name") or "").strip()
+
+    def clean_description(self):
+        return (self.cleaned_data.get("description") or "").strip()
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.professional = self.user
         if commit:
             instance.save()
         return instance
