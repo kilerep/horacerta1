@@ -241,6 +241,7 @@ class ServiceWorkLogForm(forms.ModelForm):
     def __init__(self, *args, service_job=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.service_job = service_job
+        self.fields["end_time"].required = True
         for field in self.fields.values():
             field.widget.attrs.setdefault("class", "hc-input")
 
@@ -301,6 +302,25 @@ class ServiceItemExpenseForm(forms.ModelForm):
     def save(self, commit=True):
         instance = super().save(commit=False)
         instance.service_job = self.service_job
+        if commit:
+            instance.save()
+        return instance
+
+
+class PlannedServiceItemForm(ServiceItemExpenseForm):
+    class Meta(ServiceItemExpenseForm.Meta):
+        fields = ["type", "name", "description", "quantity", "unit_value"]
+        labels = {
+            "type": "Tipo",
+            "name": "Nome do item",
+            "description": "Observacao",
+            "quantity": "Quantidade",
+            "unit_value": "Valor estimado/unidade",
+        }
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.usage_status = ServiceItemExpense.UsageStatus.PLANNED
         if commit:
             instance.save()
         return instance

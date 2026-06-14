@@ -147,7 +147,7 @@ class ServiceJobAreaTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         job = ServiceJob.objects.get(title="Revisao eletrica")
-        self.assertEqual(job.status, ServiceJob.Status.IN_PROGRESS)
+        self.assertEqual(job.status, ServiceJob.Status.PLANNED)
         self.assertEqual(job.contract, self.contract)
         self.assertEqual(job.client, self.company)
         self.assertEqual(job.service_location, "Praca da Se, 100, Sala 2, Se, Sao Paulo, SP")

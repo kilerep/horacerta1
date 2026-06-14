@@ -30,7 +30,10 @@ class ServiceCategory(models.Model):
 class ServiceJob(models.Model):
     class Status(models.TextChoices):
         DRAFT = "DRAFT", "Rascunho"
-        IN_PROGRESS = "IN_PROGRESS", "Em andamento"
+        PLANNED = "PLANNED", "Planejado"
+        SENT = "SENT", "Enviado ao cliente"
+        SCHEDULED = "SCHEDULED", "Agendado"
+        IN_PROGRESS = "IN_PROGRESS", "Em execucao"
         FINISHED = "FINISHED", "Finalizado"
         ARCHIVED = "ARCHIVED", "Arquivado"
 
@@ -192,6 +195,14 @@ class ServiceJob(models.Model):
     def estimated_total(self):
         return (self.labor_total + self.used_items_total).quantize(Decimal("0.01"))
 
+    @property
+    def preview_items_total(self):
+        return self.item_expenses.aggregate(total=models.Sum("total_value"))["total"] or Decimal("0.00")
+
+    @property
+    def has_open_work_log(self):
+        return self.work_logs.filter(end_time__isnull=True).exists()
+
     def clean(self):
         errors = {}
         if self.contract_id:
@@ -243,7 +254,7 @@ class ServiceWorkLog(models.Model):
     )
     work_date = models.DateField()
     start_time = models.TimeField()
-    end_time = models.TimeField()
+    end_time = models.TimeField(null=True, blank=True)
     duration_minutes = models.PositiveIntegerField(default=0)
     description = models.CharField(max_length=180, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
@@ -258,7 +269,7 @@ class ServiceWorkLog(models.Model):
         verbose_name_plural = "Horarios do servico"
 
     def __str__(self):
-        return f"{self.service_job_id} {self.work_date} {self.start_time}-{self.end_time}"
+        return f"{self.service_job_id} {self.work_date} {self.start_time}-{self.end_time or 'aberto'}"
 
     @property
     def duration_label(self):
@@ -277,6 +288,8 @@ class ServiceWorkLog(models.Model):
             start_minutes = self.start_time.hour * 60 + self.start_time.minute
             end_minutes = self.end_time.hour * 60 + self.end_time.minute
             self.duration_minutes = max(end_minutes - start_minutes, 0)
+        else:
+            self.duration_minutes = 0
         self.full_clean()
         return super().save(*args, **kwargs)
 

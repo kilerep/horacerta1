@@ -26,11 +26,15 @@
   .category-description{border:1px solid var(--color-border);border-radius:12px;background:var(--surface-soft);padding:10px 12px;color:var(--color-text-muted);font-size:13px;line-height:1.4}
   .billing-panel{display:none}
   .billing-panel.is-visible{display:block}
+  .planned-items{display:grid;gap:10px}
+  .planned-item-row{display:grid;grid-template-columns:1.2fr .8fr .5fr .7fr 1fr auto;gap:8px;align-items:end;border:1px solid var(--color-border);border-radius:8px;background:var(--surface-soft);padding:10px}
+  .planned-item-row label{display:block;margin-bottom:5px;color:var(--color-text-muted);font-size:11px;font-weight:800}
   .os-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
   .maps-link{display:none}
   .maps-link.is-visible{display:inline-flex}
   @media (max-width: 760px){
     .service-form-head,.os-grid,.os-grid.three{display:grid;grid-template-columns:1fr}
+    .planned-item-row{grid-template-columns:1fr}
     .os-field.full{grid-column:auto}
     .cep-row{display:grid}
     .os-actions .btn,.os-actions button,.client-mode label{width:100%}
@@ -199,6 +203,43 @@
       </div>
     </section>
 
+    {% if not is_edit %}
+      <section class="os-section">
+        <h2>Itens previstos</h2>
+        <p class="os-section__hint">Adicione materiais, pecas ou despesas previstas para este servico. O status inicial sera Previsto.</p>
+        <div class="planned-items" data-planned-items>
+          <div class="planned-item-row" data-planned-item-row>
+            <div>
+              <label>Nome do item</label>
+              <input class="hc-input" type="text" name="planned_item_name" placeholder="Ex.: Disjuntor 20A">
+            </div>
+            <div>
+              <label>Tipo</label>
+              <select class="hc-input" name="planned_item_type">
+                {% for value,label in item_type_choices %}
+                  <option value="{{ value }}">{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div>
+              <label>Quantidade</label>
+              <input class="hc-input" type="number" name="planned_item_quantity" min="0" step="0.01" value="1">
+            </div>
+            <div>
+              <label>Valor/un.</label>
+              <input class="hc-input" type="number" name="planned_item_unit_value" min="0" step="0.01" placeholder="0,00">
+            </div>
+            <div>
+              <label>Observacao</label>
+              <input class="hc-input" type="text" name="planned_item_description" placeholder="Opcional">
+            </div>
+            <button class="btn" type="button" data-remove-planned-item>Remover</button>
+          </div>
+        </div>
+        <button class="btn" type="button" data-add-planned-item>Adicionar item previsto</button>
+      </section>
+    {% endif %}
+
     <div class="os-actions">
       <a class="btn" href="{% url 'service_job_list' %}">Voltar</a>
       {% if is_edit %}
@@ -301,6 +342,32 @@
       if(field) field.addEventListener("input", updateMapsLink);
     });
     updateMapsLink();
+
+    var plannedItems = form.querySelector("[data-planned-items]");
+    var addPlannedItem = form.querySelector("[data-add-planned-item]");
+    function bindPlannedItemRow(row){
+      var remove = row.querySelector("[data-remove-planned-item]");
+      if(remove){
+        remove.addEventListener("click", function(){
+          var rows = plannedItems ? plannedItems.querySelectorAll("[data-planned-item-row]") : [];
+          if(rows.length > 1){
+            row.remove();
+          }else{
+            row.querySelectorAll("input").forEach(function(input){ input.value = input.name === "planned_item_quantity" ? "1" : ""; });
+          }
+        });
+      }
+    }
+    if(plannedItems && addPlannedItem){
+      bindPlannedItemRow(plannedItems.querySelector("[data-planned-item-row]"));
+      addPlannedItem.addEventListener("click", function(){
+        var first = plannedItems.querySelector("[data-planned-item-row]");
+        var clone = first.cloneNode(true);
+        clone.querySelectorAll("input").forEach(function(input){ input.value = input.name === "planned_item_quantity" ? "1" : ""; });
+        bindPlannedItemRow(clone);
+        plannedItems.appendChild(clone);
+      });
+    }
   })();
 </script>
 {% endblock %}
