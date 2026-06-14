@@ -659,7 +659,8 @@ class ServiceJobAreaTests(TestCase):
         self.assertContains(response, "Rua X 120 - Blumenau/SC")
         self.assertContains(response, "Horas previstas")
         self.assertContains(response, "03:00")
-        self.assertContains(response, "Horas realizadas")
+        self.assertContains(response, "Execução do serviço")
+        self.assertContains(response, "Total trabalhado")
         self.assertContains(response, "03:00")
         self.assertContains(response, "Mão de obra")
         self.assertContains(response, "R$ 300,00")
@@ -667,10 +668,10 @@ class ServiceJobAreaTests(TestCase):
         self.assertContains(response, "Disjuntor 20A")
         self.assertContains(response, "Itens não usados/devolvidos")
         self.assertContains(response, "Cabo reserva")
-        self.assertContains(response, "Pendentes de confirmação")
+        self.assertContains(response, "Itens previstos")
         self.assertContains(response, "Pedagio")
         self.assertContains(response, "R$ 370,00")
-        self.assertContains(response, "Finalize o serviço para gerar o relatório de serviço")
+        self.assertContains(response, "Quando terminar, finalize o serviço")
         self.assertEqual(Punch.objects.count(), before_punch_count)
 
         finish_response = self.client.post(
@@ -678,10 +679,38 @@ class ServiceJobAreaTests(TestCase):
             {"action": "finish"},
             follow=True,
         )
-        self.assertContains(finish_response, "Gerar relatório de serviço")
-        self.assertContains(finish_response, "Ver relatório de serviço")
+        self.assertContains(finish_response, "Ver relatório")
         self.assertContains(finish_response, "Enviar WhatsApp")
-        self.assertContains(finish_response, "PDF do serviço")
+        self.assertContains(finish_response, "PDF")
+
+    def test_planned_service_detail_prioritizes_start_actions_before_finish(self):
+        before_punch_count = Punch.objects.count()
+        job = ServiceJob.objects.create(
+            professional=self.mei_user,
+            manual_client_name="John",
+            category=self.category,
+            title="Servico planejado visual",
+            service_street="Rua X",
+            service_number="120",
+            service_city="Blumenau",
+            service_state="SC",
+            start_date=timezone.localdate(),
+            planned_start_time=datetime.strptime("08:00", "%H:%M").time(),
+            status=ServiceJob.Status.PLANNED,
+            billing_mode=ServiceJob.BillingMode.UNDEFINED,
+        )
+
+        response = self.client.get(reverse("service_job_detail", args=[job.id]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Ações do serviço")
+        self.assertContains(response, "Iniciar trabalho")
+        self.assertContains(response, "Adicionar período manual")
+        self.assertContains(response, "Adicionar item/despesa")
+        self.assertContains(response, "Nenhum período de trabalho registrado ainda.")
+        self.assertContains(response, "Registre períodos trabalhados ou confirme itens usados antes de finalizar")
+        self.assertNotContains(response, '<button class="btn" type="submit">Finalizar serviço</button>', html=True)
+        self.assertEqual(Punch.objects.count(), before_punch_count)
 
     def test_finished_service_blocks_new_work_logs_and_items_then_reopens(self):
         job = ServiceJob.objects.create(

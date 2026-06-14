@@ -217,6 +217,14 @@ def _service_job_detail_context(job, *, work_log_form=None, item_form=None):
     work_logs = job.work_logs.all()
     items = job.item_expenses.all()
     used_items = [item for item in items if item.is_chargeable]
+    expense_type_values = {
+        ServiceItemExpense.ItemType.EXPENSE,
+        ServiceItemExpense.ItemType.TOLL,
+        ServiceItemExpense.ItemType.FUEL,
+        ServiceItemExpense.ItemType.PARKING,
+        ServiceItemExpense.ItemType.FOOD,
+    }
+    expense_items = [item for item in items if item.type in expense_type_values]
     not_used_items = [
         item
         for item in items
@@ -230,11 +238,26 @@ def _service_job_detail_context(job, *, work_log_form=None, item_form=None):
     quote_items = _quote_items_for_job(job)
     quote_message = _service_quote_message(job, quote_items) if quote_items else ""
     open_work_log = next((log for log in work_logs if log.end_time is None), None)
+    has_work_logs = bool(work_logs)
+    has_chargeable_items = bool(used_items)
+    can_finish_service = (
+        job.status
+        in (
+            ServiceJob.Status.DRAFT,
+            ServiceJob.Status.PLANNED,
+            ServiceJob.Status.SENT,
+            ServiceJob.Status.SCHEDULED,
+            ServiceJob.Status.IN_PROGRESS,
+        )
+        and not open_work_log
+        and (job.status == ServiceJob.Status.IN_PROGRESS or has_work_logs or has_chargeable_items)
+    )
     report_context = _service_report_context(job)
     return {
         "job": job,
         "work_logs": work_logs,
         "used_items": used_items,
+        "expense_items": expense_items,
         "not_used_items": not_used_items,
         "pending_items": pending_items,
         "quote_items": quote_items,
@@ -246,6 +269,9 @@ def _service_job_detail_context(job, *, work_log_form=None, item_form=None):
         "is_finished": job.status == ServiceJob.Status.FINISHED,
         "is_draft": job.status == ServiceJob.Status.DRAFT,
         "is_archived": job.status == ServiceJob.Status.ARCHIVED,
+        "has_work_logs": has_work_logs,
+        "has_chargeable_items": has_chargeable_items,
+        "can_finish_service": can_finish_service,
         "can_edit_entries": job.status in (
             ServiceJob.Status.DRAFT,
             ServiceJob.Status.PLANNED,
@@ -756,9 +782,22 @@ def service_job_status_action(request, job_id):
             job.status = ServiceJob.Status.IN_PROGRESS
             job.save(update_fields=["status", "finished_at", "updated_at"])
             messages.success(request, "Serviço iniciado.")
-        elif action == "finish" and job.status == ServiceJob.Status.IN_PROGRESS:
+        elif action == "finish" and job.status in (
+            ServiceJob.Status.DRAFT,
+            ServiceJob.Status.PLANNED,
+            ServiceJob.Status.SENT,
+            ServiceJob.Status.SCHEDULED,
+            ServiceJob.Status.IN_PROGRESS,
+        ):
             if job.work_logs.filter(end_time__isnull=True).exists():
                 messages.error(request, "Encerre o periodo aberto antes de finalizar o servico.")
+                return redirect("service_job_detail", job_id=job.id)
+            has_work_logs = job.work_logs.exists()
+            has_chargeable_items = job.item_expenses.filter(
+                usage_status__in=ServiceItemExpense.CHARGEABLE_USAGE_STATUSES
+            ).exists()
+            if not (job.status == ServiceJob.Status.IN_PROGRESS or has_work_logs or has_chargeable_items):
+                messages.error(request, "Registre periodos trabalhados ou confirme itens usados antes de finalizar o servico.")
                 return redirect("service_job_detail", job_id=job.id)
             job.status = ServiceJob.Status.FINISHED
             job.save(update_fields=["status", "finished_at", "updated_at"])
