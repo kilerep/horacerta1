@@ -1,0 +1,165 @@
+{% extends "accounts/base.html" %}
+
+{% block title %}{{ form_title|default:"Novo pedido" }}{% endblock %}
+{% block page_title %}{{ form_title|default:"Novo pedido" }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  .request-form-page{display:grid;gap:16px;max-width:1080px}
+  .request-form-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:start}
+  .request-form-head h1{margin:0;font-size:28px;line-height:1.12}
+  .request-form-head p{margin:8px 0 0;color:var(--color-text-muted);line-height:1.45}
+  .rq-form{display:grid;gap:14px}
+  .rq-section{border:1px solid var(--color-border);border-radius:8px;background:var(--gradient-card);box-shadow:var(--shadow-soft);padding:16px;display:grid;gap:12px}
+  .rq-section h2{margin:0;font-size:18px;line-height:1.2}
+  .rq-hint{margin:0;color:var(--color-text-muted);font-size:13px;line-height:1.45}
+  .rq-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .rq-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .rq-field.full{grid-column:1 / -1}
+  .rq-field label{display:block;margin-bottom:5px;color:var(--color-text-muted);font-size:12px;font-weight:800}
+  .rq-field .help{margin-top:5px;color:var(--color-text-muted);font-size:12px}
+  .rq-errors{display:grid;gap:6px;margin-top:6px;color:var(--danger-text);font-size:12px}
+  .client-mode{display:flex;gap:10px;flex-wrap:wrap}
+  .client-mode label{display:flex;align-items:center;gap:8px;border:1px solid var(--color-border);border-radius:8px;padding:10px 12px;background:var(--surface-soft);font-weight:800}
+  .rq-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+  @media (max-width:760px){
+    .request-form-head,.rq-grid,.rq-grid.three{grid-template-columns:1fr}
+    .rq-field.full{grid-column:auto}
+    .request-form-head .btn,.rq-actions .btn,.rq-actions button,.client-mode label{width:100%}
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="request-form-page">
+  <section class="card request-form-head">
+    <div>
+      <h1>{{ form_title|default:"Novo pedido" }}</h1>
+      <p>{{ form_subtitle|default:"Registre uma solicitação recebida antes de transformar em serviço." }}</p>
+    </div>
+    <a class="btn" href="{% url 'service_request_list' %}">Voltar</a>
+  </section>
+
+  <form class="rq-form" method="post" data-request-form>
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="alert danger">{{ form.non_field_errors }}</div>{% endif %}
+
+    <section class="rq-section">
+      <h2>Cliente</h2>
+      <p class="rq-hint">Escolha um cliente cadastrado ou informe os dados de um cliente avulso.</p>
+      <div class="client-mode">
+        {% for radio in form.client_mode %}
+          <label>{{ radio.tag }} <span>{{ radio.choice_label }}</span></label>
+        {% endfor %}
+      </div>
+      <div class="rq-grid">
+        <div class="rq-field" data-registered-client>
+          <label for="{{ form.contract.id_for_label }}">{{ form.contract.label }}</label>
+          {{ form.contract }}
+          {% if form.contract.errors %}<div class="rq-errors">{{ form.contract.errors }}</div>{% endif %}
+        </div>
+        <div class="rq-field" data-casual-client>
+          <label for="{{ form.client_name.id_for_label }}">{{ form.client_name.label }}</label>
+          {{ form.client_name }}
+          {% if form.client_name.help_text %}<div class="help">{{ form.client_name.help_text }}</div>{% endif %}
+          {% if form.client_name.errors %}<div class="rq-errors">{{ form.client_name.errors }}</div>{% endif %}
+        </div>
+        <div class="rq-field" data-casual-client>
+          <label for="{{ form.client_whatsapp.id_for_label }}">{{ form.client_whatsapp.label }}</label>
+          {{ form.client_whatsapp }}
+          {% if form.client_whatsapp.errors %}<div class="rq-errors">{{ form.client_whatsapp.errors }}</div>{% endif %}
+        </div>
+        <div class="rq-field" data-casual-client>
+          <label for="{{ form.client_email.id_for_label }}">{{ form.client_email.label }}</label>
+          {{ form.client_email }}
+          {% if form.client_email.errors %}<div class="rq-errors">{{ form.client_email.errors }}</div>{% endif %}
+        </div>
+      </div>
+    </section>
+
+    <section class="rq-section">
+      <h2>Local</h2>
+      <div class="rq-grid">
+        <div class="rq-field">
+          <label for="{{ form.address_zipcode.id_for_label }}">{{ form.address_zipcode.label }}</label>
+          {{ form.address_zipcode }}
+          {% if form.address_zipcode.errors %}<div class="rq-errors">{{ form.address_zipcode.errors }}</div>{% endif %}
+        </div>
+        <div class="rq-field full">
+          <label for="{{ form.address_street.id_for_label }}">{{ form.address_street.label }}</label>
+          {{ form.address_street }}
+        </div>
+        <div class="rq-field"><label for="{{ form.address_number.id_for_label }}">{{ form.address_number.label }}</label>{{ form.address_number }}</div>
+        <div class="rq-field"><label for="{{ form.address_complement.id_for_label }}">{{ form.address_complement.label }}</label>{{ form.address_complement }}</div>
+        <div class="rq-field"><label for="{{ form.address_neighborhood.id_for_label }}">{{ form.address_neighborhood.label }}</label>{{ form.address_neighborhood }}</div>
+        <div class="rq-field"><label for="{{ form.address_city.id_for_label }}">{{ form.address_city.label }}</label>{{ form.address_city }}</div>
+        <div class="rq-field"><label for="{{ form.address_state.id_for_label }}">{{ form.address_state.label }}</label>{{ form.address_state }}</div>
+        <div class="rq-field full"><label for="{{ form.address_reference.id_for_label }}">{{ form.address_reference.label }}</label>{{ form.address_reference }}</div>
+      </div>
+    </section>
+
+    <section class="rq-section">
+      <h2>Pedido</h2>
+      <div class="rq-grid">
+        <div class="rq-field">
+          <label for="{{ form.category.id_for_label }}">{{ form.category.label }}</label>
+          {{ form.category }}
+          {% if form.category.errors %}<div class="rq-errors">{{ form.category.errors }}</div>{% endif %}
+        </div>
+        <div class="rq-field">
+          <label for="{{ form.title.id_for_label }}">{{ form.title.label }}</label>
+          {{ form.title }}
+          {% if form.title.errors %}<div class="rq-errors">{{ form.title.errors }}</div>{% endif %}
+        </div>
+        <div class="rq-field full">
+          <label for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
+          {{ form.description }}
+          {% if form.description.errors %}<div class="rq-errors">{{ form.description.errors }}</div>{% endif %}
+        </div>
+      </div>
+      <div class="rq-grid three">
+        <div class="rq-field"><label for="{{ form.urgency.id_for_label }}">{{ form.urgency.label }}</label>{{ form.urgency }}</div>
+        <div class="rq-field"><label for="{{ form.preferred_date.id_for_label }}">{{ form.preferred_date.label }}</label>{{ form.preferred_date }}</div>
+        <div class="rq-field"><label for="{{ form.preferred_time.id_for_label }}">{{ form.preferred_time.label }}</label>{{ form.preferred_time }}</div>
+      </div>
+    </section>
+
+    <section class="rq-section">
+      <h2>Origem</h2>
+      <div class="rq-grid">
+        <div class="rq-field">
+          <label for="{{ form.source.id_for_label }}">{{ form.source.label }}</label>
+          {{ form.source }}
+        </div>
+      </div>
+    </section>
+
+    <div class="rq-actions">
+      <a class="btn" href="{% url 'service_request_list' %}">Voltar</a>
+      <button class="btn" type="submit" name="submit_action" value="save">Salvar pedido</button>
+      <button class="btn primary" type="submit" name="submit_action" value="convert">Salvar e transformar em serviço</button>
+    </div>
+  </form>
+</div>
+
+<script>
+  (function(){
+    var form = document.querySelector("[data-request-form]");
+    if(!form) return;
+    var registeredBlocks = Array.prototype.slice.call(form.querySelectorAll("[data-registered-client]"));
+    var casualBlocks = Array.prototype.slice.call(form.querySelectorAll("[data-casual-client]"));
+    var modeInputs = Array.prototype.slice.call(form.querySelectorAll('input[name="client_mode"]'));
+    function selectedMode(){
+      var selected = modeInputs.find(function(input){ return input.checked; });
+      return selected ? selected.value : "registered";
+    }
+    function syncClientMode(){
+      var mode = selectedMode();
+      registeredBlocks.forEach(function(block){ block.style.display = mode === "registered" ? "" : "none"; });
+      casualBlocks.forEach(function(block){ block.style.display = mode === "casual" ? "" : "none"; });
+    }
+    modeInputs.forEach(function(input){ input.addEventListener("change", syncClientMode); });
+    syncClientMode();
+  })();
+</script>
+{% endblock %}

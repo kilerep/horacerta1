@@ -9,7 +9,7 @@ from accounts.models import User
 from companies.models import Company, Employee
 from timeclock.models import Contract, Punch, ServiceReport
 
-from .models import ServiceCategory, ServiceItemCatalog, ServiceItemExpense, ServiceJob, ServiceWorkLog
+from .models import ServiceCategory, ServiceItemCatalog, ServiceItemExpense, ServiceJob, ServiceRequest, ServiceWorkLog
 
 
 @override_settings(
@@ -285,6 +285,7 @@ class ServiceJobAreaTests(TestCase):
         self.assertContains(response, "Ações rápidas")
         self.assertContains(response, "Resumo da área")
         self.assertContains(response, "Filtrar serviços")
+        self.assertContains(response, "Pedidos de serviço")
         self.assertContains(response, "Nenhum serviço encontrado.")
         self.assertContains(response, "Catálogo de itens")
         self.assertContains(response, "sem alterar seu histórico normal")
@@ -839,6 +840,189 @@ class ServiceJobAreaTests(TestCase):
         search_response = self.client.get(reverse("service_job_list"), {"q": "hidraulica"})
         self.assertContains(search_response, finished.title)
         self.assertNotContains(search_response, draft.title)
+
+    def test_create_manual_service_request_for_casual_client_list_filter_and_whatsapp(self):
+        before_punch_count = Punch.objects.count()
+
+        response = self.client.post(
+            reverse("service_request_create"),
+            {
+                "client_mode": "casual",
+                "contract": "",
+                "client_name": "Cliente Pedido Avulso",
+                "client_whatsapp": "11999999999",
+                "client_email": "pedido@example.com",
+                "address_zipcode": "01001-000",
+                "address_street": "Praca da Se",
+                "address_number": "100",
+                "address_complement": "Sala 8",
+                "address_neighborhood": "Se",
+                "address_city": "Sao Paulo",
+                "address_state": "sp",
+                "address_reference": "Proximo ao metro",
+                "category": str(self.category.id),
+                "title": "Pedido de revisao eletrica",
+                "description": "Cliente pediu avaliacao do quadro.",
+                "urgency": ServiceRequest.Urgency.HIGH,
+                "preferred_date": "2026-06-20",
+                "preferred_time": "09:30",
+                "source": ServiceRequest.Source.WHATSAPP,
+                "submit_action": "save",
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        service_request = ServiceRequest.objects.get(title="Pedido de revisao eletrica")
+        self.assertEqual(service_request.professional, self.mei_user)
+        self.assertIsNone(service_request.client)
+        self.assertEqual(service_request.client_name, "Cliente Pedido Avulso")
+        self.assertEqual(service_request.address_state, "SP")
+        self.assertEqual(service_request.status, ServiceRequest.Status.NEW)
+        self.assertEqual(Punch.objects.count(), before_punch_count)
+
+        list_response = self.client.get(reverse("service_request_list"))
+        self.assertContains(list_response, "Pedido de revisao eletrica")
+        self.assertContains(list_response, "Novo")
+
+        filtered_response = self.client.get(reverse("service_request_list"), {"status": ServiceRequest.Status.NEW})
+        self.assertContains(filtered_response, "Pedido de revisao eletrica")
+
+        whatsapp_response = self.client.get(reverse("service_request_whatsapp", args=[service_request.id]))
+        self.assertEqual(whatsapp_response.status_code, 302)
+        self.assertIn("https://wa.me/5511999999999?text=", whatsapp_response["Location"])
+        self.assertIn("Pedido%20de%20revisao%20eletrica", whatsapp_response["Location"])
+
+    def test_create_registered_client_service_request(self):
+        response = self.client.post(
+            reverse("service_request_create"),
+            {
+                "client_mode": "registered",
+                "contract": str(self.contract.id),
+                "client_name": "",
+                "client_whatsapp": "",
+                "client_email": "",
+                "address_city": "Sao Paulo",
+                "address_state": "SP",
+                "category": str(ServiceCategory.objects.get(slug="manutencao").id),
+                "title": "Pedido cliente cadastrado",
+                "description": "Cliente cadastrado pediu manutencao.",
+                "urgency": ServiceRequest.Urgency.NORMAL,
+                "preferred_date": "2026-06-21",
+                "preferred_time": "10:00",
+                "source": ServiceRequest.Source.PHONE,
+                "submit_action": "save",
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        service_request = ServiceRequest.objects.get(title="Pedido cliente cadastrado")
+        self.assertEqual(service_request.contract, self.contract)
+        self.assertEqual(service_request.client, self.company)
+        self.assertEqual(service_request.client_name, self.company.name)
+        self.assertEqual(service_request.source, ServiceRequest.Source.PHONE)
+
+    def test_service_request_conversion_creates_draft_service_and_preserves_history(self):
+        before_punch_count = Punch.objects.count()
+        service_request = ServiceRequest.objects.create(
+            professional=self.mei_user,
+            contract=self.contract,
+            client=self.company,
+            client_name=self.company.name,
+            client_whatsapp="11988887777",
+            category=self.category,
+            title="Converter pedido em servico",
+            description="Trocar tomadas e revisar quadro.",
+            address_zipcode="01001-000",
+            address_street="Rua A",
+            address_number="50",
+            address_neighborhood="Centro",
+            address_city="Sao Paulo",
+            address_state="SP",
+            address_reference="Portaria",
+            preferred_date=datetime(2026, 6, 22).date(),
+            preferred_time=datetime.strptime("14:30", "%H:%M").time(),
+            urgency=ServiceRequest.Urgency.URGENT,
+            source=ServiceRequest.Source.REFERRAL,
+        )
+
+        response = self.client.post(reverse("service_request_convert", args=[service_request.id]), follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        service_request.refresh_from_db()
+        self.assertEqual(service_request.status, ServiceRequest.Status.CONVERTED)
+        self.assertIsNotNone(service_request.converted_service)
+        job = service_request.converted_service
+        self.assertEqual(job.status, ServiceJob.Status.DRAFT)
+        self.assertEqual(job.contract, self.contract)
+        self.assertEqual(job.client, self.company)
+        self.assertEqual(job.manual_client_whatsapp, "11988887777")
+        self.assertEqual(job.title, service_request.title)
+        self.assertEqual(job.description, service_request.description)
+        self.assertEqual(job.service_zip_code, service_request.address_zipcode)
+        self.assertEqual(job.service_street, service_request.address_street)
+        self.assertEqual(job.service_number, service_request.address_number)
+        self.assertEqual(job.service_district, service_request.address_neighborhood)
+        self.assertEqual(job.service_city, service_request.address_city)
+        self.assertEqual(job.service_state, service_request.address_state)
+        self.assertEqual(job.service_reference, service_request.address_reference)
+        self.assertEqual(job.start_date, service_request.preferred_date)
+        self.assertEqual(job.planned_start_time, service_request.preferred_time)
+        self.assertEqual(job.billing_mode, ServiceJob.BillingMode.UNDEFINED)
+        self.assertEqual(Punch.objects.count(), before_punch_count)
+
+    def test_service_request_save_and_convert_from_form_for_casual_client(self):
+        response = self.client.post(
+            reverse("service_request_create"),
+            {
+                "client_mode": "casual",
+                "contract": "",
+                "client_name": "Maria Pedido",
+                "client_whatsapp": "11977776666",
+                "client_email": "",
+                "address_street": "Rua das Flores",
+                "address_number": "45",
+                "address_city": "Campinas",
+                "address_state": "SP",
+                "category": str(self.category.id),
+                "title": "Pedido convertido direto",
+                "description": "Transformar no envio do formulario.",
+                "urgency": ServiceRequest.Urgency.NORMAL,
+                "preferred_date": "2026-06-23",
+                "preferred_time": "08:00",
+                "source": ServiceRequest.Source.OTHER,
+                "submit_action": "convert",
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        service_request = ServiceRequest.objects.get(title="Pedido convertido direto")
+        self.assertEqual(service_request.status, ServiceRequest.Status.CONVERTED)
+        job = service_request.converted_service
+        self.assertEqual(job.manual_client_name, "Maria Pedido")
+        self.assertEqual(job.manual_client_whatsapp, "11977776666")
+        self.assertEqual(job.status, ServiceJob.Status.DRAFT)
+
+    def test_other_user_cannot_see_or_convert_service_request(self):
+        service_request = ServiceRequest.objects.create(
+            professional=self.other_user,
+            contract=self.other_contract,
+            client=self.other_company,
+            client_name=self.other_company.name,
+            category=self.category,
+            title="Pedido de outro usuario",
+            description="Isolamento de usuario.",
+        )
+
+        list_response = self.client.get(reverse("service_request_list"))
+        detail_response = self.client.get(reverse("service_request_detail", args=[service_request.id]))
+        convert_response = self.client.post(reverse("service_request_convert", args=[service_request.id]))
+
+        self.assertNotContains(list_response, service_request.title)
+        self.assertEqual(detail_response.status_code, 404)
+        self.assertEqual(convert_response.status_code, 404)
 
     def test_user_cannot_see_or_open_other_users_service(self):
         other_job = ServiceJob.objects.create(

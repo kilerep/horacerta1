@@ -20,8 +20,15 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, Tabl
 from accounts.models import User
 from accounts.mei_context import mei_contracts_for_user
 
-from .forms import PlannedServiceItemForm, ServiceItemCatalogForm, ServiceItemExpenseForm, ServiceJobForm, ServiceWorkLogForm
-from .models import ServiceCategory, ServiceItemCatalog, ServiceItemExpense, ServiceJob, ServiceWorkLog
+from .forms import (
+    PlannedServiceItemForm,
+    ServiceItemCatalogForm,
+    ServiceItemExpenseForm,
+    ServiceJobForm,
+    ServiceRequestForm,
+    ServiceWorkLogForm,
+)
+from .models import ServiceCategory, ServiceItemCatalog, ServiceItemExpense, ServiceJob, ServiceRequest, ServiceWorkLog
 
 
 def _redirect_if_not_mei(request):
@@ -58,6 +65,10 @@ def _filename_part(value):
 
 def _service_jobs_for_user(user):
     return ServiceJob.objects.filter(professional=user).select_related("category", "client", "contract")
+
+
+def _service_requests_for_user(user):
+    return ServiceRequest.objects.filter(professional=user).select_related("category", "client", "contract", "converted_service")
 
 
 def _catalog_items_for_user(user):
@@ -332,11 +343,17 @@ def service_job_list(request):
         jobs = jobs.filter(Q(start_date__lte=date_to) | Q(start_date__isnull=True, created_at__date__lte=date_to))
 
     all_jobs = _service_jobs_for_user(request.user)
+    all_requests = _service_requests_for_user(request.user)
     status_counts = all_jobs.aggregate(
         in_progress=Count("id", filter=Q(status=ServiceJob.Status.IN_PROGRESS)),
         finished=Count("id", filter=Q(status=ServiceJob.Status.FINISHED)),
         drafts=Count("id", filter=Q(status=ServiceJob.Status.DRAFT)),
         archived=Count("id", filter=Q(status=ServiceJob.Status.ARCHIVED)),
+    )
+    request_counts = all_requests.aggregate(
+        new=Count("id", filter=Q(status=ServiceRequest.Status.NEW)),
+        waiting=Count("id", filter=Q(status=ServiceRequest.Status.WAITING_INFO)),
+        in_review=Count("id", filter=Q(status=ServiceRequest.Status.IN_REVIEW)),
     )
     estimated_total = sum(
         (job.estimated_total for job in all_jobs.prefetch_related("work_logs", "item_expenses")),
@@ -363,15 +380,207 @@ def service_job_list(request):
             "drafts": f"{reverse('service_job_list')}?status={ServiceJob.Status.DRAFT}",
             "archived": f"{reverse('service_job_list')}?status={ServiceJob.Status.ARCHIVED}",
         },
+        "service_request_url": reverse("service_request_list"),
         "summary": {
             "in_progress": status_counts["in_progress"] or 0,
             "finished": status_counts["finished"] or 0,
             "drafts": status_counts["drafts"] or 0,
             "archived": status_counts["archived"] or 0,
             "estimated_total_brl": _format_brl(estimated_total),
+            "requests_open": (request_counts["new"] or 0) + (request_counts["waiting"] or 0) + (request_counts["in_review"] or 0),
         },
     }
     return render(request, "services/service_job_list.html", context)
+
+
+def _service_request_whatsapp_url(service_request):
+    digits = "".join(ch for ch in service_request.client_whatsapp if ch.isdigit())
+    message = quote(service_request.whatsapp_message, safe="")
+    if digits:
+        return f"https://wa.me/55{digits}?text={message}" if len(digits) <= 11 else f"https://wa.me/{digits}?text={message}"
+    return f"https://wa.me/?text={message}"
+
+
+def _convert_service_request_to_job(service_request):
+    if service_request.converted_service_id:
+        return service_request.converted_service
+
+    job = ServiceJob.objects.create(
+        professional=service_request.professional,
+        client=service_request.client,
+        contract=service_request.contract,
+        manual_client_name="" if service_request.client_id else service_request.client_name,
+        manual_client_whatsapp=service_request.client_whatsapp,
+        manual_client_email=service_request.client_email,
+        category=service_request.category,
+        title=service_request.title,
+        description=service_request.description,
+        service_zip_code=service_request.address_zipcode,
+        service_street=service_request.address_street,
+        service_number=service_request.address_number,
+        service_complement=service_request.address_complement,
+        service_district=service_request.address_neighborhood,
+        service_city=service_request.address_city,
+        service_state=service_request.address_state,
+        service_reference=service_request.address_reference,
+        service_location=service_request.full_address,
+        start_date=service_request.preferred_date,
+        end_date=service_request.preferred_date,
+        planned_start_time=service_request.preferred_time,
+        status=ServiceJob.Status.DRAFT,
+        billing_mode=ServiceJob.BillingMode.UNDEFINED,
+        hourly_rate_snapshot=Decimal("0.00"),
+        notes="Criado a partir de pedido de servico.",
+    )
+    service_request.converted_service = job
+    service_request.status = ServiceRequest.Status.CONVERTED
+    service_request.save(update_fields=["converted_service", "status", "updated_at"])
+    return job
+
+
+@login_required
+def service_request_list(request):
+    denied = _redirect_if_not_mei(request)
+    if denied:
+        return denied
+
+    selected_status = (request.GET.get("status") or "").strip()
+    requests = _service_requests_for_user(request.user)
+    if selected_status:
+        requests = requests.filter(status=selected_status)
+
+    counts = _service_requests_for_user(request.user).aggregate(
+        new=Count("id", filter=Q(status=ServiceRequest.Status.NEW)),
+        waiting=Count("id", filter=Q(status=ServiceRequest.Status.WAITING_INFO)),
+        in_review=Count("id", filter=Q(status=ServiceRequest.Status.IN_REVIEW)),
+        converted=Count("id", filter=Q(status=ServiceRequest.Status.CONVERTED)),
+        rejected=Count("id", filter=Q(status=ServiceRequest.Status.REJECTED)),
+        archived=Count("id", filter=Q(status=ServiceRequest.Status.ARCHIVED)),
+    )
+    return render(
+        request,
+        "services/service_request_list.html",
+        {
+            "service_requests": requests,
+            "selected_status": selected_status,
+            "status_choices": ServiceRequest.Status.choices,
+            "counts": {key: value or 0 for key, value in counts.items()},
+        },
+    )
+
+
+@login_required
+def service_request_create(request):
+    denied = _redirect_if_not_mei(request)
+    if denied:
+        return denied
+
+    if request.method == "POST":
+        form = ServiceRequestForm(request.POST, user=request.user)
+        if form.is_valid():
+            submit_action = (request.POST.get("submit_action") or "").strip()
+            with transaction.atomic():
+                service_request = form.save()
+                if submit_action == "convert":
+                    job = _convert_service_request_to_job(service_request)
+                    messages.success(request, "Pedido salvo e transformado em rascunho de servico.")
+                    return redirect("service_job_detail", job_id=job.id)
+            messages.success(request, "Pedido de servico salvo.")
+            return redirect("service_request_detail", request_id=service_request.id)
+    else:
+        form = ServiceRequestForm(user=request.user)
+
+    return render(
+        request,
+        "services/service_request_form.html",
+        {
+            "form": form,
+            "form_title": "Novo pedido",
+            "form_subtitle": "Registre uma solicitacao recebida antes de transformar em servico.",
+        },
+    )
+
+
+@login_required
+def service_request_detail(request, request_id):
+    denied = _redirect_if_not_mei(request)
+    if denied:
+        return denied
+
+    service_request = get_object_or_404(_service_requests_for_user(request.user), id=request_id)
+    return render(
+        request,
+        "services/service_request_detail.html",
+        {
+            "service_request": service_request,
+            "whatsapp_url": _service_request_whatsapp_url(service_request),
+            "whatsapp_message": service_request.whatsapp_message,
+            "can_convert": service_request.status
+            not in (
+                ServiceRequest.Status.CONVERTED,
+                ServiceRequest.Status.REJECTED,
+                ServiceRequest.Status.ARCHIVED,
+            ),
+        },
+    )
+
+
+@login_required
+def service_request_convert(request, request_id):
+    denied = _redirect_if_not_mei(request)
+    if denied:
+        return denied
+    if request.method != "POST":
+        return redirect("service_request_detail", request_id=request_id)
+
+    service_request = get_object_or_404(_service_requests_for_user(request.user), id=request_id)
+    if service_request.status in (ServiceRequest.Status.REJECTED, ServiceRequest.Status.ARCHIVED):
+        messages.error(request, "Reabra o pedido antes de transformar em servico.")
+        return redirect("service_request_detail", request_id=service_request.id)
+    with transaction.atomic():
+        job = _convert_service_request_to_job(service_request)
+    messages.success(request, "Pedido transformado em rascunho de servico.")
+    return redirect("service_job_detail", job_id=job.id)
+
+
+@login_required
+def service_request_status_action(request, request_id):
+    denied = _redirect_if_not_mei(request)
+    if denied:
+        return denied
+    if request.method != "POST":
+        return redirect("service_request_detail", request_id=request_id)
+
+    service_request = get_object_or_404(_service_requests_for_user(request.user), id=request_id)
+    action = (request.POST.get("action") or "").strip()
+    transitions = {
+        "waiting_info": ServiceRequest.Status.WAITING_INFO,
+        "in_review": ServiceRequest.Status.IN_REVIEW,
+        "reject": ServiceRequest.Status.REJECTED,
+        "archive": ServiceRequest.Status.ARCHIVED,
+        "reopen": ServiceRequest.Status.IN_REVIEW,
+    }
+    status = transitions.get(action)
+    if not status:
+        messages.error(request, "Acao invalida para este pedido.")
+        return redirect("service_request_detail", request_id=service_request.id)
+    if service_request.status == ServiceRequest.Status.CONVERTED and action != "archive":
+        messages.error(request, "Pedido ja transformado em servico.")
+        return redirect("service_request_detail", request_id=service_request.id)
+    service_request.status = status
+    service_request.save(update_fields=["status", "updated_at"])
+    messages.success(request, "Status do pedido atualizado.")
+    return redirect("service_request_detail", request_id=service_request.id)
+
+
+@login_required
+def service_request_whatsapp(request, request_id):
+    denied = _redirect_if_not_mei(request)
+    if denied:
+        return denied
+
+    service_request = get_object_or_404(_service_requests_for_user(request.user), id=request_id)
+    return redirect(_service_request_whatsapp_url(service_request))
 
 
 @login_required

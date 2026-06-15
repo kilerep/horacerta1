@@ -38,6 +38,126 @@ class ServiceItemUnit(models.TextChoices):
     OTHER = "OTHER", "outro"
 
 
+class ServiceRequest(models.Model):
+    class Status(models.TextChoices):
+        NEW = "NEW", "Novo"
+        WAITING_INFO = "WAITING_INFO", "Aguardando informacoes"
+        IN_REVIEW = "IN_REVIEW", "Em analise"
+        CONVERTED = "CONVERTED", "Transformado em servico"
+        REJECTED = "REJECTED", "Recusado"
+        ARCHIVED = "ARCHIVED", "Arquivado"
+
+    class Source(models.TextChoices):
+        WHATSAPP = "WHATSAPP", "WhatsApp"
+        PHONE = "PHONE", "Ligacao"
+        REFERRAL = "REFERRAL", "Indicacao"
+        OLD_CLIENT = "OLD_CLIENT", "Cliente antigo"
+        PUBLIC_LINK = "PUBLIC_LINK", "Link publico"
+        OTHER = "OTHER", "Outro"
+
+    class Urgency(models.TextChoices):
+        LOW = "LOW", "Baixa"
+        NORMAL = "NORMAL", "Normal"
+        HIGH = "HIGH", "Alta"
+        URGENT = "URGENT", "Urgente"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    professional = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="service_requests",
+    )
+    client = models.ForeignKey(
+        "companies.Company",
+        on_delete=models.PROTECT,
+        related_name="service_requests",
+        null=True,
+        blank=True,
+    )
+    contract = models.ForeignKey(
+        "timeclock.Contract",
+        on_delete=models.PROTECT,
+        related_name="service_requests",
+        null=True,
+        blank=True,
+    )
+    client_name = models.CharField(max_length=120)
+    client_whatsapp = models.CharField(max_length=30, blank=True, default="")
+    client_email = models.EmailField(blank=True, null=True)
+    address_zipcode = models.CharField(max_length=9, blank=True, default="")
+    address_street = models.CharField(max_length=140, blank=True, default="")
+    address_number = models.CharField(max_length=20, blank=True, default="")
+    address_complement = models.CharField(max_length=80, blank=True, default="")
+    address_neighborhood = models.CharField(max_length=80, blank=True, default="")
+    address_city = models.CharField(max_length=80, blank=True, default="")
+    address_state = models.CharField(max_length=2, blank=True, default="")
+    address_reference = models.CharField(max_length=160, blank=True, default="")
+    category = models.ForeignKey(
+        ServiceCategory,
+        on_delete=models.PROTECT,
+        related_name="service_requests",
+    )
+    title = models.CharField(max_length=140)
+    description = models.TextField(blank=True, default="")
+    preferred_date = models.DateField(null=True, blank=True)
+    preferred_time = models.TimeField(null=True, blank=True)
+    urgency = models.CharField(max_length=20, choices=Urgency.choices, default=Urgency.NORMAL)
+    status = models.CharField(max_length=24, choices=Status.choices, default=Status.NEW)
+    source = models.CharField(max_length=20, choices=Source.choices, default=Source.WHATSAPP)
+    converted_service = models.OneToOneField(
+        "services.ServiceJob",
+        on_delete=models.SET_NULL,
+        related_name="source_request",
+        null=True,
+        blank=True,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["professional", "status", "-created_at"]),
+            models.Index(fields=["professional", "category", "-created_at"]),
+            models.Index(fields=["professional", "source", "-created_at"]),
+        ]
+        verbose_name = "Pedido de servico"
+        verbose_name_plural = "Pedidos de servico"
+
+    def __str__(self):
+        return self.title
+
+    @property
+    def full_address(self):
+        parts = [
+            self.address_street,
+            self.address_number,
+            self.address_complement,
+            self.address_neighborhood,
+            self.address_city,
+            self.address_state,
+        ]
+        return ", ".join(part for part in parts if part)
+
+    @property
+    def address_summary(self):
+        if self.address_street or self.address_city or self.address_state:
+            street = " ".join(part for part in [self.address_street, self.address_number] if part)
+            city_state = "/".join(part for part in [self.address_city, self.address_state] if part)
+            if street and city_state:
+                return f"{street} - {city_state}"
+            return street or city_state
+        return ""
+
+    @property
+    def whatsapp_message(self):
+        category = self.category.name if self.category_id else "servico"
+        return (
+            f"Ola, recebi seu pedido pelo HoraCerta sobre {self.title or category}. "
+            "Vou organizar as informacoes e te retorno com a previa do servico."
+        )
+
+
 class ServiceJob(models.Model):
     class Status(models.TextChoices):
         DRAFT = "DRAFT", "Rascunho"
@@ -394,7 +514,7 @@ class ServiceItemExpense(models.Model):
         indexes = [
             models.Index(fields=["service_job", "usage_status", "-created_at"]),
             models.Index(fields=["service_job", "type", "-created_at"]),
-            models.Index(fields=["catalog_item", "-created_at"]),
+            models.Index(fields=["catalog_item", "-created_at"], name="services_se_catalog_808f76_idx"),
         ]
         verbose_name = "Item/despesa do servico"
         verbose_name_plural = "Itens/despesas do servico"
@@ -461,9 +581,9 @@ class ServiceItemCatalog(models.Model):
     class Meta:
         ordering = ["-favorite", "name"]
         indexes = [
-            models.Index(fields=["professional", "is_active", "name"]),
-            models.Index(fields=["professional", "favorite", "name"]),
-            models.Index(fields=["professional", "category", "name"]),
+            models.Index(fields=["professional", "is_active", "name"], name="services_se_profess_8f9b2f_idx"),
+            models.Index(fields=["professional", "favorite", "name"], name="services_se_profess_fa8e6f_idx"),
+            models.Index(fields=["professional", "category", "name"], name="services_se_profess_6f5636_idx"),
         ]
         verbose_name = "Item do catalogo"
         verbose_name_plural = "Itens do catalogo"

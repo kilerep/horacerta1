@@ -90,6 +90,10 @@
         <strong>Novo serviço</strong>
         <span>Criar um trabalho avulso separado do histórico normal.</span>
       </a>
+      <a class="services-action-card" href="{{ service_request_url }}">
+        <strong>Pedidos de serviço</strong>
+        <span>{{ summary.requests_open }} pedido{{ summary.requests_open|pluralize:"s" }} aguardando análise.</span>
+      </a>
       <a class="services-action-card" href="{% url 'service_item_catalog_list' %}">
         <strong>Catálogo de itens</strong>
         <span>Organizar materiais, peças e despesas recorrentes.</span>

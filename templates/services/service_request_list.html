@@ -1,0 +1,107 @@
+{% extends "accounts/base.html" %}
+
+{% block title %}Pedidos de serviço{% endblock %}
+{% block page_title %}Pedidos de serviço{% endblock %}
+
+{% block extra_head %}
+<style>
+  .requests-page{display:grid;gap:16px;max-width:1180px}
+  .requests-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:start}
+  .requests-head h1{margin:0;font-size:28px;line-height:1.12;overflow-wrap:anywhere}
+  .requests-head p{margin:8px 0 0;color:var(--color-text-muted);line-height:1.45}
+  .request-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+  .request-stats{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+  .request-stat{border:1px solid var(--color-border);border-radius:8px;background:var(--surface-soft);padding:10px;min-width:0}
+  .request-stat span{display:block;color:var(--color-text-muted);font-size:11px;line-height:1.25}
+  .request-stat strong{display:block;margin-top:4px;font-size:18px;line-height:1.1}
+  .request-chips{display:flex;flex-wrap:wrap;gap:8px}
+  .request-chip{display:inline-flex;align-items:center;min-height:34px;padding:7px 11px;border:1px solid var(--color-border);border-radius:999px;background:var(--surface-soft);color:var(--color-text);font-size:13px;font-weight:800;text-decoration:none}
+  .request-chip.is-active{border-color:var(--color-primary);background:var(--color-primary-soft);color:var(--color-primary)}
+  .request-list{display:grid;gap:10px}
+  .request-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:start;border:1px solid var(--color-border);border-radius:8px;background:var(--gradient-card);box-shadow:var(--shadow-soft);padding:14px}
+  .request-card h2{margin:0;font-size:18px;line-height:1.22;overflow-wrap:anywhere}
+  .request-meta{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
+  .request-context{margin:10px 0 0;color:var(--color-text-muted);font-size:13px;line-height:1.45;overflow-wrap:anywhere}
+  .request-card-actions{display:grid;gap:8px;justify-items:end;min-width:150px}
+  .requests-empty{text-align:center;padding:26px 18px}
+  .requests-empty h2{margin:0 0 8px;font-size:22px}
+  .requests-empty p{margin:0 auto 14px;max-width:560px;color:var(--color-text-muted);line-height:1.45}
+  @media (max-width:980px){
+    .request-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+  }
+  @media (max-width:680px){
+    .requests-head,.request-card{grid-template-columns:1fr}
+    .request-actions,.request-actions .btn,.request-card-actions,.request-card-actions .btn{width:100%}
+    .request-card-actions{justify-items:stretch;min-width:0}
+    .request-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="requests-page">
+  <section class="card requests-head">
+    <div>
+      <h1>Pedidos de serviço</h1>
+      <p>Organize solicitações recebidas antes de transformar em serviço.</p>
+    </div>
+    <div class="request-actions">
+      <a class="btn" href="{% url 'service_job_list' %}">Serviços</a>
+      <a class="btn primary" href="{% url 'service_request_create' %}">Novo pedido</a>
+    </div>
+  </section>
+
+  <section class="request-stats" aria-label="Resumo dos pedidos">
+    <article class="request-stat"><span>Novo</span><strong>{{ counts.new }}</strong></article>
+    <article class="request-stat"><span>Aguardando informações</span><strong>{{ counts.waiting }}</strong></article>
+    <article class="request-stat"><span>Em análise</span><strong>{{ counts.in_review }}</strong></article>
+    <article class="request-stat"><span>Transformados</span><strong>{{ counts.converted }}</strong></article>
+    <article class="request-stat"><span>Recusados</span><strong>{{ counts.rejected }}</strong></article>
+    <article class="request-stat"><span>Arquivados</span><strong>{{ counts.archived }}</strong></article>
+  </section>
+
+  <section class="card">
+    <div class="request-chips" aria-label="Filtro por status">
+      <a class="request-chip {% if not selected_status %}is-active{% endif %}" href="{% url 'service_request_list' %}">Todos</a>
+      {% for value,label in status_choices %}
+        <a class="request-chip {% if selected_status == value %}is-active{% endif %}" href="{% url 'service_request_list' %}?status={{ value }}">{{ label }}</a>
+      {% endfor %}
+    </div>
+  </section>
+
+  {% if service_requests %}
+    <section class="request-list" aria-label="Lista de pedidos de serviço">
+      {% for item in service_requests %}
+        <article class="request-card">
+          <div>
+            <h2>{{ item.title }}</h2>
+            <div class="request-meta">
+              <span class="pill">{{ item.get_status_display }}</span>
+              <span class="pill">{{ item.client_name }}</span>
+              <span class="pill">{{ item.category.name }}</span>
+              <span class="pill">{{ item.get_urgency_display }}</span>
+            </div>
+            <p class="request-context">
+              Recebido por {{ item.get_source_display }} em {{ item.created_at|date:"d/m/Y" }}.
+              {% if item.preferred_date %} Desejado para {{ item.preferred_date|date:"d/m/Y" }}{% if item.preferred_time %} às {{ item.preferred_time|time:"H:i" }}{% endif %}.{% endif %}
+              {% if item.description %} {{ item.description|truncatechars:130 }}{% endif %}
+            </p>
+          </div>
+          <div class="request-card-actions">
+            <a class="btn primary" href="{% url 'service_request_detail' item.id %}">Ver pedido</a>
+            {% if item.converted_service_id %}
+              <a class="btn" href="{% url 'service_job_detail' item.converted_service_id %}">Ver serviço</a>
+            {% endif %}
+          </div>
+        </article>
+      {% endfor %}
+    </section>
+  {% else %}
+    <section class="card requests-empty">
+      <h2>Nenhum pedido de serviço encontrado.</h2>
+      <p>Registre solicitações recebidas por WhatsApp, ligação ou pessoalmente antes de transformar em serviço.</p>
+      <a class="btn primary" href="{% url 'service_request_create' %}">Novo pedido</a>
+    </section>
+  {% endif %}
+</div>
+{% endblock %}

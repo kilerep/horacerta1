@@ -4,7 +4,7 @@ from django.utils import timezone
 from accounts.mei_context import mei_contracts_for_user
 from timeclock.models import Contract
 
-from .models import ServiceCategory, ServiceItemCatalog, ServiceItemExpense, ServiceJob, ServiceWorkLog
+from .models import ServiceCategory, ServiceItemCatalog, ServiceItemExpense, ServiceJob, ServiceRequest, ServiceWorkLog
 
 
 class ServiceJobForm(forms.ModelForm):
@@ -217,6 +217,169 @@ class ServiceJobForm(forms.ModelForm):
             instance.service_state,
         ]
         instance.service_location = ", ".join(part for part in address_parts if part)
+        if commit:
+            instance.save()
+        return instance
+
+
+class ServiceRequestForm(forms.ModelForm):
+    client_mode = forms.ChoiceField(
+        choices=(("registered", "Cliente cadastrado"), ("casual", "Cliente avulso")),
+        required=False,
+        widget=forms.RadioSelect,
+        label="Tipo de cliente",
+    )
+    contract = forms.ModelChoiceField(
+        queryset=Contract.objects.none(),
+        required=False,
+        empty_label="Selecione um cliente cadastrado",
+        label="Cliente cadastrado",
+    )
+
+    class Meta:
+        model = ServiceRequest
+        fields = [
+            "contract",
+            "client_name",
+            "client_whatsapp",
+            "client_email",
+            "address_zipcode",
+            "address_street",
+            "address_number",
+            "address_complement",
+            "address_neighborhood",
+            "address_city",
+            "address_state",
+            "address_reference",
+            "category",
+            "title",
+            "description",
+            "urgency",
+            "preferred_date",
+            "preferred_time",
+            "source",
+        ]
+        labels = {
+            "client_name": "Nome",
+            "client_whatsapp": "WhatsApp",
+            "client_email": "E-mail",
+            "address_zipcode": "CEP",
+            "address_street": "Rua",
+            "address_number": "Numero",
+            "address_complement": "Complemento",
+            "address_neighborhood": "Bairro",
+            "address_city": "Cidade",
+            "address_state": "UF",
+            "address_reference": "Referencia",
+            "category": "Categoria",
+            "title": "Titulo do pedido",
+            "description": "Descricao",
+            "urgency": "Urgencia",
+            "preferred_date": "Data desejada",
+            "preferred_time": "Hora desejada",
+            "source": "Origem",
+        }
+        widgets = {
+            "client_whatsapp": forms.TextInput(attrs={"placeholder": "Ex.: 11999999999"}),
+            "client_email": forms.EmailInput(attrs={"placeholder": "Opcional"}),
+            "address_zipcode": forms.TextInput(attrs={"placeholder": "00000-000", "inputmode": "numeric"}),
+            "address_street": forms.TextInput(attrs={"placeholder": "Rua, avenida ou estrada"}),
+            "address_number": forms.TextInput(attrs={"placeholder": "Numero"}),
+            "address_complement": forms.TextInput(attrs={"placeholder": "Casa, bloco, sala..."}),
+            "address_neighborhood": forms.TextInput(attrs={"placeholder": "Bairro"}),
+            "address_city": forms.TextInput(attrs={"placeholder": "Cidade"}),
+            "address_state": forms.TextInput(attrs={"placeholder": "UF", "maxlength": "2"}),
+            "address_reference": forms.TextInput(attrs={"placeholder": "Ponto de referencia, opcional"}),
+            "title": forms.TextInput(attrs={"placeholder": "Ex.: Revisao eletrica residencial"}),
+            "description": forms.Textarea(attrs={"rows": 4, "placeholder": "Descreva o que o cliente pediu."}),
+            "preferred_date": forms.DateInput(attrs={"type": "date"}),
+            "preferred_time": forms.TimeInput(attrs={"type": "time"}),
+        }
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user = user
+        if user is not None:
+            self.instance.professional = user
+        self.fields["client_mode"].initial = "registered"
+        if self.instance and self.instance.pk:
+            self.fields["client_mode"].initial = "registered" if self.instance.contract_id else "casual"
+            self.fields["contract"].initial = self.instance.contract
+        self.fields["contract"].queryset = mei_contracts_for_user(user, include_inactive_contracts=True)
+        self.fields["contract"].label_from_instance = self._contract_label
+        self.fields["category"].queryset = ServiceCategory.objects.filter(is_active=True)
+        self.fields["client_name"].required = False
+        self.fields["client_name"].help_text = "Use quando o cliente ainda nao estiver cadastrado."
+        for field in self.fields.values():
+            field.widget.attrs.setdefault("class", "hc-input")
+
+    def _contract_label(self, contract):
+        company_name = getattr(getattr(contract, "company", None), "name", "Cliente")
+        hourly_rate = getattr(contract, "hourly_rate", None)
+        if hourly_rate:
+            return f"{company_name} - R$ {hourly_rate}/h"
+        return f"{company_name} - cliente cadastrado"
+
+    def clean_client_mode(self):
+        mode = (self.cleaned_data.get("client_mode") or "").strip()
+        if mode:
+            return mode
+        return "registered" if self.data.get("contract") else "casual"
+
+    def clean_client_name(self):
+        return (self.cleaned_data.get("client_name") or "").strip()
+
+    def clean_client_whatsapp(self):
+        return (self.cleaned_data.get("client_whatsapp") or "").strip()
+
+    def clean_client_email(self):
+        value = (self.cleaned_data.get("client_email") or "").strip().lower()
+        return value or None
+
+    def clean_address_zipcode(self):
+        value = (self.cleaned_data.get("address_zipcode") or "").strip()
+        digits = "".join(ch for ch in value if ch.isdigit())
+        if value and len(digits) != 8:
+            raise forms.ValidationError("Informe um CEP com 8 digitos.")
+        return value
+
+    def clean_address_state(self):
+        return (self.cleaned_data.get("address_state") or "").strip().upper()
+
+    def clean_title(self):
+        return (self.cleaned_data.get("title") or "").strip()
+
+    def clean_description(self):
+        return (self.cleaned_data.get("description") or "").strip()
+
+    def clean(self):
+        data = super().clean()
+        mode = data.get("client_mode")
+        contract = data.get("contract")
+        if mode == "registered" and not contract:
+            self.add_error("contract", "Selecione um cliente cadastrado ou escolha cliente avulso.")
+        if mode == "casual" and not data.get("client_name"):
+            self.add_error("client_name", "Informe o nome do cliente avulso.")
+        return data
+
+    def save(self, commit=True, status=None):
+        instance = super().save(commit=False)
+        instance.professional = self.user
+        contract = self.cleaned_data.get("contract")
+        client_mode = self.cleaned_data.get("client_mode")
+        if client_mode == "registered" and contract:
+            instance.contract = contract
+            instance.client = contract.company
+            instance.client_name = contract.company.name
+            if not instance.client_whatsapp:
+                instance.client_whatsapp = contract.company.whatsapp or contract.company.phone or ""
+            if not instance.client_email:
+                instance.client_email = contract.company.email or None
+        else:
+            instance.contract = None
+            instance.client = None
+        if status:
+            instance.status = status
         if commit:
             instance.save()
         return instance

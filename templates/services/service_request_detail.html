@@ -1,0 +1,123 @@
+{% extends "accounts/base.html" %}
+
+{% block title %}{{ service_request.title }}{% endblock %}
+{% block page_title %}Pedido de serviço{% endblock %}
+
+{% block extra_head %}
+<style>
+  .request-detail{display:grid;gap:14px;max-width:1080px}
+  .request-top{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:start}
+  .request-top h1{margin:0;font-size:26px;line-height:1.12;overflow-wrap:anywhere}
+  .request-meta{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
+  .request-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+  .request-actions form{margin:0}
+  .request-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,.38fr);gap:14px}
+  .request-block{display:grid;gap:10px}
+  .request-block h2{margin:0;font-size:18px;line-height:1.2}
+  .request-sub{margin:0;color:var(--color-text-muted);font-size:13px;line-height:1.45}
+  .request-data{display:grid;gap:8px}
+  .request-data div{display:grid;grid-template-columns:minmax(120px,.35fr) minmax(0,1fr);gap:10px;border-bottom:1px solid var(--color-border);padding-bottom:8px}
+  .request-data span{color:var(--color-text-muted)}
+  .request-data strong{overflow-wrap:anywhere}
+  .message-box{width:100%;min-height:92px}
+  @media (max-width:820px){
+    .request-top,.request-grid{grid-template-columns:1fr}
+    .request-actions,.request-actions .btn,.request-actions button{width:100%}
+    .request-data div{grid-template-columns:1fr}
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="request-detail">
+  <section class="card request-top">
+    <div>
+      <h1>{{ service_request.title }}</h1>
+      <div class="request-meta">
+        <span class="pill">{{ service_request.get_status_display }}</span>
+        <span class="pill">{{ service_request.get_source_display }}</span>
+        <span class="pill">{{ service_request.get_urgency_display }}</span>
+        <span class="pill">{{ service_request.category.name }}</span>
+      </div>
+    </div>
+    <div class="request-actions">
+      <a class="btn" href="{% url 'service_request_list' %}">Voltar</a>
+      {% if service_request.converted_service_id %}
+        <a class="btn primary" href="{% url 'service_job_detail' service_request.converted_service_id %}">Ver serviço</a>
+      {% elif can_convert %}
+        <form method="post" action="{% url 'service_request_convert' service_request.id %}">
+          {% csrf_token %}
+          <button class="btn primary" type="submit">Transformar em serviço</button>
+        </form>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="request-grid">
+    <div class="request-block">
+      <article class="card request-block">
+        <h2>Pedido</h2>
+        <p class="request-sub">{{ service_request.description|default:"Sem descrição registrada." }}</p>
+        <div class="request-data">
+          <div><span>Categoria</span><strong>{{ service_request.category.name }}</strong></div>
+          <div><span>Data desejada</span><strong>{% if service_request.preferred_date %}{{ service_request.preferred_date|date:"d/m/Y" }}{% else %}-{% endif %}</strong></div>
+          <div><span>Hora desejada</span><strong>{% if service_request.preferred_time %}{{ service_request.preferred_time|time:"H:i" }}{% else %}-{% endif %}</strong></div>
+          <div><span>Recebido em</span><strong>{{ service_request.created_at|date:"d/m/Y" }} às {{ service_request.created_at|time:"H:i" }}</strong></div>
+        </div>
+      </article>
+
+      <article class="card request-block">
+        <h2>Responder no WhatsApp</h2>
+        <p class="request-sub">Use esta mensagem para confirmar que o pedido foi recebido. O pedido ainda não é um serviço executado.</p>
+        <textarea class="hc-input message-box" readonly data-whatsapp-message>{{ whatsapp_message }}</textarea>
+        <div class="request-actions" style="justify-content:flex-start;">
+          {% if service_request.client_whatsapp %}
+            <a class="btn primary" href="{{ whatsapp_url }}" target="_blank" rel="noopener">Responder no WhatsApp</a>
+          {% endif %}
+          <button class="btn" type="button" data-copy-message>Copiar mensagem</button>
+        </div>
+      </article>
+    </div>
+
+    <aside class="request-block">
+      <article class="card request-block">
+        <h2>Cliente e local</h2>
+        <div class="request-data">
+          <div><span>Cliente</span><strong>{{ service_request.client_name }}</strong></div>
+          <div><span>WhatsApp</span><strong>{{ service_request.client_whatsapp|default:"-" }}</strong></div>
+          <div><span>E-mail</span><strong>{{ service_request.client_email|default:"-" }}</strong></div>
+          <div><span>Endereço</span><strong>{{ service_request.full_address|default:"-" }}</strong></div>
+          <div><span>Referência</span><strong>{{ service_request.address_reference|default:"-" }}</strong></div>
+        </div>
+      </article>
+
+      <article class="card request-block">
+        <h2>Status</h2>
+        <div class="request-actions" style="justify-content:flex-start;">
+          {% if service_request.status != 'CONVERTED' %}
+            <form method="post" action="{% url 'service_request_status_action' service_request.id %}">{% csrf_token %}<input type="hidden" name="action" value="in_review"><button class="btn" type="submit">Em análise</button></form>
+            <form method="post" action="{% url 'service_request_status_action' service_request.id %}">{% csrf_token %}<input type="hidden" name="action" value="waiting_info"><button class="btn" type="submit">Aguardando informações</button></form>
+            <form method="post" action="{% url 'service_request_status_action' service_request.id %}">{% csrf_token %}<input type="hidden" name="action" value="reject"><button class="btn" type="submit">Recusar</button></form>
+          {% endif %}
+          <form method="post" action="{% url 'service_request_status_action' service_request.id %}">{% csrf_token %}<input type="hidden" name="action" value="archive"><button class="btn" type="submit">Arquivar</button></form>
+        </div>
+      </article>
+    </aside>
+  </section>
+</div>
+
+<script>
+  (function(){
+    var button = document.querySelector("[data-copy-message]");
+    var message = document.querySelector("[data-whatsapp-message]");
+    if(!button || !message) return;
+    button.addEventListener("click", function(){
+      navigator.clipboard.writeText(message.value).then(function(){
+        var original = button.textContent;
+        button.textContent = "Mensagem copiada";
+        setTimeout(function(){ button.textContent = original; }, 1800);
+      });
+    });
+  })();
+</script>
+{% endblock %}
