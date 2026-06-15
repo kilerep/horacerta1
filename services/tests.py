@@ -1202,7 +1202,17 @@ class ServiceJobAreaTests(TestCase):
         self.assertContains(detail_response, "Pedir cotação")
         self.assertContains(detail_response, "Copiar mensagem")
         self.assertContains(detail_response, "Abrir WhatsApp")
-        self.assertContains(detail_response, "* 2 x Disjuntor 20A - marca/modelo se disponivel")
+        self.assertContains(detail_response, "Valores cotados são estimativas até a execução do serviço.")
+        self.assertContains(detail_response, "* 2 x Disjuntor 20A — marca/modelo se disponivel")
+
+        generate_response = self.client.post(reverse("service_job_quote_generate", args=[job.id]), follow=True)
+        job.refresh_from_db()
+        self.assertEqual(generate_response.status_code, 200)
+        self.assertContains(generate_response, "Cotacao gerada")
+        self.assertIsNotNone(job.quote_message_generated_at)
+        self.assertEqual(job.quote_item_count, 1)
+        self.assertIn("Troca de disjuntores", job.quote_last_message)
+        self.assertIn("Disjuntor 20A", job.quote_last_message)
 
         whatsapp_response = self.client.get(reverse("service_job_quote_whatsapp", args=[job.id]))
         job.refresh_from_db()
@@ -1213,6 +1223,7 @@ class ServiceJobAreaTests(TestCase):
         self.assertIn("disponibilidade", whatsapp_response["Location"])
         self.assertIsNotNone(job.quote_message_generated_at)
         self.assertEqual(job.quote_item_count, 1)
+        self.assertIn("Pode me passar os valores e disponibilidade?", job.quote_last_message)
 
         update_response = self.client.post(
             reverse("service_item_expense_update", args=[job.id, quoted_item.id]),
@@ -1245,6 +1256,26 @@ class ServiceJobAreaTests(TestCase):
         self.assertContains(preview_response, "Cotado")
         self.assertContains(preview_response, "R$ 126,00")
         self.assertEqual(Punch.objects.count(), before_punch_count)
+
+    def test_service_without_planned_items_shows_quote_guidance_only(self):
+        job = ServiceJob.objects.create(
+            professional=self.mei_user,
+            manual_client_name="John",
+            category=self.category,
+            title="Servico sem itens previstos",
+            status=ServiceJob.Status.PLANNED,
+            billing_mode=ServiceJob.BillingMode.UNDEFINED,
+        )
+
+        detail_response = self.client.get(reverse("service_job_detail", args=[job.id]))
+        generate_response = self.client.post(reverse("service_job_quote_generate", args=[job.id]), follow=True)
+
+        self.assertEqual(detail_response.status_code, 200)
+        self.assertContains(detail_response, "Adicione itens previstos para gerar uma cotação.")
+        self.assertNotContains(detail_response, "/cotacao/gerar/")
+        self.assertNotContains(detail_response, "Abrir WhatsApp")
+        self.assertEqual(generate_response.status_code, 200)
+        self.assertContains(generate_response, "Adicione itens previstos")
 
     def _create_finished_report_ready_service(self):
         job = ServiceJob.objects.create(

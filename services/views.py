@@ -138,7 +138,7 @@ def _service_quote_message(job, quote_items):
     ]
     for item in quote_items:
         note = (item.description or item.receipt_note or "").strip()
-        note_text = f" - {note[:90]}" if note else ""
+        note_text = f" — {note[:90]}" if note else ""
         lines.append(f"* {_format_quantity(item.quantity)} x {item.name}{note_text}")
     lines.extend(
         [
@@ -149,6 +149,15 @@ def _service_quote_message(job, quote_items):
         ]
     )
     return "\n".join(lines)
+
+
+def _record_service_quote_message(job, quote_items):
+    message = _service_quote_message(job, quote_items)
+    job.quote_message_generated_at = timezone.now()
+    job.quote_item_count = len(quote_items)
+    job.quote_last_message = message
+    job.save(update_fields=["quote_message_generated_at", "quote_item_count", "quote_last_message", "updated_at"])
+    return message
 
 
 def _service_report_context(job, request=None):
@@ -273,6 +282,8 @@ def _service_job_detail_context(job, *, work_log_form=None, item_form=None):
         "pending_items": pending_items,
         "quote_items": quote_items,
         "quote_message": quote_message,
+        "quote_display_message": job.quote_last_message or quote_message,
+        "quote_generate_url": reverse("service_job_quote_generate", args=[job.id]),
         "quote_whatsapp_url": reverse("service_job_quote_whatsapp", args=[job.id]),
         "open_work_log": open_work_log,
         "work_log_form": work_log_form or ServiceWorkLogForm(service_job=job),
@@ -925,6 +936,25 @@ def service_item_expense_update(request, job_id, item_id):
 
 
 @login_required
+def service_job_quote_generate(request, job_id):
+    denied = _redirect_if_not_mei(request)
+    if denied:
+        return denied
+
+    job = get_object_or_404(_service_jobs_for_user(request.user).prefetch_related("item_expenses"), id=job_id)
+    if request.method != "POST":
+        return redirect("service_job_detail", job_id=job.id)
+    quote_items = _quote_items_for_job(job)
+    if not quote_items:
+        messages.error(request, "Adicione itens previstos para gerar uma cotacao.")
+        return redirect("service_job_detail", job_id=job.id)
+
+    _record_service_quote_message(job, quote_items)
+    messages.success(request, "Cotacao gerada. Copie a mensagem ou abra o WhatsApp para enviar manualmente.")
+    return redirect("service_job_detail", job_id=job.id)
+
+
+@login_required
 def service_job_quote_whatsapp(request, job_id):
     denied = _redirect_if_not_mei(request)
     if denied:
@@ -936,10 +966,7 @@ def service_job_quote_whatsapp(request, job_id):
         messages.error(request, "Adicione itens previstos para gerar uma mensagem de cotacao.")
         return redirect("service_job_detail", job_id=job.id)
 
-    message = _service_quote_message(job, quote_items)
-    job.quote_message_generated_at = timezone.now()
-    job.quote_item_count = len(quote_items)
-    job.save(update_fields=["quote_message_generated_at", "quote_item_count", "updated_at"])
+    message = _record_service_quote_message(job, quote_items)
     return redirect(f"https://wa.me/?text={quote(message, safe='')}")
 
 

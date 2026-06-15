@@ -291,16 +291,21 @@
           {% if quote_items %}
             <h3 class="entry-group-title">Pedir cotação</h3>
             <p class="block-sub">Gere uma mensagem com os itens previstos para enviar manualmente a uma loja pelo WhatsApp.</p>
+            <p class="block-sub">Valores cotados são estimativas até a execução do serviço.</p>
             {% if job.quote_message_generated_at %}
               <p class="block-sub">Última cotação gerada em {{ job.quote_message_generated_at|date:"d/m/Y" }} às {{ job.quote_message_generated_at|time:"H:i" }} com {{ job.quote_item_count }} itens.</p>
             {% endif %}
-            <textarea data-quote-message hidden>{{ quote_message }}</textarea>
+            <textarea data-quote-message hidden>{{ quote_display_message }}</textarea>
             <div class="service-actions" style="justify-content:flex-start;margin-top:10px;">
+              <form method="post" action="{{ quote_generate_url }}">
+                {% csrf_token %}
+                <button class="btn primary" type="submit">Pedir cotação</button>
+              </form>
               <button class="btn" type="button" data-copy-quote>Copiar mensagem</button>
               <a class="btn" href="{{ quote_whatsapp_url }}" target="_blank" rel="noopener">Abrir WhatsApp</a>
             </div>
           {% else %}
-            <div class="empty-line">Adicione itens previstos para gerar uma mensagem de cotação.</div>
+            <div class="empty-line">Adicione itens previstos para gerar uma cotação.</div>
           {% endif %}
         </div>
 

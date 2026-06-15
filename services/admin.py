@@ -24,6 +24,7 @@ class ServiceJobAdmin(admin.ModelAdmin):
         "preview_updated_at",
         "quote_message_generated_at",
         "quote_item_count",
+        "quote_last_message",
         "created_at",
         "updated_at",
         "finished_at",

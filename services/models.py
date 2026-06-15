@@ -228,6 +228,7 @@ class ServiceJob(models.Model):
     preview_updated_at = models.DateTimeField(null=True, blank=True)
     quote_message_generated_at = models.DateTimeField(null=True, blank=True)
     quote_item_count = models.PositiveIntegerField(default=0)
+    quote_last_message = models.TextField(blank=True, default="")
     public_report_first_viewed_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
