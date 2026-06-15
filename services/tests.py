@@ -282,7 +282,11 @@ class ServiceJobAreaTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Serviços")
-        self.assertContains(response, "Nenhum serviço cadastrado ainda.")
+        self.assertContains(response, "Ações rápidas")
+        self.assertContains(response, "Resumo da área")
+        self.assertContains(response, "Filtrar serviços")
+        self.assertContains(response, "Nenhum serviço encontrado.")
+        self.assertContains(response, "Catálogo de itens")
         self.assertContains(response, "sem alterar seu histórico normal")
 
     def test_new_service_page_has_legible_client_select_and_guidance(self):
@@ -824,11 +828,17 @@ class ServiceJobAreaTests(TestCase):
 
         status_response = self.client.get(reverse("service_job_list"), {"status": ServiceJob.Status.DRAFT})
         self.assertContains(status_response, draft.title)
+        self.assertContains(status_response, "Editar")
         self.assertNotContains(status_response, finished.title)
 
         category_response = self.client.get(reverse("service_job_list"), {"category": "hidraulica"})
         self.assertContains(category_response, finished.title)
+        self.assertContains(category_response, "Ver relatório")
         self.assertNotContains(category_response, draft.title)
+
+        search_response = self.client.get(reverse("service_job_list"), {"q": "hidraulica"})
+        self.assertContains(search_response, finished.title)
+        self.assertNotContains(search_response, draft.title)
 
     def test_user_cannot_see_or_open_other_users_service(self):
         other_job = ServiceJob.objects.create(

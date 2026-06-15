@@ -6,7 +6,7 @@ from urllib.parse import quote
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, Q
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -310,9 +310,18 @@ def service_job_list(request):
     selected_contract = (request.GET.get("contract") or "").strip()
     date_from = (request.GET.get("date_from") or "").strip()
     date_to = (request.GET.get("date_to") or "").strip()
+    search_query = (request.GET.get("q") or "").strip()
 
     if selected_status:
         jobs = jobs.filter(status=selected_status)
+    if search_query:
+        jobs = jobs.filter(
+            Q(title__icontains=search_query)
+            | Q(description__icontains=search_query)
+            | Q(manual_client_name__icontains=search_query)
+            | Q(client__name__icontains=search_query)
+            | Q(category__name__icontains=search_query)
+        )
     if selected_category:
         jobs = jobs.filter(category__slug=selected_category)
     if selected_contract:
@@ -329,7 +338,11 @@ def service_job_list(request):
         drafts=Count("id", filter=Q(status=ServiceJob.Status.DRAFT)),
         archived=Count("id", filter=Q(status=ServiceJob.Status.ARCHIVED)),
     )
-    fixed_total = all_jobs.aggregate(total=Sum("fixed_labor_value"))["total"] or Decimal("0.00")
+    estimated_total = sum(
+        (job.estimated_total for job in all_jobs.prefetch_related("work_logs", "item_expenses")),
+        Decimal("0.00"),
+    )
+    has_advanced_filters = bool(selected_category or selected_contract or date_from or date_to)
 
     context = {
         "jobs": jobs,
@@ -341,12 +354,21 @@ def service_job_list(request):
         "selected_contract": selected_contract,
         "date_from": date_from,
         "date_to": date_to,
+        "search_query": search_query,
+        "has_advanced_filters": has_advanced_filters,
+        "status_filter_urls": {
+            "all": reverse("service_job_list"),
+            "in_progress": f"{reverse('service_job_list')}?status={ServiceJob.Status.IN_PROGRESS}",
+            "finished": f"{reverse('service_job_list')}?status={ServiceJob.Status.FINISHED}",
+            "drafts": f"{reverse('service_job_list')}?status={ServiceJob.Status.DRAFT}",
+            "archived": f"{reverse('service_job_list')}?status={ServiceJob.Status.ARCHIVED}",
+        },
         "summary": {
             "in_progress": status_counts["in_progress"] or 0,
             "finished": status_counts["finished"] or 0,
             "drafts": status_counts["drafts"] or 0,
             "archived": status_counts["archived"] or 0,
-            "fixed_total_brl": _format_brl(fixed_total),
+            "estimated_total_brl": _format_brl(estimated_total),
         },
     }
     return render(request, "services/service_job_list.html", context)
