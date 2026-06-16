@@ -36,6 +36,8 @@
   .nt-card__actions{display:flex;gap:8px;flex-wrap:wrap;padding-top:8px;border-top:1px solid var(--line-soft)}
   .nt-card__actions form{display:flex}
   .nt-card__actions .btn{min-height:40px}
+  .nt-event-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .nt-event-chip{border:1px solid var(--line-soft);border-radius:999px;padding:7px 10px;background:var(--surface-soft);color:var(--muted);font-size:12px;font-weight:800;line-height:1.25;overflow-wrap:anywhere}
   .nt-empty{border:1px dashed var(--line-soft);border-radius:14px;padding:16px;background:color-mix(in oklab,var(--surface-soft) 64%,transparent);color:var(--muted);line-height:1.45}
   .nt-empty strong{display:block;color:var(--color-text-strong);margin-bottom:4px}
   @media (min-width:1040px){
@@ -45,6 +47,7 @@
   @media (max-width:640px){
     .nt-hero,.nt-panel{padding:12px}
     .nt-hero__top{display:grid}
+    .nt-event-grid{grid-template-columns:1fr}
     .nt-actions,.nt-actions form,.nt-actions .btn,.nt-card__actions,.nt-card__actions form,.nt-card__actions .btn{width:100%;justify-content:center}
     .nt-card__actions{display:grid;grid-template-columns:1fr}
   }
@@ -64,6 +67,25 @@
           <button class="btn" type="submit">Marcar todas como lidas</button>
         </form>
       {% endif %}
+    </div>
+  </section>
+
+  <section class="nt-panel" aria-label="Eventos monitorados">
+    <div class="nt-panel__head">
+      <div>
+        <h2>O que aparece aqui</h2>
+        <p>Alertas da rotina, pedidos e servicos que precisam de revisao.</p>
+      </div>
+    </div>
+    <div class="nt-event-grid">
+      <span class="nt-event-chip">Pedido de servico novo</span>
+      <span class="nt-event-chip">Servico agendado para hoje</span>
+      <span class="nt-event-chip">Previa enviada</span>
+      <span class="nt-event-chip">Previa visualizada</span>
+      <span class="nt-event-chip">Servico em execucao</span>
+      <span class="nt-event-chip">Relatorio final pendente</span>
+      <span class="nt-event-chip">Relatorio visualizado</span>
+      <span class="nt-event-chip">Dia de horario incompleto</span>
     </div>
   </section>
 

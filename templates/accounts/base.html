@@ -109,19 +109,19 @@
                 <div class="menu-label">Operação</div>
                 <a class="item {% if current == 'employee_dashboard' %}is-active{% endif %}" href="{% url 'employee_dashboard' %}">
                   <div class="icon">R</div>
-                  <div><strong>Registrar horario</strong><div class="muted item-sub">acao principal</div></div>
+                  <div><strong>Registrar horário</strong><div class="muted item-sub">horas normais por cliente</div></div>
                 </a>
                 <a class="item {% if current == 'mei_panel' %}is-active{% endif %}" href="{% url 'mei_panel' %}">
                   <div class="icon">P</div>
-                  <div><strong>Meu resumo</strong><div class="muted item-sub">visão geral</div></div>
+                  <div><strong>Meu resumo</strong><div class="muted item-sub">atalhos dos 6 pilares</div></div>
                 </a>
                 <a class="item {% if current == 'mei_contract' %}is-active{% endif %}" href="{% url 'mei_contract' %}">
                   <div class="icon">C</div>
-                  <div><strong>Meus clientes</strong><div class="muted item-sub">cliente, contrato e valor</div></div>
+                  <div><strong>Meus clientes</strong><div class="muted item-sub">dados, contrato e histórico</div></div>
                 </a>
-                <a class="item {% if current == 'service_job_list' or current == 'service_job_create' or current == 'service_job_detail' %}is-active{% endif %}" href="{% url 'service_job_list' %}">
+                <a class="item {% if current == 'service_job_list' or current == 'service_job_create' or current == 'service_job_detail' or current == 'service_job_update' or current == 'service_request_list' or current == 'service_request_create' or current == 'service_request_detail' or current == 'service_item_catalog_list' or current == 'service_item_catalog_create' or current == 'service_item_catalog_update' %}is-active{% endif %}" href="{% url 'service_job_list' %}">
                   <div class="icon">S</div>
-                  <div><strong>Serviços</strong><div class="muted item-sub">trabalhos avulsos</div></div>
+                  <div><strong>Serviços</strong><div class="muted item-sub">pedidos, itens e trabalhos avulsos</div></div>
                 </a>
                 <a class="item {% if current == 'mei_history' %}is-active{% endif %}" href="{% url 'mei_history' %}">
                   <div class="icon">H</div>
@@ -129,7 +129,7 @@
                 </a>
                 <a class="item {% if current == 'mei_reports' or current == 'mei_service_report_detail' or current == 'mei_service_report_request_detail' %}is-active{% endif %}" href="{% url 'mei_reports' %}">
                   <div class="icon">R</div>
-                  <div><strong>Relatórios</strong><div class="muted item-sub">envio e consulta pessoal</div></div>
+                  <div><strong>Relatórios</strong><div class="muted item-sub">horas agora, serviços depois</div></div>
                 </a>
                 <a class="item {% if current == 'mei_notifications' %}is-active{% endif %}" href="{% url 'mei_notifications' %}">
                   <div class="icon">N</div>

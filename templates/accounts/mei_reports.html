@@ -16,6 +16,10 @@
   .reports-field textarea{min-height:104px;resize:vertical}
   .reports-actions{display:grid;gap:8px}
   .reports-actions .btn{width:100%;justify-content:center;min-height:44px}
+  .report-types{display:grid;gap:10px;margin-top:12px}
+  .report-type-card{border:1px solid var(--line-soft);border-radius:8px;padding:12px;background:var(--surface-soft);min-width:0}
+  .report-type-card strong{display:block;font-size:15px;line-height:1.25;overflow-wrap:anywhere}
+  .report-type-card span{display:block;margin-top:5px;color:var(--muted);font-size:12px;line-height:1.45}
   .reports-list{display:grid;gap:10px;margin-top:12px}
   .report-card{border:1px solid var(--line-soft);border-radius:12px;padding:12px;background:color-mix(in oklab,var(--surface-soft) 68%,transparent);display:grid;gap:10px;min-width:0}
   .report-card__head{display:grid;gap:5px}
@@ -44,6 +48,7 @@
     .reports-field.full{grid-column:1 / -1}
     .reports-actions{display:flex;justify-content:flex-end;flex-wrap:wrap}
     .reports-actions .btn{width:auto}
+    .report-types{grid-template-columns:repeat(2,minmax(0,1fr))}
     .report-card__head{grid-template-columns:1fr auto;align-items:start}
     .report-card__actions{display:flex;flex-wrap:wrap}
     .report-card__actions .btn,.report-card__actions form{width:auto}
@@ -68,6 +73,23 @@
   {% elif request.GET.event == "report_receive_pending" %}
     <section class="feedback" role="status">Relatorio voltou para pendente.</section>
   {% endif %}
+
+  <section class="reports-panel">
+    <div class="reports-head">
+      <h1 class="reports-title">Relatorios</h1>
+      <p class="reports-sub">Centralize relatorios de horas agora. Relatorios de servico ficam separados para trabalhos avulsos quando o servico for finalizado.</p>
+    </div>
+    <div class="report-types" aria-label="Tipos de relatorio">
+      <article class="report-type-card">
+        <strong>Relatorios de horas</strong>
+        <span>Use para rotina normal por cliente, fechamento de periodo, conferencia externa e PDF de horas.</span>
+      </article>
+      <article class="report-type-card">
+        <strong>Relatorios de servico</strong>
+        <span>Espaco reservado para trabalhos avulsos. Nao mistura com o historico normal de horarios.</span>
+      </article>
+    </div>
+  </section>
 
   <section class="reports-panel">
     <div class="reports-head">

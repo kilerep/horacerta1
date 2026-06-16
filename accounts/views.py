@@ -79,6 +79,7 @@ from timeclock.state import (
     PROFESSIONAL_STATE_CADASTRADO,
     PROFESSIONAL_STATE_INATIVO,
 )
+from services.models import ServiceJob, ServiceRequest
 
 from .forms import (
     CompanyAttendancePolicyForm,
@@ -1109,7 +1110,9 @@ def _build_mei_dynamic_notifications(user):
 
             if contract.closure_type != Contract.ClosureType.CUSTOM:
                 close_from, close_to = _suggest_closure_period(contract, today)
-                if 0 <= (close_to - today).days <= 2 or today >= close_to:
+                days_until_close = (close_to - today).days
+                closure_window_days = 6 if contract.closure_type == Contract.ClosureType.WEEKLY else 2
+                if 0 <= days_until_close <= closure_window_days or today >= close_to:
                     query = urlencode(
                         {
                             "contract": str(contract.id),
@@ -5065,6 +5068,19 @@ def mei_panel(request):
     ).select_related("company", "contract")
     pending_reports_count = pending_report_requests_qs.count()
     pending_report_requests = list(pending_report_requests_qs[:20])
+    service_today_count = ServiceJob.objects.filter(
+        professional=request.user,
+        start_date=today,
+    ).exclude(status=ServiceJob.Status.ARCHIVED).count()
+    new_service_requests_count = ServiceRequest.objects.filter(
+        professional=request.user,
+        status=ServiceRequest.Status.NEW,
+    ).count()
+    important_notifications_count = InternalNotification.objects.filter(
+        recipient_user=request.user,
+        audience=InternalNotification.Audience.MEI,
+        is_read=False,
+    ).count()
 
     context = {
         "contracts": contracts,
@@ -5080,6 +5096,9 @@ def mei_panel(request):
         "incomplete_days": incomplete_days,
         "pending_days": incomplete_days,
         "pending_reports_count": pending_reports_count,
+        "service_today_count": service_today_count,
+        "new_service_requests_count": new_service_requests_count,
+        "important_notifications_count": important_notifications_count,
         "pending_report_requests": pending_report_requests,
         "client_summaries": client_summaries,
         "incomplete_alerts": incomplete_alerts,
@@ -5702,6 +5721,9 @@ def mei_contract(request):
             "report_url": f"{reverse('mei_reports')}?contract={contract.id}",
             "reports_all_url": f"{reverse('mei_reports')}?contract={contract.id}",
             "service_report_url": reverse("mei_service_report_prepare", args=[contract.id]),
+            "services_url": f"{reverse('service_job_list')}?contract={contract.id}",
+            "service_requests_url": reverse("service_request_list"),
+            "new_service_url": reverse("service_job_create"),
             "edit_url": reverse("mei_client_edit", args=[contract.id]),
         }
         client_rows.append(row)
