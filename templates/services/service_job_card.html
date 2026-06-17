@@ -1,0 +1,35 @@
+{% load service_format %}
+<article class="service-card">
+  <div>
+    <h3>{{ job.title }}</h3>
+    <div class="service-meta">
+      <span>{{ job.client_display_name }}</span>
+      <span>{{ job.category.name }}</span>
+      <span class="status-chip {{ job.status_tone }}">{{ job.status_label }}</span>
+    </div>
+    <p class="service-line">
+      Previsao:
+      {% if job.start_date %}{{ job.start_date|date:"d/m/Y" }}{% else %}sem data{% endif %}
+      {% if job.planned_start_time %} as {{ job.planned_start_time|time:"H:i" }}{% endif %}
+    </p>
+    <div class="service-next">Proxima acao: <strong>{{ job.next_action.primary.label }}</strong></div>
+    {% if not compact %}
+      <div class="service-facts">
+        <div class="fact"><span>Horas realizadas</span><strong>{{ job.total_hours_label }}</strong></div>
+        <div class="fact"><span>Total estimado</span><strong>{{ job.estimated_total|brl }}</strong></div>
+      </div>
+    {% endif %}
+  </div>
+  <div class="service-actions">
+    {% if job.next_action.primary.method == "post" %}
+      <form method="post" action="{{ job.next_action.primary.url }}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="{{ job.next_action.primary.post_action }}">
+        <button class="btn primary" type="submit">{{ job.next_action.primary.label }}</button>
+      </form>
+    {% else %}
+      <a class="btn primary" href="{{ job.next_action.primary.url }}" {% if job.next_action.primary.external %}target="_blank" rel="noopener"{% endif %}>{{ job.next_action.primary.label }}</a>
+    {% endif %}
+    <a class="btn" href="{% url 'service_job_detail' job.id %}">Ver detalhes</a>
+  </div>
+</article>

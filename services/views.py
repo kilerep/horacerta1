@@ -29,6 +29,7 @@ from .forms import (
     ServiceWorkLogForm,
 )
 from .models import ServiceCategory, ServiceItemCatalog, ServiceItemExpense, ServiceJob, ServiceRequest, ServiceWorkLog
+from .workflow import get_next_service_action, has_minimum_service_data, planned_status_for_service, status_label, status_tone
 
 
 def _redirect_if_not_mei(request):
@@ -73,6 +74,36 @@ def _service_requests_for_user(user):
 
 def _catalog_items_for_user(user):
     return ServiceItemCatalog.objects.filter(professional=user).select_related("category")
+
+
+def _action_context(action, job):
+    return {
+        "key": action.key,
+        "label": action.label,
+        "method": action.method,
+        "url": action.resolve_url(job),
+        "post_action": action.post_action,
+        "external": action.external,
+    }
+
+
+def _next_action_context(job, *, open_work_log=None):
+    data = get_next_service_action(job, open_work_log=open_work_log)
+    return {
+        "status": data["status"],
+        "status_label": data["status_label"],
+        "status_tone": data["status_tone"],
+        "primary": _action_context(data["primary"], job),
+        "secondary": [_action_context(action, job) for action in data["secondary"]],
+    }
+
+
+def _attach_service_card_state(jobs):
+    for job in jobs:
+        job.status_label = status_label(job)
+        job.status_tone = status_tone(job)
+        job.next_action = _next_action_context(job)
+    return jobs
 
 
 def _planned_item_rows_from_post(post_data):
@@ -261,17 +292,11 @@ def _service_job_detail_context(job, *, work_log_form=None, item_form=None):
     has_work_logs = bool(work_logs)
     has_chargeable_items = bool(used_items)
     can_finish_service = (
-        job.status
-        in (
-            ServiceJob.Status.DRAFT,
-            ServiceJob.Status.PLANNED,
-            ServiceJob.Status.SENT,
-            ServiceJob.Status.SCHEDULED,
-            ServiceJob.Status.IN_PROGRESS,
-        )
+        job.status == ServiceJob.Status.IN_PROGRESS
         and not open_work_log
-        and (job.status == ServiceJob.Status.IN_PROGRESS or has_work_logs or has_chargeable_items)
+        and (has_work_logs or has_chargeable_items)
     )
+    next_action = _next_action_context(job, open_work_log=open_work_log)
     report_context = _service_report_context(job)
     return {
         "job": job,
@@ -286,11 +311,16 @@ def _service_job_detail_context(job, *, work_log_form=None, item_form=None):
         "quote_generate_url": reverse("service_job_quote_generate", args=[job.id]),
         "quote_whatsapp_url": reverse("service_job_quote_whatsapp", args=[job.id]),
         "open_work_log": open_work_log,
+        "next_action": next_action,
+        "status_label": next_action["status_label"],
+        "status_tone": next_action["status_tone"],
         "work_log_form": work_log_form or ServiceWorkLogForm(service_job=job),
         "item_form": item_form or ServiceItemExpenseForm(service_job=job),
         "is_finished": job.status == ServiceJob.Status.FINISHED,
+        "is_report_sent": job.status == ServiceJob.Status.REPORT_SENT,
         "is_draft": job.status == ServiceJob.Status.DRAFT,
         "is_archived": job.status == ServiceJob.Status.ARCHIVED,
+        "has_minimum_data": has_minimum_service_data(job),
         "has_work_logs": has_work_logs,
         "has_chargeable_items": has_chargeable_items,
         "can_finish_service": can_finish_service,
@@ -298,8 +328,12 @@ def _service_job_detail_context(job, *, work_log_form=None, item_form=None):
             ServiceJob.Status.DRAFT,
             ServiceJob.Status.PLANNED,
             ServiceJob.Status.SENT,
-            ServiceJob.Status.SCHEDULED,
             ServiceJob.Status.IN_PROGRESS,
+        ),
+        "can_edit_service": job.status in (
+            ServiceJob.Status.DRAFT,
+            ServiceJob.Status.PLANNED,
+            ServiceJob.Status.SENT,
         ),
         "summary": report_context["summary"],
         "preview_status_label": job.preview_status_label,
@@ -336,6 +370,8 @@ def service_job_list(request):
 
     if selected_status:
         jobs = jobs.filter(status=selected_status)
+    else:
+        jobs = jobs.exclude(status=ServiceJob.Status.ARCHIVED)
     if search_query:
         jobs = jobs.filter(
             Q(title__icontains=search_query)
@@ -354,10 +390,14 @@ def service_job_list(request):
         jobs = jobs.filter(Q(start_date__lte=date_to) | Q(start_date__isnull=True, created_at__date__lte=date_to))
 
     all_jobs = _service_jobs_for_user(request.user)
+    main_jobs = all_jobs.exclude(status=ServiceJob.Status.ARCHIVED)
     all_requests = _service_requests_for_user(request.user)
     status_counts = all_jobs.aggregate(
         in_progress=Count("id", filter=Q(status=ServiceJob.Status.IN_PROGRESS)),
         finished=Count("id", filter=Q(status=ServiceJob.Status.FINISHED)),
+        report_sent=Count("id", filter=Q(status=ServiceJob.Status.REPORT_SENT)),
+        planned=Count("id", filter=Q(status=ServiceJob.Status.PLANNED)),
+        preview_sent=Count("id", filter=Q(status=ServiceJob.Status.SENT)),
         drafts=Count("id", filter=Q(status=ServiceJob.Status.DRAFT)),
         archived=Count("id", filter=Q(status=ServiceJob.Status.ARCHIVED)),
     )
@@ -367,16 +407,57 @@ def service_job_list(request):
         in_review=Count("id", filter=Q(status=ServiceRequest.Status.IN_REVIEW)),
     )
     estimated_total = sum(
-        (job.estimated_total for job in all_jobs.prefetch_related("work_logs", "item_expenses")),
+        (job.estimated_total for job in main_jobs.prefetch_related("work_logs", "item_expenses")),
         Decimal("0.00"),
     )
     has_advanced_filters = bool(selected_category or selected_contract or date_from or date_to)
+    has_active_filters = bool(selected_status or search_query or has_advanced_filters)
+    today = timezone.localdate()
+    today_jobs = []
+    pending_jobs = []
+    if not has_active_filters:
+        today_jobs = _attach_service_card_state(
+            list(
+                main_jobs.filter(Q(start_date=today) | Q(status=ServiceJob.Status.IN_PROGRESS))
+                .prefetch_related("work_logs", "item_expenses")
+                .order_by("planned_start_time", "-created_at")[:6]
+            )
+        )
+        pending_jobs = _attach_service_card_state(
+            list(
+                main_jobs.filter(
+                    Q(status=ServiceJob.Status.DRAFT)
+                    | Q(status=ServiceJob.Status.PLANNED)
+                    | Q(status=ServiceJob.Status.IN_PROGRESS)
+                    | Q(status=ServiceJob.Status.FINISHED)
+                )
+                .prefetch_related("work_logs", "item_expenses")
+                .order_by("start_date", "-created_at")[:8]
+            )
+        )
+    jobs = _attach_service_card_state(list(jobs.prefetch_related("work_logs", "item_expenses")))
+    quick_status_choices = [
+        ("", "Todos", reverse("service_job_list")),
+        (ServiceJob.Status.DRAFT, "Rascunhos", f"{reverse('service_job_list')}?status={ServiceJob.Status.DRAFT}"),
+        (ServiceJob.Status.PLANNED, "Planejados", f"{reverse('service_job_list')}?status={ServiceJob.Status.PLANNED}"),
+        (ServiceJob.Status.IN_PROGRESS, "Em execucao", f"{reverse('service_job_list')}?status={ServiceJob.Status.IN_PROGRESS}"),
+        (ServiceJob.Status.FINISHED, "Finalizados", f"{reverse('service_job_list')}?status={ServiceJob.Status.FINISHED}"),
+        (ServiceJob.Status.ARCHIVED, "Arquivados", f"{reverse('service_job_list')}?status={ServiceJob.Status.ARCHIVED}"),
+    ]
+    official_status_choices = [
+        choice
+        for choice in ServiceJob.Status.choices
+        if choice[0] != ServiceJob.Status.SCHEDULED
+    ]
 
     context = {
         "jobs": jobs,
+        "today_jobs": today_jobs,
+        "pending_jobs": pending_jobs,
         "categories": categories,
         "contracts": contracts,
-        "status_choices": ServiceJob.Status.choices,
+        "status_choices": official_status_choices,
+        "quick_status_choices": quick_status_choices,
         "selected_status": selected_status,
         "selected_category": selected_category,
         "selected_contract": selected_contract,
@@ -384,10 +465,14 @@ def service_job_list(request):
         "date_to": date_to,
         "search_query": search_query,
         "has_advanced_filters": has_advanced_filters,
+        "has_active_filters": has_active_filters,
         "status_filter_urls": {
             "all": reverse("service_job_list"),
+            "planned": f"{reverse('service_job_list')}?status={ServiceJob.Status.PLANNED}",
+            "preview_sent": f"{reverse('service_job_list')}?status={ServiceJob.Status.SENT}",
             "in_progress": f"{reverse('service_job_list')}?status={ServiceJob.Status.IN_PROGRESS}",
             "finished": f"{reverse('service_job_list')}?status={ServiceJob.Status.FINISHED}",
+            "report_sent": f"{reverse('service_job_list')}?status={ServiceJob.Status.REPORT_SENT}",
             "drafts": f"{reverse('service_job_list')}?status={ServiceJob.Status.DRAFT}",
             "archived": f"{reverse('service_job_list')}?status={ServiceJob.Status.ARCHIVED}",
         },
@@ -395,6 +480,9 @@ def service_job_list(request):
         "summary": {
             "in_progress": status_counts["in_progress"] or 0,
             "finished": status_counts["finished"] or 0,
+            "report_sent": status_counts["report_sent"] or 0,
+            "planned": status_counts["planned"] or 0,
+            "preview_sent": status_counts["preview_sent"] or 0,
             "drafts": status_counts["drafts"] or 0,
             "archived": status_counts["archived"] or 0,
             "estimated_total_brl": _format_brl(estimated_total),
@@ -778,14 +866,18 @@ def service_job_create(request):
             submit_action = (request.POST.get("submit_action") or "").strip()
             posted_status = (request.POST.get("status") or "").strip()
             if submit_action == "draft":
-                status = ServiceJob.Status.DRAFT
+                requested_status = ServiceJob.Status.DRAFT
             elif posted_status in ServiceJob.Status.values:
-                status = posted_status
+                requested_status = posted_status
             else:
-                status = ServiceJob.Status.PLANNED
+                requested_status = ServiceJob.Status.PLANNED
             with transaction.atomic():
-                job = form.save(status=status)
+                job = form.save(status=ServiceJob.Status.DRAFT)
                 _create_planned_items(job, _planned_item_rows_from_post(request.POST))
+                status = planned_status_for_service(job, requested_status=requested_status)
+                if job.status != status:
+                    job.status = status
+                    job.save(update_fields=["status", "finished_at", "updated_at"])
             messages.success(request, "Servico salvo com sucesso.")
             return redirect("service_job_detail", job_id=job.id)
     else:
@@ -812,10 +904,17 @@ def service_job_update(request, job_id):
         return denied
 
     job = get_object_or_404(_service_jobs_for_user(request.user), id=job_id)
+    if job.status in (ServiceJob.Status.FINISHED, ServiceJob.Status.REPORT_SENT, ServiceJob.Status.ARCHIVED):
+        messages.error(request, "Para editar, reabra o servico.")
+        return redirect("service_job_detail", job_id=job.id)
     if request.method == "POST":
         form = ServiceJobForm(request.POST, user=request.user, instance=job)
         if form.is_valid():
             job = form.save(status=job.status)
+            status = planned_status_for_service(job)
+            if job.status != status:
+                job.status = status
+                job.save(update_fields=["status", "finished_at", "updated_at"])
             _mark_preview_updated(job)
             messages.success(request, "Dados do servico atualizados.")
             return redirect("service_job_detail", job_id=job.id)
@@ -856,10 +955,8 @@ def service_work_log_create(request, job_id):
 
     job = get_object_or_404(_service_jobs_for_user(request.user), id=job_id)
     if job.status not in (
-        ServiceJob.Status.DRAFT,
         ServiceJob.Status.PLANNED,
         ServiceJob.Status.SENT,
-        ServiceJob.Status.SCHEDULED,
         ServiceJob.Status.IN_PROGRESS,
     ):
         messages.error(request, "Reabra o servico antes de alterar horarios.")
@@ -890,10 +987,8 @@ def service_item_expense_create(request, job_id):
 
     job = get_object_or_404(_service_jobs_for_user(request.user), id=job_id)
     if job.status not in (
-        ServiceJob.Status.DRAFT,
         ServiceJob.Status.PLANNED,
         ServiceJob.Status.SENT,
-        ServiceJob.Status.SCHEDULED,
         ServiceJob.Status.IN_PROGRESS,
     ):
         messages.error(request, "Reabra o servico antes de alterar itens e despesas.")
@@ -921,7 +1016,7 @@ def service_item_expense_update(request, job_id, item_id):
 
     job = get_object_or_404(_service_jobs_for_user(request.user), id=job_id)
     item = get_object_or_404(job.item_expenses, id=item_id)
-    if job.status == ServiceJob.Status.ARCHIVED:
+    if job.status in (ServiceJob.Status.FINISHED, ServiceJob.Status.REPORT_SENT, ServiceJob.Status.ARCHIVED):
         messages.error(request, "Reabra o servico antes de alterar itens.")
         return redirect("service_job_detail", job_id=job.id)
     if request.method == "POST":
@@ -979,7 +1074,7 @@ def service_clock_action(request, job_id):
     job = get_object_or_404(_service_jobs_for_user(request.user), id=job_id)
     if request.method != "POST":
         return redirect("service_job_detail", job_id=job.id)
-    if job.status in (ServiceJob.Status.FINISHED, ServiceJob.Status.ARCHIVED):
+    if job.status in (ServiceJob.Status.FINISHED, ServiceJob.Status.REPORT_SENT, ServiceJob.Status.ARCHIVED):
         messages.error(request, "Reabra o servico antes de registrar execucao.")
         return redirect("service_job_detail", job_id=job.id)
 
@@ -1022,17 +1117,37 @@ def service_job_status_action(request, job_id):
         return redirect("service_job_detail", job_id=job.id)
 
     action = (request.POST.get("action") or "").strip()
+    if action == "start" and job.status == ServiceJob.Status.DRAFT:
+        messages.error(request, "Complete os dados minimos antes de iniciar o trabalho.")
+        return redirect("service_job_detail", job_id=job.id)
+    if action == "finish" and job.status != ServiceJob.Status.IN_PROGRESS:
+        messages.error(request, "Inicie o trabalho antes de finalizar o servico.")
+        return redirect("service_job_detail", job_id=job.id)
+    if action == "generate_report" and job.status == ServiceJob.Status.FINISHED:
+        job.status = ServiceJob.Status.REPORT_SENT
+        job.save(update_fields=["status", "finished_at", "updated_at"])
+        messages.success(request, "Relatorio final gerado. PDF e WhatsApp final estao liberados.")
+        return redirect("service_job_detail", job_id=job.id)
+    if action == "restore" and job.status == ServiceJob.Status.ARCHIVED:
+        job.status = ServiceJob.Status.PLANNED if has_minimum_service_data(job) else ServiceJob.Status.DRAFT
+        job.save(update_fields=["status", "finished_at", "updated_at"])
+        messages.success(request, "Servico restaurado.")
+        return redirect("service_job_detail", job_id=job.id)
+    if action == "reopen" and job.status == ServiceJob.Status.REPORT_SENT:
+        job.status = ServiceJob.Status.IN_PROGRESS
+        job.save(update_fields=["status", "finished_at", "updated_at"])
+        messages.success(request, "Servico reaberto para ajustes.")
+        return redirect("service_job_detail", job_id=job.id)
     with transaction.atomic():
         if action == "send_preview" and job.status in (ServiceJob.Status.DRAFT, ServiceJob.Status.PLANNED):
             job.status = ServiceJob.Status.SENT
             job.save(update_fields=["status", "finished_at", "updated_at"])
             messages.success(request, "Prévia marcada como enviada ao cliente.")
         elif action == "schedule" and job.status in (ServiceJob.Status.DRAFT, ServiceJob.Status.PLANNED, ServiceJob.Status.SENT):
-            job.status = ServiceJob.Status.SCHEDULED
+            job.status = ServiceJob.Status.PLANNED if has_minimum_service_data(job) else ServiceJob.Status.DRAFT
             job.save(update_fields=["status", "finished_at", "updated_at"])
             messages.success(request, "Serviço agendado.")
         elif action == "start" and job.status in (
-            ServiceJob.Status.DRAFT,
             ServiceJob.Status.PLANNED,
             ServiceJob.Status.SENT,
             ServiceJob.Status.SCHEDULED,
@@ -1040,13 +1155,7 @@ def service_job_status_action(request, job_id):
             job.status = ServiceJob.Status.IN_PROGRESS
             job.save(update_fields=["status", "finished_at", "updated_at"])
             messages.success(request, "Serviço iniciado.")
-        elif action == "finish" and job.status in (
-            ServiceJob.Status.DRAFT,
-            ServiceJob.Status.PLANNED,
-            ServiceJob.Status.SENT,
-            ServiceJob.Status.SCHEDULED,
-            ServiceJob.Status.IN_PROGRESS,
-        ):
+        elif action == "finish" and job.status == ServiceJob.Status.IN_PROGRESS:
             if job.work_logs.filter(end_time__isnull=True).exists():
                 messages.error(request, "Encerre o periodo aberto antes de finalizar o servico.")
                 return redirect("service_job_detail", job_id=job.id)
@@ -1060,7 +1169,7 @@ def service_job_status_action(request, job_id):
             job.status = ServiceJob.Status.FINISHED
             job.save(update_fields=["status", "finished_at", "updated_at"])
             messages.success(request, "Serviço finalizado. Agora você pode gerar o relatório para o cliente.")
-        elif action == "reopen" and job.status in (ServiceJob.Status.FINISHED, ServiceJob.Status.ARCHIVED):
+        elif action == "reopen" and job.status == ServiceJob.Status.FINISHED:
             job.status = ServiceJob.Status.IN_PROGRESS
             job.save(update_fields=["status", "finished_at", "updated_at"])
             messages.success(request, "Serviço reaberto para ajustes.")
@@ -1094,6 +1203,9 @@ def service_job_preview_generate(request, job_id):
         job.preview_updated_at = now
         update_fields.append("preview_updated_at")
         messages.success(request, "Prévia atualizada.")
+    if job.status == ServiceJob.Status.PLANNED:
+        job.status = ServiceJob.Status.SENT
+        update_fields.extend(["status", "finished_at"])
     job.save(update_fields=update_fields)
     return redirect("service_job_detail", job_id=job.id)
 
@@ -1108,8 +1220,8 @@ def service_job_report_pdf(request, job_id):
         _service_jobs_for_user(request.user).prefetch_related("work_logs", "item_expenses"),
         id=job_id,
     )
-    if job.status != ServiceJob.Status.FINISHED:
-        messages.error(request, "Finalize o servico antes de gerar o PDF do servico.")
+    if job.status != ServiceJob.Status.REPORT_SENT:
+        messages.error(request, "Gere o relatorio final antes de baixar o PDF do servico.")
         return redirect("service_job_detail", job_id=job.id)
     return _service_job_pdf_response(job)
 
@@ -1124,8 +1236,8 @@ def service_job_report_whatsapp(request, job_id):
         _service_jobs_for_user(request.user).prefetch_related("work_logs", "item_expenses"),
         id=job_id,
     )
-    if job.status != ServiceJob.Status.FINISHED:
-        messages.error(request, "Finalize o servico antes de enviar o relatorio pelo WhatsApp.")
+    if job.status != ServiceJob.Status.REPORT_SENT:
+        messages.error(request, "Gere o relatorio final antes de enviar pelo WhatsApp.")
         return redirect("service_job_detail", job_id=job.id)
     public_url = request.build_absolute_uri(reverse("public_service_job_report", args=[job.public_token]))
     report = _service_report_context(job, request=request)
@@ -1145,6 +1257,19 @@ def service_job_report_whatsapp(request, job_id):
         ]
     )
     return redirect(f"https://wa.me/?text={quote(message, safe='')}")
+
+
+@login_required
+def service_job_public_report_redirect(request, job_id):
+    denied = _redirect_if_not_mei(request)
+    if denied:
+        return denied
+
+    job = get_object_or_404(_service_jobs_for_user(request.user), id=job_id)
+    if job.status != ServiceJob.Status.REPORT_SENT:
+        messages.error(request, "Gere o relatorio final antes de abrir o link publico.")
+        return redirect("service_job_detail", job_id=job.id)
+    return redirect("public_service_job_report", token=job.public_token)
 
 
 @login_required
@@ -1210,7 +1335,7 @@ def public_service_job_report(request, token):
         ServiceJob.objects.select_related("professional", "category", "client", "contract", "contract__employee")
         .prefetch_related("work_logs", "item_expenses"),
         public_token=token,
-        status=ServiceJob.Status.FINISHED,
+        status=ServiceJob.Status.REPORT_SENT,
     )
     if not job.public_report_first_viewed_at:
         job.public_report_first_viewed_at = timezone.now()
@@ -1223,7 +1348,7 @@ def public_service_job_report_pdf(request, token):
         ServiceJob.objects.select_related("professional", "category", "client", "contract", "contract__employee")
         .prefetch_related("work_logs", "item_expenses"),
         public_token=token,
-        status=ServiceJob.Status.FINISHED,
+        status=ServiceJob.Status.REPORT_SENT,
     )
     return _service_job_pdf_response(job)
 

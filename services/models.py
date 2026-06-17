@@ -162,10 +162,11 @@ class ServiceJob(models.Model):
     class Status(models.TextChoices):
         DRAFT = "DRAFT", "Rascunho"
         PLANNED = "PLANNED", "Planejado"
-        SENT = "SENT", "Enviado ao cliente"
-        SCHEDULED = "SCHEDULED", "Agendado"
+        SENT = "SENT", "Previa enviada"
+        SCHEDULED = "SCHEDULED", "Planejado"
         IN_PROGRESS = "IN_PROGRESS", "Em execucao"
         FINISHED = "FINISHED", "Finalizado"
+        REPORT_SENT = "REPORT_SENT", "Relatorio enviado"
         ARCHIVED = "ARCHIVED", "Arquivado"
 
     class BillingMode(models.TextChoices):

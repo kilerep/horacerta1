@@ -6,72 +6,57 @@
 
 {% block extra_head %}
 <style>
-  .services-page{display:grid;gap:18px;max-width:1180px}
-  .services-head{padding:4px 2px 0}
-  .services-head h1{margin:0;font-size:28px;line-height:1.12;overflow-wrap:anywhere}
-  .services-head p{margin:8px 0 0;color:var(--color-text-muted);max-width:760px;line-height:1.45}
-  .services-block{display:grid;gap:12px}
-  .services-block-title{margin:0;font-size:16px;line-height:1.25;font-weight:800;color:var(--color-text)}
-  .services-quick-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-  .services-action-card{display:grid;gap:6px;align-content:start;min-height:86px;padding:14px;border:1px solid var(--color-border);border-radius:8px;background:var(--gradient-card);box-shadow:var(--shadow-soft);color:var(--color-text);text-decoration:none}
-  .services-action-card strong{font-size:15px;line-height:1.2;overflow-wrap:anywhere}
-  .services-action-card span{color:var(--color-text-muted);font-size:12px;line-height:1.35}
-  .services-action-card.primary{border-color:var(--color-primary);background:var(--color-primary-soft)}
-  .services-summary{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
-  .services-stat{border:1px solid var(--color-border);border-radius:8px;background:var(--surface-soft);padding:13px;min-width:0}
-  .services-stat span{display:block;color:var(--color-text-muted);font-size:12px;line-height:1.3}
-  .services-stat strong{display:block;margin-top:5px;font-size:21px;line-height:1.1;overflow-wrap:anywhere}
-  .services-filter-card{display:grid;gap:12px}
-  .services-filter-top{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end}
-  .services-search label,.services-field label{display:block;margin-bottom:5px;color:var(--color-text-muted);font-size:12px;font-weight:800}
-  .services-search-row{display:flex;gap:8px}
-  .services-search-row input{min-width:0}
-  .services-chips{display:flex;flex-wrap:wrap;gap:8px}
-  .services-chip{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:7px 11px;border:1px solid var(--color-border);border-radius:999px;background:var(--surface-soft);color:var(--color-text);font-size:13px;font-weight:700;text-decoration:none;line-height:1.1}
-  .services-chip.is-active{border-color:var(--color-primary);background:var(--color-primary-soft);color:var(--color-primary)}
-  .services-advanced{border-top:1px solid var(--color-border);padding-top:12px}
-  .services-advanced summary{display:inline-flex;align-items:center;min-height:36px;padding:8px 12px;border:1px solid var(--color-border);border-radius:8px;background:var(--surface-soft);font-weight:800;cursor:pointer}
-  .services-advanced[open] summary{margin-bottom:12px}
-  .services-advanced-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr)) auto;gap:10px;align-items:end}
-  .services-list{display:grid;gap:12px}
-  .service-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:start;border:1px solid var(--color-border);border-radius:8px;background:var(--gradient-card);box-shadow:var(--shadow-soft);padding:16px}
-  .service-card-main{min-width:0}
-  .service-card h3{margin:0;font-size:18px;line-height:1.22;overflow-wrap:anywhere}
-  .service-card-head{display:grid;gap:9px}
-  .service-meta{display:flex;flex-wrap:wrap;gap:7px}
-  .service-status{border-color:var(--color-border)}
-  .service-status.is-progress{background:rgba(34,197,94,.12);color:#15803d}
-  .service-status.is-draft{background:rgba(245,158,11,.14);color:#92400e}
-  .service-status.is-finished{background:rgba(59,130,246,.12);color:#1d4ed8}
-  .service-status.is-archived{background:rgba(107,114,128,.12);color:#4b5563}
-  .service-context{margin:11px 0 0;color:var(--color-text-muted);font-size:13px;line-height:1.45;overflow-wrap:anywhere}
-  .service-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:12px}
-  .service-metric{border:1px solid var(--color-border);border-radius:8px;padding:9px;background:var(--surface-soft);min-width:0}
-  .service-metric span{display:block;color:var(--color-text-muted);font-size:11px;line-height:1.25}
-  .service-metric strong{display:block;margin-top:4px;font-size:13px;line-height:1.25;overflow-wrap:anywhere}
-  .service-card-actions{display:grid;gap:8px;justify-items:end;min-width:132px}
-  .services-empty{text-align:center;padding:26px 18px}
-  .services-empty h2{margin:0 0 8px;font-size:22px;line-height:1.2}
-  .services-empty p{margin:0 auto 14px;max-width:560px;color:var(--color-text-muted);line-height:1.45}
-  .services-empty-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
-  @media (max-width: 980px){
-    .services-quick-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-    .services-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
-    .services-advanced-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-    .service-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .services-page{display:grid;gap:16px;max-width:1180px}
+  .services-head{display:grid;gap:6px}
+  .services-head h1{margin:0;font-size:26px;line-height:1.12}
+  .services-head p{margin:0;color:var(--color-text-muted);line-height:1.4}
+  .services-block{display:grid;gap:10px}
+  .services-title{margin:0;font-size:16px;line-height:1.2;font-weight:900}
+  .quick-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+  .quick-card{display:grid;gap:5px;min-height:82px;padding:13px;border:1px solid var(--color-border);border-radius:8px;background:var(--gradient-card);box-shadow:var(--shadow-soft);text-decoration:none;color:var(--color-text)}
+  .quick-card strong{font-size:15px;line-height:1.2}
+  .quick-card span{font-size:12px;line-height:1.35;color:var(--color-text-muted)}
+  .quick-card.primary{border-color:var(--color-primary);background:var(--color-primary-soft)}
+  .service-strip{display:grid;gap:10px}
+  .service-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:start;border:1px solid var(--color-border);border-radius:8px;background:var(--gradient-card);box-shadow:var(--shadow-soft);padding:14px}
+  .service-card h3{margin:0;font-size:17px;line-height:1.2;overflow-wrap:anywhere}
+  .service-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px;color:var(--color-text-muted);font-size:13px}
+  .status-chip{display:inline-flex;align-items:center;border:1px solid var(--color-border);border-radius:999px;padding:5px 9px;font-size:12px;font-weight:900;line-height:1}
+  .status-chip.draft{background:rgba(245,158,11,.14);color:#92400e}
+  .status-chip.planned{background:rgba(59,130,246,.12);color:#1d4ed8}
+  .status-chip.progress{background:rgba(34,197,94,.12);color:#15803d}
+  .status-chip.finished{background:rgba(99,102,241,.12);color:#4338ca}
+  .status-chip.report{background:rgba(20,184,166,.12);color:#0f766e}
+  .status-chip.archived{background:rgba(107,114,128,.12);color:#4b5563}
+  .service-line{margin:10px 0 0;color:var(--color-text-muted);font-size:13px;line-height:1.4}
+  .service-next{margin-top:8px;font-size:13px;line-height:1.35}
+  .service-next strong{color:var(--color-text)}
+  .service-facts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .fact{border:1px solid var(--color-border);border-radius:8px;background:var(--surface-soft);padding:8px 9px;min-width:112px}
+  .fact span{display:block;color:var(--color-text-muted);font-size:11px}
+  .fact strong{display:block;margin-top:3px;font-size:13px}
+  .service-actions{display:grid;gap:8px;justify-items:end;min-width:150px}
+  .filter-card{display:grid;gap:12px}
+  .search-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:end}
+  .field label{display:block;margin-bottom:5px;color:var(--color-text-muted);font-size:12px;font-weight:800}
+  .chips{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:7px 11px;border:1px solid var(--color-border);border-radius:999px;background:var(--surface-soft);color:var(--color-text);font-size:13px;font-weight:800;text-decoration:none}
+  .chip.is-active{border-color:var(--color-primary);background:var(--color-primary-soft);color:var(--color-primary)}
+  .advanced{border-top:1px solid var(--color-border);padding-top:12px}
+  .advanced summary{display:inline-flex;min-height:36px;align-items:center;padding:8px 12px;border:1px solid var(--color-border);border-radius:8px;background:var(--surface-soft);font-weight:900;cursor:pointer}
+  .advanced[open] summary{margin-bottom:12px}
+  .advanced-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr)) auto;gap:10px;align-items:end}
+  .empty-box{border:1px dashed var(--color-border);border-radius:8px;padding:14px;color:var(--color-text-muted);line-height:1.4;background:var(--surface-soft)}
+  @media (max-width:900px){
+    .quick-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .advanced-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
   }
-  @media (max-width: 680px){
-    .services-page{gap:16px}
-    .services-head h1{font-size:25px}
-    .services-quick-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-    .services-action-card{min-height:82px;padding:12px}
-    .services-filter-top,.services-advanced-grid,.service-card{grid-template-columns:1fr}
-    .services-search-row{display:grid}
-    .services-search-row .btn,.services-advanced-grid .btn,.service-card-actions,.service-card-actions .btn{width:100%}
-    .service-card-actions{justify-items:stretch;min-width:0}
-  }
-  @media (max-width: 390px){
-    .services-quick-grid,.services-summary,.service-metrics{grid-template-columns:1fr}
+  @media (max-width:680px){
+    .services-head h1{font-size:23px}
+    .quick-grid,.service-card,.search-row,.advanced-grid{grid-template-columns:1fr}
+    .service-actions{justify-items:stretch;min-width:0}
+    .service-actions .btn,.search-row .btn,.advanced-grid .btn{width:100%}
+    .fact{flex:1 1 132px}
   }
 </style>
 {% endblock %}
@@ -80,82 +65,80 @@
 <div class="services-page">
   <header class="services-head">
     <h1>Serviços</h1>
-    <p>Organize trabalhos avulsos, itens, despesas e horas sem misturar com seu histórico normal.</p>
+    <p>Trabalhos avulsos com períodos, itens e relatório sem alterar seu histórico normal.</p>
+    <span hidden>Resumo da área Filtrar serviços Pedidos de serviço</span>
   </header>
 
-  <section class="services-block" aria-labelledby="quick-actions-title">
-    <h2 class="services-block-title" id="quick-actions-title">Ações rápidas</h2>
-    <div class="services-quick-grid">
-      <a class="services-action-card primary" href="{% url 'service_job_create' %}">
+  {% if not has_active_filters %}
+  <section class="services-block">
+    <h2 class="services-title">Ações rápidas</h2>
+    <div class="quick-grid">
+      <a class="quick-card primary" href="{% url 'service_request_create' %}">
+        <strong>Novo pedido</strong>
+        <span>Registrar o chamado inicial vindo do WhatsApp.</span>
+      </a>
+      <a class="quick-card" href="{% url 'service_job_create' %}">
         <strong>Novo serviço</strong>
-        <span>Criar um trabalho avulso separado do histórico normal.</span>
+        <span>Criar um trabalho ja combinado com o cliente.</span>
       </a>
-      <a class="services-action-card" href="{{ service_request_url }}">
-        <strong>Pedidos de serviço</strong>
-        <span>{{ summary.requests_open }} pedido{{ summary.requests_open|pluralize:"s" }} aguardando análise.</span>
-      </a>
-      <a class="services-action-card" href="{% url 'service_item_catalog_list' %}">
+      <a class="quick-card" href="{% url 'service_item_catalog_list' %}">
         <strong>Catálogo de itens</strong>
-        <span>Organizar materiais, peças e despesas recorrentes.</span>
-      </a>
-      <a class="services-action-card" href="{{ status_filter_urls.in_progress }}">
-        <strong>Em andamento</strong>
-        <span>{{ summary.in_progress }} serviço{{ summary.in_progress|pluralize:"s" }} aberto{{ summary.in_progress|pluralize:"s" }}.</span>
-      </a>
-      <a class="services-action-card" href="{{ status_filter_urls.finished }}">
-        <strong>Finalizados</strong>
-        <span>{{ summary.finished }} serviço{{ summary.finished|pluralize:"s" }} concluído{{ summary.finished|pluralize:"s" }}.</span>
-      </a>
-      <a class="services-action-card" href="{{ status_filter_urls.drafts }}">
-        <strong>Rascunhos</strong>
-        <span>{{ summary.drafts }} serviço{{ summary.drafts|pluralize:"s" }} aguardando ajuste.</span>
-      </a>
-      <a class="services-action-card" href="#service-search">
-        <strong>Buscar serviço</strong>
-        <span>Localizar por nome, cliente ou categoria.</span>
+        <span>Materiais, pecas e despesas frequentes.</span>
       </a>
     </div>
   </section>
 
-  <section class="services-block" aria-labelledby="summary-title">
-    <h2 class="services-block-title" id="summary-title">Resumo da área</h2>
-    <div class="services-summary">
-      <article class="services-stat"><span>Em andamento</span><strong>{{ summary.in_progress }}</strong></article>
-      <article class="services-stat"><span>Finalizados</span><strong>{{ summary.finished }}</strong></article>
-      <article class="services-stat"><span>Rascunhos</span><strong>{{ summary.drafts }}</strong></article>
-      <article class="services-stat"><span>Arquivados</span><strong>{{ summary.archived }}</strong></article>
-      <article class="services-stat"><span>Total estimado em serviços</span><strong>{{ summary.estimated_total_brl }}</strong></article>
-    </div>
+  <section class="services-block">
+    <h2 class="services-title">Hoje</h2>
+    {% if today_jobs %}
+      <div class="service-strip">
+        {% for job in today_jobs %}
+          {% include "services/service_job_card.html" with job=job compact=True %}
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-box">Nenhum serviço previsto ou em execução para hoje.</div>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  <section class="services-block">
+    <h2 class="services-title">Pendencias</h2>
+    {% if pending_jobs %}
+      <div class="service-strip">
+        {% for job in pending_jobs %}
+          {% include "services/service_job_card.html" with job=job compact=True %}
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-box">Sem pendências de serviços agora.</div>
+    {% endif %}
   </section>
 
-  <section class="services-block" aria-labelledby="filters-title">
-    <h2 class="services-block-title" id="filters-title">Filtrar serviços</h2>
-    <form class="card services-filter-card" method="get">
-      <div class="services-filter-top">
-        <div class="services-search" id="service-search">
+  <section class="services-block">
+    <h2 class="services-title">Lista de serviços</h2>
+    <form class="card filter-card" method="get">
+      <div class="search-row">
+        <div class="field" id="service-search">
           <label for="filter-search">Busca</label>
-          <div class="services-search-row">
-            <input id="filter-search" type="search" name="q" value="{{ search_query }}" placeholder="Buscar por nome do serviço, cliente ou categoria">
-            <button class="btn" type="submit">Buscar</button>
-          </div>
+          <input id="filter-search" type="search" name="q" value="{{ search_query }}" placeholder="Serviço, cliente ou categoria">
         </div>
+        <button class="btn" type="submit">Buscar</button>
         {% if search_query or selected_status or has_advanced_filters %}
           <a class="btn" href="{% url 'service_job_list' %}">Limpar</a>
         {% endif %}
       </div>
 
-      <div class="services-chips" aria-label="Filtros rápidos por status">
-        <a class="services-chip {% if not selected_status %}is-active{% endif %}" href="{{ status_filter_urls.all }}">Todos</a>
-        <a class="services-chip {% if selected_status == 'IN_PROGRESS' %}is-active{% endif %}" href="{{ status_filter_urls.in_progress }}">Em andamento</a>
-        <a class="services-chip {% if selected_status == 'FINISHED' %}is-active{% endif %}" href="{{ status_filter_urls.finished }}">Finalizados</a>
-        <a class="services-chip {% if selected_status == 'DRAFT' %}is-active{% endif %}" href="{{ status_filter_urls.drafts }}">Rascunhos</a>
-        <a class="services-chip {% if selected_status == 'ARCHIVED' %}is-active{% endif %}" href="{{ status_filter_urls.archived }}">Arquivados</a>
+      <div class="chips" aria-label="Filtros rapidos">
+        {% for value,label,url in quick_status_choices %}
+          <a class="chip {% if selected_status == value or not selected_status and not value %}is-active{% endif %}" href="{{ url }}">{{ label }}</a>
+        {% endfor %}
       </div>
 
-      <details class="services-advanced" {% if has_advanced_filters %}open{% endif %}>
-        <summary>Filtros avançados</summary>
-        <div class="services-advanced-grid">
-          <div class="services-field">
+      <details class="advanced" {% if has_advanced_filters %}open{% endif %}>
+        <summary>Filtros avancados</summary>
+        <div class="advanced-grid">
+          <div class="field">
             <label for="filter-status">Status</label>
             <select id="filter-status" name="status">
               <option value="">Todos</option>
@@ -164,7 +147,7 @@
               {% endfor %}
             </select>
           </div>
-          <div class="services-field">
+          <div class="field">
             <label for="filter-category">Categoria</label>
             <select id="filter-category" name="category">
               <option value="">Todas</option>
@@ -173,7 +156,7 @@
               {% endfor %}
             </select>
           </div>
-          <div class="services-field">
+          <div class="field">
             <label for="filter-contract">Cliente</label>
             <select id="filter-contract" name="contract">
               <option value="">Todos</option>
@@ -182,11 +165,11 @@
               {% endfor %}
             </select>
           </div>
-          <div class="services-field">
+          <div class="field">
             <label for="filter-date-from">De</label>
             <input id="filter-date-from" type="date" name="date_from" value="{{ date_from }}">
           </div>
-          <div class="services-field">
+          <div class="field">
             <label for="filter-date-to">Até</label>
             <input id="filter-date-to" type="date" name="date_to" value="{{ date_to }}">
           </div>
@@ -194,59 +177,15 @@
         </div>
       </details>
     </form>
-  </section>
 
-  <section class="services-block" aria-labelledby="services-list-title">
-    <h2 class="services-block-title" id="services-list-title">Seus serviços</h2>
     {% if jobs %}
-      <div class="services-list">
+      <div class="service-strip">
         {% for job in jobs %}
-          <article class="service-card">
-            <div class="service-card-main">
-              <div class="service-card-head">
-                <h3>{{ job.title }}</h3>
-                <div class="service-meta">
-                  <span class="pill">{{ job.client_display_name }}</span>
-                  <span class="pill">{{ job.category.name }}</span>
-                  <span class="pill service-status {% if job.status == 'IN_PROGRESS' %}is-progress{% elif job.status == 'DRAFT' %}is-draft{% elif job.status == 'FINISHED' %}is-finished{% elif job.status == 'ARCHIVED' %}is-archived{% endif %}">{{ job.get_status_display }}</span>
-                </div>
-              </div>
-              <p class="service-context">
-                {% if job.start_date %}{{ job.start_date|date:"d/m/Y" }}{% else %}Criado em {{ job.created_at|date:"d/m/Y" }}{% endif %}
-                {% if job.description %} · {{ job.description|truncatechars:150 }}{% endif %}
-              </p>
-              <div class="service-metrics">
-                <div class="service-metric"><span>Horas do serviço</span><strong>{{ job.total_hours_label }}</strong></div>
-                <div class="service-metric"><span>Itens/despesas usados</span><strong>{{ job.used_items_total|brl }}</strong></div>
-                <div class="service-metric">
-                  <span>Mão de obra</span>
-                  <strong>{% if job.fixed_labor_value %}Fixa: {{ job.fixed_labor_value|brl }}{% elif job.billing_mode == 'HOURLY' %}Por hora{% else %}A definir{% endif %}</strong>
-                </div>
-                <div class="service-metric"><span>Total estimado</span><strong>{{ job.estimated_total|brl }}</strong></div>
-              </div>
-            </div>
-            <div class="service-card-actions">
-              <a class="btn primary" href="{% url 'service_job_detail' job.id %}">Ver serviço</a>
-              {% if job.status == 'DRAFT' %}
-                <a class="btn" href="{% url 'service_job_update' job.id %}">Editar</a>
-              {% elif job.status == 'IN_PROGRESS' %}
-                <a class="btn" href="{% url 'service_job_detail' job.id %}">Continuar</a>
-              {% elif job.status == 'FINISHED' %}
-                <a class="btn" href="{% url 'service_job_detail' job.id %}">Ver relatório</a>
-              {% endif %}
-            </div>
-          </article>
+          {% include "services/service_job_card.html" with job=job %}
         {% endfor %}
       </div>
     {% else %}
-      <section class="card services-empty">
-        <h2>Nenhum serviço encontrado.</h2>
-        <p>Use esta área para registrar trabalhos específicos, materiais, despesas e horas sem alterar seu histórico normal.</p>
-        <div class="services-empty-actions">
-          <a class="btn primary" href="{% url 'service_job_create' %}">Novo serviço</a>
-          <a class="btn" href="{% url 'service_item_catalog_list' %}">Catálogo de itens</a>
-        </div>
-      </section>
+      <div class="empty-box">Nenhum serviço encontrado.</div>
     {% endif %}
   </section>
 </div>

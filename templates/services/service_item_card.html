@@ -1,0 +1,52 @@
+{% load service_format %}
+<article class="entry-card">
+  <div class="entry-head">
+    <div>
+      <div class="entry-title">{{ item.name }}</div>
+      <div class="entry-meta">
+        <span>{{ item.get_type_display }}</span>
+        <span>{{ item.short_usage_status }}</span>
+        <span>{{ item.quantity }} {{ item.get_unit_display }} x {{ item.unit_value|brl }}</span>
+      </div>
+    </div>
+    <div class="entry-total">{{ item.total_value|brl }}</div>
+  </div>
+  {% if item.description or item.receipt_note %}<p class="sub">{{ item.receipt_note|default:item.description }}</p>{% endif %}
+  {% if can_edit_entries %}
+    <form class="item-status-form" method="post" action="{% url 'service_item_expense_update' job.id item.id %}">
+      {% csrf_token %}
+      <input type="hidden" name="catalog_item" value="{{ item.catalog_item_id|default:'' }}">
+      <input type="hidden" name="type" value="{{ item.type }}">
+      <input type="hidden" name="name" value="{{ item.name }}">
+      <input type="hidden" name="description" value="{{ item.description }}">
+      <input type="hidden" name="receipt_note" value="{{ item.receipt_note }}">
+      <div class="grid">
+        <div class="field">
+          <label>Quantidade</label>
+          <input class="hc-input" type="number" name="quantity" value="{{ item.quantity }}" min="0" step="0.01">
+        </div>
+        <div class="field">
+          <label>Valor unitario</label>
+          <input class="hc-input" type="number" name="unit_value" value="{{ item.unit_value }}" min="0" step="0.01">
+        </div>
+        <div class="field">
+          <label>Unidade</label>
+          <select class="hc-input" name="unit">
+            {% for value,label in item_form.fields.unit.choices %}
+              <option value="{{ value }}" {% if item.unit == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label>Status</label>
+          <select class="hc-input" name="usage_status">
+            {% for value,label in item_form.fields.usage_status.choices %}
+              <option value="{{ value }}" {% if item.usage_status == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <button class="btn" type="submit">Atualizar</button>
+    </form>
+  {% endif %}
+</article>

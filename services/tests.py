@@ -473,7 +473,7 @@ class ServiceJobAreaTests(TestCase):
         self.assertIsNone(job.contract)
         self.assertIsNone(job.client)
         self.assertEqual(job.manual_client_name, "Cliente avulso")
-        self.assertEqual(job.status, ServiceJob.Status.IN_PROGRESS)
+        self.assertEqual(job.status, ServiceJob.Status.DRAFT)
 
     def test_add_service_work_log_and_calculate_total_hours(self):
         job = ServiceJob.objects.create(
@@ -684,9 +684,9 @@ class ServiceJobAreaTests(TestCase):
             {"action": "finish"},
             follow=True,
         )
-        self.assertContains(finish_response, "Ver relatório")
-        self.assertContains(finish_response, "Enviar WhatsApp")
-        self.assertContains(finish_response, "PDF")
+        self.assertContains(finish_response, "Gerar relatório")
+        self.assertNotContains(finish_response, "Enviar WhatsApp")
+        self.assertNotContains(finish_response, "PDF")
 
     def test_planned_service_detail_prioritizes_start_actions_before_finish(self):
         before_punch_count = Punch.objects.count()
@@ -708,12 +708,12 @@ class ServiceJobAreaTests(TestCase):
         response = self.client.get(reverse("service_job_detail", args=[job.id]))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Ações do serviço")
+        self.assertContains(response, "O que fazer agora")
         self.assertContains(response, "Iniciar trabalho")
         self.assertContains(response, "Adicionar período manual")
-        self.assertContains(response, "Adicionar item/despesa")
+        self.assertContains(response, "Adicionar item")
         self.assertContains(response, "Nenhum período de trabalho registrado ainda.")
-        self.assertContains(response, "Registre períodos trabalhados ou confirme itens usados antes de finalizar")
+        self.assertContains(response, "O relatório final fica disponível depois que o serviço for finalizado.")
         self.assertNotContains(response, '<button class="btn" type="submit">Finalizar serviço</button>', html=True)
         self.assertEqual(Punch.objects.count(), before_punch_count)
 
@@ -779,7 +779,10 @@ class ServiceJobAreaTests(TestCase):
             contract=self.contract,
             category=self.category,
             title="Fluxo de status",
-            status=ServiceJob.Status.DRAFT,
+            description="Servico pronto para iniciar.",
+            service_location="Rua A, 10",
+            start_date=timezone.localdate(),
+            status=ServiceJob.Status.PLANNED,
         )
 
         start_response = self.client.post(
@@ -800,16 +803,16 @@ class ServiceJobAreaTests(TestCase):
         job.refresh_from_db()
         self.assertEqual(archive_response.status_code, 200)
         self.assertEqual(job.status, ServiceJob.Status.ARCHIVED)
-        self.assertContains(archive_response, "Reabrir serviço")
+        self.assertContains(archive_response, "Restaurar serviço")
 
-        reopen_response = self.client.post(
+        restore_response = self.client.post(
             reverse("service_job_status_action", args=[job.id]),
-            {"action": "reopen"},
+            {"action": "restore"},
             follow=True,
         )
         job.refresh_from_db()
-        self.assertEqual(reopen_response.status_code, 200)
-        self.assertEqual(job.status, ServiceJob.Status.IN_PROGRESS)
+        self.assertEqual(restore_response.status_code, 200)
+        self.assertEqual(job.status, ServiceJob.Status.PLANNED)
 
     def test_list_and_filters_by_status_and_category(self):
         draft = ServiceJob.objects.create(
@@ -829,12 +832,12 @@ class ServiceJobAreaTests(TestCase):
 
         status_response = self.client.get(reverse("service_job_list"), {"status": ServiceJob.Status.DRAFT})
         self.assertContains(status_response, draft.title)
-        self.assertContains(status_response, "Editar")
+        self.assertContains(status_response, "Completar dados")
         self.assertNotContains(status_response, finished.title)
 
         category_response = self.client.get(reverse("service_job_list"), {"category": "hidraulica"})
         self.assertContains(category_response, finished.title)
-        self.assertContains(category_response, "Ver relatório")
+        self.assertContains(category_response, "Gerar relatório")
         self.assertNotContains(category_response, draft.title)
 
         search_response = self.client.get(reverse("service_job_list"), {"q": "hidraulica"})
@@ -1285,7 +1288,7 @@ class ServiceJobAreaTests(TestCase):
             title="Instalacao eletrica sala",
             description="Troca de tomadas e revisao do quadro.",
             service_location="Rua A, 123",
-            status=ServiceJob.Status.FINISHED,
+            status=ServiceJob.Status.REPORT_SENT,
             billing_mode=ServiceJob.BillingMode.HOURLY,
             hourly_rate_snapshot=self.contract.hourly_rate,
             notes="Servico finalizado sem pendencias.",

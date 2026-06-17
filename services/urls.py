@@ -31,6 +31,7 @@ urlpatterns = [
     path("me/servicos/<uuid:job_id>/previa/whatsapp/", views.service_job_preview_whatsapp, name="service_job_preview_whatsapp"),
     path("me/servicos/<uuid:job_id>/relatorio/pdf/", views.service_job_report_pdf, name="service_job_report_pdf"),
     path("me/servicos/<uuid:job_id>/relatorio/whatsapp/", views.service_job_report_whatsapp, name="service_job_report_whatsapp"),
+    path("me/servicos/<uuid:job_id>/relatorio/ver/", views.service_job_public_report_redirect, name="service_job_public_report_redirect"),
     path("servicos/previa/<uuid:token>/", views.public_service_job_preview, name="public_service_job_preview"),
     path("servicos/relatorio/<uuid:token>/", views.public_service_job_report, name="public_service_job_report"),
     path("servicos/relatorio/<uuid:token>/pdf/", views.public_service_job_report_pdf, name="public_service_job_report_pdf"),
