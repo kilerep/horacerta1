@@ -175,9 +175,7 @@ def _service_quote_message(job, quote_items):
         "",
     ]
     for item in quote_items:
-        note = (item.description or item.receipt_note or "").strip()
-        note_text = f" — {note[:90]}" if note else ""
-        lines.append(f"* {_format_quantity(item.quantity)} x {item.name}{note_text}")
+        lines.append(f"* {_format_quantity(item.quantity)} x {item.name}")
     lines.extend(
         [
             "",
@@ -271,7 +269,23 @@ def _service_report_context(job, request=None):
     }
 
 
-def _service_job_detail_context(job, *, work_log_form=None, item_form=None):
+def _maps_url_for_job(job):
+    address = job.full_service_address or job.service_location_summary
+    if not address:
+        return ""
+    return f"https://www.google.com/maps/search/?api=1&query={quote(address, safe='')}"
+
+
+def _client_address_map(user):
+    addresses = {}
+    for contract in mei_contracts_for_user(user, include_inactive_contracts=True).select_related("company"):
+        address = (getattr(contract.company, "address", "") or "").strip()
+        if address:
+            addresses[str(contract.id)] = address
+    return addresses
+
+
+def _service_job_detail_context(job, *, request=None, work_log_form=None, item_form=None):
     work_logs = job.work_logs.all()
     items = job.item_expenses.all()
     used_items = [item for item in items if item.is_chargeable]
@@ -305,6 +319,14 @@ def _service_job_detail_context(job, *, work_log_form=None, item_form=None):
     )
     next_action = _next_action_context(job, open_work_log=open_work_log)
     report_context = _service_report_context(job)
+    preview_public_url = reverse("public_service_job_preview", args=[job.public_token])
+    report_public_url = reverse("public_service_job_report", args=[job.public_token])
+    if request is not None:
+        preview_public_full_url = request.build_absolute_uri(preview_public_url)
+        report_public_full_url = request.build_absolute_uri(report_public_url)
+    else:
+        preview_public_full_url = preview_public_url
+        report_public_full_url = report_public_url
     return {
         "job": job,
         "work_logs": work_logs,
@@ -350,12 +372,15 @@ def _service_job_detail_context(job, *, work_log_form=None, item_form=None):
         "preview_first_viewed_at": job.preview_first_viewed_at,
         "preview_updated_at": job.preview_updated_at,
         "preview_generate_url": reverse("service_job_preview_generate", args=[job.id]),
-        "preview_public_url": reverse("public_service_job_preview", args=[job.public_token]),
+        "preview_public_url": preview_public_url,
+        "preview_public_full_url": preview_public_full_url,
         "preview_whatsapp_url": reverse("service_job_preview_whatsapp", args=[job.id]),
-        "report_public_url": reverse("public_service_job_report", args=[job.public_token]),
+        "report_public_url": report_public_url,
+        "report_public_full_url": report_public_full_url,
         "report_pdf_url": reverse("service_job_report_pdf", args=[job.id]),
         "report_whatsapp_url": reverse("service_job_report_whatsapp", args=[job.id]),
         "public_report_first_viewed_at": job.public_report_first_viewed_at,
+        "maps_url": _maps_url_for_job(job),
     }
 
 
@@ -796,7 +821,7 @@ def service_item_catalog_list(request):
     if not show_inactive:
         items = items.filter(is_active=True)
     if q:
-        items = items.filter(Q(name__icontains=q) | Q(description__icontains=q))
+        items = items.filter(Q(internal_code__icontains=q) | Q(name__icontains=q) | Q(description__icontains=q) | Q(category__name__icontains=q))
     return render(
         request,
         "services/service_item_catalog_list.html",
@@ -929,7 +954,7 @@ def service_item_catalog_search(request):
     category_id = (request.GET.get("category") or "").strip()
     items = _catalog_items_for_user(request.user).filter(is_active=True)
     if q:
-        items = items.filter(Q(name__icontains=q) | Q(description__icontains=q))
+        items = items.filter(Q(internal_code__icontains=q) | Q(name__icontains=q) | Q(description__icontains=q) | Q(category__name__icontains=q))
     if category_id:
         items = items.filter(Q(category_id=category_id) | Q(category__isnull=True))
     items = items.order_by("-favorite", "name")[:10]
@@ -938,6 +963,7 @@ def service_item_catalog_search(request):
             "items": [
                 {
                     "id": str(item.id),
+                    "internal_code": item.internal_code,
                     "name": item.name,
                     "description": item.description,
                     "item_type": item.item_type,
@@ -995,6 +1021,7 @@ def service_job_create(request):
             "is_edit": False,
             "item_type_choices": ServiceItemExpense.ItemType.choices,
             "item_unit_choices": ServiceItemCatalog._meta.get_field("unit").choices,
+            "client_address_map": _client_address_map(request.user),
         },
     )
 
@@ -1032,6 +1059,7 @@ def service_job_update(request, job_id):
             "form_subtitle": "Atualize cliente, local, descrição e previsão deste serviço.",
             "is_edit": True,
             "job": job,
+            "client_address_map": _client_address_map(request.user),
         },
     )
 
@@ -1046,7 +1074,7 @@ def service_job_detail(request, job_id):
         _service_jobs_for_user(request.user).prefetch_related("work_logs", "item_expenses"),
         id=job_id,
     )
-    return render(request, "services/service_job_detail.html", _service_job_detail_context(job))
+    return render(request, "services/service_job_detail.html", _service_job_detail_context(job, request=request))
 
 
 @login_required
@@ -1079,6 +1107,27 @@ def service_job_save_manual_client(request, job_id):
 
 
 @login_required
+def service_job_save_address_to_client(request, job_id):
+    denied = _redirect_if_not_mei(request)
+    if denied:
+        return denied
+    job = get_object_or_404(_service_jobs_for_user(request.user), id=job_id)
+    if request.method != "POST":
+        return redirect("service_job_detail", job_id=job.id)
+    if not job.client_id:
+        messages.error(request, "Salve ou selecione um cliente antes de gravar o endereco.")
+        return redirect("service_job_detail", job_id=job.id)
+    address = job.full_service_address
+    if not address:
+        messages.error(request, "Informe o endereco do servico antes de salvar no cliente.")
+        return redirect("service_job_detail", job_id=job.id)
+    job.client.address = address
+    job.client.save(update_fields=["address"])
+    messages.success(request, "Endereco salvo no cliente.")
+    return redirect("service_job_detail", job_id=job.id)
+
+
+@login_required
 def service_work_log_create(request, job_id):
     denied = _redirect_if_not_mei(request)
     if denied:
@@ -1107,7 +1156,7 @@ def service_work_log_create(request, job_id):
         _service_jobs_for_user(request.user).prefetch_related("work_logs", "item_expenses"),
         id=job_id,
     )
-    return render(request, "services/service_job_detail.html", _service_job_detail_context(job, work_log_form=form))
+    return render(request, "services/service_job_detail.html", _service_job_detail_context(job, request=request, work_log_form=form))
 
 
 @login_required
@@ -1136,7 +1185,7 @@ def service_item_expense_create(request, job_id):
         _service_jobs_for_user(request.user).prefetch_related("work_logs", "item_expenses"),
         id=job_id,
     )
-    return render(request, "services/service_job_detail.html", _service_job_detail_context(job, item_form=form))
+    return render(request, "services/service_job_detail.html", _service_job_detail_context(job, request=request, item_form=form))
 
 
 @login_required

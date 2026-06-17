@@ -14,7 +14,7 @@
   .catalog-filter{display:flex;gap:8px;flex-wrap:wrap;align-items:end}
   .catalog-filter .field{display:grid;gap:5px;min-width:240px}
   .catalog-grid{display:grid;gap:10px}
-  .catalog-row{display:grid;grid-template-columns:1.2fr .7fr .7fr .7fr .7fr .6fr auto;gap:10px;align-items:center;border:1px solid var(--color-border);border-radius:8px;background:var(--surface-card);padding:12px}
+  .catalog-row{display:grid;grid-template-columns:1.2fr .55fr .7fr .7fr .7fr .7fr .6fr auto;gap:10px;align-items:center;border:1px solid var(--color-border);border-radius:8px;background:var(--surface-card);padding:12px}
   .catalog-title{font-weight:900;overflow-wrap:anywhere}
   .catalog-meta{font-size:12px;color:var(--color-text-muted);display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
   .catalog-cell span{display:block;font-size:11px;color:var(--color-text-muted);font-weight:800}
@@ -48,7 +48,7 @@
     <form class="catalog-filter" method="get">
       <div class="field">
         <label for="catalog-q">Buscar</label>
-        <input class="hc-input" id="catalog-q" type="search" name="q" value="{{ q }}" placeholder="Nome ou descrição">
+        <input class="hc-input" id="catalog-q" type="search" name="q" value="{{ q }}" placeholder="Código, nome ou categoria">
       </div>
       <label class="checkbox-line">
         <input type="checkbox" name="inactive" value="1" {% if show_inactive %}checked{% endif %}>
@@ -62,7 +62,7 @@
     {% for item in catalog_items %}
       <article class="catalog-row">
         <div>
-          <div class="catalog-title">{{ item.name }}</div>
+          <div class="catalog-title">{% if item.internal_code %}{{ item.internal_code }} — {% endif %}{{ item.name }}</div>
           <div class="catalog-meta">
             <span>{{ item.get_item_type_display }}</span>
             <span>{{ item.get_unit_display }}</span>
@@ -71,6 +71,7 @@
             {% if not item.is_active %}<span>Desativado</span>{% endif %}
           </div>
         </div>
+        <div class="catalog-cell"><span>Código</span><strong>{{ item.internal_code|default:"-" }}</strong></div>
         <div class="catalog-cell"><span>Quantidade</span><strong>{{ item.default_quantity }}</strong></div>
         <div class="catalog-cell"><span>Valor estimado</span><strong>{% if item.estimated_unit_value is not None %}{{ item.estimated_unit_value|brl }}{% else %}-{% endif %}</strong></div>
         <div class="catalog-cell"><span>Último valor</span><strong>{% if item.last_used_value is not None %}{{ item.last_used_value|brl }}{% else %}-{% endif %}</strong></div>

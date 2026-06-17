@@ -23,6 +23,7 @@ urlpatterns = [
     path("me/servicos/<uuid:job_id>/", views.service_job_detail, name="service_job_detail"),
     path("me/servicos/<uuid:job_id>/editar/", views.service_job_update, name="service_job_update"),
     path("me/servicos/<uuid:job_id>/salvar-cliente/", views.service_job_save_manual_client, name="service_job_save_manual_client"),
+    path("me/servicos/<uuid:job_id>/salvar-endereco-cliente/", views.service_job_save_address_to_client, name="service_job_save_address_to_client"),
     path("me/servicos/<uuid:job_id>/horarios/novo/", views.service_work_log_create, name="service_work_log_create"),
     path("me/servicos/<uuid:job_id>/cronometro/", views.service_clock_action, name="service_clock_action"),
     path("me/servicos/<uuid:job_id>/itens/novo/", views.service_item_expense_create, name="service_item_expense_create"),

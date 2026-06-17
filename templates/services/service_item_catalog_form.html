@@ -40,6 +40,11 @@
     {% if form.non_field_errors %}<div class="alert danger">{{ form.non_field_errors }}</div>{% endif %}
     <div class="form-grid">
       <div class="field">
+        <label for="{{ form.internal_code.id_for_label }}">{{ form.internal_code.label }}</label>
+        {{ form.internal_code }}
+        {% if form.internal_code.errors %}<div class="field-errors">{{ form.internal_code.errors }}</div>{% endif %}
+      </div>
+      <div class="field">
         <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
         {{ form.name }}
         {% if form.name.errors %}<div class="field-errors">{{ form.name.errors }}</div>{% endif %}

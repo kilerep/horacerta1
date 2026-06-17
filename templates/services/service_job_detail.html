@@ -123,13 +123,27 @@
     </div>
     <div class="data">
       <div><span>Cliente</span><strong>{{ job.client_display_name }}</strong></div>
+      <div><span>Categoria</span><strong>{{ job.category.name }}</strong></div>
+      <div><span>Título</span><strong>{{ job.title }}</strong></div>
       <div><span>Endereço</span><strong>{{ job.full_service_address|default:"-" }}</strong></div>
-      <div><span>Data prevista</span><strong>{% if job.start_date %}{{ job.start_date|date:"d/m/Y" }}{% else %}-{% endif %}{% if job.planned_start_time %} as {{ job.planned_start_time|time:"H:i" }}{% endif %}</strong></div>
+      <div><span>Ponto de referência</span><strong>{{ job.service_reference|default:"-" }}</strong></div>
+      <div><span>Data prevista</span><strong>{% if job.start_date %}{{ job.start_date|date:"d/m/Y" }}{% else %}-{% endif %}</strong></div>
+      <div><span>Hora prevista</span><strong>{% if job.planned_start_time %}{{ job.planned_start_time|time:"H:i" }}{% else %}-{% endif %}{% if job.planned_end_time %} até {{ job.planned_end_time|time:"H:i" }}{% endif %}</strong></div>
       <div><span>Observacoes</span><strong>{{ job.notes|default:"-" }}</strong></div>
     </div>
+    {% if not can_edit_service and maps_url %}
+      <div class="actions"><a class="btn" href="{{ maps_url }}" target="_blank" rel="noopener">Abrir no Maps</a></div>
+    {% endif %}
     {% if can_edit_service %}
       <div class="actions">
         <a class="btn" href="{% url 'service_job_update' job.id %}">Editar</a>
+        {% if maps_url %}<a class="btn" href="{{ maps_url }}" target="_blank" rel="noopener">Abrir no Maps</a>{% endif %}
+        {% if job.client_id and job.full_service_address %}
+          <form method="post" action="{% url 'service_job_save_address_to_client' job.id %}" onsubmit="return confirm('Salvar este endereço no cadastro do cliente?');">
+            {% csrf_token %}
+            <button class="btn" type="submit">Salvar endereço no cliente</button>
+          </form>
+        {% endif %}
         {% if can_save_manual_client %}
           <form method="post" action="{% url 'service_job_save_manual_client' job.id %}">
             {% csrf_token %}
@@ -143,9 +157,8 @@
   </section>
 
   <section class="card section">
-    <h2>Prévia e itens previstos</h2>
-    <p class="sub">Itens previstos e valores combinados antes da execução.</p>
-    <p class="sub">Valores cotados são estimativas até a execução do serviço.</p>
+    <h2>Itens previstos</h2>
+    <p class="sub">Use para montar a prévia e pedir cotação.</p>
     <p class="sub">Status: {{ preview_status_label }}</p>
     <div class="grid three">
       <div class="metric"><span>Status da previa</span><strong>{{ preview_status_label }}</strong></div>
@@ -153,17 +166,28 @@
       <div class="metric"><span>Mao de obra estimada</span><strong>{{ summary.preview_labor_total_brl }}</strong></div>
       <div class="metric"><span>Total estimado</span><strong>{{ summary.preview_estimated_total_brl }}</strong></div>
     </div>
+    <div class="entry-list">
+      <h3 class="entry-title">Prévia</h3>
+      <p class="sub">Valores estimados e sujeitos à confirmação na compra e execução do serviço.</p>
+    </div>
     <div class="actions">
       {% if can_edit_entries %}
         <form method="post" action="{{ preview_generate_url }}">
           {% csrf_token %}
-          <button class="btn" type="submit">{% if preview_generated_at %}Atualizar previa{% else %}Enviar previa{% endif %}</button>
+          <button class="btn" type="submit">{% if preview_generated_at %}Atualizar prévia{% else %}Gerar prévia{% endif %}</button>
         </form>
         {% if preview_generated_at %}
-          <a class="btn" href="{{ preview_public_url }}" target="_blank" rel="noopener">Ver previa</a>
-          <a class="btn" href="{{ preview_whatsapp_url }}" target="_blank" rel="noopener">Enviar previa</a>
+          <a class="btn" href="{{ preview_public_url }}" target="_blank" rel="noopener">Ver prévia</a>
+          <button class="btn" type="button" data-copy-text="{{ preview_public_full_url }}">Copiar link</button>
+          <a class="btn" href="{{ preview_whatsapp_url }}" target="_blank" rel="noopener">Enviar WhatsApp</a>
         {% endif %}
       {% endif %}
+    </div>
+    <div class="entry-list">
+      <h3 class="entry-title">Cotação oficial</h3>
+      <p class="sub">Mensagem para loja. Sem loja integrada, sem pagamento.</p>
+    </div>
+    <div class="actions">
       {% if quote_items %}
         <form method="post" action="{{ quote_generate_url }}" id="quote">
           {% csrf_token %}
@@ -283,6 +307,7 @@
         <a class="btn primary" href="{{ report_public_url }}" target="_blank" rel="noopener">Ver relatório</a>
         <a class="btn" href="{{ report_pdf_url }}">PDF</a>
         <a class="btn" href="{{ report_whatsapp_url }}" target="_blank" rel="noopener">Enviar WhatsApp</a>
+        <button class="btn" type="button" data-copy-text="{{ report_public_full_url }}">Copiar link</button>
         {% if can_save_manual_client %}
           <form method="post" action="{% url 'service_job_save_manual_client' job.id %}">
             {% csrf_token %}
@@ -293,10 +318,13 @@
       {% if public_report_first_viewed_at %}<p class="sub">Visto em {{ public_report_first_viewed_at|date:"d/m/Y" }} as {{ public_report_first_viewed_at|time:"H:i" }}</p>{% endif %}
     {% elif is_finished %}
       <p class="sub">Serviço finalizado. Gere o relatório para liberar os envios finais.</p>
+      {% if not has_work_logs %}
+        <div class="finished-note">Este serviço não possui períodos trabalhados registrados. Deseja gerar o relatório mesmo assim?</div>
+      {% endif %}
       <form method="post" action="{% url 'service_job_status_action' job.id %}">
         {% csrf_token %}
         <input type="hidden" name="action" value="generate_report">
-        <button class="btn primary" type="submit">Gerar relatório</button>
+        <button class="btn primary" type="submit" {% if not has_work_logs %}onclick="return confirm('Este serviço não possui períodos trabalhados registrados. Deseja gerar o relatório mesmo assim?');"{% endif %}>Gerar relatório</button>
       </form>
     {% elif can_finish_service %}
       <div class="empty-line">Quando terminar, finalize o serviço para gerar o relatório final.</div>
@@ -305,4 +333,24 @@
     {% endif %}
   </section>
 </div>
+<script>
+  (function(){
+    function copyValue(value, button){
+      if(!value) return;
+      navigator.clipboard.writeText(value).then(function(){
+        var original = button.textContent;
+        button.textContent = "Copiado";
+        setTimeout(function(){ button.textContent = original; }, 1600);
+      });
+    }
+    var quoteButton = document.querySelector("[data-copy-quote]");
+    var quoteMessage = document.querySelector("[data-quote-message]");
+    if(quoteButton && quoteMessage){
+      quoteButton.addEventListener("click", function(){ copyValue(quoteMessage.value, quoteButton); });
+    }
+    document.querySelectorAll("[data-copy-text]").forEach(function(button){
+      button.addEventListener("click", function(){ copyValue(button.getAttribute("data-copy-text"), button); });
+    });
+  })();
+</script>
 {% endblock %}

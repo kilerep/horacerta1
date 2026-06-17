@@ -641,6 +641,7 @@ class ServiceItemCatalogForm(forms.ModelForm):
     class Meta:
         model = ServiceItemCatalog
         fields = [
+            "internal_code",
             "category",
             "item_type",
             "name",
@@ -652,6 +653,7 @@ class ServiceItemCatalogForm(forms.ModelForm):
             "is_active",
         ]
         labels = {
+            "internal_code": "Codigo interno",
             "category": "Categoria",
             "item_type": "Tipo",
             "name": "Nome",
@@ -663,6 +665,7 @@ class ServiceItemCatalogForm(forms.ModelForm):
             "is_active": "Ativo",
         }
         widgets = {
+            "internal_code": forms.TextInput(attrs={"placeholder": "Ex.: ELE-0001"}),
             "description": forms.Textarea(attrs={"rows": 3}),
             "estimated_unit_value": forms.NumberInput(attrs={"step": "0.01", "min": "0", "placeholder": "Definido pelo prestador"}),
             "default_quantity": forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
@@ -679,6 +682,9 @@ class ServiceItemCatalogForm(forms.ModelForm):
 
     def clean_name(self):
         return (self.cleaned_data.get("name") or "").strip()
+
+    def clean_internal_code(self):
+        return (self.cleaned_data.get("internal_code") or "").strip().upper()
 
     def clean_description(self):
         return (self.cleaned_data.get("description") or "").strip()

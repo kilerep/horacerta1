@@ -113,6 +113,7 @@ class ServiceJobAreaTests(TestCase):
         list_response = self.client.get(reverse("service_item_catalog_list"))
         self.assertEqual(list_response.status_code, 200)
         self.assertContains(list_response, "Disjuntor 20A")
+        self.assertContains(list_response, item.internal_code)
         self.assertNotContains(list_response, "Disjuntor 32A")
         self.assertEqual(self.client.get(reverse("service_item_catalog_update", args=[other_item.id])).status_code, 404)
 
@@ -121,6 +122,7 @@ class ServiceJobAreaTests(TestCase):
             {
                 "category": self.category.id,
                 "item_type": ServiceItemExpense.ItemType.PART,
+                "internal_code": item.internal_code,
                 "name": "Disjuntor 20A bipolar",
                 "description": "Estimativa pessoal",
                 "unit": "UNIT",
@@ -163,6 +165,11 @@ class ServiceJobAreaTests(TestCase):
         search_response = self.client.get(reverse("service_item_catalog_search"), {"q": "disj"})
         self.assertEqual(search_response.status_code, 200)
         self.assertEqual(search_response.json()["items"][0]["name"], "Disjuntor 20A")
+        self.assertEqual(search_response.json()["items"][0]["internal_code"], catalog_item.internal_code)
+
+        code_search_response = self.client.get(reverse("service_item_catalog_search"), {"q": catalog_item.internal_code})
+        self.assertEqual(code_search_response.status_code, 200)
+        self.assertEqual(code_search_response.json()["items"][0]["name"], "Disjuntor 20A")
 
         create_response = self.client.post(
             reverse("service_job_create"),
@@ -298,6 +305,7 @@ class ServiceJobAreaTests(TestCase):
         self.assertContains(response, "Local do serviço")
         self.assertContains(response, "Previsão de atendimento")
         self.assertContains(response, "Buscar pelo CEP")
+        self.assertContains(response, "Usar endereço do cliente")
         self.assertContains(response, "Cliente Servicos A - R$ 95.00/h")
         self.assertContains(response, "Trocas, instalações, manutenção elétrica")
         self.assertNotContains(response, "Contract&lt;")
@@ -1215,7 +1223,7 @@ class ServiceJobAreaTests(TestCase):
         self.assertContains(preview_response, "Rua X, 120, Centro, Blumenau, SC")
         self.assertContains(preview_response, "Disjuntor 20A")
         self.assertContains(preview_response, "Total estimado do serviço")
-        self.assertContains(preview_response, "Os valores desta prévia podem ser ajustados")
+        self.assertContains(preview_response, "Valores estimados e sujeitos")
         self.assertNotContains(preview_response, "Registrar horario")
         job.refresh_from_db()
         self.assertIsNotNone(job.preview_first_viewed_at)
@@ -1268,8 +1276,9 @@ class ServiceJobAreaTests(TestCase):
         self.assertContains(detail_response, "Pedir cotação")
         self.assertContains(detail_response, "Copiar mensagem")
         self.assertContains(detail_response, "Abrir WhatsApp")
-        self.assertContains(detail_response, "Valores cotados são estimativas até a execução do serviço.")
-        self.assertContains(detail_response, "* 2 x Disjuntor 20A — marca/modelo se disponivel")
+        self.assertContains(detail_response, "Cotação oficial")
+        self.assertContains(detail_response, "Mensagem para loja. Sem loja integrada, sem pagamento.")
+        self.assertContains(detail_response, "* 2 x Disjuntor 20A")
 
         generate_response = self.client.post(reverse("service_job_quote_generate", args=[job.id]), follow=True)
         job.refresh_from_db()

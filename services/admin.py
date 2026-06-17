@@ -64,7 +64,7 @@ class ServiceItemExpenseAdmin(admin.ModelAdmin):
 
 @admin.register(ServiceItemCatalog)
 class ServiceItemCatalogAdmin(admin.ModelAdmin):
-    list_display = ("name", "professional", "category", "item_type", "unit", "estimated_unit_value", "last_used_value", "favorite", "is_active")
+    list_display = ("internal_code", "name", "professional", "category", "item_type", "unit", "estimated_unit_value", "last_used_value", "favorite", "is_active")
     list_filter = ("item_type", "unit", "favorite", "is_active", "category")
-    search_fields = ("name", "description", "professional__email", "professional__username")
+    search_fields = ("internal_code", "name", "description", "professional__email", "professional__username")
     readonly_fields = ("last_used_value", "last_used_at", "created_at", "updated_at")

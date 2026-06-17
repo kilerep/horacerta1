@@ -634,6 +634,17 @@ class ServiceItemExpense(models.Model):
 
 
 class ServiceItemCatalog(models.Model):
+    CODE_PREFIX_BY_TYPE = {
+        ServiceItemExpense.ItemType.MATERIAL: "MAT",
+        ServiceItemExpense.ItemType.EXPENSE: "DES",
+        ServiceItemExpense.ItemType.PART: "PEC",
+        ServiceItemExpense.ItemType.TOLL: "VIA",
+        ServiceItemExpense.ItemType.FUEL: "VIA",
+        ServiceItemExpense.ItemType.PARKING: "VIA",
+        ServiceItemExpense.ItemType.FOOD: "DES",
+        ServiceItemExpense.ItemType.OTHER: "OUT",
+    }
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     professional = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -647,6 +658,7 @@ class ServiceItemCatalog(models.Model):
         null=True,
         blank=True,
     )
+    internal_code = models.CharField(max_length=20, blank=True, default="")
     item_type = models.CharField(max_length=20, choices=ServiceItemExpense.ItemType.choices, default=ServiceItemExpense.ItemType.MATERIAL)
     name = models.CharField(max_length=140)
     description = models.TextField(blank=True, default="")
@@ -663,15 +675,43 @@ class ServiceItemCatalog(models.Model):
     class Meta:
         ordering = ["-favorite", "name"]
         indexes = [
+            models.Index(fields=["professional", "internal_code"], name="services_se_profess_code_idx"),
             models.Index(fields=["professional", "is_active", "name"], name="services_se_profess_8f9b2f_idx"),
             models.Index(fields=["professional", "favorite", "name"], name="services_se_profess_fa8e6f_idx"),
             models.Index(fields=["professional", "category", "name"], name="services_se_profess_6f5636_idx"),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["professional", "internal_code"],
+                condition=models.Q(internal_code__gt=""),
+                name="unique_service_catalog_code_per_professional",
+            ),
         ]
         verbose_name = "Item do catalogo"
         verbose_name_plural = "Itens do catalogo"
 
     def __str__(self):
-        return self.name
+        return f"{self.internal_code} - {self.name}" if self.internal_code else self.name
+
+    def _code_prefix(self):
+        if self.category_id and self.category and self.category.slug:
+            return self.category.slug[:3].upper()
+        return self.CODE_PREFIX_BY_TYPE.get(self.item_type, "ITE")
+
+    def _generate_internal_code(self):
+        prefix = self._code_prefix()
+        existing = (
+            ServiceItemCatalog.objects.filter(professional=self.professional, internal_code__startswith=f"{prefix}-")
+            .exclude(pk=self.pk)
+            .values_list("internal_code", flat=True)
+        )
+        highest = 0
+        for code in existing:
+            try:
+                highest = max(highest, int(str(code).split("-")[-1]))
+            except (TypeError, ValueError):
+                continue
+        return f"{prefix}-{highest + 1:04d}"
 
     def clean(self):
         errors = {}
@@ -686,5 +726,8 @@ class ServiceItemCatalog(models.Model):
 
     def save(self, *args, **kwargs):
         self.name = (self.name or "").strip()
+        self.internal_code = (self.internal_code or "").strip().upper()
+        if not self.internal_code and self.professional_id:
+            self.internal_code = self._generate_internal_code()
         self.full_clean()
         return super().save(*args, **kwargs)

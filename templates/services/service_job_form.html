@@ -111,6 +111,7 @@
           {% if form.service_zip_code.errors %}<div class="os-errors">{{ form.service_zip_code.errors }}</div>{% endif %}
         </div>
         <button class="btn" type="button" data-cep-search>Buscar pelo CEP</button>
+        <button class="btn" type="button" data-client-address>Usar endereço do cliente</button>
         <a class="btn maps-link" href="#" target="_blank" rel="noopener" data-maps-link>Abrir no Maps</a>
       </div>
       <div class="os-grid">
@@ -221,7 +222,7 @@
           <div class="planned-item-row" data-planned-item-row>
             <div class="catalog-suggest">
               <label>Buscar item do catálogo</label>
-              <input class="hc-input" type="search" data-catalog-search placeholder="Ex.: disj">
+              <input class="hc-input" type="search" data-catalog-search placeholder="Código ou nome">
               <input type="hidden" name="planned_item_catalog_id" data-catalog-id>
               <div class="catalog-results" data-catalog-results></div>
             </div>
@@ -281,10 +282,20 @@
   </form>
 </div>
 
+{{ client_address_map|json_script:"client-address-map" }}
 <script>
   (function(){
     var form = document.querySelector("[data-service-form]");
     if(!form) return;
+    var clientAddressMap = {};
+    var clientAddressScript = document.getElementById("client-address-map");
+    if(clientAddressScript){
+      try{
+        clientAddressMap = JSON.parse(clientAddressScript.textContent || "{}");
+      }catch(error){
+        clientAddressMap = {};
+      }
+    }
 
     var registeredBlocks = Array.prototype.slice.call(form.querySelectorAll("[data-registered-client]"));
     var casualBlocks = Array.prototype.slice.call(form.querySelectorAll("[data-casual-client]"));
@@ -349,6 +360,33 @@
           })
           .catch(function(){ alert("Não foi possível buscar o CEP agora. Preencha manualmente."); })
           .finally(function(){ cepButton.disabled = false; });
+      });
+    }
+
+    var clientAddressButton = form.querySelector("[data-client-address]");
+    var contractSelect = form.querySelector('select[name="contract"]');
+    if(clientAddressButton){
+      clientAddressButton.addEventListener("click", function(){
+        var contractId = contractSelect ? contractSelect.value : "";
+        var address = clientAddressMap[contractId] || "";
+        if(!address){
+          alert("Este cliente não possui endereço cadastrado.");
+          return;
+        }
+        var addressFields = ["service_street","service_number","service_complement","service_district","service_city","service_state"];
+        var hasCurrentAddress = addressFields.some(function(name){
+          var field = form.querySelector('[name="' + name + '"]');
+          return field && field.value;
+        });
+        if(hasCurrentAddress && !confirm("Substituir o endereço informado pelo endereço do cliente?")){
+          return;
+        }
+        addressFields.forEach(function(name){
+          var field = form.querySelector('[name="' + name + '"]');
+          if(field) field.value = "";
+        });
+        setField("service_street", address);
+        updateMapsLink();
       });
     }
 
@@ -427,7 +465,7 @@
         button.className = "catalog-result";
         var price = item.estimated_unit_value ? "Estimado: R$ " + item.estimated_unit_value.replace(".", ",") : "Sem preço estimado";
         button.innerHTML = "<strong></strong><span></span>";
-        button.querySelector("strong").textContent = item.name;
+        button.querySelector("strong").textContent = (item.internal_code ? item.internal_code + " — " : "") + item.name;
         button.querySelector("span").textContent = item.item_type_label + " · " + item.unit_label + " · " + price;
         button.addEventListener("click", function(){ applyCatalogItem(row, item); });
         results.appendChild(button);
