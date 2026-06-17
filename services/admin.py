@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import ServiceCategory, ServiceItemCatalog, ServiceItemExpense, ServiceJob, ServiceRequest, ServiceWorkLog
+from .models import ServiceCategory, ServiceItemCatalog, ServiceItemExpense, ServiceJob, ServiceRequest, ServiceRequestItem, ServiceWorkLog
 
 
 @admin.register(ServiceCategory)
@@ -37,6 +37,13 @@ class ServiceRequestAdmin(admin.ModelAdmin):
     list_filter = ("status", "source", "urgency", "category")
     search_fields = ("title", "description", "client_name", "client_whatsapp", "professional__email")
     readonly_fields = ("converted_service", "created_at", "updated_at")
+
+
+@admin.register(ServiceRequestItem)
+class ServiceRequestItemAdmin(admin.ModelAdmin):
+    list_display = ("name", "service_request", "quantity", "estimated_unit_value", "created_at")
+    search_fields = ("name", "note", "service_request__title")
+    readonly_fields = ("created_at", "updated_at")
 
 
 @admin.register(ServiceWorkLog)

@@ -2,9 +2,10 @@ from django import forms
 from django.utils import timezone
 
 from accounts.mei_context import mei_contracts_for_user
+from companies.models import Company, Employee
 from timeclock.models import Contract
 
-from .models import ServiceCategory, ServiceItemCatalog, ServiceItemExpense, ServiceJob, ServiceRequest, ServiceWorkLog
+from .models import ServiceCategory, ServiceItemCatalog, ServiceItemExpense, ServiceJob, ServiceRequest, ServiceRequestItem, ServiceWorkLog
 
 
 class ServiceJobForm(forms.ModelForm):
@@ -229,6 +230,10 @@ class ServiceRequestForm(forms.ModelForm):
         widget=forms.RadioSelect,
         label="Tipo de cliente",
     )
+    save_casual_client = forms.BooleanField(
+        required=False,
+        label="Salvar em Meus clientes?",
+    )
     contract = forms.ModelChoiceField(
         queryset=Contract.objects.none(),
         required=False,
@@ -243,57 +248,27 @@ class ServiceRequestForm(forms.ModelForm):
             "client_name",
             "client_whatsapp",
             "client_email",
-            "address_zipcode",
-            "address_street",
-            "address_number",
-            "address_complement",
-            "address_neighborhood",
-            "address_city",
-            "address_state",
-            "address_reference",
             "category",
             "title",
             "description",
             "urgency",
-            "preferred_date",
-            "preferred_time",
             "source",
         ]
         labels = {
             "client_name": "Nome",
             "client_whatsapp": "WhatsApp",
             "client_email": "E-mail",
-            "address_zipcode": "CEP",
-            "address_street": "Rua",
-            "address_number": "Numero",
-            "address_complement": "Complemento",
-            "address_neighborhood": "Bairro",
-            "address_city": "Cidade",
-            "address_state": "UF",
-            "address_reference": "Referencia",
             "category": "Categoria",
-            "title": "Titulo do pedido",
-            "description": "Descricao",
+            "title": "Titulo curto",
+            "description": "Descricao do que o cliente pediu",
             "urgency": "Urgencia",
-            "preferred_date": "Data desejada",
-            "preferred_time": "Hora desejada",
             "source": "Origem",
         }
         widgets = {
             "client_whatsapp": forms.TextInput(attrs={"placeholder": "Ex.: 11999999999"}),
             "client_email": forms.EmailInput(attrs={"placeholder": "Opcional"}),
-            "address_zipcode": forms.TextInput(attrs={"placeholder": "00000-000", "inputmode": "numeric"}),
-            "address_street": forms.TextInput(attrs={"placeholder": "Rua, avenida ou estrada"}),
-            "address_number": forms.TextInput(attrs={"placeholder": "Numero"}),
-            "address_complement": forms.TextInput(attrs={"placeholder": "Casa, bloco, sala..."}),
-            "address_neighborhood": forms.TextInput(attrs={"placeholder": "Bairro"}),
-            "address_city": forms.TextInput(attrs={"placeholder": "Cidade"}),
-            "address_state": forms.TextInput(attrs={"placeholder": "UF", "maxlength": "2"}),
-            "address_reference": forms.TextInput(attrs={"placeholder": "Ponto de referencia, opcional"}),
             "title": forms.TextInput(attrs={"placeholder": "Ex.: Revisao eletrica residencial"}),
             "description": forms.Textarea(attrs={"rows": 4, "placeholder": "Descreva o que o cliente pediu."}),
-            "preferred_date": forms.DateInput(attrs={"type": "date"}),
-            "preferred_time": forms.TimeInput(attrs={"type": "time"}),
         }
 
     def __init__(self, *args, user=None, **kwargs):
@@ -336,16 +311,6 @@ class ServiceRequestForm(forms.ModelForm):
         value = (self.cleaned_data.get("client_email") or "").strip().lower()
         return value or None
 
-    def clean_address_zipcode(self):
-        value = (self.cleaned_data.get("address_zipcode") or "").strip()
-        digits = "".join(ch for ch in value if ch.isdigit())
-        if value and len(digits) != 8:
-            raise forms.ValidationError("Informe um CEP com 8 digitos.")
-        return value
-
-    def clean_address_state(self):
-        return (self.cleaned_data.get("address_state") or "").strip().upper()
-
     def clean_title(self):
         return (self.cleaned_data.get("title") or "").strip()
 
@@ -378,8 +343,98 @@ class ServiceRequestForm(forms.ModelForm):
         else:
             instance.contract = None
             instance.client = None
+        if client_mode == "casual" and self.cleaned_data.get("save_casual_client"):
+            contract = self._create_client_contract(instance)
+            instance.contract = contract
+            instance.client = contract.company
+            instance.client_name = contract.company.name
         if status:
             instance.status = status
+        if commit:
+            instance.save()
+        return instance
+
+    def _create_client_contract(self, instance):
+        company = Company.objects.create(
+            owner=self.user,
+            name=instance.client_name,
+            whatsapp=instance.client_whatsapp,
+            phone=instance.client_whatsapp,
+            email=instance.client_email,
+        )
+        employee = Employee.objects.create(
+            user=self.user,
+            company=company,
+            full_name=self.user.get_full_name() or self.user.email or self.user.username,
+            phone=company.whatsapp,
+            is_active=True,
+        )
+        return Contract.objects.create(
+            employee=employee,
+            company=company,
+            hourly_rate=0,
+            start_date=timezone.localdate(),
+            is_active=True,
+            notes="Criado a partir de pedido de servico.",
+        )
+
+
+class ServiceRequestItemForm(forms.ModelForm):
+    class Meta:
+        model = ServiceRequestItem
+        fields = ["name", "quantity", "note", "estimated_unit_value"]
+        labels = {
+            "name": "Nome do item",
+            "quantity": "Quantidade",
+            "note": "Observacao",
+            "estimated_unit_value": "Valor estimado",
+        }
+        widgets = {
+            "name": forms.TextInput(attrs={"placeholder": "Ex.: disjuntor 20A"}),
+            "quantity": forms.NumberInput(attrs={"step": "0.01", "min": "0.01"}),
+            "note": forms.TextInput(attrs={"placeholder": "Marca, modelo ou detalhe opcional"}),
+            "estimated_unit_value": forms.NumberInput(attrs={"step": "0.01", "min": "0", "placeholder": "Opcional"}),
+        }
+
+    def __init__(self, *args, service_request=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.service_request = service_request
+        self.fields["name"].required = False
+        self.fields["note"].required = False
+        self.fields["estimated_unit_value"].required = False
+        for field in self.fields.values():
+            field.widget.attrs.setdefault("class", "hc-input")
+
+    def clean_name(self):
+        return (self.cleaned_data.get("name") or "").strip()
+
+    def clean_note(self):
+        return (self.cleaned_data.get("note") or "").strip()
+
+    def clean(self):
+        data = super().clean()
+        name = data.get("name")
+        quantity = data.get("quantity")
+        estimated = data.get("estimated_unit_value")
+        note = data.get("note")
+        has_any = any([name, quantity, estimated, note])
+        if has_any and not name:
+            self.add_error("name", "Informe o nome do item.")
+        if has_any and not quantity:
+            data["quantity"] = 1
+        return data
+
+    def has_item_data(self):
+        if not self.is_bound:
+            return False
+        return any(
+            (self.data.get(self.add_prefix(name)) or "").strip()
+            for name in ("name", "quantity", "note", "estimated_unit_value")
+        )
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.service_request = self.service_request
         if commit:
             instance.save()
         return instance

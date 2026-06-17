@@ -9,7 +9,7 @@ from accounts.models import User
 from companies.models import Company, Employee
 from timeclock.models import Contract, Punch, ServiceReport
 
-from .models import ServiceCategory, ServiceItemCatalog, ServiceItemExpense, ServiceJob, ServiceRequest, ServiceWorkLog
+from .models import ServiceCategory, ServiceItemCatalog, ServiceItemExpense, ServiceJob, ServiceRequest, ServiceRequestItem, ServiceWorkLog
 
 
 @override_settings(
@@ -880,7 +880,8 @@ class ServiceJobAreaTests(TestCase):
         self.assertEqual(service_request.professional, self.mei_user)
         self.assertIsNone(service_request.client)
         self.assertEqual(service_request.client_name, "Cliente Pedido Avulso")
-        self.assertEqual(service_request.address_state, "SP")
+        self.assertEqual(service_request.address_state, "")
+        self.assertIsNone(service_request.preferred_date)
         self.assertEqual(service_request.status, ServiceRequest.Status.NEW)
         self.assertEqual(Punch.objects.count(), before_punch_count)
 
@@ -895,6 +896,7 @@ class ServiceJobAreaTests(TestCase):
         self.assertEqual(whatsapp_response.status_code, 302)
         self.assertIn("https://wa.me/5511999999999?text=", whatsapp_response["Location"])
         self.assertIn("Pedido%20de%20revisao%20eletrica", whatsapp_response["Location"])
+        self.assertNotIn("R%24", whatsapp_response["Location"])
 
     def test_create_registered_client_service_request(self):
         response = self.client.post(
@@ -926,6 +928,55 @@ class ServiceJobAreaTests(TestCase):
         self.assertEqual(service_request.client_name, self.company.name)
         self.assertEqual(service_request.source, ServiceRequest.Source.PHONE)
 
+    def test_service_request_quick_item_initial_quote_and_save_casual_client(self):
+        before_contract_count = Contract.objects.filter(employee__user=self.mei_user).count()
+        response = self.client.post(
+            reverse("service_request_create"),
+            {
+                "client_mode": "casual",
+                "contract": "",
+                "client_name": "Cliente Novo Avulso",
+                "client_whatsapp": "11955554444",
+                "client_email": "novo@example.com",
+                "save_casual_client": "on",
+                "category": str(self.category.id),
+                "title": "Troca de disjuntores",
+                "description": "Cliente pediu troca do quadro.",
+                "urgency": ServiceRequest.Urgency.HIGH,
+                "source": ServiceRequest.Source.WHATSAPP,
+                "quick-name": "Disjuntor 20A",
+                "quick-quantity": "4",
+                "quick-note": "Curva C",
+                "quick-estimated_unit_value": "35.00",
+                "submit_action": "save",
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        service_request = ServiceRequest.objects.get(title="Troca de disjuntores")
+        self.assertIsNotNone(service_request.contract)
+        self.assertEqual(service_request.client.name, "Cliente Novo Avulso")
+        self.assertEqual(
+            Contract.objects.filter(employee__user=self.mei_user).count(),
+            before_contract_count + 1,
+        )
+        quick_item = service_request.quick_items.get()
+        self.assertEqual(quick_item.name, "Disjuntor 20A")
+        self.assertEqual(quick_item.quantity, Decimal("4.00"))
+
+        detail_response = self.client.get(reverse("service_request_detail", args=[service_request.id]))
+        self.assertContains(detail_response, "Pedir cotação inicial")
+        self.assertContains(detail_response, "4 x Disjuntor 20A")
+        self.assertContains(detail_response, "Responder cliente")
+        self.assertContains(detail_response, "Proximo passo: confirmar os detalhes")
+        self.assertNotContains(detail_response, "R$ 140")
+
+        quote_response = self.client.get(reverse("service_request_quote_whatsapp", args=[service_request.id]))
+        self.assertEqual(quote_response.status_code, 302)
+        self.assertIn("Pedido%3A%20Troca%20de%20disjuntores", quote_response["Location"])
+        self.assertIn("4%20x%20Disjuntor%2020A", quote_response["Location"])
+
     def test_service_request_conversion_creates_draft_service_and_preserves_history(self):
         before_punch_count = Punch.objects.count()
         service_request = ServiceRequest.objects.create(
@@ -949,6 +1000,13 @@ class ServiceJobAreaTests(TestCase):
             urgency=ServiceRequest.Urgency.URGENT,
             source=ServiceRequest.Source.REFERRAL,
         )
+        ServiceRequestItem.objects.create(
+            service_request=service_request,
+            name="Disjuntor 20A",
+            quantity=Decimal("4"),
+            note="Curva C",
+            estimated_unit_value=Decimal("35.00"),
+        )
 
         response = self.client.post(reverse("service_request_convert", args=[service_request.id]), follow=True)
 
@@ -963,16 +1021,15 @@ class ServiceJobAreaTests(TestCase):
         self.assertEqual(job.manual_client_whatsapp, "11988887777")
         self.assertEqual(job.title, service_request.title)
         self.assertEqual(job.description, service_request.description)
-        self.assertEqual(job.service_zip_code, service_request.address_zipcode)
-        self.assertEqual(job.service_street, service_request.address_street)
-        self.assertEqual(job.service_number, service_request.address_number)
-        self.assertEqual(job.service_district, service_request.address_neighborhood)
-        self.assertEqual(job.service_city, service_request.address_city)
-        self.assertEqual(job.service_state, service_request.address_state)
-        self.assertEqual(job.service_reference, service_request.address_reference)
-        self.assertEqual(job.start_date, service_request.preferred_date)
-        self.assertEqual(job.planned_start_time, service_request.preferred_time)
+        self.assertEqual(job.service_location, "")
+        self.assertEqual(job.service_zip_code, "")
+        self.assertIsNone(job.start_date)
+        self.assertIsNone(job.planned_start_time)
         self.assertEqual(job.billing_mode, ServiceJob.BillingMode.UNDEFINED)
+        planned_item = job.item_expenses.get(name="Disjuntor 20A")
+        self.assertEqual(planned_item.quantity, Decimal("4.00"))
+        self.assertEqual(planned_item.unit_value, Decimal("35.00"))
+        self.assertEqual(planned_item.usage_status, ServiceItemExpense.UsageStatus.PLANNED)
         self.assertEqual(Punch.objects.count(), before_punch_count)
 
     def test_service_request_save_and_convert_from_form_for_casual_client(self):
@@ -995,6 +1052,10 @@ class ServiceJobAreaTests(TestCase):
                 "preferred_date": "2026-06-23",
                 "preferred_time": "08:00",
                 "source": ServiceRequest.Source.OTHER,
+                "quick-name": "Fita isolante",
+                "quick-quantity": "1",
+                "quick-note": "preta",
+                "quick-estimated_unit_value": "12.50",
                 "submit_action": "convert",
             },
             follow=True,
@@ -1007,6 +1068,8 @@ class ServiceJobAreaTests(TestCase):
         self.assertEqual(job.manual_client_name, "Maria Pedido")
         self.assertEqual(job.manual_client_whatsapp, "11977776666")
         self.assertEqual(job.status, ServiceJob.Status.DRAFT)
+        self.assertEqual(job.service_location, "")
+        self.assertTrue(job.item_expenses.filter(name="Fita isolante", usage_status=ServiceItemExpense.UsageStatus.PLANNED).exists())
 
     def test_other_user_cannot_see_or_convert_service_request(self):
         service_request = ServiceRequest.objects.create(

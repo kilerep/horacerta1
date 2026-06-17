@@ -23,6 +23,7 @@
   .request-meta{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
   .request-context{margin:10px 0 0;color:var(--color-text-muted);font-size:13px;line-height:1.45;overflow-wrap:anywhere}
   .request-card-actions{display:grid;gap:8px;justify-items:end;min-width:150px}
+  .request-card-actions form{margin:0}
   .requests-empty{text-align:center;padding:26px 18px}
   .requests-empty h2{margin:0 0 8px;font-size:22px}
   .requests-empty p{margin:0 auto 14px;max-width:560px;color:var(--color-text-muted);line-height:1.45}
@@ -43,7 +44,8 @@
   <section class="card requests-head">
     <div>
       <h1>Pedidos de serviço</h1>
-      <p>Organize solicitações recebidas antes de transformar em serviço.</p>
+      <p>Registre solicitações recebidas antes de organizar o serviço.</p>
+      <p>Quando combinar os detalhes, transforme o pedido em serviço.</p>
     </div>
     <div class="request-actions">
       <a class="btn" href="{% url 'service_job_list' %}">Serviços</a>
@@ -79,19 +81,24 @@
               <span class="pill">{{ item.get_status_display }}</span>
               <span class="pill">{{ item.client_name }}</span>
               <span class="pill">{{ item.category.name }}</span>
-              <span class="pill">{{ item.get_urgency_display }}</span>
+              <span class="pill">{{ item.get_source_display }}</span>
             </div>
             <p class="request-context">
               Recebido por {{ item.get_source_display }} em {{ item.created_at|date:"d/m/Y" }}.
-              {% if item.preferred_date %} Desejado para {{ item.preferred_date|date:"d/m/Y" }}{% if item.preferred_time %} às {{ item.preferred_time|time:"H:i" }}{% endif %}.{% endif %}
               {% if item.description %} {{ item.description|truncatechars:130 }}{% endif %}
             </p>
           </div>
           <div class="request-card-actions">
-            <a class="btn primary" href="{% url 'service_request_detail' item.id %}">Ver pedido</a>
-            {% if item.converted_service_id %}
-              <a class="btn" href="{% url 'service_job_detail' item.converted_service_id %}">Ver serviço</a>
+            {% if item.primary_action.kind == "post" %}
+              <form method="post" action="{{ item.primary_action.url }}">
+                {% csrf_token %}
+                {% if item.primary_action.post_action %}<input type="hidden" name="action" value="{{ item.primary_action.post_action }}">{% endif %}
+                <button class="btn primary" type="submit">{{ item.primary_action.label }}</button>
+              </form>
+            {% else %}
+              <a class="btn primary" href="{{ item.primary_action.url }}">{{ item.primary_action.label }}</a>
             {% endif %}
+            <a class="btn" href="{% url 'service_request_detail' item.id %}">Ver pedido</a>
           </div>
         </article>
       {% endfor %}

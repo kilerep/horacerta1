@@ -151,11 +151,91 @@ class ServiceRequest(models.Model):
 
     @property
     def whatsapp_message(self):
-        category = self.category.name if self.category_id else "servico"
         return (
-            f"Ola, recebi seu pedido pelo HoraCerta sobre {self.title or category}. "
-            "Vou organizar as informacoes e te retorno com a previa do servico."
+            "Ola, organizei seu pedido no HoraCerta.\n\n"
+            f"Pedido: {self.title}\n"
+            "Proximo passo: confirmar os detalhes para montar a previa do servico.\n\n"
+            "Assim que eu tiver as informacoes, envio a previa para voce."
         )
+
+    @property
+    def initial_quote_message(self):
+        lines = [
+            "Ola, preciso de uma cotacao dos itens abaixo:",
+            "",
+            f"Pedido: {self.title}",
+            "",
+            "Itens:",
+            "",
+        ]
+        items = list(self.quick_items.all())
+        if items:
+            lines.extend(f"* {item.quantity_label} x {item.name}" for item in items)
+        else:
+            lines.append("* Informe os itens para cotacao.")
+        lines.extend(
+            [
+                "",
+                "Pode me passar os valores e disponibilidade?",
+                "",
+                "Obrigado.",
+            ]
+        )
+        return "\n".join(lines)
+
+
+class ServiceRequestItem(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    service_request = models.ForeignKey(
+        ServiceRequest,
+        on_delete=models.CASCADE,
+        related_name="quick_items",
+    )
+    name = models.CharField(max_length=140)
+    quantity = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("1.00"))
+    note = models.CharField(max_length=180, blank=True, default="")
+    estimated_unit_value = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["created_at"]
+        indexes = [
+            models.Index(fields=["service_request", "created_at"]),
+        ]
+        verbose_name = "Item rapido do pedido"
+        verbose_name_plural = "Itens rapidos do pedido"
+
+    def __str__(self):
+        return f"{self.quantity_label} x {self.name}"
+
+    @property
+    def quantity_label(self):
+        value = self.quantity or Decimal("0")
+        if value == value.to_integral():
+            return str(int(value))
+        return f"{value:.2f}".replace(".", ",")
+
+    @property
+    def total_value(self):
+        if self.estimated_unit_value is None:
+            return None
+        return ((self.quantity or Decimal("0")) * self.estimated_unit_value).quantize(Decimal("0.01"))
+
+    def clean(self):
+        errors = {}
+        if self.quantity is not None and self.quantity <= 0:
+            errors["quantity"] = "Quantidade precisa ser maior que zero."
+        if self.estimated_unit_value is not None and self.estimated_unit_value < 0:
+            errors["estimated_unit_value"] = "Valor estimado nao pode ser negativo."
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.name = (self.name or "").strip()
+        self.note = (self.note or "").strip()
+        self.full_clean()
+        return super().save(*args, **kwargs)
 
 
 class ServiceJob(models.Model):

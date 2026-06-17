@@ -128,7 +128,15 @@
       <div><span>Observacoes</span><strong>{{ job.notes|default:"-" }}</strong></div>
     </div>
     {% if can_edit_service %}
-      <div class="actions"><a class="btn" href="{% url 'service_job_update' job.id %}">Editar</a></div>
+      <div class="actions">
+        <a class="btn" href="{% url 'service_job_update' job.id %}">Editar</a>
+        {% if can_save_manual_client %}
+          <form method="post" action="{% url 'service_job_save_manual_client' job.id %}">
+            {% csrf_token %}
+            <button class="btn" type="submit">Salvar cliente em Meus clientes</button>
+          </form>
+        {% endif %}
+      </div>
     {% elif is_finished or is_report_sent %}
       <div class="finished-note">Para editar, reabra o serviço.</div>
     {% endif %}
@@ -275,6 +283,12 @@
         <a class="btn primary" href="{{ report_public_url }}" target="_blank" rel="noopener">Ver relatório</a>
         <a class="btn" href="{{ report_pdf_url }}">PDF</a>
         <a class="btn" href="{{ report_whatsapp_url }}" target="_blank" rel="noopener">Enviar WhatsApp</a>
+        {% if can_save_manual_client %}
+          <form method="post" action="{% url 'service_job_save_manual_client' job.id %}">
+            {% csrf_token %}
+            <button class="btn" type="submit">Salvar cliente em Meus clientes</button>
+          </form>
+        {% endif %}
       </div>
       {% if public_report_first_viewed_at %}<p class="sub">Visto em {{ public_report_first_viewed_at|date:"d/m/Y" }} as {{ public_report_first_viewed_at|time:"H:i" }}</p>{% endif %}
     {% elif is_finished %}

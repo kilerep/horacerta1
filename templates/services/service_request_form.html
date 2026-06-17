@@ -74,27 +74,9 @@
           {{ form.client_email }}
           {% if form.client_email.errors %}<div class="rq-errors">{{ form.client_email.errors }}</div>{% endif %}
         </div>
-      </div>
-    </section>
-
-    <section class="rq-section">
-      <h2>Local</h2>
-      <div class="rq-grid">
-        <div class="rq-field">
-          <label for="{{ form.address_zipcode.id_for_label }}">{{ form.address_zipcode.label }}</label>
-          {{ form.address_zipcode }}
-          {% if form.address_zipcode.errors %}<div class="rq-errors">{{ form.address_zipcode.errors }}</div>{% endif %}
+        <div class="rq-field" data-casual-client>
+          <label>{{ form.save_casual_client }} {{ form.save_casual_client.label }}</label>
         </div>
-        <div class="rq-field full">
-          <label for="{{ form.address_street.id_for_label }}">{{ form.address_street.label }}</label>
-          {{ form.address_street }}
-        </div>
-        <div class="rq-field"><label for="{{ form.address_number.id_for_label }}">{{ form.address_number.label }}</label>{{ form.address_number }}</div>
-        <div class="rq-field"><label for="{{ form.address_complement.id_for_label }}">{{ form.address_complement.label }}</label>{{ form.address_complement }}</div>
-        <div class="rq-field"><label for="{{ form.address_neighborhood.id_for_label }}">{{ form.address_neighborhood.label }}</label>{{ form.address_neighborhood }}</div>
-        <div class="rq-field"><label for="{{ form.address_city.id_for_label }}">{{ form.address_city.label }}</label>{{ form.address_city }}</div>
-        <div class="rq-field"><label for="{{ form.address_state.id_for_label }}">{{ form.address_state.label }}</label>{{ form.address_state }}</div>
-        <div class="rq-field full"><label for="{{ form.address_reference.id_for_label }}">{{ form.address_reference.label }}</label>{{ form.address_reference }}</div>
       </div>
     </section>
 
@@ -117,10 +99,8 @@
           {% if form.description.errors %}<div class="rq-errors">{{ form.description.errors }}</div>{% endif %}
         </div>
       </div>
-      <div class="rq-grid three">
+      <div class="rq-grid">
         <div class="rq-field"><label for="{{ form.urgency.id_for_label }}">{{ form.urgency.label }}</label>{{ form.urgency }}</div>
-        <div class="rq-field"><label for="{{ form.preferred_date.id_for_label }}">{{ form.preferred_date.label }}</label>{{ form.preferred_date }}</div>
-        <div class="rq-field"><label for="{{ form.preferred_time.id_for_label }}">{{ form.preferred_time.label }}</label>{{ form.preferred_time }}</div>
       </div>
     </section>
 
@@ -130,6 +110,31 @@
         <div class="rq-field">
           <label for="{{ form.source.id_for_label }}">{{ form.source.label }}</label>
           {{ form.source }}
+        </div>
+      </div>
+    </section>
+
+    <section class="rq-section">
+      <h2>Itens rápidos</h2>
+      <p class="rq-hint">Opcional. Use quando já souber algum material para cotação inicial.</p>
+      <div class="rq-grid">
+        <div class="rq-field">
+          <label for="{{ item_form.name.id_for_label }}">{{ item_form.name.label }}</label>
+          {{ item_form.name }}
+          {% if item_form.name.errors %}<div class="rq-errors">{{ item_form.name.errors }}</div>{% endif %}
+        </div>
+        <div class="rq-field">
+          <label for="{{ item_form.quantity.id_for_label }}">{{ item_form.quantity.label }}</label>
+          {{ item_form.quantity }}
+          {% if item_form.quantity.errors %}<div class="rq-errors">{{ item_form.quantity.errors }}</div>{% endif %}
+        </div>
+        <div class="rq-field full">
+          <label for="{{ item_form.note.id_for_label }}">{{ item_form.note.label }}</label>
+          {{ item_form.note }}
+        </div>
+        <div class="rq-field">
+          <label for="{{ item_form.estimated_unit_value.id_for_label }}">{{ item_form.estimated_unit_value.label }}</label>
+          {{ item_form.estimated_unit_value }}
         </div>
       </div>
     </section>

@@ -19,16 +19,19 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, Tabl
 
 from accounts.models import User
 from accounts.mei_context import mei_contracts_for_user
+from companies.models import Company, Employee
+from timeclock.models import Contract
 
 from .forms import (
     PlannedServiceItemForm,
     ServiceItemCatalogForm,
     ServiceItemExpenseForm,
     ServiceJobForm,
+    ServiceRequestItemForm,
     ServiceRequestForm,
     ServiceWorkLogForm,
 )
-from .models import ServiceCategory, ServiceItemCatalog, ServiceItemExpense, ServiceJob, ServiceRequest, ServiceWorkLog
+from .models import ServiceCategory, ServiceItemCatalog, ServiceItemExpense, ServiceJob, ServiceRequest, ServiceRequestItem, ServiceWorkLog
 from .workflow import get_next_service_action, has_minimum_service_data, planned_status_for_service, status_label, status_tone
 
 
@@ -69,7 +72,11 @@ def _service_jobs_for_user(user):
 
 
 def _service_requests_for_user(user):
-    return ServiceRequest.objects.filter(professional=user).select_related("category", "client", "contract", "converted_service")
+    return (
+        ServiceRequest.objects.filter(professional=user)
+        .select_related("category", "client", "contract", "converted_service")
+        .prefetch_related("quick_items")
+    )
 
 
 def _catalog_items_for_user(user):
@@ -335,6 +342,7 @@ def _service_job_detail_context(job, *, work_log_form=None, item_form=None):
             ServiceJob.Status.PLANNED,
             ServiceJob.Status.SENT,
         ),
+        "can_save_manual_client": bool(job.manual_client_name and not job.client_id and not job.contract_id),
         "summary": report_context["summary"],
         "preview_status_label": job.preview_status_label,
         "preview_generated_at": job.preview_generated_at,
@@ -500,10 +508,62 @@ def _service_request_whatsapp_url(service_request):
     return f"https://wa.me/?text={message}"
 
 
+def _service_request_initial_quote_url(service_request):
+    message = quote(service_request.initial_quote_message, safe="")
+    return f"https://wa.me/?text={message}"
+
+
+def _create_casual_client_contract(user, *, name, whatsapp="", email=None, notes=""):
+    company = Company.objects.create(
+        owner=user,
+        name=name,
+        whatsapp=whatsapp,
+        phone=whatsapp,
+        email=email or None,
+        internal_note=notes,
+    )
+    employee = Employee.objects.create(
+        user=user,
+        company=company,
+        full_name=user.get_full_name() or user.email or user.username,
+        phone=whatsapp,
+        is_active=True,
+    )
+    return Contract.objects.create(
+        employee=employee,
+        company=company,
+        hourly_rate=0,
+        start_date=timezone.localdate(),
+        is_active=True,
+        notes=notes,
+    )
+
+
+def _service_request_primary_action(service_request):
+    if service_request.status == ServiceRequest.Status.NEW:
+        return {"label": "Transformar em servico", "kind": "post", "url": reverse("service_request_convert", args=[service_request.id])}
+    if service_request.status == ServiceRequest.Status.WAITING_INFO:
+        return {"label": "Responder cliente", "kind": "get", "url": reverse("service_request_whatsapp", args=[service_request.id])}
+    if service_request.status == ServiceRequest.Status.IN_REVIEW:
+        return {"label": "Transformar em servico", "kind": "post", "url": reverse("service_request_convert", args=[service_request.id])}
+    if service_request.status == ServiceRequest.Status.CONVERTED and service_request.converted_service_id:
+        return {"label": "Ver servico", "kind": "get", "url": reverse("service_job_detail", args=[service_request.converted_service_id])}
+    if service_request.status == ServiceRequest.Status.REJECTED:
+        return {"label": "Arquivar", "kind": "post", "url": reverse("service_request_status_action", args=[service_request.id]), "post_action": "archive"}
+    if service_request.status == ServiceRequest.Status.ARCHIVED:
+        return {"label": "Restaurar", "kind": "post", "url": reverse("service_request_status_action", args=[service_request.id]), "post_action": "reopen"}
+    return {"label": "Ver pedido", "kind": "get", "url": reverse("service_request_detail", args=[service_request.id])}
+
+
 def _convert_service_request_to_job(service_request):
     if service_request.converted_service_id:
         return service_request.converted_service
 
+    notes = (
+        "Criado a partir de pedido de servico.\n"
+        f"Origem: {service_request.get_source_display()}.\n"
+        f"Urgencia: {service_request.get_urgency_display()}."
+    )
     job = ServiceJob.objects.create(
         professional=service_request.professional,
         client=service_request.client,
@@ -514,23 +574,21 @@ def _convert_service_request_to_job(service_request):
         category=service_request.category,
         title=service_request.title,
         description=service_request.description,
-        service_zip_code=service_request.address_zipcode,
-        service_street=service_request.address_street,
-        service_number=service_request.address_number,
-        service_complement=service_request.address_complement,
-        service_district=service_request.address_neighborhood,
-        service_city=service_request.address_city,
-        service_state=service_request.address_state,
-        service_reference=service_request.address_reference,
-        service_location=service_request.full_address,
-        start_date=service_request.preferred_date,
-        end_date=service_request.preferred_date,
-        planned_start_time=service_request.preferred_time,
         status=ServiceJob.Status.DRAFT,
         billing_mode=ServiceJob.BillingMode.UNDEFINED,
         hourly_rate_snapshot=Decimal("0.00"),
-        notes="Criado a partir de pedido de servico.",
+        notes=notes,
     )
+    for item in service_request.quick_items.all():
+        ServiceItemExpense.objects.create(
+            service_job=job,
+            type=ServiceItemExpense.ItemType.MATERIAL,
+            name=item.name,
+            description=item.note,
+            quantity=item.quantity,
+            unit_value=item.estimated_unit_value or Decimal("0.00"),
+            usage_status=ServiceItemExpense.UsageStatus.PLANNED,
+        )
     service_request.converted_service = job
     service_request.status = ServiceRequest.Status.CONVERTED
     service_request.save(update_fields=["converted_service", "status", "updated_at"])
@@ -547,6 +605,9 @@ def service_request_list(request):
     requests = _service_requests_for_user(request.user)
     if selected_status:
         requests = requests.filter(status=selected_status)
+    service_requests = list(requests)
+    for item in service_requests:
+        item.primary_action = _service_request_primary_action(item)
 
     counts = _service_requests_for_user(request.user).aggregate(
         new=Count("id", filter=Q(status=ServiceRequest.Status.NEW)),
@@ -560,7 +621,7 @@ def service_request_list(request):
         request,
         "services/service_request_list.html",
         {
-            "service_requests": requests,
+            "service_requests": service_requests,
             "selected_status": selected_status,
             "status_choices": ServiceRequest.Status.choices,
             "counts": {key: value or 0 for key, value in counts.items()},
@@ -576,10 +637,16 @@ def service_request_create(request):
 
     if request.method == "POST":
         form = ServiceRequestForm(request.POST, user=request.user)
-        if form.is_valid():
+        item_form = ServiceRequestItemForm(request.POST, prefix="quick")
+        item_form_has_data = item_form.has_item_data()
+        item_form_is_valid = item_form.is_valid() if item_form_has_data else True
+        if form.is_valid() and item_form_is_valid:
             submit_action = (request.POST.get("submit_action") or "").strip()
             with transaction.atomic():
                 service_request = form.save()
+                if item_form_has_data:
+                    item_form.service_request = service_request
+                    item_form.save()
                 if submit_action == "convert":
                     job = _convert_service_request_to_job(service_request)
                     messages.success(request, "Pedido salvo e transformado em rascunho de servico.")
@@ -588,14 +655,16 @@ def service_request_create(request):
             return redirect("service_request_detail", request_id=service_request.id)
     else:
         form = ServiceRequestForm(user=request.user)
+        item_form = ServiceRequestItemForm(prefix="quick")
 
     return render(
         request,
         "services/service_request_form.html",
         {
             "form": form,
+            "item_form": item_form,
             "form_title": "Novo pedido",
-            "form_subtitle": "Registre uma solicitacao recebida antes de transformar em servico.",
+            "form_subtitle": "Registre solicitacoes recebidas antes de organizar o servico.",
         },
     )
 
@@ -614,6 +683,10 @@ def service_request_detail(request, request_id):
             "service_request": service_request,
             "whatsapp_url": _service_request_whatsapp_url(service_request),
             "whatsapp_message": service_request.whatsapp_message,
+            "initial_quote_url": _service_request_initial_quote_url(service_request),
+            "initial_quote_message": service_request.initial_quote_message,
+            "item_form": ServiceRequestItemForm(service_request=service_request),
+            "primary_action": _service_request_primary_action(service_request),
             "can_convert": service_request.status
             not in (
                 ServiceRequest.Status.CONVERTED,
@@ -622,6 +695,35 @@ def service_request_detail(request, request_id):
             ),
         },
     )
+
+
+@login_required
+def service_request_item_create(request, request_id):
+    denied = _redirect_if_not_mei(request)
+    if denied:
+        return denied
+    service_request = get_object_or_404(_service_requests_for_user(request.user), id=request_id)
+    if service_request.status in (ServiceRequest.Status.CONVERTED, ServiceRequest.Status.ARCHIVED):
+        messages.error(request, "Nao e possivel adicionar itens a este pedido.")
+        return redirect("service_request_detail", request_id=service_request.id)
+    if request.method != "POST":
+        return redirect("service_request_detail", request_id=service_request.id)
+    form = ServiceRequestItemForm(request.POST, service_request=service_request)
+    if form.is_valid() and form.has_item_data():
+        form.save()
+        messages.success(request, "Item rapido adicionado ao pedido.")
+    else:
+        messages.error(request, "Informe ao menos o nome do item rapido.")
+    return redirect("service_request_detail", request_id=service_request.id)
+
+
+@login_required
+def service_request_quote_whatsapp(request, request_id):
+    denied = _redirect_if_not_mei(request)
+    if denied:
+        return denied
+    service_request = get_object_or_404(_service_requests_for_user(request.user), id=request_id)
+    return redirect(_service_request_initial_quote_url(service_request))
 
 
 @login_required
@@ -945,6 +1047,35 @@ def service_job_detail(request, job_id):
         id=job_id,
     )
     return render(request, "services/service_job_detail.html", _service_job_detail_context(job))
+
+
+@login_required
+def service_job_save_manual_client(request, job_id):
+    denied = _redirect_if_not_mei(request)
+    if denied:
+        return denied
+    job = get_object_or_404(_service_jobs_for_user(request.user), id=job_id)
+    if request.method != "POST":
+        return redirect("service_job_detail", job_id=job.id)
+    if job.client_id or job.contract_id:
+        messages.error(request, "Este servico ja esta vinculado a um cliente cadastrado.")
+        return redirect("service_job_detail", job_id=job.id)
+    if not job.manual_client_name:
+        messages.error(request, "Informe o nome do cliente antes de salvar em Meus clientes.")
+        return redirect("service_job_detail", job_id=job.id)
+    with transaction.atomic():
+        contract = _create_casual_client_contract(
+            request.user,
+            name=job.manual_client_name,
+            whatsapp=job.manual_client_whatsapp,
+            email=job.manual_client_email,
+            notes="Criado a partir de servico avulso.",
+        )
+        job.contract = contract
+        job.client = contract.company
+        job.save(update_fields=["contract", "client", "updated_at"])
+    messages.success(request, "Cliente salvo em Meus clientes e vinculado ao servico.")
+    return redirect("service_job_detail", job_id=job.id)
 
 
 @login_required
