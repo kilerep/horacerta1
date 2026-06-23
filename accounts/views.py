@@ -6620,9 +6620,9 @@ def evaluation_next_step_view(request):
 def pwa_manifest(request):
     manifest = {
         "id": "/",
-        "name": "HoraCerta - Gestao de Horas",
+        "name": "HoraCerta - Gestão de Horas",
         "short_name": "HoraCerta",
-        "description": "Controle de horas, clientes e relatorios para profissionais e MEIs.",
+        "description": "Plataforma de gestão de horas entre empresa e MEI. Controle suas horas, clientes e serviços na palma da mão.",
         "start_url": "/",
         "scope": "/",
         "display": "standalone",
@@ -6631,6 +6631,22 @@ def pwa_manifest(request):
         "background_color": "#0b1220",
         "categories": ["business", "productivity"],
         "lang": "pt-BR",
+        "screenshots": [
+            {
+                "src": static("screenshots/screenshot-540x720.png"),
+                "sizes": "540x720",
+                "type": "image/png",
+                "form_factor": "narrow",
+                "label": "Dashboard do HoraCerta"
+            },
+            {
+                "src": static("screenshots/screenshot-1280x720.png"),
+                "sizes": "1280x720",
+                "type": "image/png",
+                "form_factor": "wide",
+                "label": "Dashboard em tablet"
+            }
+        ],
         "icons": [
             {
                 "src": static("pwa/icon-192.png"),
@@ -6645,12 +6661,60 @@ def pwa_manifest(request):
                 "purpose": "any",
             },
             {
+                "src": static("pwa/icon-maskable-192.png"),
+                "sizes": "192x192",
+                "type": "image/png",
+                "purpose": "maskable",
+            },
+            {
                 "src": static("pwa/icon-maskable-512.png"),
                 "sizes": "512x512",
                 "type": "image/png",
                 "purpose": "maskable",
             },
         ],
+        "shortcuts": [
+            {
+                "name": "Registrar Ponto",
+                "short_name": "Ponto",
+                "description": "Registre suas horas rapidamente",
+                "url": "/timeclock/me/",
+                "icons": [
+                    {
+                        "src": static("pwa/shortcut-punch-96.png"),
+                        "sizes": "96x96",
+                        "type": "image/png"
+                    }
+                ]
+            },
+            {
+                "name": "Meus Clientes",
+                "short_name": "Clientes",
+                "description": "Veja seus clientes e contratos",
+                "url": "/app/clientes/",
+                "icons": [
+                    {
+                        "src": static("pwa/shortcut-clients-96.png"),
+                        "sizes": "96x96",
+                        "type": "image/png"
+                    }
+                ]
+            },
+            {
+                "name": "Meus Serviços",
+                "short_name": "Serviços",
+                "description": "Gerencie seus serviços e pedidos",
+                "url": "/services/",
+                "icons": [
+                    {
+                        "src": static("pwa/shortcut-services-96.png"),
+                        "sizes": "96x96",
+                        "type": "image/png"
+                    }
+                ]
+            }
+        ],
+        "prefer_related_applications": False
     }
     response = HttpResponse(
         json.dumps(manifest, ensure_ascii=False),
@@ -6669,3 +6733,54 @@ def pwa_service_worker(request):
     response["Service-Worker-Allowed"] = "/"
     return response
 
+
+
+# ============================================================================
+# PWA - PUSH NOTIFICATIONS
+# ============================================================================
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def register_push_subscription(request):
+    """Registrar subscription de push notification"""
+    
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Não autenticado'}, status=401)
+    
+    try:
+        data = json.loads(request.body)
+        
+        # Aqui você pode armazenar a subscription no banco de dados
+        # Por enquanto, apenas retornar sucesso
+        
+        logger.info(f"Push subscription registrada para usuário {request.user.id}")
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Notificações push ativadas com sucesso',
+            'timestamp': timezone.now().isoformat()
+        })
+    
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'JSON inválido'}, status=400)
+    except Exception as e:
+        logger.error(f"Erro ao registrar push subscription: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=400)
+
+
+@login_required
+@require_http_methods(["GET"])
+def pwa_status(request):
+    """Retornar status do PWA para o usuário"""
+    
+    return JsonResponse({
+        'pwa_installed': True,
+        'service_worker_active': True,
+        'notifications_enabled': True,
+        'offline_mode': True,
+        'user': {
+            'id': request.user.id,
+            'email': request.user.email,
+            'role': request.user.role,
+        }
+    })

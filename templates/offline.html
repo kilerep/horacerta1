@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0b1220">
+    <title>Offline - HoraCerta</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            width: 100%;
+            height: 100%;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #0b1220 0%, #1a2a3a 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 40px 30px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 420px;
+            width: 100%;
+            animation: slideUp 0.5s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.6;
+            }
+        }
+        
+        h1 {
+            color: #0b1220;
+            margin-bottom: 10px;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.6;
+            font-size: 15px;
+        }
+        
+        .status {
+            background: #f5f5f5;
+            border-left: 4px solid #ff6b6b;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            text-align: left;
+            font-size: 14px;
+            color: #555;
+        }
+        
+        .status strong {
+            color: #ff6b6b;
+        }
+        
+        .button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            margin-bottom: 12px;
+        }
+        
+        .button:active {
+            transform: scale(0.98);
+        }
+        
+        .button:hover {
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .button-secondary {
+            background: #f5f5f5;
+            color: #333;
+            margin-bottom: 0;
+        }
+        
+        .button-secondary:hover {
+            background: #efefef;
+        }
+        
+        .tips {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 1px solid #eee;
+            text-align: left;
+        }
+        
+        .tips h3 {
+            color: #0b1220;
+            font-size: 14px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        
+        .tips ul {
+            list-style: none;
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .tips li {
+            margin-bottom: 10px;
+            padding-left: 24px;
+            position: relative;
+        }
+        
+        .tips li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #667eea;
+            font-weight: bold;
+        }
+        
+        .connection-status {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            font-size: 12px;
+            color: #999;
+        }
+        
+        .dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ff6b6b;
+            margin-right: 6px;
+            animation: blink 1s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">📡</div>
+        
+        <h1>Sem Conexão</h1>
+        <p class="subtitle">Você está offline no momento. Verifique sua conexão com a internet.</p>
+        
+        <div class="status">
+            <strong>Status:</strong> Sem conexão com a internet
+        </div>
+        
+        <button class="button" onclick="tryAgain()">
+            🔄 Tentar Novamente
+        </button>
+        
+        <button class="button button-secondary" onclick="goHome()">
+            🏠 Ir para Início
+        </button>
+        
+        <div class="tips">
+            <h3>💡 O que você pode fazer:</h3>
+            <ul>
+                <li>Verifique o WiFi ou dados móveis</li>
+                <li>Reinicie seu roteador</li>
+                <li>Tente em outro local</li>
+                <li>Volte quando tiver conexão</li>
+            </ul>
+        </div>
+        
+        <div class="connection-status">
+            <span class="dot"></span>
+            Monitorando conexão...
+        </div>
+    </div>
+    
+    <script>
+        function tryAgain() {
+            location.reload();
+        }
+        
+        function goHome() {
+            window.location.href = "/";
+        }
+        
+        // Monitorar conexão
+        window.addEventListener("online", () => {
+            console.log("✅ Conexão restaurada!");
+            // Redirecionar para página anterior ou home
+            setTimeout(() => {
+                window.location.href = "/";
+            }, 1000);
+        });
+        
+        window.addEventListener("offline", () => {
+            console.log("❌ Conexão perdida");
+        });
+        
+        // Verificar conexão inicial
+        if (navigator.onLine) {
+            console.log("Você está online, redirecionando...");
+            window.location.href = "/";
+        }
+    </script>
+</body>
+</html>

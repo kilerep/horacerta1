@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "HoraCerta - Gestao de Horas",
+  "name": "HoraCerta - Gestão de Horas",
   "short_name": "HoraCerta",
-  "description": "Plataforma de gestao de horas entre empresa e MEI.",
+  "description": "Plataforma de gestão de horas entre empresa e MEI. Controle suas horas, clientes e serviços na palma da mão.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -10,6 +10,23 @@
   "background_color": "#0b1220",
   "theme_color": "#0b1220",
   "lang": "pt-BR",
+  "categories": ["productivity", "business"],
+  "screenshots": [
+    {
+      "src": "/static/screenshots/screenshot-540x720.png",
+      "sizes": "540x720",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Dashboard do HoraCerta"
+    },
+    {
+      "src": "/static/screenshots/screenshot-1280x720.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Dashboard em tablet"
+    }
+  ],
   "icons": [
     {
       "src": "/static/pwa/icon-192.png",
@@ -24,10 +41,58 @@
       "purpose": "any"
     },
     {
+      "src": "/static/pwa/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
       "src": "/static/pwa/icon-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
     }
-  ]
+  ],
+  "shortcuts": [
+    {
+      "name": "Registrar Ponto",
+      "short_name": "Ponto",
+      "description": "Registre suas horas rapidamente",
+      "url": "/timeclock/me/",
+      "icons": [
+        {
+          "src": "/static/pwa/shortcut-punch-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Meus Clientes",
+      "short_name": "Clientes",
+      "description": "Veja seus clientes e contratos",
+      "url": "/app/clientes/",
+      "icons": [
+        {
+          "src": "/static/pwa/shortcut-clients-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Meus Serviços",
+      "short_name": "Serviços",
+      "description": "Gerencie seus serviços e pedidos",
+      "url": "/services/",
+      "icons": [
+        {
+          "src": "/static/pwa/shortcut-services-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "prefer_related_applications": false
 }
