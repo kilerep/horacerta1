@@ -1,0 +1,511 @@
+{% extends "public/base_public.html" %}
+{% load static %}
+{% block title %}HoraCerta | Gestão de Horas para MEIs e Prestadores de Serviço{% endblock %}
+{% block meta_description %}Plataforma completa para MEIs e prestadores de serviço controlarem horas, organizarem clientes, gerarem relatórios e emitirem notas fiscais. Conforme com LGPD e regulamentações brasileiras.{% endblock %}
+
+{% block extra_head %}
+<link rel="canonical" href="{{ canonical_url }}">
+<meta name="robots" content="index, follow, max-image-preview:large">
+
+<meta property="og:type" content="website">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:site_name" content="HoraCerta">
+<meta property="og:title" content="HoraCerta | Gestão Completa para MEIs e Prestadores">
+<meta property="og:description" content="Controle de horas, clientes, serviços e relatórios profissionais. Tudo que você precisa para gerenciar seu negócio na palma da mão.">
+<meta property="og:url" content="{{ og_url }}">
+<meta property="og:image" content="{{ og_image_url }}">
+<meta property="og:image:alt" content="HoraCerta">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="HoraCerta | Gestão Completa para MEIs e Prestadores">
+<meta name="twitter:description" content="Controle de horas, clientes, serviços e relatórios profissionais.">
+<meta name="twitter:image" content="{{ og_image_url }}">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "name": "HoraCerta",
+      "url": "{{ canonical_url|escapejs }}",
+      "logo": "{{ request.scheme }}://{{ request.get_host }}{% static 'pwa/icon-512.png' %}",
+      "description": "Plataforma de gestão de horas para MEIs, PJs e prestadores de serviço.",
+      "sameAs": ["https://www.instagram.com/horacerta", "https://www.facebook.com/horacerta"]
+    },
+    {
+      "@type": "SoftwareApplication",
+      "name": "HoraCerta",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web, Android, iOS",
+      "url": "{{ canonical_url|escapejs }}",
+      "image": "{{ og_image_url|escapejs }}",
+      "description": "Plataforma completa para controle de horas, gestão de clientes e geração de relatórios profissionais.",
+      "publisher": {
+        "@type": "Organization",
+        "name": "HoraCerta"
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "ratingCount": "150"
+      }
+    }
+  ]
+}
+</script>
+<link rel="stylesheet" href="{% static 'css/public_landing_new.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<!-- HERO SECTION -->
+<section class="hero-section">
+  <div class="container hero-container">
+    <div class="hero-content">
+      <span class="hero-badge">✨ Para MEIs, PJs e Prestadores de Serviço</span>
+      <h1 class="hero-title">Gestão de Horas Profissional na Palma da Mão</h1>
+      <p class="hero-subtitle">Controle suas horas, organize clientes, gere relatórios e compartilhe com seus clientes. Tudo que você precisa para crescer seu negócio.</p>
+      
+      <div class="hero-cta-group">
+        <a href="{% url 'login' %}" class="btn btn-primary btn-lg">Começar Agora</a>
+        <a href="#recursos" class="btn btn-secondary btn-lg">Conhecer Recursos</a>
+      </div>
+
+      <div class="hero-stats">
+        <div class="stat">
+          <strong>14M+</strong>
+          <span>MEIs no Brasil</span>
+        </div>
+        <div class="stat">
+          <strong>100%</strong>
+          <span>Conforme LGPD</span>
+        </div>
+        <div class="stat">
+          <strong>∞</strong>
+          <span>Funciona Offline</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-visual">
+      <div class="phone-mockup">
+        <div class="phone-screen">
+          <div class="screen-content">
+            <div class="screen-header">
+              <span>Hoje</span>
+              <strong>7h 40min</strong>
+            </div>
+            <div class="screen-client">
+              <span>Cliente</span>
+              <strong>Oficina Central</strong>
+            </div>
+            <div class="screen-metrics">
+              <div class="metric">
+                <span>Valor</span>
+                <strong>R$ 384</strong>
+              </div>
+              <div class="metric">
+                <span>Relatórios</span>
+                <strong>3</strong>
+              </div>
+            </div>
+            <div class="screen-timeline">
+              <div class="timeline-item">
+                <span class="dot"></span>
+                <div>
+                  <strong>Entrada</strong>
+                  <small>08:04</small>
+                </div>
+              </div>
+              <div class="timeline-item">
+                <span class="dot"></span>
+                <div>
+                  <strong>Saída</strong>
+                  <small>17:44</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROBLEMA & SOLUÇÃO -->
+<section class="problem-solution">
+  <div class="container">
+    <div class="section-header">
+      <h2>O Desafio do Prestador de Serviço</h2>
+      <p>Você já enfrentou esses problemas?</p>
+    </div>
+
+    <div class="problems-grid">
+      <div class="problem-card">
+        <div class="icon">📝</div>
+        <h3>Controle de Horas</h3>
+        <p>Dificuldade em rastrear todas as horas trabalhadas em diferentes clientes</p>
+      </div>
+
+      <div class="problem-card">
+        <div class="icon">👥</div>
+        <h3>Gestão de Clientes</h3>
+        <p>Múltiplos clientes, contratos diferentes, valores variados</p>
+      </div>
+
+      <div class="problem-card">
+        <div class="icon">📊</div>
+        <h3>Relatórios Profissionais</h3>
+        <p>Gerar relatórios que impressionem seus clientes</p>
+      </div>
+
+      <div class="problem-card">
+        <div class="icon">🔒</div>
+        <h3>Segurança de Dados</h3>
+        <p>Proteger dados sensíveis do seu negócio</p>
+      </div>
+
+      <div class="problem-card">
+        <div class="icon">📱</div>
+        <h3>Mobilidade</h3>
+        <p>Acessar seu sistema em qualquer lugar, mesmo sem internet</p>
+      </div>
+
+      <div class="problem-card">
+        <div class="icon">⚖️</div>
+        <h3>Conformidade Legal</h3>
+        <p>Estar em dia com LGPD, CLT e regulamentações brasileiras</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RECURSOS PRINCIPAIS -->
+<section class="resources-section" id="recursos">
+  <div class="container">
+    <div class="section-header">
+      <h2>Tudo que Você Precisa para Crescer</h2>
+      <p>HoraCerta oferece uma solução completa e integrada</p>
+    </div>
+
+    <div class="resources-grid">
+      <div class="resource-card">
+        <div class="resource-icon">⏱️</div>
+        <h3>Controle de Horas</h3>
+        <p>Registre entrada e saída com um clique. Histórico completo e organizado por cliente.</p>
+        <ul class="feature-list">
+          <li>Registro rápido via celular</li>
+          <li>Histórico detalhado</li>
+          <li>Sincronização automática</li>
+        </ul>
+      </div>
+
+      <div class="resource-card">
+        <div class="resource-icon">👥</div>
+        <h3>Gestão de Clientes</h3>
+        <p>Organize todos os seus clientes em um único lugar. Contratos, valores e histórico.</p>
+        <ul class="feature-list">
+          <li>Cadastro completo de clientes</li>
+          <li>Contratos e valores por hora</li>
+          <li>Histórico de atendimentos</li>
+        </ul>
+      </div>
+
+      <div class="resource-card">
+        <div class="resource-icon">🔧</div>
+        <h3>Gestão de Serviços</h3>
+        <p>Crie orçamentos profissionais e compartilhe com seus clientes para aprovação.</p>
+        <ul class="feature-list">
+          <li>Orçamentos personalizados</li>
+          <li>Compartilhamento com clientes</li>
+          <li>Rastreamento de status</li>
+        </ul>
+      </div>
+
+      <div class="resource-card">
+        <div class="resource-icon">📊</div>
+        <h3>Relatórios Profissionais</h3>
+        <p>Gere relatórios detalhados prontos para enviar aos seus clientes.</p>
+        <ul class="feature-list">
+          <li>Relatórios por período</li>
+          <li>Exportação em PDF</li>
+          <li>Compartilhamento seguro</li>
+        </ul>
+      </div>
+
+      <div class="resource-card">
+        <div class="resource-icon">📱</div>
+        <h3>App Mobile Completo</h3>
+        <p>Acesse HoraCerta como um app nativo no seu celular. Funciona offline!</p>
+        <ul class="feature-list">
+          <li>Instalação em 1 clique</li>
+          <li>Funciona sem internet</li>
+          <li>Sincronização automática</li>
+        </ul>
+      </div>
+
+      <div class="resource-card">
+        <div class="resource-icon">🔒</div>
+        <h3>Segurança & Conformidade</h3>
+        <p>Seus dados estão protegidos conforme LGPD e regulamentações brasileiras.</p>
+        <ul class="feature-list">
+          <li>Criptografia de dados</li>
+          <li>Conformidade LGPD</li>
+          <li>Backup automático</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COMO FUNCIONA -->
+<section class="how-it-works">
+  <div class="container">
+    <div class="section-header">
+      <h2>Como Funciona</h2>
+      <p>Simples, rápido e eficiente</p>
+    </div>
+
+    <div class="steps-timeline">
+      <div class="step">
+        <div class="step-number">1</div>
+        <h3>Crie sua Conta</h3>
+        <p>Cadastre-se gratuitamente e comece a usar em minutos</p>
+      </div>
+
+      <div class="step-arrow">→</div>
+
+      <div class="step">
+        <div class="step-number">2</div>
+        <h3>Registre Clientes</h3>
+        <p>Adicione seus clientes e configure contratos</p>
+      </div>
+
+      <div class="step-arrow">→</div>
+
+      <div class="step">
+        <div class="step-number">3</div>
+        <h3>Marque Horas</h3>
+        <p>Registre entrada e saída conforme trabalha</p>
+      </div>
+
+      <div class="step-arrow">→</div>
+
+      <div class="step">
+        <div class="step-number">4</div>
+        <h3>Gere Relatórios</h3>
+        <p>Compartilhe com seus clientes profissionalmente</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CASOS DE USO -->
+<section class="use-cases">
+  <div class="container">
+    <div class="section-header">
+      <h2>Perfeito para</h2>
+      <p>HoraCerta é ideal para diferentes tipos de profissionais</p>
+    </div>
+
+    <div class="use-cases-grid">
+      <div class="use-case">
+        <div class="use-case-icon">🔧</div>
+        <h3>Eletricistas</h3>
+        <p>Controle suas horas em diferentes obras e clientes. Gere orçamentos profissionais.</p>
+      </div>
+
+      <div class="use-case">
+        <div class="use-case-icon">💻</div>
+        <h3>Desenvolvedores</h3>
+        <p>Rastreie tempo em projetos. Fature com precisão. Mantenha clientes informados.</p>
+      </div>
+
+      <div class="use-case">
+        <div class="use-case-icon">🏠</div>
+        <h3>Encanadores</h3>
+        <p>Organize múltiplos atendimentos. Controle de custos e lucro por serviço.</p>
+      </div>
+
+      <div class="use-case">
+        <div class="use-case-icon">📚</div>
+        <h3>Consultores</h3>
+        <p>Fature por hora com precisão. Relatórios detalhados para seus clientes.</p>
+      </div>
+
+      <div class="use-case">
+        <div class="use-case-icon">🎨</div>
+        <h3>Designers</h3>
+        <p>Controle de projetos. Rastreamento de tempo. Faturamento profissional.</p>
+      </div>
+
+      <div class="use-case">
+        <div class="use-case-icon">🏥</div>
+        <h3>Profissionais Liberais</h3>
+        <p>Gestão completa de atendimentos. Conformidade com regulamentações.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BENEFÍCIOS PRINCIPAIS -->
+<section class="benefits">
+  <div class="container">
+    <div class="section-header">
+      <h2>Por Que Escolher HoraCerta</h2>
+      <p>Diferencial que faz a diferença</p>
+    </div>
+
+    <div class="benefits-grid">
+      <div class="benefit">
+        <div class="benefit-icon">🇧🇷</div>
+        <h3>Feito para o Brasil</h3>
+        <p>Desenvolvido especificamente para MEIs, PJs e prestadores de serviço brasileiros. Conforme com LGPD, CLT e regulamentações locais.</p>
+      </div>
+
+      <div class="benefit">
+        <div class="benefit-icon">📱</div>
+        <h3>Funciona Offline</h3>
+        <p>Registre suas horas mesmo sem internet. Sincroniza automaticamente quando voltar online.</p>
+      </div>
+
+      <div class="benefit">
+        <div class="benefit-icon">🚀</div>
+        <h3>Simples e Rápido</h3>
+        <p>Interface intuitiva. Sem complicações. Comece a usar em minutos.</p>
+      </div>
+
+      <div class="benefit">
+        <div class="benefit-icon">💰</div>
+        <h3>Preços Acessíveis</h3>
+        <p>Plano gratuito para começar. Planos profissionais com excelente custo-benefício.</p>
+      </div>
+
+      <div class="benefit">
+        <div class="benefit-icon">🔒</div>
+        <h3>Seus Dados Seguros</h3>
+        <p>Criptografia de ponta a ponta. Backup automático. Conformidade LGPD.</p>
+      </div>
+
+      <div class="benefit">
+        <div class="benefit-icon">🤝</div>
+        <h3>Suporte Dedicado</h3>
+        <p>Equipe pronta para ajudar. Respostas rápidas. Comunidade ativa.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="faq-section">
+  <div class="container">
+    <div class="section-header">
+      <h2>Perguntas Frequentes</h2>
+      <p>Tire suas dúvidas</p>
+    </div>
+
+    <div class="faq-grid">
+      <details class="faq-item" open>
+        <summary>
+          <span>Preciso pagar para começar?</span>
+          <span class="icon">+</span>
+        </summary>
+        <p>Não! HoraCerta tem um plano gratuito completo para você começar. Upgrade para planos profissionais quando estiver pronto.</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>
+          <span>HoraCerta emite nota fiscal?</span>
+          <span class="icon">+</span>
+        </summary>
+        <p>HoraCerta não emite nota fiscal diretamente (responsabilidade do prestador), mas facilita a integração com plataformas de emissão como Webmania e NotaAS.</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>
+          <span>Meus dados estão seguros?</span>
+          <span class="icon">+</span>
+        </summary>
+        <p>Sim! Seus dados são criptografados, fazemos backup automático e somos 100% conforme com LGPD. Você tem direito ao esquecimento e pode exportar seus dados a qualquer momento.</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>
+          <span>Funciona sem internet?</span>
+          <span class="icon">+</span>
+        </summary>
+        <p>Sim! HoraCerta é um app PWA que funciona completamente offline. Registre suas horas sem internet e sincronize quando voltar online.</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>
+          <span>Posso usar em múltiplos dispositivos?</span>
+          <span class="icon">+</span>
+        </summary>
+        <p>Claro! Acesse HoraCerta no seu celular, tablet ou computador. Seus dados sincronizam automaticamente em todos os dispositivos.</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>
+          <span>Como faço para mudar meu email ou senha?</span>
+          <span class="icon">+</span>
+        </summary>
+        <p>Você pode mudar seu email e senha a qualquer momento nas configurações da sua conta. Implementaremos essa funcionalidade em breve com recuperação segura.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- CONFORMIDADE LEGAL -->
+<section class="compliance">
+  <div class="container">
+    <div class="section-header">
+      <h2>Conformidade & Segurança</h2>
+      <p>Você pode confiar em HoraCerta</p>
+    </div>
+
+    <div class="compliance-grid">
+      <div class="compliance-card">
+        <div class="compliance-icon">🛡️</div>
+        <h3>LGPD Compliant</h3>
+        <p>Seus dados pessoais são protegidos conforme Lei Geral de Proteção de Dados. Você tem direito ao esquecimento e acesso aos seus dados.</p>
+      </div>
+
+      <div class="compliance-card">
+        <div class="compliance-icon">⚖️</div>
+        <h3>Conforme CLT</h3>
+        <p>HoraCerta respeita direitos trabalhistas e regulamentações. Ideal para MEIs, PJs e prestadores de serviço.</p>
+      </div>
+
+      <div class="compliance-card">
+        <div class="compliance-icon">📋</div>
+        <h3>NFS-e Integrado</h3>
+        <p>Integração com plataformas de emissão de Nota Fiscal de Serviço Eletrônica. Facilita sua conformidade fiscal.</p>
+      </div>
+
+      <div class="compliance-card">
+        <div class="compliance-icon">🔐</div>
+        <h3>Segurança de Dados</h3>
+        <p>Criptografia de ponta a ponta. Backup automático. Auditoria completa de todas as mudanças.</p>
+      </div>
+    </div>
+
+    <div class="compliance-note">
+      <p><strong>Importante:</strong> HoraCerta não substitui um contador ou advogado. Recomendamos consultar um profissional para questões fiscais e legais específicas do seu negócio.</p>
+    </div>
+  </div>
+</section>
+
+<!-- CTA FINAL -->
+<section class="final-cta">
+  <div class="container">
+    <div class="cta-content">
+      <h2>Pronto para Crescer seu Negócio?</h2>
+      <p>Comece agora com HoraCerta. É gratuito, rápido e fácil.</p>
+      <a href="{% url 'login' %}" class="btn btn-primary btn-lg">Começar Agora</a>
+    </div>
+  </div>
+</section>
+
+{% endblock %}
