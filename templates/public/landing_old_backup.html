@@ -1,0 +1,137 @@
+{% extends "public/base_public.html" %}
+{% load static %}
+{% block title %}HoraCerta | Controle de horas para profissionais{% endblock %}
+{% block meta_description %}Registre horarios, organize clientes e gere relatorios profissionais com o HoraCerta.{% endblock %}
+
+{% block extra_head %}
+<link rel="canonical" href="{{ canonical_url }}">
+<meta name="robots" content="index, follow, max-image-preview:large">
+
+<meta property="og:type" content="website">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:site_name" content="HoraCerta">
+<meta property="og:title" content="HoraCerta | Controle de horas para profissionais">
+<meta property="og:description" content="Registre horarios, organize clientes e gere relatorios profissionais em poucos minutos.">
+<meta property="og:url" content="{{ og_url }}">
+<meta property="og:image" content="{{ og_image_url }}">
+<meta property="og:image:alt" content="HoraCerta">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="HoraCerta | Controle de horas para profissionais">
+<meta name="twitter:description" content="Registre horarios, organize clientes e gere relatorios profissionais em poucos minutos.">
+<meta name="twitter:image" content="{{ og_image_url }}">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "name": "HoraCerta",
+      "url": "{{ canonical_url|escapejs }}",
+      "logo": "{{ request.scheme }}://{{ request.get_host }}{% static 'pwa/icon-512.png' %}",
+      "description": "Controle de horas, clientes e relatorios para profissionais e MEIs."
+    },
+    {
+      "@type": "SoftwareApplication",
+      "name": "HoraCerta",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web, Android, iOS",
+      "url": "{{ canonical_url|escapejs }}",
+      "image": "{{ og_image_url|escapejs }}",
+      "description": "Aplicativo para profissionais registrarem horarios, organizarem clientes e gerarem relatorios.",
+      "publisher": {
+        "@type": "Organization",
+        "name": "HoraCerta"
+      }
+    }
+  ]
+}
+</script>
+<link rel="stylesheet" href="{% static 'css/public_landing.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="container hero">
+  <div class="hero-copy">
+    <span class="kicker">HoraCerta para profissionais e MEIs</span>
+    <h1>Controle suas horas com clareza.</h1>
+    <p class="lead">Registre horarios, organize clientes e gere relatorios profissionais em poucos minutos.</p>
+    <p>O HoraCerta ajuda profissionais e MEIs a acompanhar jornadas, valores estimados e relatorios por cliente.</p>
+    <div class="hero-actions">
+      <a class="btn primary" href="{% url 'login' %}">Entrar no sistema</a>
+      <a class="btn" href="#recursos">Conhecer recursos</a>
+    </div>
+    <p class="hero-assist">Conta criada por convite ou administracao do HoraCerta.</p>
+  </div>
+
+  <div class="hero-panel" aria-label="Resumo ilustrativo do HoraCerta">
+    <div class="panel-top">
+      <span>Hoje</span>
+      <strong>7h 40min</strong>
+    </div>
+    <div class="client-row">
+      <span>Cliente</span>
+      <strong>Oficina Central</strong>
+    </div>
+    <div class="metric-grid">
+      <div>
+        <span>Valor estimado</span>
+        <strong>R$ 384,00</strong>
+      </div>
+      <div>
+        <span>Relatorios</span>
+        <strong>3 prontos</strong>
+      </div>
+    </div>
+    <div class="timeline">
+      <span></span>
+      <div>
+        <strong>Entrada registrada</strong>
+        <small>08:04</small>
+      </div>
+    </div>
+    <div class="timeline">
+      <span></span>
+      <div>
+        <strong>Saida registrada</strong>
+        <small>17:44</small>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="container section" id="recursos">
+  <div class="section-head">
+    <h2>O essencial para fechar o dia com seguranca</h2>
+    <p class="intro">Uma entrada simples para a rotina: registrar, conferir e compartilhar informacoes com seus clientes.</p>
+  </div>
+  <div class="steps">
+    <article class="card">
+      <div class="step-index">01</div>
+      <h3>Registre horarios</h3>
+      <p>Marque entradas e saidas pelo celular e mantenha o historico organizado.</p>
+    </article>
+    <article class="card">
+      <div class="step-index">02</div>
+      <h3>Organize clientes</h3>
+      <p>Separe contratos, jornadas e valores para acompanhar cada atendimento com clareza.</p>
+    </article>
+    <article class="card">
+      <div class="step-index">03</div>
+      <h3>Gere relatorios</h3>
+      <p>Prepare relatorios profissionais para enviar aos clientes quando precisar.</p>
+    </article>
+  </div>
+</section>
+
+<section class="container section">
+  <div class="simple-cta">
+    <div>
+      <h2>Acesse seu painel profissional</h2>
+      <p>Ao entrar, o HoraCerta abre direto no seu painel para continuar a rotina.</p>
+    </div>
+    <a class="btn primary" href="{% url 'login' %}">Entrar no sistema</a>
+  </div>
+</section>
+{% endblock %}
