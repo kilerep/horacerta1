@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
@@ -75,15 +75,19 @@ class MeiDashboardAttentionTests(TestCase):
         )
 
     def test_attention_panel_provides_direct_actions_for_relevant_pending_items(self):
-        Punch.objects.create(contract=self.contract_a, timestamp=timezone.now() - timedelta(hours=1))
+        today = timezone.localdate()
+        Punch.objects.create(
+            contract=self.contract_a,
+            timestamp=timezone.make_aware(datetime.combine(today, time(hour=10))),
+        )
         report_request = ActivityReportRequest.objects.create(
             company=self.company_a,
             employee=self.employee_a,
             contract=self.contract_a,
             requested_by=self.owner_a,
             subject="Enviar resumo do período",
-            date_from=timezone.localdate() - timedelta(days=7),
-            date_to=timezone.localdate(),
+            date_from=today - timedelta(days=7),
+            date_to=today,
         )
         self.client.force_login(self.mei_user)
 
@@ -100,8 +104,8 @@ class MeiDashboardAttentionTests(TestCase):
         self.assertContains(response, reverse("mei_client_edit", args=[self.contract_b.id]))
         self.assertContains(response, reverse("mei_service_report_request_detail", args=[report_request.id]))
         self.assertContains(response, f"contract={self.contract_a.id}")
-        self.assertContains(response, f"date_from={timezone.localdate().isoformat()}")
-        self.assertContains(response, f"date_to={timezone.localdate().isoformat()}")
+        self.assertContains(response, f"date_from={today.isoformat()}")
+        self.assertContains(response, f"date_to={today.isoformat()}")
 
     def test_attention_panel_has_a_clear_empty_state_when_there_are_no_priority_items(self):
         self.contract_b.hourly_rate = Decimal("50.00")
