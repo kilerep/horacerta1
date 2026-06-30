@@ -20,14 +20,14 @@ class PasswordChangeFlowTests(TestCase):
             password="SenhaAtual@123",
             role=User.Role.FUNCIONARIO,
         )
-        owner = User.objects.create_user(
+        self.owner = User.objects.create_user(
             username="empresa-seguranca@example.com",
             email="empresa-seguranca@example.com",
             password="SenhaEmpresa@123",
             role=User.Role.EMPRESA,
         )
         company = Company.objects.create(
-            owner=owner,
+            owner=self.owner,
             name="Empresa de Segurança",
             email="empresa-seguranca@example.com",
         )
@@ -92,6 +92,16 @@ class PasswordChangeFlowTests(TestCase):
         self.client.force_login(self.user)
 
         response = self.client.get(reverse("mei_profile"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Segurança da conta")
+        self.assertContains(response, "Alterar senha")
+        self.assertContains(response, reverse("password_change"))
+
+    def test_company_settings_exposes_password_change_action(self):
+        self.client.force_login(self.owner)
+
+        response = self.client.get(reverse("company_settings"))
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Segurança da conta")
