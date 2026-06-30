@@ -48,6 +48,16 @@
     .client-metric{border:1px solid rgba(255,255,255,.09);border-radius:12px;padding:10px;background:rgba(255,255,255,.03)}
     .client-metric span{display:block;color:var(--muted);font-size:11px}
     .client-metric strong{display:block;margin-top:3px;font-size:15px}
+    .attention-list{display:grid;gap:8px}
+    .attention-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:12px;background:rgba(255,255,255,.035)}
+    .attention-item--warn{border-color:rgba(255,176,32,.36);background:rgba(255,176,32,.09)}
+    .attention-item--danger{border-color:rgba(255,94,94,.34);background:rgba(255,94,94,.1)}
+    .attention-item--neutral{border-color:rgba(255,255,255,.12);background:rgba(255,255,255,.04)}
+    .attention-item__eyebrow{display:block;color:var(--muted);font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.04em}
+    .attention-item__title{display:block;margin-top:3px;color:var(--text);font-size:15px;line-height:1.25}
+    .attention-item__text{margin:4px 0 0;color:var(--muted);font-size:13px;line-height:1.45}
+    .attention-item--warn .attention-item__text{color:#ffe7ad}
+    .attention-item--danger .attention-item__text{color:#ffd8d8}
     .alert-list{display:grid;gap:8px}
     .summary-alert{border:1px solid rgba(255,176,32,.36);border-radius:12px;padding:11px 12px;background:rgba(255,176,32,.1);color:#ffe7ad}
     .summary-alert.danger{border-color:rgba(255,94,94,.34);background:rgba(255,94,94,.1);color:#ffd8d8}
@@ -62,8 +72,9 @@
     }
     @media (max-width: 640px){
       .summary-hero,
-      .client-row__head{display:grid}
-      .summary-actions .btn{width:100%;justify-content:center}
+      .client-row__head,
+      .attention-item{display:grid;grid-template-columns:1fr}
+      .summary-actions .btn,.attention-item .btn{width:100%;justify-content:center}
       .pillar-shortcuts,
       .summary-cards,
       .client-metrics{grid-template-columns:1fr}
@@ -120,6 +131,79 @@
       <article class="summary-card"><span>Dias incompletos</span><strong>{{ incomplete_days }}</strong></article>
       <article class="summary-card"><span>Relatórios pendentes</span><strong>{{ pending_reports_count }}</strong></article>
       <article class="summary-card"><span>Clientes vinculados</span><strong>{{ contracts_count }}</strong></article>
+    </section>
+
+    <section class="summary-panel" aria-labelledby="attention-title">
+      <h2 id="attention-title">Ação de hoje</h2>
+      <p class="summary-panel__sub">Pendências com um caminho direto para resolver ou revisar.</p>
+      <div class="attention-list">
+        {% if incomplete_alerts %}
+          {% for item in incomplete_alerts %}
+            <article class="attention-item attention-item--warn">
+              <div>
+                <span class="attention-item__eyebrow">Registro incompleto</span>
+                <strong class="attention-item__title">{{ item.contract.company.name }}</strong>
+                <p class="attention-item__text">{{ item.count }} dia(s) incompleto(s). Último em {{ item.latest_date|date:"d/m/Y" }}.</p>
+              </div>
+              <a class="btn" href="{% url 'mei_history' %}?contract={{ item.contract.id }}&amp;date_from={{ item.latest_date|date:"Y-m-d" }}&amp;date_to={{ item.latest_date|date:"Y-m-d" }}">Ver dia</a>
+            </article>
+          {% endfor %}
+        {% endif %}
+        {% if missing_rate_contracts %}
+          {% for contract in missing_rate_contracts %}
+            <article class="attention-item attention-item--danger">
+              <div>
+                <span class="attention-item__eyebrow">Valor por hora pendente</span>
+                <strong class="attention-item__title">{{ contract.company.name }}</strong>
+                <p class="attention-item__text">Defina o valor/hora para que o fechamento apresente uma estimativa correta.</p>
+              </div>
+              <a class="btn" href="{% url 'mei_client_edit' contract.id %}">Definir valor/hora</a>
+            </article>
+          {% endfor %}
+        {% endif %}
+        {% if pending_report_requests %}
+          {% for req in pending_report_requests %}
+            <article class="attention-item attention-item--warn">
+              <div>
+                <span class="attention-item__eyebrow">Relatório solicitado</span>
+                <strong class="attention-item__title">{{ req.company.name }}</strong>
+                <p class="attention-item__text">{% if req.subject %}{{ req.subject }}{% else %}Há uma solicitação de relatório pendente para revisão.{% endif %}</p>
+              </div>
+              <a class="btn" href="{% url 'mei_service_report_request_detail' req.id %}">Abrir solicitação</a>
+            </article>
+          {% endfor %}
+        {% endif %}
+        {% if new_service_requests_count %}
+          <article class="attention-item">
+            <div>
+              <span class="attention-item__eyebrow">Pedidos novos</span>
+              <strong class="attention-item__title">{{ new_service_requests_count }} pedido(s) aguardando análise</strong>
+              <p class="attention-item__text">Organize o que foi solicitado antes de transformar em serviço.</p>
+            </div>
+            <a class="btn" href="{% url 'service_request_list' %}">Ver pedidos</a>
+          </article>
+        {% endif %}
+        {% if important_notifications_count %}
+          <article class="attention-item">
+            <div>
+              <span class="attention-item__eyebrow">Notificações</span>
+              <strong class="attention-item__title">{{ important_notifications_count }} aviso(s) não lido(s)</strong>
+              <p class="attention-item__text">Revise os avisos importantes da sua conta.</p>
+            </div>
+            <a class="btn" href="{% url 'mei_notifications' %}">Abrir avisos</a>
+          </article>
+        {% endif %}
+        {% if not incomplete_alerts and not missing_rate_contracts and not pending_report_requests and not new_service_requests_count and not important_notifications_count %}
+          <article class="attention-item attention-item--neutral">
+            <div>
+              <span class="attention-item__eyebrow">Tudo em ordem</span>
+              <strong class="attention-item__title">Nenhuma pendência prioritária agora</strong>
+              <p class="attention-item__text">Continue registrando os horários e confira o resumo antes do próximo fechamento.</p>
+            </div>
+            <a class="btn" href="{% url 'employee_dashboard' %}">Registrar horário</a>
+          </article>
+        {% endif %}
+      </div>
     </section>
 
     <section class="summary-panel">
