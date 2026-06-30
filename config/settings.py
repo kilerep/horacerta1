@@ -1,6 +1,7 @@
 """Configuração do projeto Django HoraCerta."""
 
 import os
+import sys
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -17,6 +18,7 @@ except ImportError:  # pragma: no cover
     whitenoise = None
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+TESTING = "test" in sys.argv
 
 
 def _env_bool(name, default=False):
@@ -155,7 +157,7 @@ STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
 }
-if USE_WHITENOISE:
+if USE_WHITENOISE and not TESTING:
     STORAGES["staticfiles"]["BACKEND"] = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 MEDIA_URL = "/media/"
