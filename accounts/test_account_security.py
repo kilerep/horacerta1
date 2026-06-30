@@ -84,7 +84,7 @@ class PasswordChangeFlowTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Sua senha antiga não está correta")
+        self.assertIn("old_password", response.context["form"].errors)
         self.user.refresh_from_db()
         self.assertTrue(self.user.check_password("SenhaAtual@123"))
 
