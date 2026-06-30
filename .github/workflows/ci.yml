@@ -38,7 +38,19 @@ jobs:
         run: python manage.py makemigrations --check --dry-run
 
       - name: Run test suite
-        run: python manage.py test
+        shell: bash
+        run: |
+          set -o pipefail
+          python manage.py test 2>&1 | tee django-test-output.log
+
+      - name: Upload test output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: django-test-output
+          path: django-test-output.log
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Collect static files
         run: python manage.py collectstatic --noinput
