@@ -87,7 +87,7 @@ def _test_mei_client_detail_shows_quick_closure_and_recent_reports(self):
     self.assertContains(response, "data-client-reports-panel")
     self.assertContains(response, "hidden")
     self.assertContains(response, "Últimos fechamentos")
-    self.assertContains(response, "Não visualizado")
+    self.assertContains(response, "Nao visualizado")
     self.assertContains(response, "Pendente")
     self.assertContains(response, "Ver todos em Relatórios")
     self.assertNotContains(response, "Relatorio antigo 3")
