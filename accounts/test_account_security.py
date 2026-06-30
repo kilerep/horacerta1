@@ -107,3 +107,22 @@ class PasswordChangeFlowTests(TestCase):
         self.assertContains(response, "Segurança da conta")
         self.assertContains(response, "Alterar senha")
         self.assertContains(response, reverse("password_change"))
+
+    def test_company_sees_company_return_actions_after_password_change(self):
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            reverse("password_change"),
+            {
+                "old_password": "SenhaEmpresa@123",
+                "new_password1": "NovaSenhaEmpresa@456",
+                "new_password2": "NovaSenhaEmpresa@456",
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Voltar às configurações")
+        self.assertContains(response, reverse("company_settings"))
+        self.owner.refresh_from_db()
+        self.assertTrue(self.owner.check_password("NovaSenhaEmpresa@456"))
