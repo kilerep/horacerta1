@@ -29,6 +29,10 @@
       width:70px;height:70px;border-radius:999px;object-fit:cover;border:1px solid var(--border);
       background:rgba(255,255,255,.05);
     }
+    .security-summary{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center}
+    .security-summary h2{margin:0}
+    .security-summary p{margin:8px 0 0}
+    @media (max-width:640px){.security-summary{grid-template-columns:1fr}.security-summary .btn{width:100%;justify-content:center}}
   </style>
 
   <section class="panel">
@@ -99,6 +103,16 @@
         <button class="btn primary" type="submit">Salvar perfil</button>
       </div>
     </form>
+  </section>
+
+  <section class="panel" style="margin-top:14px;">
+    <div class="security-summary">
+      <div>
+        <h2>Segurança da conta</h2>
+        <p class="muted">Altere sua senha usando a senha atual como confirmação.</p>
+      </div>
+      <a class="btn" href="{% url 'password_change' %}">Alterar senha</a>
+    </div>
   </section>
 
   <section class="panel" style="margin-top:14px;">
