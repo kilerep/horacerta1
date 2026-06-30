@@ -49,7 +49,7 @@ class PasswordChangeFlowTests(TestCase):
         form_response = self.client.get(reverse("password_change"))
         self.assertEqual(form_response.status_code, 200)
         self.assertContains(form_response, "Alterar senha")
-        self.assertContains(form_response, "Senha atual")
+        self.assertContains(form_response, "Senha antiga")
         self.assertContains(form_response, "Nova senha")
 
         response = self.client.post(
