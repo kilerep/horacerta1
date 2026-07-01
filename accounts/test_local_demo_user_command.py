@@ -2,6 +2,7 @@ from io import StringIO
 
 from django.core.management import CommandError, call_command
 from django.test import TestCase, override_settings
+from django.urls import reverse
 
 from accounts.models import User
 from companies.models import Company, Employee
@@ -37,6 +38,23 @@ class LocalDemoUserCommandTests(TestCase):
         self.assertTrue(Employee.objects.filter(user=professional, is_active=True).exists())
         self.assertTrue(Contract.objects.filter(employee__user=professional, is_active=True).exists())
         self.assertIn("Usuário local de demonstração pronto.", output.getvalue())
+
+    @override_settings(DEBUG=True, SECURE_SSL_REDIRECT=False)
+    def test_demo_user_reaches_the_core_mei_area(self):
+        call_command(
+            "create_local_demo_user",
+            "--email",
+            "demo.fluxo@horacerta.test",
+            "--password",
+            "Teste@12345",
+            stdout=StringIO(),
+        )
+        professional = User.objects.get(email="demo.fluxo@horacerta.test")
+        self.client.force_login(professional)
+
+        for route_name in ("mei_panel", "mei_contract", "mei_history", "mei_reports"):
+            response = self.client.get(reverse(route_name))
+            self.assertEqual(response.status_code, 200)
 
     @override_settings(DEBUG=False)
     def test_command_refuses_to_create_demo_data_outside_debug(self):
