@@ -1,0 +1,69 @@
+{% extends "accounts/base.html" %}
+{% block title %}Primeiros passos{% endblock %}
+{% block page_title %}Primeiros passos{% endblock %}
+
+{% block content %}
+<style>
+  .onboarding-page{display:grid;gap:14px;max-width:980px}
+  .onboarding-hero,.onboarding-card{border:1px solid var(--border);border-radius:var(--radius);background:radial-gradient(circle at 12% 0,var(--color-primary-soft),transparent 46%),linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02));box-shadow:var(--shadow)}
+  .onboarding-hero{padding:18px;display:grid;gap:12px}
+  .onboarding-eyebrow{margin:0;color:var(--muted);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+  .onboarding-title{margin:0;font-size:clamp(24px,4vw,34px);line-height:1.1}
+  .onboarding-subtitle{margin:0;color:var(--muted);line-height:1.55;max-width:760px}
+  .onboarding-progress{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .onboarding-progress strong{font-size:16px}
+  .onboarding-progress span{color:var(--muted);font-size:13px}
+  .onboarding-track{height:8px;flex:1 1 180px;min-width:160px;border-radius:999px;background:var(--surface-soft);overflow:hidden}
+  .onboarding-track > span{display:block;height:100%;background:var(--color-primary);border-radius:999px}
+  .onboarding-steps{display:grid;gap:10px}
+  .onboarding-card{padding:14px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center}
+  .onboarding-card.is-complete{border-color:var(--border-brand);background:linear-gradient(180deg,var(--surface-brand-soft),rgba(255,255,255,.02))}
+  .onboarding-number{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:999px;border:1px solid var(--line-soft);background:var(--surface-soft);font-weight:900}
+  .onboarding-card.is-complete .onboarding-number{background:var(--color-primary);color:var(--color-primary-contrast);border-color:var(--color-primary)}
+  .onboarding-card h2{margin:0;font-size:17px;line-height:1.25}
+  .onboarding-card p{margin:4px 0 0;color:var(--muted);font-size:13px;line-height:1.45}
+  .onboarding-status{display:inline-flex;width:max-content;margin-top:8px;border:1px solid var(--border-brand);border-radius:999px;padding:4px 8px;color:var(--color-success);font-size:11px;font-weight:900}
+  .onboarding-note{margin:0;color:var(--muted);font-size:12px;line-height:1.5}
+  .onboarding-note strong{color:var(--color-text-strong)}
+  @media (max-width:680px){.onboarding-card{grid-template-columns:auto minmax(0,1fr)}.onboarding-card .btn{grid-column:1/-1;width:100%;justify-content:center}}
+</style>
+
+<div class="onboarding-page">
+  <section class="onboarding-hero">
+    <p class="onboarding-eyebrow">Configuração guiada</p>
+    <h1 class="onboarding-title">Organize sua rotina no HoraCerta</h1>
+    <p class="onboarding-subtitle">Siga estes passos na ordem. O sistema apenas mostra o que falta; nenhuma ação é feita automaticamente nos seus clientes, horas ou relatórios.</p>
+    <div class="onboarding-progress" aria-label="Progresso dos primeiros passos">
+      <strong>{{ completed_steps }} de {{ total_steps }} etapas concluídas</strong>
+      <div class="onboarding-track" aria-hidden="true"><span style="width:{% widthratio completed_steps total_steps 100 %}%"></span></div>
+    </div>
+  </section>
+
+  <section class="onboarding-steps" aria-label="Etapas de configuração">
+    {% for step in steps %}
+      <article class="onboarding-card{% if step.is_complete %} is-complete{% endif %}">
+        <span class="onboarding-number">{% if step.is_complete %}✓{% else %}{{ step.number }}{% endif %}</span>
+        <div>
+          <h2>{{ step.title }}</h2>
+          <p>{{ step.description }}</p>
+          {% if step.is_complete %}<span class="onboarding-status">Concluído</span>{% endif %}
+          {% if step.blocked and not step.is_complete %}<p>Esta etapa será liberada depois da etapa anterior.</p>{% endif %}
+        </div>
+        {% if not step.is_complete and not step.blocked %}
+          {% if step.contract_id %}
+            <a class="btn primary" href="{% url step.action_url step.contract_id %}">{{ step.action_label }}</a>
+          {% else %}
+            <a class="btn primary" href="{% url step.action_url %}">{{ step.action_label }}</a>
+          {% endif %}
+        {% endif %}
+      </article>
+    {% endfor %}
+  </section>
+
+  <section class="onboarding-card">
+    <span class="onboarding-number">i</span>
+    <p class="onboarding-note"><strong>Antes do fechamento:</strong> revise cliente, período, horários e valor estimado. Depois de gerar o relatório, o período correspondente fica bloqueado para alterações do prestador.</p>
+    <a class="btn" href="{% url 'help' %}">Abrir Central de Ajuda</a>
+  </section>
+</div>
+{% endblock %}
