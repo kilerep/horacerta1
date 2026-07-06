@@ -77,19 +77,30 @@ class EventProposalTests(TestCase):
             usage_status=ServiceItemExpense.UsageStatus.PLANNED,
         )
 
-    def test_private_event_proposal_opens_shareable_page_and_hides_item_prices(self):
+    def test_event_proposal_sends_whatsapp_then_public_sheet_hides_item_prices(self):
         self.client.force_login(self.professional)
 
-        response = self.client.get(reverse("service_event_proposal_detail", args=[self.job.id]), follow=True)
+        open_response = self.client.get(reverse("service_event_proposal_detail", args=[self.job.id]))
+        self.assertRedirects(
+            open_response,
+            reverse("service_event_proposal_whatsapp", args=[self.job.id]),
+            fetch_redirect_response=False,
+        )
 
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Proposta de evento")
-        self.assertContains(response, "R$ 1.450,00")
-        self.assertContains(response, "Caixa ativa")
-        self.assertContains(response, "Valor fechado")
-        self.assertNotContains(response, "R$ 450,00")
+        whatsapp_response = self.client.get(open_response.url)
+        self.assertEqual(whatsapp_response.status_code, 302)
+        self.assertIn("wa.me", whatsapp_response.url)
+
         self.job.refresh_from_db()
+        public_response = self.client.get(reverse("public_service_event_proposal", args=[self.job.public_token]))
+        self.assertEqual(public_response.status_code, 200)
+        self.assertContains(public_response, "Proposta de evento")
+        self.assertContains(public_response, "R$ 1.450,00")
+        self.assertContains(public_response, "Caixa ativa")
+        self.assertContains(public_response, "Valor fechado")
+        self.assertNotContains(public_response, "R$ 450,00")
         self.assertIsNotNone(self.job.preview_generated_at)
+        self.assertIsNotNone(self.job.preview_sent_at)
         self.assertEqual(self.job.status, ServiceJob.Status.SENT)
 
     def test_event_proposal_whatsapp_marks_the_proposal_as_sent(self):
