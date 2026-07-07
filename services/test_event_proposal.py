@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 from django.urls import reverse
@@ -42,7 +44,7 @@ class EventProposalTests(TestCase):
         self.contract = Contract.objects.create(
             employee=self.employee,
             company=self.company,
-            hourly_rate="0.00",
+            hourly_rate=Decimal("0.00"),
             start_date=timezone.localdate(),
             is_active=True,
         )
@@ -63,7 +65,7 @@ class EventProposalTests(TestCase):
             service_state="SC",
             start_date=timezone.localdate(),
             billing_mode=ServiceJob.BillingMode.FIXED,
-            fixed_labor_value="1450.00",
+            fixed_labor_value=Decimal("1450.00"),
             notes="Sinal e saldo serão combinados com o cliente antes do evento.",
             status=ServiceJob.Status.PLANNED,
         )
@@ -72,8 +74,8 @@ class EventProposalTests(TestCase):
             type=ServiceItemExpense.ItemType.MATERIAL,
             name="Caixa ativa",
             unit=ServiceItemUnit.UNIT,
-            quantity="2.00",
-            unit_value="450.00",
+            quantity=Decimal("2.00"),
+            unit_value=Decimal("450.00"),
             usage_status=ServiceItemExpense.UsageStatus.PLANNED,
         )
 
