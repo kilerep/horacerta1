@@ -1,3 +1,4 @@
+from decimal import Decimal
 from io import StringIO
 
 from django.core.management import CommandError, call_command
@@ -46,6 +47,10 @@ class LocalDemoScenariosCommandTests(TestCase):
             professional=professional,
             title="Serviço demo - instalação",
         )
+        event_job = ServiceJob.objects.get(
+            professional=professional,
+            title="Evento demo - sonorização",
+        )
 
         self.assertTrue(professional.check_password("Teste@12345"))
         self.assertEqual(catalog_item.category_id, category.id)
@@ -55,6 +60,17 @@ class LocalDemoScenariosCommandTests(TestCase):
         self.assertEqual(job.status, ServiceJob.Status.IN_PROGRESS)
         self.assertEqual(ServiceWorkLog.objects.filter(service_job=job).count(), 1)
         self.assertEqual(ServiceItemExpense.objects.filter(service_job=job).count(), 1)
+        self.assertEqual(event_job.contract_id, contract.id)
+        self.assertEqual(event_job.status, ServiceJob.Status.PLANNED)
+        self.assertEqual(event_job.billing_mode, ServiceJob.BillingMode.FIXED)
+        self.assertEqual(event_job.fixed_labor_value, Decimal("1450.00"))
+        self.assertEqual(ServiceItemExpense.objects.filter(service_job=event_job).count(), 4)
+        self.assertFalse(
+            ServiceItemExpense.objects.filter(
+                service_job=event_job,
+                unit_value__gt=0,
+            ).exists()
+        )
         self.assertEqual(Punch.objects.filter(contract=contract).count(), 3)
         self.assertIn("Cenários locais de demonstração prontos.", output.getvalue())
 
