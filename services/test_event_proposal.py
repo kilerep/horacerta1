@@ -64,6 +64,8 @@ class EventProposalTests(TestCase):
             service_city="Blumenau",
             service_state="SC",
             start_date=timezone.localdate(),
+            planned_start_time="18:00",
+            planned_end_time="23:00",
             billing_mode=ServiceJob.BillingMode.FIXED,
             fixed_labor_value=Decimal("1450.00"),
             notes="Sinal e saldo serão combinados com o cliente antes do evento.",
@@ -79,21 +81,23 @@ class EventProposalTests(TestCase):
             usage_status=ServiceItemExpense.UsageStatus.PLANNED,
         )
 
-    def test_event_proposal_sends_whatsapp_then_public_sheet_hides_item_prices(self):
+    def test_event_proposal_review_generates_public_sheet_and_hides_item_prices(self):
         self.client.force_login(self.professional)
 
-        open_response = self.client.get(reverse("service_event_proposal_detail", args=[self.job.id]))
-        self.assertRedirects(
-            open_response,
-            reverse("service_event_proposal_whatsapp", args=[self.job.id]),
-            fetch_redirect_response=False,
-        )
+        review_response = self.client.get(reverse("service_event_proposal_detail", args=[self.job.id]))
 
-        whatsapp_response = self.client.get(open_response.url)
-        self.assertEqual(whatsapp_response.status_code, 302)
-        self.assertIn("wa.me", whatsapp_response.url)
+        self.assertEqual(review_response.status_code, 200)
+        self.assertContains(review_response, "Revisar proposta de evento")
+        self.assertContains(review_response, "Proposta pronta para envio")
+        self.assertContains(review_response, "R$ 1.450,00")
+        self.assertContains(review_response, "Caixa ativa")
+        self.assertNotContains(review_response, "R$ 450,00")
 
         self.job.refresh_from_db()
+        self.assertIsNotNone(self.job.preview_generated_at)
+        self.assertIsNone(self.job.preview_sent_at)
+        self.assertEqual(self.job.status, ServiceJob.Status.PLANNED)
+
         public_response = self.client.get(reverse("public_service_event_proposal", args=[self.job.public_token]))
         self.assertEqual(public_response.status_code, 200)
         self.assertContains(public_response, "Proposta de evento")
@@ -101,9 +105,6 @@ class EventProposalTests(TestCase):
         self.assertContains(public_response, "Caixa ativa")
         self.assertContains(public_response, "Valor fechado")
         self.assertNotContains(public_response, "R$ 450,00")
-        self.assertIsNotNone(self.job.preview_generated_at)
-        self.assertIsNotNone(self.job.preview_sent_at)
-        self.assertEqual(self.job.status, ServiceJob.Status.SENT)
 
     def test_event_proposal_whatsapp_marks_the_proposal_as_sent(self):
         self.client.force_login(self.professional)
@@ -115,6 +116,7 @@ class EventProposalTests(TestCase):
         self.job.refresh_from_db()
         self.assertIsNotNone(self.job.preview_generated_at)
         self.assertIsNotNone(self.job.preview_sent_at)
+        self.assertEqual(self.job.status, ServiceJob.Status.SENT)
 
     def test_other_professional_cannot_open_the_event_proposal(self):
         other = User.objects.create_user(
