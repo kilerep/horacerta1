@@ -21,7 +21,7 @@ from timeclock.models import Contract, Punch
 
 
 class Command(BaseCommand):
-    help = "Prepara cenários completos de demonstração local para validar horas, pedidos e serviços."
+    help = "Prepara cenários completos de demonstração local para validar horas, pedidos, serviços e propostas."
 
     def add_arguments(self, parser):
         parser.add_argument("--email", default="demo.prestador@horacerta.test")
@@ -164,6 +164,61 @@ class Command(BaseCommand):
                 },
             )
 
+            event_job, _ = ServiceJob.objects.get_or_create(
+                professional=professional,
+                title="Evento demo - sonorização",
+                defaults={
+                    "contract": contract,
+                    "category": category,
+                    "description": "Operação de som para evento com montagem, passagem de som, acompanhamento e desmontagem.",
+                    "service_street": "Rua do Evento",
+                    "service_number": "250",
+                    "service_city": "Blumenau",
+                    "service_state": "SC",
+                    "start_date": today + timedelta(days=7),
+                    "planned_start_time": time(18, 0),
+                    "planned_end_time": time(23, 0),
+                    "status": ServiceJob.Status.PLANNED,
+                    "billing_mode": ServiceJob.BillingMode.FIXED,
+                    "fixed_labor_value": Decimal("1450.00"),
+                    "notes": "Pacote fechado: inclui operação, montagem, desmontagem e equipamentos listados. Sinal e saldo devem ser confirmados com o cliente.",
+                },
+            )
+            event_job.contract = contract
+            event_job.category = category
+            event_job.description = "Operação de som para evento com montagem, passagem de som, acompanhamento e desmontagem."
+            event_job.service_street = "Rua do Evento"
+            event_job.service_number = "250"
+            event_job.service_city = "Blumenau"
+            event_job.service_state = "SC"
+            event_job.start_date = today + timedelta(days=7)
+            event_job.planned_start_time = time(18, 0)
+            event_job.planned_end_time = time(23, 0)
+            event_job.status = ServiceJob.Status.PLANNED
+            event_job.billing_mode = ServiceJob.BillingMode.FIXED
+            event_job.fixed_labor_value = Decimal("1450.00")
+            event_job.notes = "Pacote fechado: inclui operação, montagem, desmontagem e equipamentos listados. Sinal e saldo devem ser confirmados com o cliente."
+            event_job.save()
+
+            for name, quantity, description in (
+                ("Caixa ativa", Decimal("2.00"), "Equipamento próprio incluso no pacote."),
+                ("Mesa de som", Decimal("1.00"), "Equipamento próprio incluso no pacote."),
+                ("Microfone sem fio", Decimal("2.00"), "Equipamento próprio incluso no pacote."),
+                ("Kit de cabos", Decimal("1.00"), "Acessórios de ligação inclusos no pacote."),
+            ):
+                ServiceItemExpense.objects.get_or_create(
+                    service_job=event_job,
+                    name=name,
+                    defaults={
+                        "type": ServiceItemExpense.ItemType.MATERIAL,
+                        "description": description,
+                        "unit": ServiceItemUnit.UNIT,
+                        "quantity": quantity,
+                        "unit_value": Decimal("0.00"),
+                        "usage_status": ServiceItemExpense.UsageStatus.PLANNED,
+                    },
+                )
+
             completed_day = today - timedelta(days=1)
             for work_date, work_time, note in (
                 (completed_day, time(8, 0), "Entrada local de demonstração."),
@@ -178,4 +233,4 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS("Cenários locais de demonstração prontos."))
         self.stdout.write(f"Prestador: {professional.email}")
-        self.stdout.write("Incluídos: contrato, horários, catálogo, pedido, serviço, período e item previsto.")
+        self.stdout.write("Incluídos: contrato, horários, catálogo, pedido, serviço, evento, período e itens previstos.")
