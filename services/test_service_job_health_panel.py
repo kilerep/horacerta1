@@ -59,6 +59,12 @@ class ServiceJobHealthPanelTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Checklist do serviço")
+        self.assertContains(response, "Linha do tempo do serviço")
+        self.assertContains(response, "1. Rascunho")
+        self.assertContains(response, "2. Planejado")
+        self.assertContains(response, "3. Em execução")
+        self.assertContains(response, "4. Finalizado")
+        self.assertContains(response, "5. Relatório enviado")
         self.assertContains(response, "Serve para qualquer tipo de prestação")
         self.assertContains(response, "Adicione endereço, cidade ou referência")
         self.assertContains(response, "Registre períodos para comprovar execução")
