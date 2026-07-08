@@ -58,6 +58,23 @@ def _professional_name(job):
     return job.professional.get_full_name() or job.professional.email or job.professional.username
 
 
+def _proposal_warnings(job, items):
+    warnings = []
+    if not (job.client_whatsapp or "").strip():
+        warnings.append("WhatsApp do cliente não informado; o envio abrirá sem destinatário definido.")
+    if not items:
+        warnings.append("Nenhum equipamento ou item técnico foi listado na composição do pacote.")
+    if not (job.full_service_address or job.service_location_summary):
+        warnings.append("Local do evento ainda não foi informado.")
+    if not job.start_date:
+        warnings.append("Data do evento ainda não foi informada.")
+    if not job.planned_start_time or not job.planned_end_time:
+        warnings.append("Horário previsto de início e fim ainda não está completo.")
+    if not (job.notes or "").strip():
+        warnings.append("Condições como sinal, saldo e observações comerciais ainda não foram preenchidas.")
+    return warnings
+
+
 def _proposal_context(job, request=None):
     items = _included_items(job)
     event_date = job.start_date.strftime("%d/%m/%Y") if job.start_date else "A combinar"
@@ -79,6 +96,7 @@ def _proposal_context(job, request=None):
         "planned_time": planned_time,
         "service_address": job.full_service_address or job.service_location_summary or "A combinar",
         "included_items": items,
+        "proposal_warnings": _proposal_warnings(job, items),
         "package_value": job.fixed_labor_value,
         "package_value_brl": _format_brl(job.fixed_labor_value),
         "public_url": public_url,
@@ -133,6 +151,9 @@ def service_event_proposal_detail(request, job_id):
             "Defina o serviço como Valor fixo e informe o valor fechado do pacote antes de gerar a proposta.",
         )
         return redirect("service_job_update", job_id=job.id)
+    if not job.preview_generated_at:
+        job.preview_generated_at = timezone.now()
+        job.save(update_fields=["preview_generated_at", "updated_at"])
     return render(request, "services/service_event_proposal.html", _proposal_context(job, request=request))
 
 
