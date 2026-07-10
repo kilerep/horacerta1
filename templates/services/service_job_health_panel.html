@@ -6,7 +6,7 @@
   <p class="sub">Conferência rápida para evitar serviço sem cliente, local, itens, execução ou relatório. Serve para qualquer tipo de prestação, não só evento.</p>
   <div class="service-timeline" aria-label="Linha do tempo do serviço">
     <div class="timeline-step {% if job.status == 'DRAFT' %}current{% else %}done{% endif %}">1. Rascunho</div>
-    <div class="timeline-step {% if job.status == 'PLANNED' or job.status == 'SENT' %}current{% elif job.status == 'IN_PROGRESS' or job.status == 'FINISHED' or job.status == 'REPORT_SENT' or job.status == 'ARCHIVED' %}done{% endif %}">2. Planejado</div>
+    <div class="timeline-step {% if job.status == 'PLANNED' or job.status == 'SCHEDULED' or job.status == 'SENT' %}current{% elif job.status == 'IN_PROGRESS' or job.status == 'FINISHED' or job.status == 'REPORT_SENT' or job.status == 'ARCHIVED' %}done{% endif %}">2. Planejado</div>
     <div class="timeline-step {% if job.status == 'IN_PROGRESS' %}current{% elif job.status == 'FINISHED' or job.status == 'REPORT_SENT' or job.status == 'ARCHIVED' %}done{% endif %}">3. Em execução</div>
     <div class="timeline-step {% if job.status == 'FINISHED' %}current{% elif job.status == 'REPORT_SENT' or job.status == 'ARCHIVED' %}done{% endif %}">4. Finalizado</div>
     <div class="timeline-step {% if job.status == 'REPORT_SENT' %}current done{% elif job.status == 'ARCHIVED' %}done{% endif %}">5. Relatório enviado</div>
