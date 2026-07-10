@@ -9,7 +9,9 @@ class ServicePlaybookTests(SimpleTestCase):
 
         self.assertEqual(playbook["document_title"], "Proposta técnica para evento")
         self.assertEqual(playbook["items_title"], "Composição técnica inclusa")
-        self.assertIn("montagem/operação/desmontagem", playbook["client_focus"])
+        self.assertIn("equipamentos inclusos", playbook["client_focus"])
+        self.assertIn("montagem", playbook["client_focus"])
+        self.assertIn("desmontagem", playbook["client_focus"])
         self.assertTrue(any("check-in opcional" in item for item in playbook["checklist"]))
 
     def test_assistance_playbook_uses_technical_order_language(self):
