@@ -38,7 +38,21 @@ jobs:
         run: python manage.py makemigrations --check --dry-run
 
       - name: Run test suite
-        run: python manage.py test
+        shell: bash
+        run: |
+          set -o pipefail
+          python manage.py test -v 2 2>&1 | tee test-output.log
+
+      - name: Preserve failed test diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: django-test-output-${{ github.run_id }}
+          path: |
+            test-output.log
+            services/tests.py
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Collect static files
         run: python manage.py collectstatic --noinput
