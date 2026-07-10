@@ -5,6 +5,7 @@ from django.core.management import BaseCommand, CommandError
 from django.db import transaction
 
 from services.models import ServiceCategory, ServiceItemCatalog, ServiceItemExpense, ServiceItemUnit
+from services.premium_service_categories import ensure_premium_service_categories
 
 
 CATALOG_TEMPLATES = {
@@ -92,7 +93,7 @@ class Command(BaseCommand):
             "--category",
             action="append",
             dest="categories",
-            help="Slug de categoria específica. Pode ser repetido. Se omitido, aplica todas as categorias premium.",
+            help="Slug específico. Pode ser repetido. Se omitido, aplica todas as categorias premium.",
         )
 
     def handle(self, *args, **options):
@@ -108,14 +109,11 @@ class Command(BaseCommand):
             raise CommandError("Prestador não encontrado para o e-mail informado.")
 
         selected_slugs = sorted(categories_filter or CATALOG_TEMPLATES.keys())
-        categories = {category.slug: category for category in ServiceCategory.objects.filter(slug__in=selected_slugs)}
-        missing = [slug for slug in selected_slugs if slug not in categories]
-        if missing:
-            raise CommandError("Categorias ainda não existem no banco. Rode as migrations antes: " + ", ".join(missing))
-
         created = 0
         skipped = 0
+
         with transaction.atomic():
+            categories, _, _ = ensure_premium_service_categories(ServiceCategory, selected_slugs)
             for slug in selected_slugs:
                 category = categories[slug]
                 for name, item_type, unit, default_quantity in CATALOG_TEMPLATES[slug]:
