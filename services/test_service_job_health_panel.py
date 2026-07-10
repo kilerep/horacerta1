@@ -1,3 +1,4 @@
+from datetime import time
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
@@ -81,8 +82,8 @@ class ServiceJobHealthPanelTests(TestCase):
             service_city="Blumenau",
             service_state="SC",
             start_date=timezone.localdate(),
-            planned_start_time="09:00",
-            planned_end_time="11:00",
+            planned_start_time=time(9, 0),
+            planned_end_time=time(11, 0),
             status=ServiceJob.Status.IN_PROGRESS,
         )
         ServiceItemExpense.objects.create(
@@ -97,8 +98,8 @@ class ServiceJobHealthPanelTests(TestCase):
         ServiceWorkLog.objects.create(
             service_job=job,
             work_date=timezone.localdate(),
-            start_time="09:00",
-            end_time="10:00",
+            start_time=time(9, 0),
+            end_time=time(10, 0),
             description="Execução inicial.",
         )
         self.client.force_login(self.professional)
