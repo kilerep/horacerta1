@@ -66,6 +66,12 @@
     </article>
 
     <article class="settings-item">
+      <h3>Segurança da conta</h3>
+      <p>Altere sua senha usando a senha atual como confirmação.</p>
+      <div><a class="btn" href="{% url 'password_change' %}">Alterar senha</a></div>
+    </article>
+
+    <article class="settings-item">
       <h3>Confiabilidade do registro</h3>
       <p>Cadastre locais autorizados e defina a política de validação de horários da empresa.</p>
       <div><a class="btn primary" href="{% url 'company_attendance_reliability' %}">Abrir configuração</a></div>
