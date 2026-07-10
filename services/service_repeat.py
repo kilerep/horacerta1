@@ -40,15 +40,18 @@ class RepeatServiceForm(forms.Form):
 
     def clean(self):
         cleaned = super().clean()
+        next_date = cleaned.get("next_date")
         start = cleaned.get("planned_start_time")
         end = cleaned.get("planned_end_time")
+        if next_date and next_date < timezone.localdate():
+            self.add_error("next_date", "A próxima visita não pode ser marcada em uma data passada.")
         if start and end and end <= start:
             self.add_error("planned_end_time", "O horário final precisa ser maior que o horário inicial.")
         return cleaned
 
 
 def _initial_date(job):
-    base = job.start_date or timezone.localdate()
+    base = max(job.start_date or timezone.localdate(), timezone.localdate())
     category_slug = job.category.slug if job.category_id else ""
     weekly_categories = {"limpeza-conservacao", "jardinagem-paisagismo", "beleza-bem-estar", "aulas-consultoria"}
     return base + timedelta(days=7 if category_slug in weekly_categories else 30)
