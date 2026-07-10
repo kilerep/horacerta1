@@ -71,6 +71,21 @@ class ServiceJobHealthPanelTests(TestCase):
         self.assertContains(response, "Registre períodos para comprovar execução")
         self.assertContains(response, "Previsto x realizado")
 
+    def test_legacy_scheduled_status_is_shown_as_current_planned_step(self):
+        job = ServiceJob.objects.create(
+            professional=self.professional,
+            contract=self.contract,
+            category=self.category,
+            title="Serviço agendado legado",
+            status=ServiceJob.Status.SCHEDULED,
+        )
+        self.client.force_login(self.professional)
+
+        response = self.client.get(reverse("service_job_detail", args=[job.id]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'timeline-step current">2. Planejado', html=False)
+
     def test_service_detail_shows_health_panel_for_complete_service(self):
         job = ServiceJob.objects.create(
             professional=self.professional,
