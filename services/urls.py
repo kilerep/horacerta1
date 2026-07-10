@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import event_proposal, views
+from . import event_proposal, service_calendar, views
 
 urlpatterns = [
     path("me/servicos/", views.service_job_list, name="service_job_list"),
@@ -22,6 +22,7 @@ urlpatterns = [
     path("me/servicos/catalogo/<uuid:item_id>/desativar/", views.service_item_catalog_deactivate, name="service_item_catalog_deactivate"),
     path("me/servicos/novo/", views.service_job_create, name="service_job_create"),
     path("me/servicos/<uuid:job_id>/", views.service_job_detail, name="service_job_detail"),
+    path("me/servicos/<uuid:job_id>/calendario.ics", service_calendar.service_job_calendar_ics, name="service_job_calendar_ics"),
     path("me/servicos/<uuid:job_id>/proposta-evento/", event_proposal.service_event_proposal_detail, name="service_event_proposal_detail"),
     path("me/servicos/<uuid:job_id>/proposta-evento/whatsapp/", event_proposal.service_event_proposal_whatsapp, name="service_event_proposal_whatsapp"),
     path("me/servicos/<uuid:job_id>/editar/", views.service_job_update, name="service_job_update"),
