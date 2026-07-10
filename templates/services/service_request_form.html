@@ -22,6 +22,14 @@
   .client-mode{display:flex;gap:10px;flex-wrap:wrap}
   .client-mode label{display:flex;align-items:center;gap:8px;border:1px solid var(--color-border);border-radius:8px;padding:10px 12px;background:var(--surface-soft);font-weight:800}
   .rq-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+  .catalog-suggest{position:relative}
+  .catalog-results{display:none;position:absolute;z-index:20;top:100%;left:0;right:0;border:1px solid var(--color-border);border-radius:8px;background:var(--surface-card);box-shadow:var(--shadow-soft);max-height:220px;overflow:auto}
+  .catalog-results.is-visible{display:grid}
+  .catalog-result{border:0;background:transparent;text-align:left;padding:9px 10px;cursor:pointer;color:var(--color-text)}
+  .catalog-result:hover,.catalog-result:focus{background:var(--surface-soft);outline:none}
+  .catalog-result strong{display:block}
+  .catalog-result span{display:block;color:var(--color-text-muted);font-size:12px;margin-top:2px}
+  .catalog-selection{margin:0;color:var(--color-text-muted);font-size:12px;line-height:1.4;min-height:18px}
   @media (max-width:760px){
     .request-form-head,.rq-grid,.rq-grid.three{grid-template-columns:1fr}
     .rq-field.full{grid-column:auto}
@@ -116,8 +124,16 @@
 
     <section class="rq-section">
       <h2>Itens rápidos</h2>
-      <p class="rq-hint">Opcional. Use quando já souber algum material para cotação inicial.</p>
+      <p class="rq-hint">Opcional. Pesquise pelo código interno ou nome para preencher um material da cotação inicial.</p>
       <div class="rq-grid">
+        <div class="rq-field full">
+          <label for="request-create-item-catalog-search">Buscar no catálogo</label>
+          <div class="catalog-suggest">
+            <input id="request-create-item-catalog-search" class="hc-input" type="search" autocomplete="off" placeholder="Código interno ou nome do item" data-request-create-catalog-search>
+            <div class="catalog-results" data-request-create-catalog-results></div>
+          </div>
+          <p class="catalog-selection" data-request-create-catalog-selection aria-live="polite">Digite um código interno ou nome para preencher o item rápido.</p>
+        </div>
         <div class="rq-field">
           <label for="{{ item_form.name.id_for_label }}">{{ item_form.name.label }}</label>
           {{ item_form.name }}
@@ -151,6 +167,7 @@
   (function(){
     var form = document.querySelector("[data-request-form]");
     if(!form) return;
+
     var registeredBlocks = Array.prototype.slice.call(form.querySelectorAll("[data-registered-client]"));
     var casualBlocks = Array.prototype.slice.call(form.querySelectorAll("[data-casual-client]"));
     var modeInputs = Array.prototype.slice.call(form.querySelectorAll('input[name="client_mode"]'));
@@ -165,6 +182,88 @@
     }
     modeInputs.forEach(function(input){ input.addEventListener("change", syncClientMode); });
     syncClientMode();
+
+    var searchUrl = "{% url 'service_item_catalog_search' %}";
+    var searchInput = form.querySelector("[data-request-create-catalog-search]");
+    var results = form.querySelector("[data-request-create-catalog-results]");
+    var selection = form.querySelector("[data-request-create-catalog-selection]");
+    var categoryField = document.getElementById("{{ form.category.id_for_label }}");
+    var nameField = document.getElementById("{{ item_form.name.id_for_label }}");
+    var quantityField = document.getElementById("{{ item_form.quantity.id_for_label }}");
+    var noteField = document.getElementById("{{ item_form.note.id_for_label }}");
+    var valueField = document.getElementById("{{ item_form.estimated_unit_value.id_for_label }}");
+    var searchTimer;
+
+    function clearResults(){
+      if(!results) return;
+      results.innerHTML = "";
+      results.classList.remove("is-visible");
+    }
+    function priceFor(item){
+      return item.estimated_unit_value || item.last_used_value || "";
+    }
+    function selectItem(item){
+      if(nameField) nameField.value = item.name || "";
+      if(quantityField) quantityField.value = item.default_quantity || "1";
+      if(valueField) valueField.value = priceFor(item);
+      if(noteField && !noteField.value) noteField.value = item.description || "";
+      if(searchInput) searchInput.value = item.internal_code ? item.internal_code + " — " + item.name : item.name;
+      if(selection){
+        var price = priceFor(item);
+        selection.textContent = "Item selecionado: " + (item.internal_code ? item.internal_code + " — " : "") + item.name + (price ? " | valor sugerido: R$ " + price.replace(".", ",") : " | sem valor sugerido.");
+      }
+      clearResults();
+    }
+    function showResults(items){
+      if(!results) return;
+      results.innerHTML = "";
+      if(!items.length){
+        results.classList.remove("is-visible");
+        if(selection) selection.textContent = "Nenhum item encontrado. Você pode preencher manualmente.";
+        return;
+      }
+      items.forEach(function(item){
+        var button = document.createElement("button");
+        button.type = "button";
+        button.className = "catalog-result";
+        var title = document.createElement("strong");
+        var detail = document.createElement("span");
+        title.textContent = (item.internal_code ? item.internal_code + " — " : "") + item.name;
+        var price = priceFor(item);
+        detail.textContent = item.item_type_label + " · " + item.unit_label + (price ? " · R$ " + price.replace(".", ",") : " · sem valor estimado");
+        button.appendChild(title);
+        button.appendChild(detail);
+        button.addEventListener("click", function(){ selectItem(item); });
+        results.appendChild(button);
+      });
+      results.classList.add("is-visible");
+      if(selection) selection.textContent = items.length + " item(ns) encontrado(s). Selecione um para preencher.";
+    }
+    function searchCatalog(){
+      if(!searchInput) return;
+      clearTimeout(searchTimer);
+      var query = searchInput.value.trim();
+      if(!query){
+        clearResults();
+        if(selection) selection.textContent = "Digite um código interno ou nome para preencher o item rápido.";
+        return;
+      }
+      searchTimer = setTimeout(function(){
+        var params = new URLSearchParams({q: query});
+        if(categoryField && categoryField.value) params.set("category", categoryField.value);
+        fetch(searchUrl + "?" + params.toString(), {headers:{"X-Requested-With":"XMLHttpRequest"}})
+          .then(function(response){ return response.ok ? response.json() : {items:[]}; })
+          .then(function(data){ showResults(data.items || []); })
+          .catch(function(){
+            clearResults();
+            if(selection) selection.textContent = "Não foi possível consultar o catálogo agora. Preencha o item manualmente.";
+          });
+      }, 180);
+    }
+    if(searchInput) searchInput.addEventListener("input", searchCatalog);
+    if(categoryField) categoryField.addEventListener("change", function(){
+      if(searchInput && searchInput.value.trim()) searchCatalog();
+    });
   })();
 </script>
 {% endblock %}
