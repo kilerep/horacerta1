@@ -69,6 +69,7 @@ class ServiceJobHealthPanelTests(TestCase):
         self.assertContains(response, "Serve para qualquer tipo de prestação")
         self.assertContains(response, "Adicione endereço, cidade ou referência")
         self.assertContains(response, "Registre períodos para comprovar execução")
+        self.assertContains(response, "Previsto x realizado")
 
     def test_service_detail_shows_health_panel_for_complete_service(self):
         job = ServiceJob.objects.create(
@@ -85,6 +86,8 @@ class ServiceJobHealthPanelTests(TestCase):
             planned_start_time=time(9, 0),
             planned_end_time=time(11, 0),
             status=ServiceJob.Status.IN_PROGRESS,
+            billing_mode=ServiceJob.BillingMode.HOURLY,
+            hourly_rate_snapshot=Decimal("90.00"),
         )
         ServiceItemExpense.objects.create(
             service_job=job,
@@ -111,3 +114,11 @@ class ServiceJobHealthPanelTests(TestCase):
         self.assertContains(response, "Endereço/local informado")
         self.assertContains(response, "Descrição do combinado registrada")
         self.assertContains(response, "Períodos de trabalho registrados")
+        self.assertContains(response, "Horas previstas")
+        self.assertContains(response, "Horas realizadas")
+        self.assertContains(response, "Total estimado")
+        self.assertContains(response, "Total atual/final")
+        self.assertContains(response, "02:00")
+        self.assertContains(response, "01:00")
+        self.assertContains(response, "R$ 205,00")
+        self.assertContains(response, "R$ 115,00")
