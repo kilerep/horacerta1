@@ -155,6 +155,21 @@ class ServiceRepeatTests(TestCase):
         self.assertEqual(repeated.notes, "")
         self.assertFalse(repeated.item_expenses.exists())
 
+    def test_repeat_rejects_past_date(self):
+        response = self.client.post(
+            reverse("service_job_repeat", args=[self.source.id]),
+            {
+                "title": "Visita antiga",
+                "next_date": (timezone.localdate() - timedelta(days=1)).isoformat(),
+                "planned_start_time": "09:00",
+                "planned_end_time": "11:00",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "A próxima visita não pode ser marcada em uma data passada.")
+        self.assertFalse(ServiceJob.objects.filter(title="Visita antiga").exists())
+
     def test_other_professional_cannot_repeat_service(self):
         other = User.objects.create_user(
             username="outro-recorrente@example.test",
