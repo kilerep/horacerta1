@@ -81,6 +81,36 @@ class EventProposalTests(TestCase):
             usage_status=ServiceItemExpense.UsageStatus.PLANNED,
         )
 
+    def test_services_page_links_to_event_proposals(self):
+        self.client.force_login(self.professional)
+
+        response = self.client.get(reverse("service_job_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Propostas de evento")
+        self.assertContains(response, reverse("service_event_proposal_list"))
+
+    def test_event_proposal_list_renders_fixed_packages(self):
+        ServiceJob.objects.create(
+            professional=self.professional,
+            contract=self.contract,
+            category=self.category,
+            title="Serviço por hora fora da central",
+            billing_mode=ServiceJob.BillingMode.HOURLY,
+            hourly_rate_snapshot=Decimal("100.00"),
+            status=ServiceJob.Status.PLANNED,
+        )
+        self.client.force_login(self.professional)
+
+        response = self.client.get(reverse("service_event_proposal_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Som para aniversário")
+        self.assertContains(response, "R$ 1.450,00")
+        self.assertContains(response, "Cliente Evento")
+        self.assertContains(response, "Revisar proposta")
+        self.assertNotContains(response, "Serviço por hora fora da central")
+
     def test_event_proposal_review_generates_public_sheet_and_hides_item_prices(self):
         self.client.force_login(self.professional)
 
@@ -130,3 +160,18 @@ class EventProposalTests(TestCase):
         response = self.client.get(reverse("service_event_proposal_detail", args=[self.job.id]))
 
         self.assertEqual(response.status_code, 404)
+
+    def test_other_professional_does_not_see_fixed_package_in_list(self):
+        other = User.objects.create_user(
+            username="outro-lista@example.test",
+            email="outro-lista@example.test",
+            password="Teste@12345",
+            role=User.Role.FUNCIONARIO,
+        )
+        self.client.force_login(other)
+
+        response = self.client.get(reverse("service_event_proposal_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Som para aniversário")
+        self.assertContains(response, "Nenhum serviço com valor fixo")
