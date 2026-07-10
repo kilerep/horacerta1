@@ -1,0 +1,62 @@
+<section class="card section" aria-labelledby="service-health-title">
+  <style>
+    .service-health-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.health-item{display:grid;gap:4px;border:1px solid var(--color-border);border-radius:8px;background:var(--surface-soft);padding:10px}.health-item strong{font-size:14px}.health-item span{color:var(--color-text-muted);font-size:12px;line-height:1.35}.health-item.ok{border-color:rgba(34,197,94,.38);background:rgba(34,197,94,.08)}.health-item.warn{border-color:rgba(245,158,11,.42);background:rgba(245,158,11,.1)}.health-mark{display:inline-flex;align-items:center;gap:6px}.health-mark::before{content:"•";font-weight:900}.health-item.ok .health-mark::before{content:"✓"}.health-item.warn .health-mark::before{content:"!"}.service-timeline{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}.timeline-step{border:1px solid var(--color-border);border-radius:999px;padding:8px 10px;text-align:center;font-size:12px;font-weight:900;color:var(--color-text-muted);background:var(--surface-soft)}.timeline-step.done{border-color:rgba(34,197,94,.45);background:rgba(34,197,94,.1);color:var(--color-text)}.timeline-step.current{border-color:var(--color-primary);background:var(--color-primary-soft);color:var(--color-text)}.calendar-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:4px}.calendar-action{display:inline-flex;align-items:center;justify-content:center;width:max-content;border:1px solid var(--color-border);border-radius:8px;padding:7px 10px;background:var(--surface);color:var(--color-text);font-size:12px;font-weight:900;text-decoration:none}.calendar-action:hover{border-color:var(--color-primary);background:var(--color-primary-soft)}.variance-panel{display:grid;gap:9px;margin-top:4px;border-top:1px solid var(--color-border);padding-top:12px}.variance-panel h3{margin:0;font-size:15px}.variance-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.variance-metric{border:1px solid var(--color-border);border-radius:8px;background:var(--surface-soft);padding:10px}.variance-metric span{display:block;color:var(--color-text-muted);font-size:12px}.variance-metric strong{display:block;margin-top:4px;font-size:16px;overflow-wrap:anywhere}@media(max-width:760px){.service-health-grid,.variance-grid{grid-template-columns:1fr}.service-timeline{grid-template-columns:1fr}.timeline-step{text-align:left;border-radius:8px}.calendar-actions{display:grid}.calendar-action{width:100%}}
+  </style>
+  <h2 id="service-health-title">Checklist do serviço</h2>
+  <p class="sub">Conferência rápida para evitar serviço sem cliente, local, itens, execução ou relatório. Serve para qualquer tipo de prestação, não só evento.</p>
+  <div class="service-timeline" aria-label="Linha do tempo do serviço">
+    <div class="timeline-step {% if job.status == 'DRAFT' %}current{% else %}done{% endif %}">1. Rascunho</div>
+    <div class="timeline-step {% if job.status == 'PLANNED' or job.status == 'SENT' %}current{% elif job.status == 'IN_PROGRESS' or job.status == 'FINISHED' or job.status == 'REPORT_SENT' or job.status == 'ARCHIVED' %}done{% endif %}">2. Planejado</div>
+    <div class="timeline-step {% if job.status == 'IN_PROGRESS' %}current{% elif job.status == 'FINISHED' or job.status == 'REPORT_SENT' or job.status == 'ARCHIVED' %}done{% endif %}">3. Em execução</div>
+    <div class="timeline-step {% if job.status == 'FINISHED' %}current{% elif job.status == 'REPORT_SENT' or job.status == 'ARCHIVED' %}done{% endif %}">4. Finalizado</div>
+    <div class="timeline-step {% if job.status == 'REPORT_SENT' %}current done{% elif job.status == 'ARCHIVED' %}done{% endif %}">5. Relatório enviado</div>
+  </div>
+  <div class="service-health-grid">
+    <div class="health-item {% if job.client_id or job.manual_client_name %}ok{% else %}warn{% endif %}">
+      <strong class="health-mark">Cliente</strong>
+      <span>{% if job.client_id %}Vinculado em Meus clientes.{% elif job.manual_client_name %}Cliente avulso informado. Depois você pode salvar em Meus clientes.{% else %}Informe ou selecione um cliente antes de avançar.{% endif %}</span>
+    </div>
+    <div class="health-item {% if job.full_service_address or job.service_location_summary %}ok{% else %}warn{% endif %}">
+      <strong class="health-mark">Local</strong>
+      <span>{% if job.full_service_address or job.service_location_summary %}Endereço/local informado para orientar atendimento e relatório.{% else %}Adicione endereço, cidade ou referência do atendimento.{% endif %}</span>
+    </div>
+    <div class="health-item {% if job.start_date and job.planned_start_time %}ok{% else %}warn{% endif %}">
+      <strong class="health-mark">Data, agenda e recorrência</strong>
+      <span>{% if job.start_date and job.planned_start_time %}Previsão registrada: {{ job.start_date|date:"d/m/Y" }} às {{ job.planned_start_time|time:"H:i" }}.{% elif job.start_date %}Data informada; horário ainda pode ser completado.{% else %}Defina a previsão para organizar agenda e combinado com o cliente.{% endif %}</span>
+      <div class="calendar-actions">
+        {% if job.start_date %}<a class="calendar-action" href="{% url 'service_job_calendar_ics' job.id %}">Adicionar ao calendário</a>{% endif %}
+        <a class="calendar-action" href="{% url 'service_job_repeat' job.id %}">Criar próxima visita</a>
+      </div>
+    </div>
+    <div class="health-item {% if job.description %}ok{% else %}warn{% endif %}">
+      <strong class="health-mark">Escopo</strong>
+      <span>{% if job.description %}Descrição do combinado registrada.{% else %}Descreva o que será feito para reduzir retrabalho e mal-entendido.{% endif %}</span>
+    </div>
+    <div class="health-item {% if pending_items or used_items or not_used_items %}ok{% else %}warn{% endif %}">
+      <strong class="health-mark">Itens e despesas</strong>
+      <span>{% if pending_items or used_items or not_used_items %}Há itens/despesas registrados para este serviço.{% else %}Adicione materiais, peças, equipamentos ou despesas quando fizer sentido.{% endif %}</span>
+    </div>
+    <div class="health-item {% if preview_generated_at or job.billing_mode == 'FIXED' %}ok{% else %}warn{% endif %}">
+      <strong class="health-mark">Prévia / valor</strong>
+      <span>{% if preview_generated_at %}Prévia já gerada para compartilhar com o cliente.{% elif job.billing_mode == 'FIXED' %}Serviço com valor fixo definido; revise antes de enviar proposta ou relatório.{% else %}Gere uma prévia quando precisar alinhar valores antes da execução.{% endif %}</span>
+    </div>
+    <div class="health-item {% if has_work_logs %}ok{% else %}warn{% endif %}">
+      <strong class="health-mark">Execução</strong>
+      <span>{% if open_work_log %}Existe um período aberto em andamento.{% elif has_work_logs %}Períodos de trabalho registrados.{% else %}Registre períodos para comprovar execução e montar relatório final.{% endif %}</span>
+    </div>
+    <div class="health-item {% if is_report_sent %}ok{% elif is_finished %}warn{% else %}warn{% endif %}">
+      <strong class="health-mark">Relatório final</strong>
+      <span>{% if is_report_sent %}Relatório final gerado e pronto para consulta do cliente.{% elif is_finished %}Serviço finalizado; falta gerar o relatório final.{% else %}Finalize a execução para liberar o relatório final.{% endif %}</span>
+    </div>
+  </div>
+  <div class="variance-panel" aria-labelledby="service-variance-title">
+    <h3 id="service-variance-title">Previsto x realizado</h3>
+    <p class="sub">Comparação rápida para o prestador perceber desvios de tempo e valor antes de repetir o serviço ou fechar o relatório.</p>
+    <div class="variance-grid">
+      <div class="variance-metric"><span>Horas previstas</span><strong>{{ job.planned_duration_label }}</strong></div>
+      <div class="variance-metric"><span>Horas realizadas</span><strong>{{ summary.total_hours }}</strong></div>
+      <div class="variance-metric"><span>Total estimado</span><strong>{{ summary.preview_estimated_total_brl }}</strong></div>
+      <div class="variance-metric"><span>Total atual/final</span><strong>{{ summary.estimated_total_brl }}</strong></div>
+    </div>
+  </div>
+</section>
