@@ -82,7 +82,9 @@ class OrganizationMemberInviteForm(forms.Form):
         if self.organization and OrganizationMember.objects.filter(
             organization=self.organization,
             user=user,
-        ).exclude(status=OrganizationMember.Status.REMOVED).exists():
-            raise forms.ValidationError("Esta pessoa já possui vínculo com a empresa.")
+        ).exists():
+            raise forms.ValidationError(
+                "Esta pessoa já possui histórico na empresa. Reative o vínculo existente em vez de criar outro convite."
+            )
         self.user_to_invite = user
         return email
