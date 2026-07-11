@@ -19,7 +19,7 @@ class HiringOrganization(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=140)
     legal_name = models.CharField(max_length=180, blank=True, default="")
-    cnpj = models.CharField(max_length=14, blank=True, default="")
+    cnpj = models.CharField(max_length=18, blank=True, default="")
     email = models.EmailField(blank=True, null=True)
     whatsapp = models.CharField(max_length=30, blank=True, default="")
     phone = models.CharField(max_length=30, blank=True, default="")
@@ -64,6 +64,7 @@ class HiringOrganization(models.Model):
             raise ValidationError(errors)
 
     def save(self, *args, **kwargs):
+        self.cnpj = normalize_cnpj(self.cnpj)
         self.full_clean()
         return super().save(*args, **kwargs)
 
