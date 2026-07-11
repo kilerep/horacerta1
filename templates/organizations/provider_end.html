@@ -1,0 +1,30 @@
+{% extends "organizations/base.html" %}
+
+{% block title %}Encerrar vínculo · {{ organization.name }}{% endblock %}
+{% block page_title %}Encerrar vínculo{% endblock %}
+
+{% block organization_content %}
+<header class="org-head">
+  <div>
+    <h1>Encerrar vínculo</h1>
+    <p>O compartilhamento será interrompido, mas o histórico da relação será preservado.</p>
+  </div>
+</header>
+
+<section class="org-card">
+  <h2>{{ link.provider.get_full_name|default:link.provider.email }}</h2>
+  <p class="sub">{{ link.provider.email }}</p>
+  <form class="org-form" method="post">
+    {% csrf_token %}
+    <div class="org-field">
+      <label for="{{ form.reason.id_for_label }}">{{ form.reason.label }}</label>
+      {{ form.reason }}
+      {% if form.reason.errors %}<div class="org-errors">{{ form.reason.errors }}</div>{% endif %}
+    </div>
+    <div class="org-actions">
+      <a class="btn" href="{% url 'organization_providers' organization.id %}">Cancelar</a>
+      <button class="btn primary" type="submit">Confirmar encerramento</button>
+    </div>
+  </form>
+</section>
+{% endblock %}
