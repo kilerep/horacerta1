@@ -1,11 +1,11 @@
-from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.db import models
 
 
 class User(AbstractUser):
     class Role(models.TextChoices):
-        EMPRESA = "EMPRESA", "Empresa (RH/Admin)"
-        FUNCIONARIO = "FUNCIONARIO", "Funcionário (MEI)"
+        EMPRESA = "EMPRESA", "Empresa contratante"
+        FUNCIONARIO = "FUNCIONARIO", "Prestador de serviço"
 
     class VisualTheme(models.TextChoices):
         GRAPHITE = "graphite-premium", "Grafite Premium"
@@ -19,7 +19,7 @@ class User(AbstractUser):
         default=Role.FUNCIONARIO,
     )
 
-    email = models.EmailField(unique=True)  # <- importante
+    email = models.EmailField(unique=True)
     visual_theme = models.CharField(
         max_length=40,
         choices=VisualTheme.choices,
@@ -31,11 +31,11 @@ class User(AbstractUser):
         Resolve um perfil Employee para compatibilidade legada.
 
         Prioridade:
-        1) Contract operacional selecionado (quando contract_id informado)
-        2) Contract operacional mais recente do usuário
-        3) Contract mais recente do usuário
-        4) Employee ativo mais recente
-        5) Employee mais recente
+        1) Contrato operacional selecionado, quando contract_id for informado;
+        2) Contrato operacional mais recente do usuário;
+        3) Contrato mais recente do usuário;
+        4) Perfil Employee ativo mais recente;
+        5) Perfil Employee mais recente.
         """
         from companies.models import Employee
         from timeclock.models import Contract
@@ -78,4 +78,4 @@ class User(AbstractUser):
         return self.resolve_employee_profile()
 
     def __str__(self):
-        return f"{self.username} ({self.role})"
+        return f"{self.username} ({self.get_role_display()})"
