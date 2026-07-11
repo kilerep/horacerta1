@@ -1,0 +1,35 @@
+{% extends "organizations/base.html" %}
+
+{% block title %}Convites de empresas{% endblock %}
+{% block page_title %}Convites de empresas{% endblock %}
+
+{% block organization_content %}
+<header class="org-head">
+  <div>
+    <h1>Convites recebidos</h1>
+    <p>Confira a empresa, o papel oferecido e aceite somente os convites que você reconhece.</p>
+  </div>
+</header>
+
+{% if invites %}
+  {% for invite in invites %}
+    <section class="org-card">
+      <div>
+        <h2>{{ invite.organization.name }}</h2>
+        <p class="sub">Papel: {{ invite.get_role_display }} · Convite registrado em {{ invite.invited_at|date:"d/m/Y H:i" }}</p>
+      </div>
+      <form method="post" action="{% url 'organization_invite_accept' invite.id %}">
+        {% csrf_token %}
+        <div class="org-actions">
+          <button class="btn primary" type="submit">Aceitar convite</button>
+        </div>
+      </form>
+    </section>
+  {% endfor %}
+{% else %}
+  <section class="org-empty">
+    Nenhum convite está aguardando sua resposta. Você também pode criar uma empresa contratante para iniciar seu próprio ambiente.
+  </section>
+  <div class="org-actions"><a class="btn primary" href="{% url 'organization_setup' %}">Cadastrar empresa</a></div>
+{% endif %}
+{% endblock %}
