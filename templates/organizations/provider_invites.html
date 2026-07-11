@@ -1,0 +1,44 @@
+{% extends "organizations/base.html" %}
+
+{% block title %}Empresas vinculadas{% endblock %}
+{% block page_title %}Empresas vinculadas{% endblock %}
+
+{% block organization_content %}
+<header class="org-head">
+  <div>
+    <h1>Convites de empresas</h1>
+    <p>Revise o que será compartilhado antes de aceitar um vínculo.</p>
+  </div>
+</header>
+
+{% if invites %}
+  {% for link in invites %}
+    <section class="org-card">
+      <div><h2>{{ link.organization.name }}</h2><p class="sub">Convite enviado em {{ link.created_at|date:"d/m/Y H:i" }}</p></div>
+      <div class="org-grid">
+        <div class="org-metric"><span>Serviços</span><strong>{% if link.share_services %}Sim{% else %}Não{% endif %}</strong></div>
+        <div class="org-metric"><span>Horas</span><strong>{% if link.share_hours %}Sim{% else %}Não{% endif %}</strong></div>
+        <div class="org-metric"><span>Relatórios</span><strong>{% if link.share_reports %}Sim{% else %}Não{% endif %}</strong></div>
+        <div class="org-metric"><span>Valores</span><strong>{% if link.share_financial_values %}Sim{% else %}Não{% endif %}</strong></div>
+      </div>
+      <div class="org-actions">
+        <form method="post" action="{% url 'provider_link_decline' link.id %}">{% csrf_token %}<button class="btn" type="submit">Recusar</button></form>
+        <form method="post" action="{% url 'provider_link_accept' link.id %}">{% csrf_token %}<button class="btn primary" type="submit">Aceitar vínculo</button></form>
+      </div>
+    </section>
+  {% endfor %}
+{% else %}
+  <section class="org-empty">Nenhum convite de empresa está aguardando sua resposta.</section>
+{% endif %}
+
+<section class="org-card">
+  <h2>Vínculos ativos</h2>
+  {% if active_links %}
+    {% for link in active_links %}
+      <div class="org-event"><strong>{{ link.organization.name }}</strong><span>Ativo desde {{ link.started_at|date:"d/m/Y H:i" }}</span></div>
+    {% endfor %}
+  {% else %}
+    <div class="org-empty">Você ainda não possui vínculo empresarial ativo.</div>
+  {% endif %}
+</section>
+{% endblock %}

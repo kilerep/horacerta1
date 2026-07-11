@@ -2,7 +2,7 @@ from django import forms
 
 from accounts.models import User
 
-from .models import HiringOrganization, OrganizationMember
+from .models import HiringOrganization, OrganizationMember, ProviderOrganizationLink
 
 
 class HiringOrganizationSetupForm(forms.ModelForm):
@@ -31,12 +31,8 @@ class HiringOrganizationSetupForm(forms.ModelForm):
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.user = user
-        self.fields["legal_name"].required = False
-        self.fields["cnpj"].required = False
-        self.fields["email"].required = False
-        self.fields["whatsapp"].required = False
-        self.fields["phone"].required = False
-        self.fields["address"].required = False
+        for name in ("legal_name", "cnpj", "email", "whatsapp", "phone", "address"):
+            self.fields[name].required = False
         for field in self.fields.values():
             field.widget.attrs.setdefault("class", "hc-input")
 
@@ -52,11 +48,7 @@ class OrganizationMemberInviteForm(forms.Form):
     email = forms.EmailField(
         label="E-mail do usuário",
         widget=forms.EmailInput(
-            attrs={
-                "class": "hc-input",
-                "placeholder": "pessoa@empresa.com.br",
-                "autocomplete": "email",
-            }
+            attrs={"class": "hc-input", "placeholder": "pessoa@empresa.com.br", "autocomplete": "email"}
         ),
     )
     role = forms.ChoiceField(
@@ -88,3 +80,70 @@ class OrganizationMemberInviteForm(forms.Form):
             )
         self.user_to_invite = user
         return email
+
+
+class ProviderLinkInviteForm(forms.Form):
+    email = forms.EmailField(
+        label="E-mail do prestador",
+        widget=forms.EmailInput(
+            attrs={"class": "hc-input", "placeholder": "prestador@email.com", "autocomplete": "email"}
+        ),
+    )
+    share_services = forms.BooleanField(required=False, initial=True, label="Compartilhar serviços")
+    share_hours = forms.BooleanField(required=False, initial=True, label="Compartilhar horas")
+    share_reports = forms.BooleanField(required=False, initial=True, label="Compartilhar relatórios")
+    share_financial_values = forms.BooleanField(
+        required=False,
+        initial=False,
+        label="Compartilhar valores financeiros",
+        help_text="Permissão sensível. Mantenha desativada quando a empresa não precisar conferir valores.",
+    )
+
+    def __init__(self, *args, organization=None, allow_financial=False, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.organization = organization
+        self.allow_financial = allow_financial
+        self.provider = None
+        for field in self.fields.values():
+            field.widget.attrs.setdefault("class", "hc-input")
+        if not allow_financial:
+            self.fields["share_financial_values"].disabled = True
+
+    def clean_email(self):
+        email = (self.cleaned_data.get("email") or "").strip().lower()
+        provider = User.objects.filter(email__iexact=email).first()
+        if provider is None:
+            raise forms.ValidationError(
+                "Ainda não existe uma conta com este e-mail. O prestador precisa criar a conta antes do convite."
+            )
+        if provider.role != User.Role.FUNCIONARIO:
+            raise forms.ValidationError("Selecione uma conta do perfil Prestador de serviço.")
+        if self.organization and ProviderOrganizationLink.objects.filter(
+            organization=self.organization,
+            provider=provider,
+        ).exists():
+            raise forms.ValidationError(
+                "Este prestador já possui histórico com a empresa. Atualize o vínculo existente em vez de criar outro."
+            )
+        self.provider = provider
+        return email
+
+    def clean_share_financial_values(self):
+        return bool(self.cleaned_data.get("share_financial_values")) if self.allow_financial else False
+
+
+class ProviderLinkEndForm(forms.Form):
+    reason = forms.CharField(
+        label="Motivo do encerramento",
+        min_length=5,
+        widget=forms.Textarea(
+            attrs={
+                "class": "hc-input",
+                "rows": 3,
+                "placeholder": "Explique por que o vínculo será encerrado. O histórico será preservado.",
+            }
+        ),
+    )
+
+    def clean_reason(self):
+        return (self.cleaned_data.get("reason") or "").strip()
