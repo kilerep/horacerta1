@@ -1,0 +1,39 @@
+{% extends "organizations/base.html" %}
+
+{% block title %}Convidar prestador · {{ organization.name }}{% endblock %}
+{% block page_title %}Convidar prestador{% endblock %}
+
+{% block organization_content %}
+<header class="org-head">
+  <div>
+    <h1>Convidar prestador</h1>
+    <p>Escolha quais informações poderão ser compartilhadas após o aceite.</p>
+  </div>
+  <nav class="org-nav"><a href="{% url 'organization_providers' organization.id %}">Voltar aos prestadores</a></nav>
+</header>
+
+<section class="org-card">
+  <form class="org-form" method="post">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="alert danger">{{ form.non_field_errors }}</div>{% endif %}
+    {% for field in form %}
+      <div class="org-field">
+        {% if field.field.widget.input_type == 'checkbox' %}
+          <label>{{ field }} {{ field.label }}</label>
+        {% else %}
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}
+        {% endif %}
+        {% if field.help_text %}<div class="sub">{{ field.help_text }}</div>{% endif %}
+        {% if field.errors %}<div class="org-errors">{{ field.errors }}</div>{% endif %}
+      </div>
+    {% endfor %}
+    <div class="org-empty">
+      O convite não libera acesso imediatamente. O prestador precisa aceitar o vínculo. Informações de outros clientes permanecem privadas.
+    </div>
+    <div class="org-actions">
+      <a class="btn" href="{% url 'organization_providers' organization.id %}">Cancelar</a>
+      <button class="btn primary" type="submit">Enviar convite</button>
+    </div>
+  </form>
+</section>
+{% endblock %}
