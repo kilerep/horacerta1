@@ -35,13 +35,13 @@ class ProfessionalLanguageTests(SimpleTestCase):
         self.assertEqual(fields["urgency"].label, "Prioridade")
         self.assertEqual(fields["source"].label, "Origem do pedido")
 
-    def test_critical_copy_files_do_not_contain_mojibake(self):
+    def test_critical_interface_files_do_not_contain_mojibake(self):
         paths = [
             Path(settings.BASE_DIR) / "accounts" / "models.py",
             Path(settings.BASE_DIR) / "services" / "forms.py",
+            Path(settings.BASE_DIR) / "services" / "professional_language.py",
             Path(settings.BASE_DIR) / "templates" / "500.html",
             Path(settings.BASE_DIR) / "templates" / "public" / "landing.html",
-            Path(settings.BASE_DIR) / "docs" / "HORACERTA_GLOSSARIO_E_TOM_DE_VOZ.md",
         ]
 
         for path in paths:
