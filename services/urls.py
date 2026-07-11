@@ -1,9 +1,15 @@
 from django.urls import path
 
-from . import event_proposal, service_calendar, service_repeat, views
+from . import event_proposal, service_calendar, service_repeat, service_templates, views
 
 urlpatterns = [
     path("me/servicos/", views.service_job_list, name="service_job_list"),
+    path("me/servicos/modelos/", service_templates.service_template_library, name="service_template_library"),
+    path(
+        "me/servicos/modelos/<slug:template_slug>/usar/",
+        service_templates.service_job_create_from_template,
+        name="service_job_create_from_template",
+    ),
     path("me/servicos/propostas-evento/", event_proposal.service_event_proposal_list, name="service_event_proposal_list"),
     path("me/servicos/pedidos/", views.service_request_list, name="service_request_list"),
     path("me/servicos/pedidos/novo/", views.service_request_create, name="service_request_create"),
