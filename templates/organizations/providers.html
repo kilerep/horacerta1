@@ -1,0 +1,48 @@
+{% extends "organizations/base.html" %}
+
+{% block title %}Prestadores · {{ organization.name }}{% endblock %}
+{% block page_title %}Prestadores vinculados{% endblock %}
+
+{% block organization_content %}
+<header class="org-head">
+  <div>
+    <h1>Prestadores vinculados</h1>
+    <p>Gerencie convites, permissões de compartilhamento e o estado de cada vínculo.</p>
+  </div>
+  <nav class="org-nav">
+    <a href="{% url 'organization_dashboard' organization.id %}">Voltar ao painel</a>
+    {% if membership.can_manage_services %}<a href="{% url 'organization_provider_invite' organization.id %}">Convidar prestador</a>{% endif %}
+  </nav>
+</header>
+
+{% if links %}
+  {% for link in links %}
+    <section class="org-card">
+      <div>
+        <h2>{{ link.provider.get_full_name|default:link.provider.email }}</h2>
+        <p class="sub">{{ link.provider.email }} · {{ link.get_status_display }}</p>
+      </div>
+      <div class="org-grid">
+        <div class="org-metric"><span>Serviços</span><strong>{% if link.share_services %}Sim{% else %}Não{% endif %}</strong></div>
+        <div class="org-metric"><span>Horas</span><strong>{% if link.share_hours %}Sim{% else %}Não{% endif %}</strong></div>
+        <div class="org-metric"><span>Relatórios</span><strong>{% if link.share_reports %}Sim{% else %}Não{% endif %}</strong></div>
+        <div class="org-metric"><span>Valores</span><strong>{% if link.share_financial_values %}Sim{% else %}Não{% endif %}</strong></div>
+      </div>
+      {% if membership.can_manage_members %}
+        <div class="org-actions">
+          {% if link.status == 'ACTIVE' %}
+            <form method="post" action="{% url 'organization_provider_suspend' organization.id link.id %}">{% csrf_token %}<button class="btn" type="submit">Suspender</button></form>
+            <a class="btn" href="{% url 'organization_provider_end' organization.id link.id %}">Encerrar vínculo</a>
+          {% elif link.status == 'SUSPENDED' %}
+            <form method="post" action="{% url 'organization_provider_resume' organization.id link.id %}">{% csrf_token %}<button class="btn primary" type="submit">Reativar</button></form>
+            <a class="btn" href="{% url 'organization_provider_end' organization.id link.id %}">Encerrar vínculo</a>
+          {% endif %}
+        </div>
+      {% endif %}
+      {% if link.status == 'ENDED' and link.end_reason %}<div class="org-empty"><strong>Motivo do encerramento:</strong> {{ link.end_reason }}</div>{% endif %}
+    </section>
+  {% endfor %}
+{% else %}
+  <section class="org-empty">Nenhum prestador foi vinculado. Convide um prestador para iniciar a relação de trabalho no portal.</section>
+{% endif %}
+{% endblock %}
