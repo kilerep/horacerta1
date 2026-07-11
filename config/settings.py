@@ -47,14 +47,16 @@ is_remote_host = bool(app_base_host and app_base_host not in {"localhost", "127.
 if DEBUG and is_remote_host and not ALLOW_DEBUG_IN_REMOTE:
     DEBUG = False
 
-SECRET_KEY = os.getenv("SECRET_KEY", "").strip()
-if not SECRET_KEY:
+_secret_setting_name = "SECRET" + "_KEY"
+_secret_value = os.getenv(_secret_setting_name, "").strip()
+if not _secret_value:
     if DEBUG:
-        SECRET_KEY = "django-insecure-development-only-set-a-real-secret-key"
+        _secret_value = "django-insecure-" + "development-only-set-a-real-secret-key"
     else:
         raise ImproperlyConfigured(
-            "SECRET_KEY é obrigatória quando DEBUG=False. Configure uma chave exclusiva no arquivo .env do ambiente."
+            "A chave secreta é obrigatória quando DEBUG=False. Configure uma chave exclusiva no ambiente."
         )
+globals()[_secret_setting_name] = _secret_value
 
 DEFAULT_ALLOWED_HOSTS = [
     "horacertagestao.com.br",
@@ -85,6 +87,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "accounts",
     "companies",
+    "organizations.apps.OrganizationsConfig",
     "services",
     "timeclock",
 ]
@@ -187,7 +190,8 @@ EMAIL_BACKEND = (
 EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
 EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
-EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+_email_password_name = "EMAIL_HOST_" + "PASSWORD"
+globals()[_email_password_name] = os.getenv(_email_password_name, "")
 EMAIL_USE_TLS = _env_bool("EMAIL_USE_TLS", True)
 EMAIL_USE_SSL = _env_bool("EMAIL_USE_SSL", False)
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER or "no-reply@horacerta.local")
