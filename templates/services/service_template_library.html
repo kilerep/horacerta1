@@ -45,7 +45,7 @@
           <div class="template-meta">
             <span class="template-badge">{{ item.group }}</span>
             <span class="template-badge">{{ item.category_label }}</span>
-            <span class="template-badge">{{ item.get_billing_mode_display|default:item.billing_mode }}</span>
+            <span class="template-badge">{% if item.billing_mode == 'FIXED' %}Valor fixo{% elif item.billing_mode == 'HOURLY' %}Por hora{% else %}A definir{% endif %}</span>
           </div>
         </div>
         <p class="template-summary">{{ item.summary }}</p>
