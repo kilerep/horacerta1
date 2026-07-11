@@ -7,10 +7,12 @@
 <header class="org-head">
   <div>
     <h1>{{ organization.name }}</h1>
-    <p>Painel inicial da empresa contratante. Convide sua equipe e prepare os vínculos com prestadores.</p>
+    <p>Painel inicial da empresa contratante. Organize sua equipe e os vínculos com prestadores.</p>
   </div>
   <nav class="org-nav" aria-label="Navegação da empresa">
+    <a href="{% url 'organization_providers' organization.id %}">Prestadores</a>
     <a href="{% url 'organization_members' organization.id %}">Membros</a>
+    {% if membership.can_manage_services %}<a href="{% url 'organization_provider_invite' organization.id %}">Convidar prestador</a>{% endif %}
     {% if membership.can_manage_members %}<a href="{% url 'organization_member_invite' organization.id %}">Convidar membro</a>{% endif %}
   </nav>
 </header>
@@ -28,9 +30,9 @@
     <strong>1. Organize sua equipe.</strong><br>
     Convide as pessoas que acompanharão pedidos, serviços, horas ou relatórios.<br><br>
     <strong>2. Vincule prestadores.</strong><br>
-    O vínculo com prestadores será liberado na próxima etapa, com permissões claras para cada tipo de informação.<br><br>
-    <strong>3. Compartilhe apenas o necessário.</strong><br>
-    Serviços, horas, relatórios e valores serão controlados separadamente.
+    Envie o convite e escolha quais informações poderão ser compartilhadas após o aceite.<br><br>
+    <strong>3. Acompanhe as permissões.</strong><br>
+    Serviços, horas, relatórios e valores são autorizados separadamente.
   </div>
 </section>
 
