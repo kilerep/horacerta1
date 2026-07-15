@@ -33,9 +33,9 @@ class ReleaseReadinessCommandTests(TestCase):
         self.assertIn("css/public_landing_new.css", content)
         self.assertIn("Release não está pronta para publicação.", content)
 
-    @patch("accounts.management.commands.check_release_readiness.MigrationAutodetector.changes")
-    def test_command_blocks_publication_when_models_have_no_migration(self, mocked_changes):
-        mocked_changes.return_value = {"services": [object()]}
+    @patch("accounts.management.commands.check_release_readiness.call_command")
+    def test_command_blocks_publication_when_models_have_no_migration(self, mocked_call_command):
+        mocked_call_command.side_effect = SystemExit(1)
         output = StringIO()
 
         with self.assertRaises(CommandError):
@@ -43,7 +43,6 @@ class ReleaseReadinessCommandTests(TestCase):
 
         content = output.getvalue()
         self.assertIn("[FALHA] Existem alterações de modelo sem migration", content)
-        self.assertIn("apps: services", content)
 
     @patch("accounts.management.commands.check_release_readiness.staticfiles_storage.exists")
     def test_command_can_require_collected_static_files(self, mocked_exists):
