@@ -33,35 +33,42 @@
     margin:0;
     color:var(--muted);
     font-size:13px;
+    line-height:1.45;
   }
 </style>
 
 <section class="card">
   <h2 style="margin-top:0;">Configurações da empresa</h2>
-  <p class="muted">Central de ajustes operacionais do MVP.</p>
+  <p class="muted">Gerencie a conta, os contratos e o relacionamento da empresa com prestadores de serviço.</p>
 
   <div class="settings-grid" style="margin-top:12px;">
     <article class="settings-item">
+      <h3>Portal da empresa contratante</h3>
+      <p>Cadastre a organização, convide pessoas da equipe e administre vínculos com prestadores de serviço.</p>
+      <div><a class="btn primary" href="{% url 'organization_entry' %}">Abrir portal da empresa</a></div>
+    </article>
+
+    <article class="settings-item">
       <h3>Meu plano</h3>
-      <p>Consulte plano atual, limite de prestadores, renovação e benefícios incluídos.</p>
+      <p>Consulte o plano atual, limites, renovação e recursos incluídos.</p>
       <div><a class="btn primary" href="{% url 'company_plan' %}">Abrir meu plano</a></div>
     </article>
 
     <article class="settings-item">
       <h3>Relatórios</h3>
-      <p>Análise e exportação de dados operacionais.</p>
+      <p>Consulte e exporte dados operacionais relacionados aos prestadores e contratos.</p>
       <div><a class="btn" href="{% url 'company_reports' %}">Abrir relatórios</a></div>
     </article>
 
     <article class="settings-item">
       <h3>Centro de pendências</h3>
-      <p>Acompanhe dias incompletos, observações e itens de revisão por prestador.</p>
+      <p>Acompanhe dias incompletos, observações e itens que precisam de revisão.</p>
       <div><a class="btn" href="{% url 'company_incident_center' %}">Abrir painel</a></div>
     </article>
 
     <article class="settings-item">
       <h3>Perfil da empresa</h3>
-      <p>Atualize razão social, contato, endereço e logo usados no sistema.</p>
+      <p>Atualize razão social, contatos, endereço e logo usados no sistema.</p>
       <div><a class="btn primary" href="{% url 'company_profile' %}">Abrir perfil</a></div>
     </article>
 
@@ -72,14 +79,8 @@
     </article>
 
     <article class="settings-item">
-      <h3>Confiabilidade do registro</h3>
-      <p>Cadastre locais autorizados e defina a política de validação de horários da empresa.</p>
-      <div><a class="btn primary" href="{% url 'company_attendance_reliability' %}">Abrir configuração</a></div>
-    </article>
-
-    <article class="settings-item">
       <h3>Contratos</h3>
-      <p>Acompanhe e edite os contratos operacionais já criados para os prestadores.</p>
+      <p>Acompanhe e edite os contratos operacionais criados para os prestadores de serviço.</p>
       <div><a class="btn" href="{% url 'company_contracts' %}">Ir para contratos</a></div>
     </article>
 
@@ -91,7 +92,7 @@
 
     <article class="settings-item">
       <h3>Regras e suporte</h3>
-      <p>Acesse ajuda operacional e termos vigentes do produto.</p>
+      <p>Consulte a ajuda operacional e os termos vigentes do produto.</p>
       <div style="display:flex; gap:8px; flex-wrap:wrap;">
         <a class="btn" href="{% url 'help' %}">Central de ajuda</a>
         <a class="btn" href="{% url 'terms' %}">Termos de uso</a>
