@@ -2,6 +2,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from accounts.models import User
+from companies.models import Company
 
 
 @override_settings(
@@ -15,6 +16,11 @@ class CompanySettingsPortalTests(TestCase):
             email="empresa-config@example.test",
             password="Teste@12345",
             role=User.Role.EMPRESA,
+        )
+        Company.objects.create(
+            owner=self.company_user,
+            name="Empresa de configuração",
+            email=self.company_user.email,
         )
         self.client.force_login(self.company_user)
 
