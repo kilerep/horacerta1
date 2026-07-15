@@ -1,0 +1,42 @@
+{% extends "organizations/base.html" %}
+
+{% block title %}Convidar membro · {{ organization.name }}{% endblock %}
+{% block page_title %}Convidar membro{% endblock %}
+
+{% block organization_content %}
+<header class="org-head">
+  <div>
+    <h1>Convidar membro</h1>
+    <p>Escolha uma conta existente e defina o que essa pessoa poderá fazer na empresa.</p>
+  </div>
+  <nav class="org-nav"><a href="{% url 'organization_members' organization.id %}">Voltar aos membros</a></nav>
+</header>
+
+<section class="org-card">
+  <h2>Dados do convite</h2>
+  <p class="sub">Nesta primeira versão, a pessoa precisa criar uma conta do perfil Empresa contratante antes de receber o convite.</p>
+  <form class="org-form" method="post">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="alert danger">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="org-form-grid">
+      {% for field in form %}
+        <div class="org-field">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.errors %}<div class="org-errors">{{ field.errors }}</div>{% endif %}
+        </div>
+      {% endfor %}
+    </div>
+    <div class="org-empty">
+      <strong>Administrador:</strong> gerencia empresa e membros.<br>
+      <strong>Gestor de serviços:</strong> acompanha pedidos e serviços.<br>
+      <strong>Financeiro:</strong> consulta horas, fechamentos e valores compartilhados.<br>
+      <strong>Consulta:</strong> acesso somente para leitura.
+    </div>
+    <div class="org-actions">
+      <a class="btn" href="{% url 'organization_members' organization.id %}">Cancelar</a>
+      <button class="btn primary" type="submit">Registrar convite</button>
+    </div>
+  </form>
+</section>
+{% endblock %}

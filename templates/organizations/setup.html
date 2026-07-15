@@ -1,0 +1,36 @@
+{% extends "organizations/base.html" %}
+
+{% block title %}Cadastrar empresa contratante{% endblock %}
+{% block page_title %}Empresa contratante{% endblock %}
+
+{% block organization_content %}
+<header class="org-head">
+  <div>
+    <h1>Cadastre sua empresa</h1>
+    <p>Crie o ambiente da empresa contratante. Depois você poderá convidar sua equipe e vincular prestadores.</p>
+  </div>
+</header>
+
+<section class="org-card">
+  <h2>Dados principais</h2>
+  <p class="sub">Comece com as informações essenciais. Razão social e CNPJ são opcionais nesta etapa.</p>
+  <form class="org-form" method="post">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="alert danger">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="org-form-grid">
+      {% for field in form %}
+        <div class="org-field {% if field.name == 'address' %}full{% endif %}">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<div class="sub">{{ field.help_text }}</div>{% endif %}
+          {% if field.errors %}<div class="org-errors">{{ field.errors }}</div>{% endif %}
+        </div>
+      {% endfor %}
+    </div>
+    <div class="org-actions">
+      <a class="btn" href="{% url 'dashboard' %}">Voltar</a>
+      <button class="btn primary" type="submit">Criar empresa</button>
+    </div>
+  </form>
+</section>
+{% endblock %}
