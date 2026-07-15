@@ -1,15 +1,14 @@
 from __future__ import annotations
 
-from django.apps import apps
+from io import StringIO
+
 from django.contrib.staticfiles import finders
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.core import checks
+from django.core.management import call_command
 from django.core.management.base import BaseCommand, CommandError
 from django.db import DEFAULT_DB_ALIAS, connections
-from django.db.migrations.autodetector import MigrationAutodetector
 from django.db.migrations.executor import MigrationExecutor
-from django.db.migrations.loader import MigrationLoader
-from django.db.migrations.state import ProjectState
 
 
 CRITICAL_ASSETS = (
@@ -113,23 +112,32 @@ class Command(BaseCommand):
                 else:
                     self.stdout.write(self.style.SUCCESS("[OK] Nenhuma migration pendente"))
 
+        migration_output = StringIO()
         try:
-            source_loader = MigrationLoader(None, ignore_no_migrations=True)
-            migration_changes = MigrationAutodetector(
-                source_loader.project_state(),
-                ProjectState.from_apps(apps),
-            ).changes(graph=source_loader.graph)
-        except Exception as exc:
-            failures.append(f"Comparação modelos/migrations: {exc.__class__.__name__}")
-            self.stdout.write(self.style.ERROR("[FALHA] Comparação entre modelos e migrations"))
-        else:
-            if migration_changes:
-                changed_apps = ", ".join(sorted(migration_changes))
-                failures.append(f"Modelos sem migration correspondente: {changed_apps}")
+            call_command(
+                "makemigrations",
+                check_changes=True,
+                dry_run=True,
+                interactive=False,
+                verbosity=0,
+                stdout=migration_output,
+                stderr=migration_output,
+            )
+        except SystemExit as exc:
+            if exc.code:
+                details = migration_output.getvalue().strip()
+                failures.append("Existem alterações de modelo sem migration correspondente.")
                 self.stdout.write(self.style.ERROR("[FALHA] Existem alterações de modelo sem migration"))
-                self.stdout.write(f"  - apps: {changed_apps}")
-            else:
+                if details:
+                    for line in details.splitlines():
+                        self.stdout.write(f"  {line}")
+            else:  # pragma: no cover - comportamento defensivo
                 self.stdout.write(self.style.SUCCESS("[OK] Modelos e migrations estão consistentes"))
+        except Exception as exc:
+            failures.append(f"Verificação de modelos/migrations: {exc.__class__.__name__}")
+            self.stdout.write(self.style.ERROR("[FALHA] Verificação entre modelos e migrations"))
+        else:
+            self.stdout.write(self.style.SUCCESS("[OK] Modelos e migrations estão consistentes"))
 
         missing_assets = [path for path in CRITICAL_ASSETS if not finders.find(path)]
         if missing_assets:
