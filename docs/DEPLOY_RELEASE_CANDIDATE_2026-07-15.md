@@ -63,13 +63,13 @@ python manage.py migrate --plan
 
 Revise o plano antes de aplicar.
 
-O comando de prontidão pode apontar migrations pendentes neste momento, o que é esperado antes de `migrate`:
+O comando de prontidão também verifica configuração, banco, consistência entre modelos e arquivos de migration e assets críticos de origem. Ele pode apontar migrations pendentes neste momento, o que é esperado antes de `migrate`:
 
 ```bash
 python manage.py check_release_readiness
 ```
 
-Ele deve confirmar configuração, banco e assets; caso indique migrations pendentes, aplique somente depois de revisar o plano.
+Não prossiga se o comando indicar alteração de modelo sem migration correspondente ou asset de origem ausente.
 
 ## 6. Aplicar migrations e validar
 
@@ -78,17 +78,27 @@ python manage.py migrate
 python manage.py check_release_readiness
 ```
 
-Depois da migration, o comando deve terminar com:
+Depois das migrations, o comando deve confirmar:
 
-```text
-Release pronta para a etapa de publicacao.
-```
+- conexão com o banco;
+- nenhuma migration pendente;
+- modelos e migrations consistentes;
+- assets críticos de origem presentes.
 
-## 7. Arquivos estáticos
+## 7. Arquivos estáticos e manifesto
 
 ```bash
 python manage.py collectstatic --noinput
+python manage.py check_release_readiness --require-collected-static
 python manage.py check --deploy
+```
+
+A segunda verificação confirma que os arquivos críticos existem em `STATIC_ROOT` e que o storage consegue resolver suas URLs. Isso protege contra manifesto desatualizado ou asset ausente, problema que já causou HTTP 500 na landing.
+
+O comando deve terminar com:
+
+```text
+Release pronta para a etapa de publicação.
 ```
 
 ## 8. Reiniciar aplicação
