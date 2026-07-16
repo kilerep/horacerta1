@@ -8,10 +8,11 @@ Endurecer o documento público de prestação de contas sem alterar horas, valor
 
 1. A página pública podia ser armazenada pelo navegador, proxy ou cache intermediário.
 2. Não havia instrução explícita para mecanismos de busca não indexarem o documento.
-3. O e-mail de login do prestador era usado como contato público quando não havia telefone profissional.
-4. A abertura da prestação de contas não registrava a primeira visualização do documento final.
-5. O compartilhamento pelo WhatsApp enviava apenas o endereço, sem explicar qual documento estava sendo enviado.
-6. Existiam duas PRs concorrentes para a mesma jornada de Serviços, baseadas em branches diferentes.
+3. O e-mail de login podia aparecer como nome ou contato do prestador.
+4. O campo legado `Employee.phone` não é uma fonte pública confiável: em alguns cadastros criados a partir de cliente avulso, ele pode conter o telefone do próprio cliente.
+5. A abertura da prestação de contas não registrava a primeira visualização do documento final.
+6. O compartilhamento pelo WhatsApp enviava apenas o endereço, sem explicar qual documento estava sendo enviado.
+7. Existiam duas PRs concorrentes para a mesma jornada de Serviços, baseadas em branches diferentes.
 
 ## Correções
 
@@ -27,11 +28,17 @@ As respostas HTML e PDF passam a usar:
 
 A página HTML também possui metatags `robots` e `referrer`.
 
-### Contato profissional
+### Identidade pública do prestador
 
-A página pública utiliza somente o telefone cadastrado no perfil profissional relacionado ao contrato. Quando esse telefone não existe, mostra **Não divulgado**.
+A página pública usa o nome profissional relacionado ao contrato somente quando ele não se parece com um identificador de login. Na ausência de um nome seguro, apresenta **Prestador de serviço**.
 
-O e-mail usado para autenticação não é mais publicado automaticamente.
+O documento público não mostra automaticamente:
+
+- e-mail de autenticação;
+- nome de usuário em formato de e-mail;
+- telefone armazenado no perfil legado `Employee`.
+
+Enquanto não existir um campo específico de contato profissional, a página apresenta **Não divulgado**. Isso evita publicar por engano o telefone do próprio cliente.
 
 ### Primeira visualização
 
@@ -61,6 +68,8 @@ Os testes cobrem:
 
 - cabeçalhos de cache, indexação e referência;
 - ausência do e-mail de login na página pública;
+- ausência de telefone legado na página e no PDF públicos;
+- serviço avulso sem nome profissional explícito;
 - registro da primeira visualização em HTML e PDF;
 - bloqueio antes do relatório final;
 - isolamento entre prestadores;
