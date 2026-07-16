@@ -6,6 +6,7 @@ class ServicesConfig(AppConfig):
     name = "services"
 
     def ready(self):
+        from . import signals  # noqa: F401
         from .professional_language import apply_professional_form_copy
 
         apply_professional_form_copy()

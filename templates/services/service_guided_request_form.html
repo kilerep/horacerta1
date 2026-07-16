@@ -1,0 +1,140 @@
+{% extends "accounts/base.html" %}
+{% load static %}
+
+{% block title %}{{ scenario_title }}{% endblock %}
+{% block page_title %}{{ scenario_title }}{% endblock %}
+
+{% block extra_head %}
+  <link rel="stylesheet" href="{% static 'css/services_workspace.css' %}">
+  <style>
+    .guided-request{display:grid;gap:16px;max-width:1080px}.guided-request-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:start}.guided-request-head h1{margin:0;font-size:clamp(25px,4vw,36px);line-height:1.08}.guided-request-head p{margin:9px 0 0;max-width:760px;color:var(--color-text-muted);line-height:1.55}.guided-result{margin-top:13px;padding:11px 12px;border:1px solid var(--border-brand);border-radius:12px;background:var(--color-primary-soft);font-size:13px;line-height:1.45}.guided-flow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.guided-flow div{padding:12px;border:1px solid var(--color-border);border-radius:12px;background:var(--surface-soft)}.guided-flow strong{display:block;font-size:13px}.guided-flow span{display:block;margin-top:4px;color:var(--color-text-muted);font-size:12px;line-height:1.4}.guided-form{display:grid;gap:14px}.guided-section{display:grid;gap:12px;padding:17px;border:1px solid var(--color-border);border-radius:16px;background:var(--gradient-card);box-shadow:var(--shadow-soft)}.guided-section h2{margin:0;font-size:18px}.guided-hint{margin:0;color:var(--color-text-muted);font-size:13px;line-height:1.45}.guided-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.guided-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}.guided-field.full{grid-column:1/-1}.guided-field label{display:block;margin-bottom:5px;color:var(--color-text-muted);font-size:12px;font-weight:800}.guided-field .help{margin-top:5px;color:var(--color-text-muted);font-size:12px;line-height:1.4}.guided-errors{margin-top:5px;color:var(--danger-text);font-size:12px}.guided-client-mode{display:flex;gap:9px;flex-wrap:wrap}.guided-client-mode label{display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--color-border);border-radius:11px;background:var(--surface-soft);font-weight:800}.guided-actions{display:flex;gap:9px;justify-content:flex-end;flex-wrap:wrap}.guided-actions .btn{min-height:44px}.guided-note{padding:12px;border:1px solid var(--warning-border);border-radius:12px;background:var(--warning-bg);color:var(--warning-text);font-size:13px;line-height:1.5}@media(max-width:760px){.guided-request-head,.guided-grid,.guided-grid.three,.guided-flow{grid-template-columns:1fr}.guided-field.full{grid-column:auto}.guided-request-head .btn,.guided-client-mode label,.guided-actions .btn{width:100%}}
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="guided-request">
+  <section class="service-hero guided-request-head">
+    <div>
+      <p class="service-eyebrow">Pedido guiado</p>
+      <h1>{{ scenario_title }}</h1>
+      <p>{{ scenario_subtitle }}</p>
+      <div class="guided-result"><strong>Resultado esperado:</strong> {{ scenario_result_hint }}</div>
+    </div>
+    <a class="btn" href="{% url 'service_start_guide' %}">Voltar ao assistente</a>
+  </section>
+
+  <section class="guided-flow" aria-label="Etapas deste pedido">
+    <div><strong>1. Registre o que já sabe</strong><span>Cliente, necessidade, data, local e informações iniciais.</span></div>
+    <div><strong>2. Complete depois</strong><span>O pedido pode ficar salvo enquanto você confirma detalhes e valores.</span></div>
+    <div><strong>3. Transforme em serviço</strong><span>Agenda e endereço serão preservados para organizar a execução.</span></div>
+  </section>
+
+  <form class="guided-form" method="post" data-guided-request-form>
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="alert danger">{{ form.non_field_errors }}</div>{% endif %}
+
+    <section class="guided-section">
+      <h2>Cliente ou empresa contratante</h2>
+      <p class="guided-hint">Selecione um cadastro existente ou informe um cliente avulso. Você pode salvar o cliente para reutilizar depois.</p>
+      <div class="guided-client-mode">
+        {% for radio in form.client_mode %}<label>{{ radio.tag }} <span>{{ radio.choice_label }}</span></label>{% endfor %}
+      </div>
+      <div class="guided-grid">
+        <div class="guided-field" data-registered-client>
+          <label for="{{ form.contract.id_for_label }}">{{ form.contract.label }}</label>
+          {{ form.contract }}
+          {% if form.contract.errors %}<div class="guided-errors">{{ form.contract.errors }}</div>{% endif %}
+        </div>
+        <div class="guided-field" data-casual-client>
+          <label for="{{ form.client_name.id_for_label }}">{{ form.client_name.label }}</label>
+          {{ form.client_name }}
+          {% if form.client_name.errors %}<div class="guided-errors">{{ form.client_name.errors }}</div>{% endif %}
+        </div>
+        <div class="guided-field" data-casual-client>
+          <label for="{{ form.client_whatsapp.id_for_label }}">{{ form.client_whatsapp.label }}</label>
+          {{ form.client_whatsapp }}
+        </div>
+        <div class="guided-field" data-casual-client>
+          <label for="{{ form.client_email.id_for_label }}">{{ form.client_email.label }}</label>
+          {{ form.client_email }}
+        </div>
+        <div class="guided-field" data-casual-client><label>{{ form.save_casual_client }} {{ form.save_casual_client.label }}</label></div>
+      </div>
+    </section>
+
+    <section class="guided-section">
+      <h2>O que foi solicitado</h2>
+      <p class="guided-hint">Use o texto inicial como roteiro e substitua pelos dados reais do cliente.</p>
+      <div class="guided-grid">
+        <div class="guided-field">
+          <label for="{{ form.category.id_for_label }}">{{ form.category.label }}</label>
+          {{ form.category }}
+          {% if form.category.errors %}<div class="guided-errors">{{ form.category.errors }}</div>{% endif %}
+        </div>
+        <div class="guided-field">
+          <label for="{{ form.title.id_for_label }}">{{ form.title.label }}</label>
+          {{ form.title }}
+          {% if form.title.errors %}<div class="guided-errors">{{ form.title.errors }}</div>{% endif %}
+        </div>
+        <div class="guided-field full">
+          <label for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
+          {{ form.description }}
+          {% if form.description.errors %}<div class="guided-errors">{{ form.description.errors }}</div>{% endif %}
+        </div>
+        <div class="guided-field"><label for="{{ form.urgency.id_for_label }}">{{ form.urgency.label }}</label>{{ form.urgency }}</div>
+        <div class="guided-field"><label for="{{ form.source.id_for_label }}">{{ form.source.label }}</label>{{ form.source }}</div>
+      </div>
+    </section>
+
+    <section class="guided-section">
+      <h2>Quando e onde</h2>
+      <p class="guided-hint">Mesmo que a informação ainda seja uma previsão, registrá-la agora evita perder o combinado feito pelo WhatsApp.</p>
+      <div class="guided-grid">
+        <div class="guided-field"><label for="{{ form.preferred_date.id_for_label }}">{{ form.preferred_date.label }}</label>{{ form.preferred_date }}</div>
+        <div class="guided-field"><label for="{{ form.preferred_time.id_for_label }}">{{ form.preferred_time.label }}</label>{{ form.preferred_time }}</div>
+        <div class="guided-field"><label for="{{ form.address_zipcode.id_for_label }}">{{ form.address_zipcode.label }}</label>{{ form.address_zipcode }}{% if form.address_zipcode.errors %}<div class="guided-errors">{{ form.address_zipcode.errors }}</div>{% endif %}</div>
+        <div class="guided-field full"><label for="{{ form.address_street.id_for_label }}">{{ form.address_street.label }}</label>{{ form.address_street }}</div>
+        <div class="guided-field"><label for="{{ form.address_number.id_for_label }}">{{ form.address_number.label }}</label>{{ form.address_number }}</div>
+        <div class="guided-field"><label for="{{ form.address_complement.id_for_label }}">{{ form.address_complement.label }}</label>{{ form.address_complement }}</div>
+        <div class="guided-field"><label for="{{ form.address_neighborhood.id_for_label }}">{{ form.address_neighborhood.label }}</label>{{ form.address_neighborhood }}</div>
+        <div class="guided-field"><label for="{{ form.address_city.id_for_label }}">{{ form.address_city.label }}</label>{{ form.address_city }}</div>
+        <div class="guided-field"><label for="{{ form.address_state.id_for_label }}">{{ form.address_state.label }}</label>{{ form.address_state }}{% if form.address_state.errors %}<div class="guided-errors">{{ form.address_state.errors }}</div>{% endif %}</div>
+        <div class="guided-field full"><label for="{{ form.address_reference.id_for_label }}">{{ form.address_reference.label }}</label>{{ form.address_reference }}</div>
+      </div>
+    </section>
+
+    <section class="guided-section">
+      <h2>Item inicial, equipamento ou despesa</h2>
+      <p class="guided-hint">Opcional. Registre apenas um item importante agora; o restante pode ser organizado dentro do serviço.</p>
+      <div class="guided-grid">
+        <div class="guided-field"><label for="{{ item_form.name.id_for_label }}">{{ item_form.name.label }}</label>{{ item_form.name }}{% if item_form.name.errors %}<div class="guided-errors">{{ item_form.name.errors }}</div>{% endif %}</div>
+        <div class="guided-field"><label for="{{ item_form.quantity.id_for_label }}">{{ item_form.quantity.label }}</label>{{ item_form.quantity }}</div>
+        <div class="guided-field full"><label for="{{ item_form.note.id_for_label }}">{{ item_form.note.label }}</label>{{ item_form.note }}</div>
+        <div class="guided-field"><label for="{{ item_form.estimated_unit_value.id_for_label }}">{{ item_form.estimated_unit_value.label }}</label>{{ item_form.estimated_unit_value }}</div>
+      </div>
+    </section>
+
+    <div class="guided-note">Salvar o pedido não envia nada automaticamente. Revise o escopo, os valores e as condições antes de compartilhar qualquer folha ou proposta com o cliente.</div>
+
+    <div class="guided-actions">
+      <a class="btn" href="{% url 'service_start_guide' %}">Cancelar</a>
+      <button class="btn" type="submit" name="submit_action" value="save">Salvar pedido para completar depois</button>
+      <button class="btn primary" type="submit" name="submit_action" value="convert">Salvar e abrir o serviço</button>
+    </div>
+  </form>
+</div>
+
+<script>
+  (function(){
+    var form = document.querySelector("[data-guided-request-form]");
+    if(!form) return;
+    var registered = Array.prototype.slice.call(form.querySelectorAll("[data-registered-client]"));
+    var casual = Array.prototype.slice.call(form.querySelectorAll("[data-casual-client]"));
+    var modes = Array.prototype.slice.call(form.querySelectorAll('input[name="client_mode"]'));
+    function mode(){ var selected = modes.find(function(input){ return input.checked; }); return selected ? selected.value : "registered"; }
+    function sync(){ var current = mode(); registered.forEach(function(block){ block.style.display = current === "registered" ? "" : "none"; }); casual.forEach(function(block){ block.style.display = current === "casual" ? "" : "none"; }); }
+    modes.forEach(function(input){ input.addEventListener("change", sync); });
+    sync();
+  })();
+</script>
+{% endblock %}

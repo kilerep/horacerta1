@@ -1,108 +1,142 @@
 {% extends "accounts/base.html" %}
-{% load service_format %}
+{% load static service_format %}
 
 {% block title %}Serviços{% endblock %}
 {% block page_title %}Serviços{% endblock %}
 
 {% block extra_head %}
-<style>
-  .services-page{display:grid;gap:16px;max-width:1180px}
-  .services-head{display:grid;gap:6px}
-  .services-head h1{margin:0;font-size:26px;line-height:1.12}
-  .services-head p{margin:0;color:var(--color-text-muted);line-height:1.4}
-  .services-block{display:grid;gap:10px}
-  .services-title{margin:0;font-size:16px;line-height:1.2;font-weight:900}
-  .quick-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
-  .quick-card{display:grid;gap:5px;min-height:82px;padding:13px;border:1px solid var(--color-border);border-radius:8px;background:var(--gradient-card);box-shadow:var(--shadow-soft);text-decoration:none;color:var(--color-text)}
-  .quick-card strong{font-size:15px;line-height:1.2}
-  .quick-card span{font-size:12px;line-height:1.35;color:var(--color-text-muted)}
-  .quick-card.primary{border-color:var(--color-primary);background:var(--color-primary-soft)}
-  .service-strip{display:grid;gap:10px}
-  .service-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:start;border:1px solid var(--color-border);border-radius:8px;background:var(--gradient-card);box-shadow:var(--shadow-soft);padding:14px}
-  .service-card h3{margin:0;font-size:17px;line-height:1.2;overflow-wrap:anywhere}
-  .service-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px;color:var(--color-text-muted);font-size:13px}
-  .status-chip{display:inline-flex;align-items:center;border:1px solid var(--color-border);border-radius:999px;padding:5px 9px;font-size:12px;font-weight:900;line-height:1}
-  .status-chip.draft{background:rgba(245,158,11,.14);color:#92400e}
-  .status-chip.planned{background:rgba(59,130,246,.12);color:#1d4ed8}
-  .status-chip.progress{background:rgba(34,197,94,.12);color:#15803d}
-  .status-chip.finished{background:rgba(99,102,241,.12);color:#4338ca}
-  .status-chip.report{background:rgba(20,184,166,.12);color:#0f766e}
-  .status-chip.archived{background:rgba(107,114,128,.12);color:#4b5563}
-  .service-line{margin:10px 0 0;color:var(--color-text-muted);font-size:13px;line-height:1.4}
-  .service-next{margin-top:8px;font-size:13px;line-height:1.35}
-  .service-next strong{color:var(--color-text)}
-  .service-facts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-  .fact{border:1px solid var(--color-border);border-radius:8px;background:var(--surface-soft);padding:8px 9px;min-width:112px}
-  .fact span{display:block;color:var(--color-text-muted);font-size:11px}
-  .fact strong{display:block;margin-top:3px;font-size:13px}
-  .service-actions{display:grid;gap:8px;justify-items:end;min-width:150px}
-  .filter-card{display:grid;gap:12px}
-  .search-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:end}
-  .field label{display:block;margin-bottom:5px;color:var(--color-text-muted);font-size:12px;font-weight:800}
-  .chips{display:flex;gap:8px;flex-wrap:wrap}
-  .chip{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:7px 11px;border:1px solid var(--color-border);border-radius:999px;background:var(--surface-soft);color:var(--color-text);font-size:13px;font-weight:800;text-decoration:none}
-  .chip.is-active{border-color:var(--color-primary);background:var(--color-primary-soft);color:var(--color-primary)}
-  .advanced{border-top:1px solid var(--color-border);padding-top:12px}
-  .advanced summary{display:inline-flex;min-height:36px;align-items:center;padding:8px 12px;border:1px solid var(--color-border);border-radius:8px;background:var(--surface-soft);font-weight:900;cursor:pointer}
-  .advanced[open] summary{margin-bottom:12px}
-  .advanced-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr)) auto;gap:10px;align-items:end}
-  .empty-box{border:1px dashed var(--color-border);border-radius:8px;padding:14px;color:var(--color-text-muted);line-height:1.4;background:var(--surface-soft)}
-  @media (max-width:900px){.advanced-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-  @media (max-width:680px){.services-head h1{font-size:23px}.quick-grid,.service-card,.search-row,.advanced-grid{grid-template-columns:1fr}.service-actions{justify-items:stretch;min-width:0}.service-actions .btn,.search-row .btn,.advanced-grid .btn{width:100%}.fact{flex:1 1 132px}}
-</style>
+  <link rel="stylesheet" href="{% static 'css/services_workspace.css' %}">
+  <link rel="stylesheet" href="{% static 'css/services_guided_flow.css' %}">
+  <link rel="stylesheet" href="{% static 'css/services_theme_polish.css' %}">
 {% endblock %}
 
 {% block content %}
-<div class="services-page">
-  <header class="services-head">
-    <h1>Serviços</h1>
-    <p>Trabalhos avulsos com períodos, itens e relatório sem alterar seu histórico normal.</p>
-    <span hidden>Resumo da área Filtrar serviços Pedidos de serviço</span>
-  </header>
-
-  {% if not has_active_filters %}
-  <section class="services-block">
-    <h2 class="services-title">Ações rápidas</h2>
-    <div class="quick-grid">
-      <a class="quick-card primary" href="{% url 'service_request_create' %}">
-        <strong>Novo pedido</strong>
-        <span>Registrar o chamado inicial vindo do WhatsApp.</span>
-      </a>
-      <a class="quick-card" href="{% url 'service_job_create' %}">
-        <strong>Novo serviço</strong>
-        <span>Criar um trabalho já combinado com o cliente.</span>
-      </a>
-      <a class="quick-card" href="{% url 'service_template_library' %}">
-        <strong>Modelos profissionais</strong>
-        <span>Começar com escopo, checklist e itens sugeridos por tipo de serviço.</span>
-      </a>
-      <a class="quick-card" href="{% url 'service_item_catalog_list' %}">
-        <strong>Catálogo de itens</strong>
-        <span>Materiais, peças e despesas frequentes.</span>
-      </a>
-      <a class="quick-card" href="{% url 'service_event_proposal_list' %}">
-        <strong>Propostas de evento</strong>
-        <span>Revisar pacotes de valor fixo antes do envio.</span>
-      </a>
+<div class="services-workspace">
+  <section class="service-hero">
+    <div>
+      <p class="service-eyebrow">Do pedido ao relatório</p>
+      <h1>Central de serviços</h1>
+      <p>Comece pelo tipo de atendimento, organize o combinado com o cliente, registre horas e despesas durante a execução e entregue um documento profissional no final. Esse fluxo fica separado e sem alterar seu histórico normal de horários.</p>
+    </div>
+    <div class="service-hero-actions">
+      <a class="btn primary service-primary-action" href="{% url 'service_start_guide' %}">Começar um atendimento</a>
+      <a class="btn service-primary-action" href="{% url 'service_request_create' %}">Registrar pedido</a>
     </div>
   </section>
 
-  <section class="services-block">
-    <h2 class="services-title">Hoje</h2>
-    {% if today_jobs %}
-      <div class="service-strip">
-        {% for job in today_jobs %}
-          {% include "services/service_job_card.html" with job=job compact=True %}
-        {% endfor %}
+  {% if not has_active_filters %}
+    <section class="service-section">
+      <div class="service-section-head">
+        <div>
+          <h2>Resumo da área</h2>
+          <p>Visão rápida dos pedidos, serviços em andamento e entregas pendentes.</p>
+        </div>
       </div>
-    {% else %}
-      <div class="empty-box">Nenhum serviço previsto ou em execução para hoje.</div>
-    {% endif %}
-  </section>
+      <div class="service-metrics" aria-label="Resumo dos serviços">
+        <div class="service-metric"><span>Pedidos abertos</span><strong>{{ summary.requests_open }}</strong></div>
+        <div class="service-metric"><span>Serviços de hoje</span><strong>{{ today_jobs|length }}</strong></div>
+        <div class="service-metric"><span>Em execução</span><strong>{{ summary.in_progress }}</strong></div>
+        <div class="service-metric"><span>Aguardando relatório</span><strong>{{ summary.finished }}</strong></div>
+        <div class="service-metric"><span>Total atual dos serviços</span><strong>{{ summary.estimated_total_brl }}</strong></div>
+      </div>
+    </section>
+
+    <section class="service-section">
+      <div class="service-section-head">
+        <div>
+          <h2>Ações rápidas por situação</h2>
+          <p>Escolha o caminho que mais se parece com o trabalho que você recebeu.</p>
+        </div>
+      </div>
+      <div class="service-path-grid">
+        <a class="service-path-card is-primary" href="{% url 'service_request_create' %}">
+          <div class="service-path-icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M5 5.5h14v9H9l-4 4v-13Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 9h8M8 12h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </div>
+          <strong>Pedido vindo do WhatsApp</strong>
+          <span>Registre o que o cliente pediu antes de fechar escopo, data e valor.</span>
+          <small>Começar pelo pedido →</small>
+        </a>
+        <a class="service-path-card is-primary" href="{% url 'service_request_create_from_scenario' 'evento' %}">
+          <div class="service-path-icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 9v6h4l5 4V5L8 9H4Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M16 9.5a4 4 0 0 1 0 5M18.5 7a7.5 7.5 0 0 1 0 10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </div>
+          <strong>Evento ou sonorização</strong>
+          <span>Registre primeiro o pedido do cliente e depois complete equipamentos, horários, logística e proposta.</span>
+          <small>Registrar pedido do evento →</small>
+        </a>
+        <a class="service-path-card is-primary" href="{% url 'service_request_create_from_scenario' 'viagem' %}">
+          <div class="service-path-icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M5 7.5h14l1 10.5H4L5 7.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 7.5V6a3 3 0 0 1 6 0v1.5M8 12h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </div>
+          <strong>Viagem ou atendimento externo</strong>
+          <span>Organize destino, responsável, datas e regras de despesas antes de transformar em serviço.</span>
+          <small>Registrar solicitação da viagem →</small>
+        </a>
+        <a class="service-path-card" href="{% url 'service_template_library' %}">
+          <div class="service-path-icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.8"/><rect x="14" y="4" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.8"/><rect x="4" y="14" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.8"/><rect x="14" y="14" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.8"/></svg>
+          </div>
+          <strong>Outro tipo de serviço</strong>
+          <span>Use um modelo profissional com escopo, checklist e itens sugeridos.</span>
+          <small>Escolher modelo →</small>
+        </a>
+      </div>
+
+      <details class="service-advanced">
+        <summary>Entenda as etapas e os documentos</summary>
+        <div class="guide-flow">
+          <div class="guide-step"><b>1</b><strong>Pedido de serviço</strong><span>Guarda o que o cliente solicitou, mesmo quando os detalhes ainda não estão definidos.</span></div>
+          <div class="guide-step"><b>2</b><strong>Serviço</strong><span>Organiza cliente, local, escopo, agenda, cobrança, itens e despesas do trabalho.</span></div>
+          <div class="guide-step"><b>3</b><strong>Folha ou proposta</strong><span>Apresenta ao cliente o que será feito, o que será usado e as condições combinadas.</span></div>
+          <div class="guide-step"><b>4</b><strong>Execução</strong><span>Registra períodos trabalhados, atividades, materiais utilizados e despesas reais.</span></div>
+          <div class="guide-step"><b>5</b><strong>Relatório final</strong><span>Entrega horas, atividades, consumo e valores; em viagens, também gera a prestação de contas.</span></div>
+        </div>
+      </details>
+    </section>
+
+    <section class="service-section">
+      <div class="service-section-head">
+        <div>
+          <h2>Ferramentas da operação</h2>
+          <p>Recursos de apoio para organizar materiais, propostas e trabalhos já combinados.</p>
+        </div>
+      </div>
+      <div class="service-tools">
+        <a class="service-tool-link" href="{% url 'service_job_create' %}">Criar serviço direto</a>
+        <a class="service-tool-link" href="{% url 'service_request_list' %}">Pedidos de serviço</a>
+        <a class="service-tool-link" href="{% url 'service_template_library' %}">Modelos profissionais</a>
+        <a class="service-tool-link" href="{% url 'service_item_catalog_list' %}">Catálogo de itens</a>
+        <a class="service-tool-link" href="{% url 'service_event_proposal_list' %}">Propostas de evento</a>
+      </div>
+    </section>
+
+    <section class="service-section">
+      <div class="service-section-head">
+        <div>
+          <h2>Hoje</h2>
+          <p>Atendimentos previstos para hoje ou que já estão em execução.</p>
+        </div>
+      </div>
+      {% if today_jobs %}
+        <div class="service-strip">
+          {% for job in today_jobs %}
+            {% include "services/service_job_card.html" with job=job compact=True %}
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="service-empty">Nenhum serviço previsto ou em execução para hoje.</div>
+      {% endif %}
+    </section>
   {% endif %}
 
-  <section class="services-block">
-    <h2 class="services-title">Pendências</h2>
+  <section class="service-section">
+    <div class="service-section-head">
+      <div>
+        <h2>Pendências</h2>
+        <p>Serviços que ainda precisam de planejamento, execução ou relatório final.</p>
+      </div>
+    </div>
     {% if pending_jobs %}
       <div class="service-strip">
         {% for job in pending_jobs %}
@@ -110,15 +144,21 @@
         {% endfor %}
       </div>
     {% else %}
-      <div class="empty-box">Sem pendências de serviços agora.</div>
+      <div class="service-empty">Sem pendências de serviços agora.</div>
     {% endif %}
   </section>
 
-  <section class="services-block">
-    <h2 class="services-title">Lista de serviços</h2>
-    <form class="card filter-card" method="get">
-      <div class="search-row">
-        <div class="field" id="service-search">
+  <section class="service-section">
+    <div class="service-section-head">
+      <div>
+        <h2>Todos os serviços</h2>
+        <p>Filtrar serviços por cliente, categoria, período ou status.</p>
+      </div>
+    </div>
+
+    <form class="card service-filter-card" method="get">
+      <div class="service-search-row">
+        <div class="service-field" id="service-search">
           <label for="filter-search">Busca</label>
           <input id="filter-search" type="search" name="q" value="{{ search_query }}" placeholder="Serviço, cliente ou categoria">
         </div>
@@ -126,29 +166,35 @@
         {% if search_query or selected_status or has_advanced_filters %}<a class="btn" href="{% url 'service_job_list' %}">Limpar</a>{% endif %}
       </div>
 
-      <div class="chips" aria-label="Filtros rápidos">
-        {% for value,label,url in quick_status_choices %}
-          <a class="chip {% if selected_status == value or not selected_status and not value %}is-active{% endif %}" href="{{ url }}">{{ label }}</a>
-        {% endfor %}
+      <div class="service-chips" aria-label="Filtros rápidos">
+        <a class="service-chip {% if not selected_status %}is-active{% endif %}" href="{{ status_filter_urls.all }}">Todos</a>
+        <a class="service-chip {% if selected_status == 'DRAFT' %}is-active{% endif %}" href="{{ status_filter_urls.drafts }}">Rascunhos</a>
+        <a class="service-chip {% if selected_status == 'PLANNED' %}is-active{% endif %}" href="{{ status_filter_urls.planned }}">Planejados</a>
+        <a class="service-chip {% if selected_status == 'IN_PROGRESS' %}is-active{% endif %}" href="{{ status_filter_urls.in_progress }}">Em execução</a>
+        <a class="service-chip {% if selected_status == 'FINISHED' %}is-active{% endif %}" href="{{ status_filter_urls.finished }}">Finalizados</a>
+        <a class="service-chip {% if selected_status == 'REPORT_SENT' %}is-active{% endif %}" href="{{ status_filter_urls.report_sent }}">Relatório enviado</a>
+        <a class="service-chip {% if selected_status == 'ARCHIVED' %}is-active{% endif %}" href="{{ status_filter_urls.archived }}">Arquivados</a>
       </div>
 
-      <details class="advanced" {% if has_advanced_filters %}open{% endif %}>
+      <details class="service-advanced" {% if has_advanced_filters %}open{% endif %}>
         <summary>Filtros avançados</summary>
-        <div class="advanced-grid">
-          <div class="field"><label for="filter-status">Status</label><select id="filter-status" name="status"><option value="">Todos</option>{% for value,label in status_choices %}<option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
-          <div class="field"><label for="filter-category">Categoria</label><select id="filter-category" name="category"><option value="">Todas</option>{% for category in categories %}<option value="{{ category.slug }}" {% if selected_category == category.slug %}selected{% endif %}>{{ category.name }}</option>{% endfor %}</select></div>
-          <div class="field"><label for="filter-contract">Cliente</label><select id="filter-contract" name="contract"><option value="">Todos</option>{% for contract in contracts %}<option value="{{ contract.id }}" {% if selected_contract == contract.id|stringformat:"s" %}selected{% endif %}>{{ contract.company.name }}</option>{% endfor %}</select></div>
-          <div class="field"><label for="filter-date-from">De</label><input id="filter-date-from" type="date" name="date_from" value="{{ date_from }}"></div>
-          <div class="field"><label for="filter-date-to">Até</label><input id="filter-date-to" type="date" name="date_to" value="{{ date_to }}"></div>
+        <div class="service-advanced-grid">
+          <div class="service-field"><label for="filter-status">Status</label><select id="filter-status" name="status"><option value="">Todos</option>{% for value,label in status_choices %}<option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+          <div class="service-field"><label for="filter-category">Categoria</label><select id="filter-category" name="category"><option value="">Todas</option>{% for category in categories %}<option value="{{ category.slug }}" {% if selected_category == category.slug %}selected{% endif %}>{{ category.name }}</option>{% endfor %}</select></div>
+          <div class="service-field"><label for="filter-contract">Cliente</label><select id="filter-contract" name="contract"><option value="">Todos</option>{% for contract in contracts %}<option value="{{ contract.id }}" {% if selected_contract == contract.id|stringformat:"s" %}selected{% endif %}>{{ contract.company.name }}</option>{% endfor %}</select></div>
+          <div class="service-field"><label for="filter-date-from">De</label><input id="filter-date-from" type="date" name="date_from" value="{{ date_from }}"></div>
+          <div class="service-field"><label for="filter-date-to">Até</label><input id="filter-date-to" type="date" name="date_to" value="{{ date_to }}"></div>
           <button class="btn" type="submit">Filtrar</button>
         </div>
       </details>
     </form>
 
     {% if jobs %}
-      <div class="service-strip">{% for job in jobs %}{% include "services/service_job_card.html" with job=job %}{% endfor %}</div>
+      <div class="service-strip">
+        {% for job in jobs %}{% include "services/service_job_card.html" with job=job %}{% endfor %}
+      </div>
     {% else %}
-      <div class="empty-box">Nenhum serviço encontrado.</div>
+      <div class="service-empty">Nenhum serviço encontrado. Revise a busca ou os filtros selecionados.</div>
     {% endif %}
   </section>
 </div>

@@ -5,7 +5,7 @@
 
 {% block extra_head %}
 <style>
-  .template-page{max-width:1180px;display:grid;gap:16px}.template-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.template-head h1{margin:0;font-size:27px}.template-head p{margin:7px 0 0;color:var(--color-text-muted);line-height:1.5;max-width:820px}.template-toolbar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end}.template-toolbar label{display:block;margin-bottom:5px;color:var(--color-text-muted);font-size:12px;font-weight:900}.template-chips{display:flex;gap:7px;flex-wrap:wrap}.template-chip{border:1px solid var(--color-border);border-radius:999px;background:var(--surface-soft);color:var(--color-text);padding:8px 11px;font-weight:800;cursor:pointer}.template-chip.is-active{border-color:var(--color-primary);background:var(--color-primary-soft);color:var(--color-primary)}.template-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.template-card{display:grid;gap:12px;border:1px solid var(--color-border);border-radius:10px;background:var(--gradient-card);box-shadow:var(--shadow-soft);padding:15px}.template-card[hidden]{display:none}.template-card h2{margin:0;font-size:19px}.template-meta{display:flex;gap:7px;flex-wrap:wrap}.template-badge{display:inline-flex;border:1px solid var(--color-border);border-radius:999px;background:var(--surface-soft);padding:5px 8px;color:var(--color-text-muted);font-size:12px;font-weight:800}.template-summary{margin:0;color:var(--color-text-muted);line-height:1.45}.template-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.template-box{border:1px solid var(--color-border);border-radius:8px;background:var(--surface-soft);padding:10px}.template-box strong{display:block;margin-bottom:6px;font-size:13px}.template-box ul{margin:0;padding-left:18px;color:var(--color-text-muted);font-size:12px;line-height:1.45}.template-warning{border-left:3px solid var(--warning-border);padding-left:10px;color:var(--color-text-muted);font-size:12px;line-height:1.45}.template-actions{display:flex;gap:8px;flex-wrap:wrap}.template-actions .btn{flex:1 1 160px}.template-empty{display:none;border:1px dashed var(--color-border);border-radius:10px;background:var(--surface-soft);padding:16px;color:var(--color-text-muted)}.template-empty.is-visible{display:block}@media(max-width:760px){.template-head,.template-toolbar,.template-grid,.template-columns{display:grid;grid-template-columns:1fr}.template-actions{display:grid}.template-actions .btn{width:100%}}
+  .template-page{max-width:1180px;display:grid;gap:16px}.template-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.template-head h1{margin:0;font-size:27px}.template-head p{margin:7px 0 0;color:var(--color-text-muted);line-height:1.5;max-width:820px}.template-toolbar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end}.template-toolbar label{display:block;margin-bottom:5px;color:var(--color-text-muted);font-size:12px;font-weight:900}.template-chips{display:flex;gap:7px;flex-wrap:wrap}.template-chip{border:1px solid var(--color-border);border-radius:999px;background:var(--surface-soft);color:var(--color-text);padding:8px 11px;font-weight:800;cursor:pointer}.template-chip.is-active{border-color:var(--color-primary);background:var(--color-primary-soft);color:var(--color-primary)}.template-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.template-card{display:grid;gap:12px;border:1px solid var(--color-border);border-radius:10px;background:var(--gradient-card);box-shadow:var(--shadow-soft);padding:15px}.template-card[hidden]{display:none}.template-card h2{margin:0;font-size:19px}.template-meta{display:flex;gap:7px;flex-wrap:wrap}.template-badge{display:inline-flex;border:1px solid var(--color-border);border-radius:999px;background:var(--surface-soft);padding:5px 8px;color:var(--color-text-muted);font-size:12px;font-weight:800}.template-summary{margin:0;color:var(--color-text-muted);line-height:1.45}.template-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.template-box{border:1px solid var(--color-border);border-radius:8px;background:var(--surface-soft);padding:10px}.template-box strong{display:block;margin-bottom:6px;font-size:13px}.template-box ul{margin:0;padding-left:18px;color:var(--color-text-muted);font-size:12px;line-height:1.45}.template-warning{border-left:3px solid var(--warning-border);padding-left:10px;color:var(--color-text-muted);font-size:12px;line-height:1.45}.template-actions{display:flex;gap:8px;flex-wrap:wrap}.template-actions .btn{flex:1 1 180px}.template-choice{display:grid;gap:4px}.template-choice small{color:var(--color-text-muted);font-size:11px;line-height:1.35}.template-empty{display:none;border:1px dashed var(--color-border);border-radius:10px;background:var(--surface-soft);padding:16px;color:var(--color-text-muted)}.template-empty.is-visible{display:block}@media(max-width:760px){.template-head,.template-toolbar,.template-grid,.template-columns{display:grid;grid-template-columns:1fr}.template-actions{display:grid}.template-actions .btn{width:100%}}
 </style>
 {% endblock %}
 
@@ -15,7 +15,7 @@
     <div>
       <p class="sub">{{ template_count }} pontos de partida</p>
       <h1>Modelos profissionais de serviço</h1>
-      <p>Escolha um modelo para começar com escopo, responsabilidades, checklist e itens sugeridos. Os valores nunca são preenchidos automaticamente: revise tudo antes de enviar ao cliente.</p>
+      <p>Escolha um modelo e depois informe em que momento o atendimento está: ainda em negociação ou já combinado. Os valores nunca são preenchidos automaticamente; o HoraCerta prepara o fluxo e mantém quantidades, preços e condições sob sua revisão.</p>
     </div>
     <a class="btn" href="{% url 'service_job_list' %}">Voltar para Serviços</a>
   </header>
@@ -61,13 +61,20 @@
         </div>
         <div class="template-warning">
           {% if item.category_available %}
-            A categoria correspondente está disponível. O modelo será pré-selecionado no formulário.
+            A categoria correspondente está disponível. Quantidades e valores continuarão sob sua revisão.
           {% else %}
             A categoria premium ainda não está ativa; escolha uma categoria disponível antes de salvar.
           {% endif %}
         </div>
         <div class="template-actions">
-          <a class="btn primary" href="{% url 'service_job_create_from_template' item.slug %}">Usar este modelo</a>
+          <div class="template-choice">
+            <a class="btn" href="{% url 'service_request_create_from_template' item.slug %}">Ainda estou negociando</a>
+            <small>Cria um pedido para completar após conversar com o cliente.</small>
+          </div>
+          <div class="template-choice">
+            <a class="btn primary" href="{% url 'service_job_create_from_template' item.slug %}">Serviço já combinado</a>
+            <small>Abre o serviço completo para planejar e executar.</small>
+          </div>
         </div>
       </article>
     {% endfor %}
