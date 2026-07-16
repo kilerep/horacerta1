@@ -57,10 +57,27 @@ class PwaFoundationTests(TestCase):
     def test_service_worker_never_caches_private_documents_or_media(self):
         response = self.client.get(reverse("pwa_service_worker"))
 
-        self.assertContains(response, '"/me/"')
-        self.assertContains(response, '"/contratante/"')
-        self.assertContains(response, '"/servicos/"')
-        self.assertContains(response, '"/media/"')
+        sensitive_prefixes = [
+            "/me/",
+            "/contratante/",
+            "/empresa/",
+            "/dashboard/",
+            "/interno/",
+            "/admin/",
+            "/api/",
+            "/servicos/",
+            "/conferencia/",
+            "/media/",
+            "/login/",
+            "/logout/",
+            "/signup/",
+            "/password-",
+            "/reset/",
+        ]
+        for prefix in sensitive_prefixes:
+            with self.subTest(prefix=prefix):
+                self.assertContains(response, f'"{prefix}"')
+
         self.assertContains(response, 'cacheControl.includes("no-store")')
         self.assertContains(response, 'cacheControl.includes("private")')
         self.assertContains(response, 'url.pathname.startsWith("/static/")')
