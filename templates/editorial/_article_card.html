@@ -1,0 +1,19 @@
+<article class="editorial-card">
+  {% if article.cover_image %}
+    <a class="editorial-card__media" href="{{ article.get_absolute_url }}">
+      <img src="{{ article.cover_image.url }}" alt="{{ article.cover_alt }}" loading="lazy">
+    </a>
+  {% endif %}
+  <div class="editorial-card__body">
+    <div class="editorial-card__meta">
+      <span>{{ article.category.name }}</span>
+      <span>{{ article.get_content_type_display }}</span>
+    </div>
+    <h3><a href="{{ article.get_absolute_url }}">{{ article.title }}</a></h3>
+    <p>{{ article.summary }}</p>
+    <div class="editorial-card__footer">
+      <span>{{ article.published_at|date:"d/m/Y" }}</span>
+      <span>{{ article.estimated_reading_minutes }} min de leitura</span>
+    </div>
+  </div>
+</article>

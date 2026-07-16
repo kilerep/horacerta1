@@ -13,12 +13,13 @@
   <link rel="apple-touch-icon" href="{% static 'pwa/apple-touch-icon-180.png' %}">
   <link rel="icon" type="image/png" sizes="32x32" href="{% static 'pwa/favicon-32.png' %}">
   <title>{% block title %}HoraCerta{% endblock %}</title>
-  <meta name="description" content="{% block meta_description %}HoraCerta: controle de horas, clientes e relatorios para profissionais e MEIs.{% endblock %}">
+  <meta name="description" content="{% block meta_description %}HoraCerta: gestão de horas, clientes, serviços e relatórios para prestadores de serviço.{% endblock %}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/design_tokens.css' %}">
   <link rel="stylesheet" href="{% static 'css/ui_system.css' %}">
+  <link rel="stylesheet" href="{% static 'css/editorial.css' %}">
   <style>
     html,body{margin:0;padding:0;font-family:"Manrope","Segoe UI",sans-serif;background:
       radial-gradient(900px 380px at 8% -6%, color-mix(in oklab, var(--color-secondary) 14%, transparent), transparent 55%),
@@ -57,10 +58,10 @@
           <span class="mark">HC</span>
           <span>
             <div class="name">HoraCerta</div>
-            <div class="sub">Controle de horas para profissionais</div>
+            <div class="sub">Portal para prestadores de serviço</div>
           </span>
         </a>
-        <nav class="nav" aria-label="Navegacao publica">
+        <nav class="nav" aria-label="Navegação pública">
           <div class="theme-switch" aria-label="Tema visual">
             <span class="theme-switch__label">Tema</span>
             <select class="theme-switch__select" data-theme-control>
@@ -71,6 +72,7 @@
             </select>
           </div>
           <a class="link hide-sm" href="{% url 'landing' %}#recursos">Recursos</a>
+          <a class="link" href="{% url 'editorial:article_list' %}">Conteúdos</a>
           <a class="link" href="{% url 'help' %}">Ajuda</a>
           <a class="btn" href="{% url 'login' %}">Entrar no sistema</a>
         </nav>
@@ -80,12 +82,15 @@
 
   <main class="main">
     {% block content %}{% endblock %}
+    {% if request.resolver_match.url_name == 'landing' %}
+      {% include "editorial/landing_section.html" %}
+    {% endif %}
   </main>
 
   <footer class="footer">
     <div class="container footer-row">
-      <span>© {% now "Y" %} HoraCerta. Controle de horas para profissionais e MEIs.</span>
-      <span><a href="{% url 'terms' %}">Termos</a> | <a href="{% url 'privacy' %}">Privacidade</a> | <a href="{% url 'help' %}">Ajuda</a></span>
+      <span>© {% now "Y" %} HoraCerta. Portal para prestadores de serviço e empresas contratantes.</span>
+      <span><a href="{% url 'editorial:article_list' %}">Conteúdos</a> | <a href="{% url 'terms' %}">Termos</a> | <a href="{% url 'privacy' %}">Privacidade</a> | <a href="{% url 'help' %}">Ajuda</a></span>
     </div>
   </footer>
   <script src="{% static 'js/theme_engine.js' %}"></script>
