@@ -1,5 +1,4 @@
 {% extends "public/base_public.html" %}
-{% load static %}
 
 {% block title %}Portal do Prestador | HoraCerta{% endblock %}
 {% block meta_description %}Notícias, guias e análises para prestadores de serviço e empresas contratantes.{% endblock %}
@@ -15,7 +14,6 @@
 <meta property="og:url" content="{{ og_url }}">
 <meta property="og:image" content="{{ og_image_url }}">
 <link rel="alternate" type="application/rss+xml" title="HoraCerta — Portal do prestador" href="{% url 'editorial:feed' %}">
-<link rel="stylesheet" href="{% static 'css/editorial.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -78,7 +76,7 @@
       <span class="editorial-eyebrow">Publicações</span>
       <h2>{% if query or selected_category or selected_type %}Resultados da busca{% else %}Conteúdos mais recentes{% endif %}</h2>
     </div>
-    <span class="editorial-count">{{ page.paginator.count }} publicação{{ page.paginator.count|pluralize:"ões" }}</span>
+    <span class="editorial-count">{{ page.paginator.count }} {% if page.paginator.count == 1 %}publicação{% else %}publicações{% endif %}</span>
   </div>
 
   {% if page.object_list %}
