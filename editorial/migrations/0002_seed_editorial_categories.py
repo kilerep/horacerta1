@@ -27,9 +27,10 @@ def seed_categories(apps, schema_editor):
         )
 
 
-def reverse_seed(apps, schema_editor):
-    category_model = apps.get_model("editorial", "EditorialCategory")
-    category_model.objects.filter(slug__in=[item[1] for item in CATEGORIES]).delete()
+def preserve_categories(apps, schema_editor):
+    # As categorias podem ter publicações associadas. A reversão preserva o
+    # conteúdo editorial e deixa a remoção estrutural para a migration 0001.
+    return None
 
 
 class Migration(migrations.Migration):
@@ -39,5 +40,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(seed_categories, reverse_seed),
+        migrations.RunPython(seed_categories, preserve_categories),
     ]
