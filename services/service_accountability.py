@@ -1,11 +1,11 @@
 from decimal import Decimal
 from html import escape
 from io import BytesIO
+from urllib.parse import quote
 
-from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.utils import timezone
 from reportlab.lib import colors
@@ -25,6 +25,9 @@ EXPENSE_TYPES = {
     ServiceItemExpense.ItemType.PARKING,
     ServiceItemExpense.ItemType.FOOD,
 }
+
+
+DOCUMENT_CACHE_CONTROL = "private, no-store, no-cache, max-age=0, must-revalidate"
 
 
 def _format_brl(value):
@@ -50,6 +53,58 @@ def _period_label(job, work_logs):
     return "Não informado"
 
 
+def _is_login_identifier(value):
+    text = (value or "").strip()
+    return "@" in text
+
+
+def _professional_name(job, *, is_public=False):
+    employee_name = (getattr(getattr(job.contract, "employee", None), "full_name", "") or "").strip()
+    if employee_name and not (is_public and _is_login_identifier(employee_name)):
+        return employee_name
+    full_name = (job.professional.get_full_name() or "").strip()
+    if full_name:
+        return full_name
+    if is_public:
+        return "Prestador de serviço"
+    return job.professional.email or job.professional.username or "Prestador de serviço"
+
+
+def _professional_contact(job, *, is_public=False):
+    if is_public:
+        # O campo Employee.phone é legado e, em cadastros criados a partir de cliente
+        # avulso, pode conter o telefone do próprio cliente. Só um futuro campo de
+        # contato profissional explícito deverá ser publicado.
+        return ""
+    employee = getattr(getattr(job, "contract", None), "employee", None)
+    phone = (getattr(employee, "phone", "") or "").strip()
+    return phone or job.professional.email or job.professional.username
+
+
+def _secure_document_response(response):
+    response["Cache-Control"] = DOCUMENT_CACHE_CONTROL
+    response["Pragma"] = "no-cache"
+    response["Expires"] = "0"
+    response["X-Robots-Tag"] = "noindex, nofollow, noarchive"
+    response["Referrer-Policy"] = "no-referrer"
+    return response
+
+
+def _record_public_document_view(job):
+    if job.public_report_first_viewed_at:
+        return job.public_report_first_viewed_at
+    viewed_at = timezone.now()
+    updated = ServiceJob.objects.filter(
+        pk=job.pk,
+        public_report_first_viewed_at__isnull=True,
+    ).update(public_report_first_viewed_at=viewed_at)
+    if updated:
+        job.public_report_first_viewed_at = viewed_at
+    else:
+        job.refresh_from_db(fields=["public_report_first_viewed_at"])
+    return job.public_report_first_viewed_at
+
+
 def _accountability_context(job, request=None, *, is_public=False):
     work_logs = list(job.work_logs.all())
     chargeable_items = [
@@ -61,20 +116,20 @@ def _accountability_context(job, request=None, *, is_public=False):
     materials = [item for item in chargeable_items if item.type not in EXPENSE_TYPES]
     expense_total = sum((item.total_value for item in expenses), Decimal("0.00"))
     material_total = sum((item.total_value for item in materials), Decimal("0.00"))
-    professional_name = (
-        getattr(getattr(job.contract, "employee", None), "full_name", "")
-        or job.professional.get_full_name()
-        or job.professional.email
-        or job.professional.username
-    )
     public_url = ""
+    whatsapp_url = ""
     if request is not None and job.status == ServiceJob.Status.REPORT_SENT:
         public_url = request.build_absolute_uri(reverse("public_service_accountability", args=[job.public_token]))
+        whatsapp_message = (
+            "Olá, segue a prestação de contas do serviço "
+            f"{job.title}:\n{public_url}"
+        )
+        whatsapp_url = f"https://wa.me/?text={quote(whatsapp_message)}"
     return {
         "job": job,
         "is_public": is_public,
-        "professional_name": professional_name,
-        "professional_contact": job.professional.email or job.professional.username,
+        "professional_name": _professional_name(job, is_public=is_public),
+        "professional_contact": _professional_contact(job, is_public=is_public),
         "client_name": job.client_display_name,
         "service_address": job.full_service_address or job.service_location_summary,
         "period_label": _period_label(job, work_logs),
@@ -82,6 +137,7 @@ def _accountability_context(job, request=None, *, is_public=False):
         "expenses": expenses,
         "materials": materials,
         "public_url": public_url,
+        "whatsapp_url": whatsapp_url,
         "summary": {
             "total_hours": job.total_hours_label,
             "labor_total_brl": _format_brl(job.labor_total),
@@ -110,7 +166,8 @@ def service_accountability(request, job_id):
             "back_url": reverse("service_job_detail", args=[job.id]),
         }
     )
-    return render(request, "services/service_accountability_report.html", context)
+    response = render(request, "services/service_accountability_report.html", context)
+    return _secure_document_response(response)
 
 
 @login_required
@@ -134,9 +191,11 @@ def public_service_accountability(request, token):
         public_token=token,
         status=ServiceJob.Status.REPORT_SENT,
     )
+    _record_public_document_view(job)
     context = _accountability_context(job, request=request, is_public=True)
     context["pdf_url"] = reverse("public_service_accountability_pdf", args=[job.public_token])
-    return render(request, "services/service_accountability_report.html", context)
+    response = render(request, "services/service_accountability_report.html", context)
+    return _secure_document_response(response)
 
 
 def public_service_accountability_pdf(request, token):
@@ -146,6 +205,7 @@ def public_service_accountability_pdf(request, token):
         public_token=token,
         status=ServiceJob.Status.REPORT_SENT,
     )
+    _record_public_document_view(job)
     return _accountability_pdf_response(job)
 
 
@@ -177,7 +237,7 @@ def _table(rows, widths, *, header=True):
 
 
 def _accountability_pdf_response(job):
-    report = _accountability_context(job)
+    report = _accountability_context(job, is_public=True)
     buffer = BytesIO()
     document = SimpleDocTemplate(
         buffer,
@@ -203,6 +263,7 @@ def _accountability_pdf_response(job):
         _table(
             [
                 ["Prestador", report["professional_name"]],
+                ["Contato profissional", report["professional_contact"] or "Não divulgado"],
                 ["Cliente/empresa", report["client_name"]],
                 ["Serviço", job.title],
                 ["Categoria", job.category.name],
@@ -293,4 +354,4 @@ def _accountability_pdf_response(job):
     date_part = timezone.localdate().strftime("%Y%m%d")
     response = HttpResponse(buffer.getvalue(), content_type="application/pdf")
     response["Content-Disposition"] = f'attachment; filename="horacerta_prestacao_contas_{client_part}_{date_part}.pdf"'
-    return response
+    return _secure_document_response(response)
