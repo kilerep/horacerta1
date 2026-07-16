@@ -7,6 +7,7 @@
 {% block extra_head %}
   <link rel="stylesheet" href="{% static 'css/services_workspace.css' %}">
   <link rel="stylesheet" href="{% static 'css/services_guided_flow.css' %}">
+  <link rel="stylesheet" href="{% static 'css/services_theme_polish.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -35,6 +36,21 @@
       <div class="guide-step"><b>3</b><strong>Enviar a folha</strong><span>Prévia profissional ou proposta para o cliente conferir.</span></div>
       <div class="guide-step"><b>4</b><strong>Executar e registrar</strong><span>Horas, materiais, despesas e observações do trabalho.</span></div>
       <div class="guide-step"><b>5</b><strong>Entregar o relatório</strong><span>Documento final e, quando necessário, prestação de contas.</span></div>
+    </div>
+  </section>
+
+  <section class="service-section">
+    <div class="service-section-head">
+      <div>
+        <h2>O que você terá ao final</h2>
+        <p>Cada etapa gera uma informação útil. Nada precisa ficar espalhado em conversas e anotações.</p>
+      </div>
+    </div>
+    <div class="guide-outcomes">
+      <div class="guide-outcome"><strong>Pedido organizado</strong><span>Necessidade, cliente, origem e informações ainda pendentes.</span></div>
+      <div class="guide-outcome"><strong>Folha ou proposta</strong><span>Escopo, itens, horários, logística, cobrança e responsabilidades.</span></div>
+      <div class="guide-outcome"><strong>Execução registrada</strong><span>Períodos trabalhados, atividades, materiais e despesas reais.</span></div>
+      <div class="guide-outcome"><strong>Entrega profissional</strong><span>Relatório final ou prestação de contas para compartilhar com o cliente.</span></div>
     </div>
   </section>
 
@@ -165,6 +181,29 @@
           <a class="btn primary" href="{% url 'service_template_library' %}">Abrir modelos profissionais</a>
         </div>
       </article>
+    </div>
+  </section>
+
+  <section class="service-section">
+    <div class="service-section-head">
+      <div>
+        <h2>Encontre pelo tipo de trabalho</h2>
+        <p>Atalhos para modelos que já trazem escopo, checklist e itens iniciais sem preço automático.</p>
+      </div>
+    </div>
+    <div class="guide-category-grid">
+      <a class="guide-category-card" href="{% url 'service_job_create_from_template' 'visita-tecnica-diagnostico' %}"><strong>Visita técnica e diagnóstico</strong><span>Inspeção, diagnóstico e próximos passos.</span><small>Usar modelo →</small></a>
+      <a class="guide-category-card" href="{% url 'service_job_create_from_template' 'instalacao-tecnica' %}"><strong>Instalação técnica</strong><span>Montagem, conexões, configuração e testes.</span><small>Usar modelo →</small></a>
+      <a class="guide-category-card" href="{% url 'service_job_create_from_template' 'limpeza-recorrente' %}"><strong>Limpeza e conservação</strong><span>Áreas, prioridades, execução e conferência.</span><small>Usar modelo →</small></a>
+      <a class="guide-category-card" href="{% url 'service_job_create_from_template' 'pequena-reforma-reparos' %}"><strong>Obras e reparos</strong><span>Preparação, materiais, execução e acabamento.</span><small>Usar modelo →</small></a>
+      <a class="guide-category-card" href="{% url 'service_job_create_from_template' 'servico-automotivo' %}"><strong>Serviço automotivo</strong><span>Condição inicial, peças, serviço e testes.</span><small>Usar modelo →</small></a>
+      <a class="guide-category-card" href="{% url 'service_job_create_from_template' 'aula-consultoria' %}"><strong>Aula ou consultoria</strong><span>Objetivo, sessão, material e próximos passos.</span><small>Usar modelo →</small></a>
+      <a class="guide-category-card" href="{% url 'service_job_create_from_template' 'fotografia-video' %}"><strong>Fotografia e vídeo</strong><span>Briefing, captação, edição e entrega.</span><small>Usar modelo →</small></a>
+      <a class="guide-category-card" href="{% url 'service_job_create_from_template' 'beleza-bem-estar' %}"><strong>Beleza e bem-estar</strong><span>Preferências, produtos, atendimento e cuidados.</span><small>Usar modelo →</small></a>
+    </div>
+    <div class="guide-note">
+      <b>i</b>
+      <div><strong>O modelo é um ponto de partida.</strong><p>Revise cliente, local, quantidade, valores, prazos e responsabilidades antes de enviar qualquer folha ou proposta.</p></div>
     </div>
   </section>
 
