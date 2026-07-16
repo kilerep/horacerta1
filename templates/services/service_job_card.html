@@ -8,11 +8,11 @@
       <span class="status-chip {{ job.status_tone }}">{{ job.status_label }}</span>
     </div>
     <p class="service-line">
-      Previsao:
+      Previsão:
       {% if job.start_date %}{{ job.start_date|date:"d/m/Y" }}{% else %}sem data{% endif %}
-      {% if job.planned_start_time %} as {{ job.planned_start_time|time:"H:i" }}{% endif %}
+      {% if job.planned_start_time %} às {{ job.planned_start_time|time:"H:i" }}{% endif %}
     </p>
-    <div class="service-next">Proxima acao: <strong>{{ job.next_action.primary.label }}</strong></div>
+    <div class="service-next">Próxima ação: <strong>{{ job.next_action.primary.label }}</strong></div>
     {% if not compact %}
       <div class="service-facts">
         <div class="fact"><span>Horas realizadas</span><strong>{{ job.total_hours_label }}</strong></div>
@@ -31,5 +31,6 @@
       <a class="btn primary" href="{{ job.next_action.primary.url }}" {% if job.next_action.primary.external %}target="_blank" rel="noopener"{% endif %}>{{ job.next_action.primary.label }}</a>
     {% endif %}
     <a class="btn" href="{% url 'service_job_detail' job.id %}">Ver detalhes</a>
+    {% if not compact %}<a class="btn" href="{% url 'service_statement' job.id %}">Prestação de contas</a>{% endif %}
   </div>
 </article>
