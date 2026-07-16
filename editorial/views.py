@@ -16,6 +16,7 @@ def _public_context(request, path, *, image_url=""):
     canonical_url = f"{base_url}{path}"
     fallback_image = f"{base_url}{static('pwa/icon-512.png')}"
     return {
+        "site_url": base_url,
         "canonical_url": canonical_url,
         "og_url": canonical_url,
         "og_image_url": image_url or fallback_image,
@@ -59,9 +60,8 @@ def article_detail(request, slug):
         EditorialArticle.objects.published().select_related("category", "author"),
         slug=slug,
     )
-    image_url = ""
-    if article.cover_image:
-        image_url = request.build_absolute_uri(article.cover_image.url)
+    base_url = _public_base_url(request)
+    image_url = f"{base_url}{article.cover_image.url}" if article.cover_image else ""
     context = _public_context(request, article.get_absolute_url(), image_url=image_url)
     context.update(
         {
