@@ -8,7 +8,8 @@ from django.utils import timezone
 from companies.models import Company, Employee
 from timeclock.models import Contract
 
-from .models import ServiceCategory, ServiceJob, ServiceRequest
+from .models import ServiceCategory, ServiceItemExpense, ServiceItemUnit, ServiceJob, ServiceRequest
+from .service_templates import get_service_template
 
 
 User = get_user_model()
@@ -48,15 +49,21 @@ class TemplateRequestFlowTests(TestCase):
             slug="limpeza-conservacao",
             is_active=True,
         )
+        self.template = get_service_template("limpeza-recorrente")
         self.client.force_login(self.professional)
 
     def _payload(self, submit_action):
+        checklist = "\n".join(f"- {step}" for step in self.template["checklist"])
         return {
             "client_mode": "registered",
             "contract": str(self.contract.id),
             "category": str(self.category.id),
             "title": "Limpeza mensal do escritório",
-            "description": "Necessidade informada pelo cliente: limpeza mensal.\n\nPontos de conferência:\n- áreas e prioridades",
+            "description": (
+                "Necessidade informada pelo cliente: limpeza mensal.\n\n"
+                f"Escopo sugerido para confirmar:\n{self.template['description']}\n\n"
+                f"Pontos de conferência:\n{checklist}"
+            ),
             "preferred_date": timezone.localdate().isoformat(),
             "preferred_time": "08:00",
             "address_street": "Rua do Escritório",
@@ -121,12 +128,33 @@ class TemplateRequestFlowTests(TestCase):
         service_request = ServiceRequest.objects.get(title="Limpeza mensal do escritório")
         job = service_request.converted_service
         self.assertEqual(response.url, reverse("service_job_detail", args=[job.id]))
+        self._assert_converted_template_job(job)
+
+    def test_saved_template_request_preserves_template_when_converted_later(self):
+        create_response = self.client.post(
+            reverse("service_request_create_from_template", args=["limpeza-recorrente"]),
+            self._payload("save"),
+        )
+        self.assertEqual(create_response.status_code, 302)
+        service_request = ServiceRequest.objects.get(title="Limpeza mensal do escritório")
+
+        convert_response = self.client.post(reverse("service_request_convert", args=[service_request.id]))
+
+        self.assertEqual(convert_response.status_code, 302)
+        service_request.refresh_from_db()
+        self._assert_converted_template_job(service_request.converted_service)
+
+    def _assert_converted_template_job(self, job):
         self.assertEqual(job.billing_mode, ServiceJob.BillingMode.FIXED)
         self.assertIn("materiais delicados", job.notes)
         self.assertEqual(job.service_street, "Rua do Escritório")
+        self.assertEqual(job.service_number, "100")
+        self.assertEqual(job.service_city, "Blumenau")
         self.assertSetEqual(
             set(job.item_expenses.values_list("name", flat=True)),
             {"Produtos de limpeza", "Sacos para resíduos"},
         )
         for item in job.item_expenses.all():
             self.assertEqual(item.unit_value, Decimal("0.00"))
+            self.assertEqual(item.type, ServiceItemExpense.ItemType.MATERIAL)
+            self.assertEqual(item.unit, ServiceItemUnit.PACKAGE)
