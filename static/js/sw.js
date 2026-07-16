@@ -7,14 +7,20 @@ const ESSENTIAL_ASSETS = ["/", OFFLINE_PAGE, "/static/pwa/icon-192.png"];
 const SENSITIVE_PATH_PREFIXES = [
   "/me/",
   "/contratante/",
+  "/empresa/",
+  "/dashboard/",
+  "/interno/",
   "/admin/",
   "/api/",
   "/accounts/",
   "/servicos/",
+  "/conferencia/",
   "/media/",
   "/login/",
   "/logout/",
+  "/signup/",
   "/password-",
+  "/reset/",
 ];
 
 function isSensitiveRequest(url) {
