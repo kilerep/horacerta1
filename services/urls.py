@@ -7,6 +7,7 @@ from . import (
     service_guide,
     service_repeat,
     service_templates,
+    template_request,
     views,
 )
 
@@ -20,6 +21,11 @@ urlpatterns = [
     ),
     path("me/servicos/viagem-trabalho/novo/", service_guide.service_travel_create, name="service_travel_create"),
     path("me/servicos/modelos/", service_templates.service_template_library, name="service_template_library"),
+    path(
+        "me/servicos/modelos/<slug:template_slug>/pedido/",
+        template_request.service_request_create_from_template,
+        name="service_request_create_from_template",
+    ),
     path(
         "me/servicos/modelos/<slug:template_slug>/usar/",
         service_templates.service_job_create_from_template,
