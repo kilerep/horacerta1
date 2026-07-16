@@ -85,9 +85,11 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.sitemaps",
     "accounts",
     "companies",
     "organizations.apps.OrganizationsConfig",
+    "editorial.apps.EditorialConfig",
     "services",
     "timeclock",
 ]
@@ -119,7 +121,7 @@ TEMPLATES = [
                 "accounts.context_processors.header_profile_media",
             ],
         },
-    },
+    }
 ]
 
 WSGI_APPLICATION = "config.wsgi.application"
