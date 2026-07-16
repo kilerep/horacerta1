@@ -1,0 +1,25 @@
+{% load editorial_tags %}
+{% latest_editorial_articles 3 as landing_articles %}
+<section class="landing-editorial" id="conteudos">
+  <div class="container">
+    <div class="landing-editorial__head">
+      <div>
+        <span class="editorial-eyebrow">Portal do Prestador</span>
+        <h2>Conteúdo para trabalhar melhor</h2>
+        <p>Notícias explicadas, guias e análises sobre gestão, mercado, finanças, tecnologia e oportunidades para quem presta ou contrata serviços.</p>
+      </div>
+      <a class="btn" href="{% url 'editorial:article_list' %}">Ver todos os conteúdos</a>
+    </div>
+    {% if landing_articles %}
+      <div class="editorial-grid">
+        {% for article in landing_articles %}{% include "editorial/_article_card.html" with article=article %}{% endfor %}
+      </div>
+    {% else %}
+      <div class="editorial-empty">
+        <h3>Portal editorial em preparação</h3>
+        <p>Os primeiros guias e notícias serão publicados com autoria, data e fontes identificadas.</p>
+        <a class="btn" href="{% url 'editorial:editorial_policy' %}">Conhecer a política editorial</a>
+      </div>
+    {% endif %}
+  </div>
+</section>
