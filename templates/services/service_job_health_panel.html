@@ -42,7 +42,7 @@
     </div>
     <div class="health-item {% if has_work_logs %}ok{% else %}warn{% endif %}">
       <strong class="health-mark">Execução</strong>
-      <span>{% if open_work_log %}Existe um período aberto em andamento.{% elif has_work_logs %}Períodos de trabalho registrados.{% else %}Registre cada período trabalhado para comprovar a execução.{% endif %}</span>
+      <span>{% if open_work_log %}Existe um período aberto em andamento.{% elif has_work_logs %}Períodos de trabalho registrados.{% else %}Registre períodos para comprovar execução e montar relatório final.{% endif %}</span>
     </div>
     <div class="health-item {% if is_report_sent %}ok{% else %}warn{% endif %}">
       <strong class="health-mark">Entrega final</strong>
