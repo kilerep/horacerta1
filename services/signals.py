@@ -30,31 +30,76 @@ def _guided_request_kind(service_request):
     return ""
 
 
-def _apply_guided_defaults(kind, job):
+def _template_for_request(service_request):
+    """Identifica o modelo pela descrição completa inserida no pedido guiado."""
+    from .service_templates import SERVICE_TEMPLATES
+
+    description = service_request.description or ""
+    for template in SERVICE_TEMPLATES:
+        template_description = template.get("description") or ""
+        if template_description and template_description in description:
+            return template
+    return None
+
+
+def _apply_template_defaults(template, job):
+    from .service_templates import _create_template_items
+
+    _create_template_items(job, template)
+
+    for definition in template.get("items", ()):
+        item = job.item_expenses.filter(name__iexact=definition["name"]).first()
+        if not item:
+            continue
+        changed_fields = []
+        if item.type != definition["type"]:
+            item.type = definition["type"]
+            changed_fields.append("type")
+        if item.unit != definition["unit"]:
+            item.unit = definition["unit"]
+            changed_fields.append("unit")
+        if changed_fields:
+            item.save(update_fields=[*changed_fields, "updated_at"])
+
+    job_changed_fields = []
+    if job.billing_mode == ServiceJob.BillingMode.UNDEFINED:
+        job.billing_mode = template["billing_mode"]
+        job_changed_fields.append("billing_mode")
+        if job.billing_mode == ServiceJob.BillingMode.HOURLY and job.contract_id:
+            job.hourly_rate_snapshot = job.contract.hourly_rate or 0
+            job_changed_fields.append("hourly_rate_snapshot")
+
+    template_notes = (template.get("notes") or "").strip()
+    if template_notes and template_notes not in (job.notes or ""):
+        job.notes = f"{(job.notes or '').strip()}\n\n{template_notes}".strip()
+        job_changed_fields.append("notes")
+
+    if job_changed_fields:
+        job.save(update_fields=[*dict.fromkeys(job_changed_fields), "updated_at"])
+
+
+def _apply_guided_defaults(service_request, job):
+    template = _template_for_request(service_request)
+    if template:
+        _apply_template_defaults(template, job)
+        return
+
+    kind = _guided_request_kind(service_request)
     if kind == "viagem":
         from .service_guide import _create_travel_preset_items
 
         _create_travel_preset_items(job)
         return
     if kind == "evento":
-        from .service_templates import _create_template_items, get_service_template
+        from .service_templates import get_service_template
 
-        template = get_service_template("evento-sonorizacao")
-        _create_template_items(job, template)
-        template_notes = (template.get("notes") or "").strip()
-        if template_notes and template_notes not in (job.notes or ""):
-            job.notes = f"{(job.notes or '').strip()}\n\n{template_notes}".strip()
-            job.save(update_fields=["notes", "updated_at"])
+        _apply_template_defaults(get_service_template("evento-sonorizacao"), job)
 
 
 @receiver(post_save, sender=ServiceRequest)
-def copy_guided_request_to_service(sender, instance, **kwargs):
-    """Leva agenda, local e itens do pedido guiado para o serviço sem afetar o fluxo legado."""
+def copy_request_context_to_service(sender, instance, **kwargs):
+    """Leva agenda, local e sugestões do pedido para o serviço sem sobrescrever dados revisados."""
     if not instance.converted_service_id:
-        return
-
-    kind = _guided_request_kind(instance)
-    if not kind:
         return
 
     job = ServiceJob.objects.filter(pk=instance.converted_service_id).first()
@@ -89,4 +134,4 @@ def copy_guided_request_to_service(sender, instance, **kwargs):
 
         job.save(update_fields=[*dict.fromkeys(changed_fields), "updated_at"])
 
-    _apply_guided_defaults(kind, job)
+    _apply_guided_defaults(instance, job)
