@@ -66,6 +66,10 @@ class ServiceGuideAndAccountabilityTests(TestCase):
         self.assertContains(response, "Pedido vindo do WhatsApp")
         self.assertContains(response, "Evento ou sonorização")
         self.assertContains(response, "Viagem ou atendimento externo")
+        self.assertContains(response, "Entenda as etapas e os documentos")
+        self.assertContains(response, "Pedido de serviço")
+        self.assertContains(response, "Folha ou proposta")
+        self.assertContains(response, "prestação de contas")
         self.assertContains(response, reverse("service_start_guide"))
         self.assertContains(response, reverse("service_travel_create"))
 
@@ -79,6 +83,7 @@ class ServiceGuideAndAccountabilityTests(TestCase):
         self.assertContains(response, "Entregar o relatório")
         self.assertContains(response, "Vou fazer um evento ou sonorização")
         self.assertContains(response, "Vou viajar ou trabalhar fora da empresa")
+        self.assertContains(response, "mostra a próxima ação")
         self.assertContains(response, reverse("service_job_create_from_template", args=["evento-sonorizacao"]))
 
     def test_travel_flow_creates_zero_value_expense_presets(self):
