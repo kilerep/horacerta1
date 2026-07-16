@@ -27,7 +27,6 @@ class EditorialArticleAdmin(admin.ModelAdmin):
     list_filter = ("status", "content_type", "category", "is_featured", "published_at")
     search_fields = ("title", "summary", "body", "author_name", "source_name")
     prepopulated_fields = {"slug": ("title",)}
-    autocomplete_fields = ("author",)
     date_hierarchy = "published_at"
     readonly_fields = ("created_at", "updated_at")
     actions = ("publish_selected", "archive_selected")
