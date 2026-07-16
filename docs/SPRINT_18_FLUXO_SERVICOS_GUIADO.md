@@ -12,6 +12,17 @@ Tornar a área de Serviços fácil de entender para prestadores de diferentes se
 4. Registrar períodos, materiais e despesas durante a execução.
 5. Entregar relatório final e, quando necessário, prestação de contas.
 
+## Experiência visual
+
+A Central de serviços e o assistente usam os tokens do design system do HoraCerta. Assim, o mesmo fluxo se adapta aos temas:
+
+- Grafite Premium;
+- Neutro Profissional;
+- Brasil Corporativo;
+- Rubro Profissional.
+
+O layout possui cartões por situação, etapas numeradas, ações prioritárias, estados de foco, redução de movimento e breakpoints para computador, tablet e celular. O documento de prestação de contas usa um visual claro próprio para leitura, PDF e impressão.
+
 ## Assistente de início
 
 A rota `/me/servicos/comecar/` apresenta caminhos por situação:
@@ -61,7 +72,7 @@ A prestação de contas reúne:
 - materiais e outros itens consumidos;
 - mão de obra, despesas, materiais e total geral.
 
-O documento possui visualização interna, PDF e link público somente depois que o relatório final do serviço foi gerado.
+O documento possui visualização interna, PDF e link público somente depois que o relatório final do serviço foi gerado. A visualização interna também oferece envio do link pelo WhatsApp, para o prestador escolher a empresa ou responsável que receberá o documento.
 
 ## Segurança
 
@@ -90,5 +101,6 @@ O documento possui visualização interna, PDF e link público somente depois qu
 7. Marcar combustível e alimentação como usados.
 8. Informar referências de comprovantes.
 9. Abrir a prestação de contas.
-10. Baixar o PDF.
+10. Baixar o PDF e testar a impressão.
 11. Gerar o relatório final e testar o link público.
+12. Usar o botão de envio pelo WhatsApp e conferir o link recebido.
