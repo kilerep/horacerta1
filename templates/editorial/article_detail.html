@@ -1,5 +1,4 @@
 {% extends "public/base_public.html" %}
-{% load static %}
 
 {% block title %}{{ article.public_title }} | HoraCerta{% endblock %}
 {% block meta_description %}{{ article.public_description }}{% endblock %}
@@ -17,7 +16,6 @@
 <meta property="article:published_time" content="{{ article.published_at|date:'c' }}">
 <meta property="article:modified_time" content="{{ article.updated_at|date:'c' }}">
 <meta property="article:section" content="{{ article.category.name }}">
-<link rel="stylesheet" href="{% static 'css/editorial.css' %}">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -27,8 +25,8 @@
   "datePublished": "{{ article.published_at|date:'c' }}",
   "dateModified": "{{ article.updated_at|date:'c' }}",
   "mainEntityOfPage": "{{ canonical_url|escapejs }}",
-  "author": {"@type": "Organization", "name": "{{ article.author_name|escapejs }}"},
-  "publisher": {"@type": "Organization", "name": "HoraCerta", "url": "{{ request.scheme }}://{{ request.get_host }}"}{% if article.cover_image %},
+  "author": {"@type": "Organization", "name": "{{ article.author_name|escapejs }}", "url": "{{ site_url|escapejs }}"},
+  "publisher": {"@type": "Organization", "name": "HoraCerta", "url": "{{ site_url|escapejs }}"}{% if article.cover_image %},
   "image": ["{{ og_image_url|escapejs }}"]{% endif %}
 }
 </script>
@@ -65,7 +63,7 @@
         <h2>Sobre este conteúdo</h2>
         <p>Categoria: <strong>{{ article.category.name }}</strong></p>
         <p>Formato: <strong>{{ article.get_content_type_display }}</strong></p>
-        <a href="{% url 'editorial:editorial_policy' %}">Conheça a política editorial</a>
+        <a href="{% url 'editorial:editorial_policy' %}">Política editorial</a>
       </div>
       {% if article.source_url %}
         <div class="editorial-aside-card">
