@@ -51,8 +51,37 @@ class PwaFoundationTests(TestCase):
     def test_service_worker_is_served_from_root_scope(self):
         response = self.client.get(reverse("pwa_service_worker"))
         self.assertEqual(response["Service-Worker-Allowed"], "/")
-        self.assertContains(response, 'const SW_VERSION = "hc-sw-v3";')
+        self.assertContains(response, 'const SW_VERSION = "hc-sw-v4";')
         self.assertContains(response, 'const OFFLINE_PAGE = "/offline/";')
+
+    def test_service_worker_never_caches_private_documents_or_media(self):
+        response = self.client.get(reverse("pwa_service_worker"))
+
+        sensitive_prefixes = [
+            "/me/",
+            "/contratante/",
+            "/empresa/",
+            "/dashboard/",
+            "/interno/",
+            "/admin/",
+            "/api/",
+            "/servicos/",
+            "/conferencia/",
+            "/media/",
+            "/login/",
+            "/logout/",
+            "/signup/",
+            "/password-",
+            "/reset/",
+        ]
+        for prefix in sensitive_prefixes:
+            with self.subTest(prefix=prefix):
+                self.assertContains(response, f'"{prefix}"')
+
+        self.assertContains(response, 'cacheControl.includes("no-store")')
+        self.assertContains(response, 'cacheControl.includes("private")')
+        self.assertContains(response, 'url.pathname.startsWith("/static/")')
+        self.assertContains(response, "event.respondWith(networkOnly(event.request))")
 
     def test_pwa_status_requires_login_and_reports_only_available_capabilities(self):
         anonymous_response = self.client.get(reverse("pwa_status"))

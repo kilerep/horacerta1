@@ -1,0 +1,52 @@
+{% extends "organizations/base.html" %}
+
+{% block title %}{{ organization.name }}{% endblock %}
+{% block page_title %}Empresa contratante{% endblock %}
+
+{% block organization_content %}
+<header class="org-head">
+  <div>
+    <h1>{{ organization.name }}</h1>
+    <p>Painel inicial da empresa contratante. Organize sua equipe e os vínculos com prestadores.</p>
+  </div>
+  <nav class="org-nav" aria-label="Navegação da empresa">
+    <a href="{% url 'organization_providers' organization.id %}">Prestadores</a>
+    <a href="{% url 'organization_members' organization.id %}">Membros</a>
+    {% if membership.can_manage_services %}<a href="{% url 'organization_provider_invite' organization.id %}">Convidar prestador</a>{% endif %}
+    {% if membership.can_manage_members %}<a href="{% url 'organization_member_invite' organization.id %}">Convidar membro</a>{% endif %}
+  </nav>
+</header>
+
+<section class="org-grid" aria-label="Resumo da empresa">
+  <div class="org-metric"><span>Prestadores ativos</span><strong>{{ active_provider_count }}</strong></div>
+  <div class="org-metric"><span>Vínculos pendentes</span><strong>{{ pending_provider_count }}</strong></div>
+  <div class="org-metric"><span>Membros ativos</span><strong>{{ active_member_count }}</strong></div>
+  <div class="org-metric"><span>Convites pendentes</span><strong>{{ pending_member_count }}</strong></div>
+</section>
+
+<section class="org-card">
+  <h2>Próximos passos</h2>
+  <div class="org-empty">
+    <strong>1. Organize sua equipe.</strong><br>
+    Convide as pessoas que acompanharão pedidos, serviços, horas ou relatórios.<br><br>
+    <strong>2. Vincule prestadores.</strong><br>
+    Envie o convite e escolha quais informações poderão ser compartilhadas após o aceite.<br><br>
+    <strong>3. Acompanhe as permissões.</strong><br>
+    Serviços, horas, relatórios e valores são autorizados separadamente.
+  </div>
+</section>
+
+<section class="org-card">
+  <h2>Atividade recente</h2>
+  {% if recent_events %}
+    {% for event in recent_events %}
+      <div class="org-event">
+        <strong>{{ event.summary }}</strong>
+        <span>{{ event.created_at|date:"d/m/Y H:i" }}{% if event.actor %} · {{ event.actor.email }}{% endif %}</span>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="org-empty">Nenhuma atividade registrada ainda.</div>
+  {% endif %}
+</section>
+{% endblock %}

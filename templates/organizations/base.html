@@ -1,0 +1,13 @@
+{% extends "accounts/base.html" %}
+
+{% block extra_head %}
+<style>
+  .org-page{display:grid;gap:16px;max-width:1120px}.org-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.org-head h1{margin:0;font-size:27px}.org-head p{margin:6px 0 0;color:var(--color-text-muted);line-height:1.45}.org-nav{display:flex;gap:8px;flex-wrap:wrap}.org-nav a{display:inline-flex;align-items:center;min-height:38px;padding:8px 12px;border:1px solid var(--color-border);border-radius:8px;background:var(--surface-soft);color:var(--color-text);font-weight:800;text-decoration:none}.org-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.org-metric{border:1px solid var(--color-border);border-radius:8px;background:var(--surface-soft);padding:13px}.org-metric span{display:block;color:var(--color-text-muted);font-size:12px}.org-metric strong{display:block;margin-top:5px;font-size:22px}.org-card{display:grid;gap:12px;border:1px solid var(--color-border);border-radius:8px;background:var(--gradient-card);box-shadow:var(--shadow-soft);padding:16px}.org-card h2{margin:0;font-size:18px}.org-form{display:grid;gap:12px}.org-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.org-field.full{grid-column:1 / -1}.org-field label{display:block;margin-bottom:5px;color:var(--color-text-muted);font-size:12px;font-weight:800}.org-errors{margin-top:5px;color:var(--danger-text);font-size:12px}.org-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.org-table{width:100%;border-collapse:collapse}.org-table th,.org-table td{padding:10px;border-bottom:1px solid var(--color-border);text-align:left;vertical-align:top}.org-table th{font-size:12px;color:var(--color-text-muted)}.org-empty{border:1px dashed var(--color-border);border-radius:8px;background:var(--surface-soft);padding:14px;color:var(--color-text-muted);line-height:1.45}.org-event{display:grid;gap:3px;border-left:3px solid var(--color-primary);padding:7px 0 7px 10px}.org-event span{color:var(--color-text-muted);font-size:12px}@media(max-width:780px){.org-head,.org-grid,.org-form-grid{display:grid;grid-template-columns:1fr}.org-field.full{grid-column:auto}.org-nav,.org-actions{display:grid}.org-nav a,.org-actions .btn{width:100%}.org-table{display:block;overflow-x:auto}}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="org-page">
+  {% block organization_content %}{% endblock %}
+</div>
+{% endblock %}

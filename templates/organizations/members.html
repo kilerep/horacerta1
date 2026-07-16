@@ -1,0 +1,37 @@
+{% extends "organizations/base.html" %}
+
+{% block title %}Membros · {{ organization.name }}{% endblock %}
+{% block page_title %}Membros da empresa{% endblock %}
+
+{% block organization_content %}
+<header class="org-head">
+  <div>
+    <h1>Membros da empresa</h1>
+    <p>Veja quem participa da organização e qual é o papel de cada pessoa.</p>
+  </div>
+  <nav class="org-nav">
+    <a href="{% url 'organization_dashboard' organization.id %}">Voltar ao painel</a>
+    {% if membership.can_manage_members %}<a href="{% url 'organization_member_invite' organization.id %}">Convidar membro</a>{% endif %}
+  </nav>
+</header>
+
+<section class="org-card">
+  {% if members %}
+    <table class="org-table">
+      <thead><tr><th>Pessoa</th><th>Papel</th><th>Status</th><th>Entrada</th></tr></thead>
+      <tbody>
+        {% for item in members %}
+          <tr>
+            <td><strong>{{ item.user.get_full_name|default:item.user.email }}</strong><br><span class="sub">{{ item.user.email }}</span></td>
+            <td>{{ item.get_role_display }}</td>
+            <td>{{ item.get_status_display }}</td>
+            <td>{% if item.joined_at %}{{ item.joined_at|date:"d/m/Y H:i" }}{% else %}Aguardando aceite{% endif %}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="org-empty">Nenhum membro foi encontrado.</div>
+  {% endif %}
+</section>
+{% endblock %}

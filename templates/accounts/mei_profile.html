@@ -29,15 +29,15 @@
       width:70px;height:70px;border-radius:999px;object-fit:cover;border:1px solid var(--border);
       background:rgba(255,255,255,.05);
     }
-    .security-summary{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center}
-    .security-summary h2{margin:0}
-    .security-summary p{margin:8px 0 0}
-    @media (max-width:640px){.security-summary{grid-template-columns:1fr}.security-summary .btn{width:100%;justify-content:center}}
+    .summary-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center}
+    .summary-row h2{margin:0}
+    .summary-row p{margin:8px 0 0}
+    @media (max-width:640px){.summary-row{grid-template-columns:1fr}.summary-row .btn{width:100%;justify-content:center}}
   </style>
 
   <section class="panel">
     <h2 style="margin:0;">Meu perfil</h2>
-    <p class="muted" style="margin:8px 0 0;">Mantenha seus dados atualizados para facilitar a operacao com a empresa.</p>
+    <p class="muted" style="margin:8px 0 0;">Mantenha seus dados atualizados para facilitar a operação com clientes e empresas contratantes.</p>
     {% if contracts %}
       <form method="get" class="row" style="margin-top:10px;">
         <div class="field">
@@ -106,7 +106,17 @@
   </section>
 
   <section class="panel" style="margin-top:14px;">
-    <div class="security-summary">
+    <div class="summary-row">
+      <div>
+        <h2>Empresas contratantes</h2>
+        <p class="muted">Consulte convites, confirme permissões de compartilhamento e acompanhe vínculos ativos.</p>
+      </div>
+      <a class="btn primary" href="{% url 'provider_link_invites' %}">Abrir vínculos e convites</a>
+    </div>
+  </section>
+
+  <section class="panel" style="margin-top:14px;">
+    <div class="summary-row">
       <div>
         <h2>Segurança da conta</h2>
         <p class="muted">Altere sua senha usando a senha atual como confirmação.</p>

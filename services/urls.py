@@ -1,9 +1,36 @@
 from django.urls import path
 
-from . import event_proposal, service_calendar, service_repeat, views
+from . import (
+    event_proposal,
+    service_accountability,
+    service_calendar,
+    service_guide,
+    service_repeat,
+    service_templates,
+    template_request,
+    views,
+)
 
 urlpatterns = [
     path("me/servicos/", views.service_job_list, name="service_job_list"),
+    path("me/servicos/comecar/", service_guide.service_start_guide, name="service_start_guide"),
+    path(
+        "me/servicos/pedidos/guiado/<slug:scenario>/",
+        service_guide.service_request_create_from_scenario,
+        name="service_request_create_from_scenario",
+    ),
+    path("me/servicos/viagem-trabalho/novo/", service_guide.service_travel_create, name="service_travel_create"),
+    path("me/servicos/modelos/", service_templates.service_template_library, name="service_template_library"),
+    path(
+        "me/servicos/modelos/<slug:template_slug>/pedido/",
+        template_request.service_request_create_from_template,
+        name="service_request_create_from_template",
+    ),
+    path(
+        "me/servicos/modelos/<slug:template_slug>/usar/",
+        service_templates.service_job_create_from_template,
+        name="service_job_create_from_template",
+    ),
     path("me/servicos/propostas-evento/", event_proposal.service_event_proposal_list, name="service_event_proposal_list"),
     path("me/servicos/pedidos/", views.service_request_list, name="service_request_list"),
     path("me/servicos/pedidos/novo/", views.service_request_create, name="service_request_create"),
@@ -21,6 +48,8 @@ urlpatterns = [
     path("me/servicos/catalogo/<uuid:item_id>/favorito/", views.service_item_catalog_toggle_favorite, name="service_item_catalog_toggle_favorite"),
     path("me/servicos/catalogo/<uuid:item_id>/desativar/", views.service_item_catalog_deactivate, name="service_item_catalog_deactivate"),
     path("me/servicos/novo/", views.service_job_create, name="service_job_create"),
+    path("me/servicos/<uuid:job_id>/prestacao-contas/", service_accountability.service_accountability, name="service_accountability"),
+    path("me/servicos/<uuid:job_id>/prestacao-contas/pdf/", service_accountability.service_accountability_pdf, name="service_accountability_pdf"),
     path("me/servicos/<uuid:job_id>/", views.service_job_detail, name="service_job_detail"),
     path("me/servicos/<uuid:job_id>/proxima-visita/", service_repeat.service_job_repeat, name="service_job_repeat"),
     path("me/servicos/<uuid:job_id>/calendario.ics", service_calendar.service_job_calendar_ics, name="service_job_calendar_ics"),
@@ -45,4 +74,6 @@ urlpatterns = [
     path("servicos/previa/<uuid:token>/", views.public_service_job_preview, name="public_service_job_preview"),
     path("servicos/relatorio/<uuid:token>/", views.public_service_job_report, name="public_service_job_report"),
     path("servicos/relatorio/<uuid:token>/pdf/", views.public_service_job_report_pdf, name="public_service_job_report_pdf"),
+    path("servicos/prestacao-contas/<uuid:token>/", service_accountability.public_service_accountability, name="public_service_accountability"),
+    path("servicos/prestacao-contas/<uuid:token>/pdf/", service_accountability.public_service_accountability_pdf, name="public_service_accountability_pdf"),
 ]

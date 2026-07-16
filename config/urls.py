@@ -2,13 +2,24 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
+from django.contrib.sitemaps.views import sitemap
 from django.urls import include, path
 
 from accounts import pwa
 from accounts import views as account_views
+from config.health import healthcheck
+from editorial.sitemaps import EditorialArticleSitemap
+
+
+sitemaps = {
+    "editorial": EditorialArticleSitemap,
+}
 
 urlpatterns = [
+    path("health/", healthcheck, name="healthcheck"),
     path("", account_views.landing_view, name="landing"),
+    path("conteudos/", include("editorial.urls")),
+    path("sitemap.xml", sitemap, {"sitemaps": sitemaps}, name="django.contrib.sitemaps.views.sitemap"),
     path("manifest.webmanifest", pwa.manifest, name="pwa_manifest"),
     path("sw.js", pwa.service_worker, name="pwa_service_worker"),
     path("offline/", pwa.offline, name="offline"),
@@ -23,6 +34,7 @@ urlpatterns = [
         auth_views.PasswordChangeDoneView.as_view(template_name="registration/password_change_done.html"),
         name="password_change_done",
     ),
+    path("contratante/", include("organizations.urls")),
     path("", include("accounts.urls")),
     path("", include("services.urls")),
     path("api/push/subscribe/", pwa.register_push_subscription, name="register_push"),

@@ -1,0 +1,94 @@
+{% extends "public/base_public.html" %}
+
+{% block title %}{{ article.public_title }} | HoraCerta{% endblock %}
+{% block meta_description %}{{ article.public_description }}{% endblock %}
+
+{% block extra_head %}
+<link rel="canonical" href="{{ canonical_url }}">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta property="og:type" content="article">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:site_name" content="HoraCerta">
+<meta property="og:title" content="{{ article.public_title }}">
+<meta property="og:description" content="{{ article.public_description }}">
+<meta property="og:url" content="{{ og_url }}">
+<meta property="og:image" content="{{ og_image_url }}">
+<meta property="article:published_time" content="{{ article.published_at|date:'c' }}">
+<meta property="article:modified_time" content="{{ article.updated_at|date:'c' }}">
+<meta property="article:section" content="{{ article.category.name }}">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "{{ article.schema_type }}",
+  "headline": "{{ article.title|escapejs }}",
+  "description": "{{ article.public_description|escapejs }}",
+  "datePublished": "{{ article.published_at|date:'c' }}",
+  "dateModified": "{{ article.updated_at|date:'c' }}",
+  "mainEntityOfPage": "{{ canonical_url|escapejs }}",
+  "author": {"@type": "Organization", "name": "{{ article.author_name|escapejs }}", "url": "{{ site_url|escapejs }}"},
+  "publisher": {"@type": "Organization", "name": "HoraCerta", "url": "{{ site_url|escapejs }}"}{% if article.cover_image %},
+  "image": ["{{ og_image_url|escapejs }}"]{% endif %}
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<article class="editorial-article">
+  <header class="container editorial-article__header">
+    <nav class="editorial-breadcrumb" aria-label="Navegação estrutural">
+      <a href="{% url 'landing' %}">Início</a><span>›</span><a href="{% url 'editorial:article_list' %}">Conteúdos</a><span>›</span><span>{{ article.category.name }}</span>
+    </nav>
+    <div class="editorial-article__meta">
+      <span>{{ article.category.name }}</span>
+      <span>{{ article.get_content_type_display }}</span>
+      <span>{{ article.estimated_reading_minutes }} min de leitura</span>
+    </div>
+    <h1>{{ article.title }}</h1>
+    <p class="editorial-article__summary">{{ article.summary }}</p>
+    <div class="editorial-article__byline">
+      <span>Por {{ article.author_name }}</span>
+      <span>Publicado em {{ article.published_at|date:"d/m/Y \à\s H:i" }}</span>
+      {% if article.updated_at|date:"YmdHi" != article.published_at|date:"YmdHi" %}<span>Atualizado em {{ article.updated_at|date:"d/m/Y \à\s H:i" }}</span>{% endif %}
+    </div>
+  </header>
+
+  {% if article.cover_image %}
+    <div class="container editorial-article__cover"><img src="{{ article.cover_image.url }}" alt="{{ article.cover_alt }}"></div>
+  {% endif %}
+
+  <div class="container editorial-article__layout">
+    <div class="editorial-article__content">{{ article.body|linebreaks }}</div>
+    <aside class="editorial-article__aside">
+      <div class="editorial-aside-card">
+        <h2>Sobre este conteúdo</h2>
+        <p>Categoria: <strong>{{ article.category.name }}</strong></p>
+        <p>Formato: <strong>{{ article.get_content_type_display }}</strong></p>
+        <a href="{% url 'editorial:editorial_policy' %}">Política editorial</a>
+      </div>
+      {% if article.source_url %}
+        <div class="editorial-aside-card">
+          <h2>Fonte consultada</h2>
+          <p>{{ article.source_name }}</p>
+          {% if article.source_published_at %}<p>Publicada em {{ article.source_published_at|date:"d/m/Y" }}.</p>{% endif %}
+          <a class="btn" href="{{ article.source_url }}" target="_blank" rel="noopener noreferrer external">Abrir fonte original</a>
+        </div>
+      {% endif %}
+      {% if article.correction_note %}
+        <div class="editorial-aside-card editorial-aside-card--notice">
+          <h2>Correção ou atualização</h2>
+          <p>{{ article.correction_note|linebreaksbr }}</p>
+        </div>
+      {% endif %}
+    </aside>
+  </div>
+</article>
+
+{% if related_articles %}
+<section class="container editorial-section">
+  <div class="editorial-section__head"><div><span class="editorial-eyebrow">Continue lendo</span><h2>Conteúdos relacionados</h2></div></div>
+  <div class="editorial-grid">
+    {% for related in related_articles %}{% include "editorial/_article_card.html" with article=related %}{% endfor %}
+  </div>
+</section>
+{% endif %}
+{% endblock %}
