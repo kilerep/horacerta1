@@ -78,13 +78,10 @@ def _apply_template_defaults(template, job):
         job.save(update_fields=[*dict.fromkeys(job_changed_fields), "updated_at"])
 
 
-def _apply_guided_defaults(service_request, job):
-    template = _template_for_request(service_request)
+def _apply_guided_defaults(job, *, template=None, kind=""):
     if template:
         _apply_template_defaults(template, job)
         return
-
-    kind = _guided_request_kind(service_request)
     if kind == "viagem":
         from .service_guide import _create_travel_preset_items
 
@@ -97,9 +94,14 @@ def _apply_guided_defaults(service_request, job):
 
 
 @receiver(post_save, sender=ServiceRequest)
-def copy_request_context_to_service(sender, instance, **kwargs):
-    """Leva agenda, local e sugestões do pedido para o serviço sem sobrescrever dados revisados."""
+def copy_guided_request_context_to_service(sender, instance, **kwargs):
+    """Leva dados de pedidos guiados ao serviço sem alterar o fluxo legado."""
     if not instance.converted_service_id:
+        return
+
+    template = _template_for_request(instance)
+    kind = _guided_request_kind(instance)
+    if not template and not kind:
         return
 
     job = ServiceJob.objects.filter(pk=instance.converted_service_id).first()
@@ -134,4 +136,4 @@ def copy_request_context_to_service(sender, instance, **kwargs):
 
         job.save(update_fields=[*dict.fromkeys(changed_fields), "updated_at"])
 
-    _apply_guided_defaults(instance, job)
+    _apply_guided_defaults(job, template=template, kind=kind)
