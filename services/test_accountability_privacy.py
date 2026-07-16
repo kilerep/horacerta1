@@ -89,6 +89,24 @@ class AccountabilityPrivacyTests(TestCase):
         self.job.refresh_from_db()
         self.assertIsNotNone(self.job.public_report_first_viewed_at)
 
+    def test_public_accountability_does_not_use_login_email_as_provider_name(self):
+        casual_job = ServiceJob.objects.create(
+            professional=self.provider,
+            category=self.category,
+            manual_client_name="Cliente avulso",
+            title="Serviço sem contrato",
+            status=ServiceJob.Status.REPORT_SENT,
+            billing_mode=ServiceJob.BillingMode.UNDEFINED,
+        )
+
+        response = self.client.get(
+            reverse("public_service_accountability", args=[casual_job.public_token])
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Prestador de serviço")
+        self.assertNotContains(response, self.provider.email)
+
     def test_public_pdf_uses_the_same_privacy_headers_and_records_view(self):
         self.job.public_report_first_viewed_at = None
         self.job.save(update_fields=["public_report_first_viewed_at", "updated_at"])
