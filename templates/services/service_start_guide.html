@@ -79,10 +79,11 @@
         </div>
         <div class="guide-result">
           <strong>O sistema vai preparar</strong>
-          <span>Escopo técnico, equipamentos previstos, horários, logística, proposta profissional e relatório final.</span>
+          <span>Pedido guiado, escopo técnico, equipamentos previstos, horários, logística, proposta profissional e relatório final.</span>
         </div>
         <div class="guide-scenario-actions">
-          <a class="btn primary" href="{% url 'service_job_create_from_template' 'evento-sonorizacao' %}">Começar evento</a>
+          <a class="btn primary" href="{% url 'service_request_create_from_scenario' 'evento' %}">Registrar pedido do evento</a>
+          <a class="btn" href="{% url 'service_job_create_from_template' 'evento-sonorizacao' %}">Evento já combinado</a>
           <a class="btn" href="{% url 'service_event_proposal_list' %}">Ver propostas</a>
         </div>
       </article>
@@ -99,10 +100,11 @@
         </div>
         <div class="guide-result">
           <strong>O sistema vai preparar</strong>
-          <span>Serviço por hora, pedágio, combustível, estacionamento, alimentação, hospedagem e prestação de contas.</span>
+          <span>Solicitação guiada, destino, responsável, regras de reembolso, horas, despesas e prestação de contas.</span>
         </div>
         <div class="guide-scenario-actions">
-          <a class="btn primary" href="{% url 'service_travel_create' %}">Começar viagem de trabalho</a>
+          <a class="btn primary" href="{% url 'service_request_create_from_scenario' 'viagem' %}">Registrar solicitação da viagem</a>
+          <a class="btn" href="{% url 'service_travel_create' %}">Viagem já autorizada</a>
         </div>
       </article>
 
@@ -168,7 +170,7 @@
 
   <section class="card">
     <h2 style="margin-top:0;">Exemplo: prestação de contas de uma viagem</h2>
-    <p class="muted" style="line-height:1.55;">Crie o atendimento externo, registre um período para cada dia trabalhado e marque somente as despesas realmente utilizadas. Ao final, abra <strong>Prestação de contas</strong> para gerar um documento com horas, atividades, pedágio, combustível, estacionamento, alimentação, hospedagem e referências de comprovantes.</p>
+    <p class="muted" style="line-height:1.55;">Primeiro registre a solicitação da empresa. Depois de autorizada, transforme em serviço, registre um período para cada dia trabalhado e marque somente as despesas realmente utilizadas. Ao final, abra <strong>Prestação de contas</strong> para gerar um documento com horas, atividades, pedágio, combustível, estacionamento, alimentação, hospedagem e referências de comprovantes.</p>
   </section>
 </div>
 {% endblock %}
