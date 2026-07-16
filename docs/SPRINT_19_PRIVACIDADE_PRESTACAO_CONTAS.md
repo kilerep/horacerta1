@@ -7,12 +7,13 @@ Endurecer o documento público de prestação de contas sem alterar horas, valor
 ## Problemas encontrados
 
 1. A página pública podia ser armazenada pelo navegador, proxy ou cache intermediário.
-2. Não havia instrução explícita para mecanismos de busca não indexarem o documento.
-3. O e-mail de login podia aparecer como nome ou contato do prestador.
-4. O campo legado `Employee.phone` não é uma fonte pública confiável: em alguns cadastros criados a partir de cliente avulso, ele pode conter o telefone do próprio cliente.
-5. A abertura da prestação de contas não registrava a primeira visualização do documento final.
-6. O compartilhamento pelo WhatsApp enviava apenas o endereço, sem explicar qual documento estava sendo enviado.
-7. Existiam duas PRs concorrentes para a mesma jornada de Serviços, baseadas em branches diferentes.
+2. O service worker armazenava navegações e imagens dinâmicas, podendo manter relatórios, documentos compartilhados ou arquivos de `media/` no dispositivo.
+3. Não havia instrução explícita para mecanismos de busca não indexarem o documento.
+4. O e-mail de login podia aparecer como nome ou contato do prestador.
+5. O campo legado `Employee.phone` não é uma fonte pública confiável: em alguns cadastros criados a partir de cliente avulso, ele pode conter o telefone do próprio cliente.
+6. A abertura da prestação de contas não registrava a primeira visualização do documento final.
+7. O compartilhamento pelo WhatsApp enviava apenas o endereço, sem explicar qual documento estava sendo enviado.
+8. Existiam duas PRs concorrentes para a mesma jornada de Serviços, baseadas em branches diferentes.
 
 ## Correções
 
@@ -27,6 +28,22 @@ As respostas HTML e PDF passam a usar:
 - `Referrer-Policy: no-referrer`.
 
 A página HTML também possui metatags `robots` e `referrer`.
+
+### Cache seguro no PWA
+
+O service worker foi atualizado para `hc-sw-v4`. Ao ativar, ele remove os caches antigos do HoraCerta, incluindo o cache dinâmico anterior.
+
+Nunca são armazenados pelo service worker:
+
+- área do prestador (`/me/`);
+- portal da empresa (`/contratante/`);
+- administração e APIs;
+- links públicos de serviços, propostas e relatórios (`/servicos/`);
+- login, logout e recuperação de senha;
+- arquivos enviados em `/media/`;
+- respostas marcadas como `private` ou `no-store`.
+
+Somente arquivos localizados em `/static/` podem usar a estratégia de cache de assets. Rotas sensíveis passam a operar em modo somente rede e mostram apenas a página offline genérica quando não houver conexão.
 
 ### Identidade pública do prestador
 
@@ -73,4 +90,7 @@ Os testes cobrem:
 - registro da primeira visualização em HTML e PDF;
 - bloqueio antes do relatório final;
 - isolamento entre prestadores;
-- mensagem contextual do WhatsApp.
+- mensagem contextual do WhatsApp;
+- versão nova do service worker;
+- exclusão de rotas e mídia privadas do cache PWA;
+- respeito a `private` e `no-store`.
