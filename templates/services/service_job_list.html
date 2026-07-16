@@ -56,21 +56,21 @@
           <span>Registre o que o cliente pediu antes de fechar escopo, data e valor.</span>
           <small>Começar pelo pedido →</small>
         </a>
-        <a class="service-path-card is-primary" href="{% url 'service_job_create_from_template' 'evento-sonorizacao' %}">
+        <a class="service-path-card is-primary" href="{% url 'service_request_create_from_scenario' 'evento' %}">
           <div class="service-path-icon" aria-hidden="true">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 9v6h4l5 4V5L8 9H4Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M16 9.5a4 4 0 0 1 0 5M18.5 7a7.5 7.5 0 0 1 0 10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
           </div>
           <strong>Evento ou sonorização</strong>
-          <span>Prepare equipamentos, horários, logística e proposta técnica do evento.</span>
-          <small>Montar evento →</small>
+          <span>Registre primeiro o pedido do cliente e depois complete equipamentos, horários, logística e proposta.</span>
+          <small>Registrar pedido do evento →</small>
         </a>
-        <a class="service-path-card is-primary" href="{% url 'service_travel_create' %}">
+        <a class="service-path-card is-primary" href="{% url 'service_request_create_from_scenario' 'viagem' %}">
           <div class="service-path-icon" aria-hidden="true">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M5 7.5h14l1 10.5H4L5 7.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 7.5V6a3 3 0 0 1 6 0v1.5M8 12h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
           </div>
           <strong>Viagem ou atendimento externo</strong>
-          <span>Registre horas, pedágio, combustível, alimentação e prestação de contas.</span>
-          <small>Organizar viagem →</small>
+          <span>Organize destino, responsável, datas e regras de despesas antes de transformar em serviço.</span>
+          <small>Registrar solicitação da viagem →</small>
         </a>
         <a class="service-path-card" href="{% url 'service_template_library' %}">
           <div class="service-path-icon" aria-hidden="true">
