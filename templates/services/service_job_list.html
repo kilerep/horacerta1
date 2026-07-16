@@ -14,7 +14,7 @@
     <div>
       <p class="service-eyebrow">Do pedido ao relatório</p>
       <h1>Central de serviços</h1>
-      <p>Comece pelo tipo de atendimento, organize o combinado com o cliente, registre horas e despesas durante a execução e entregue um documento profissional no final.</p>
+      <p>Comece pelo tipo de atendimento, organize o combinado com o cliente, registre horas e despesas durante a execução e entregue um documento profissional no final. Esse fluxo fica separado e sem alterar seu histórico normal de horários.</p>
     </div>
     <div class="service-hero-actions">
       <a class="btn primary service-primary-action" href="{% url 'service_start_guide' %}">Começar um atendimento</a>
@@ -23,12 +23,20 @@
   </section>
 
   {% if not has_active_filters %}
-    <section class="service-metrics" aria-label="Resumo dos serviços">
-      <div class="service-metric"><span>Pedidos abertos</span><strong>{{ summary.requests_open }}</strong></div>
-      <div class="service-metric"><span>Serviços de hoje</span><strong>{{ today_jobs|length }}</strong></div>
-      <div class="service-metric"><span>Em execução</span><strong>{{ summary.in_progress }}</strong></div>
-      <div class="service-metric"><span>Aguardando relatório</span><strong>{{ summary.finished }}</strong></div>
-      <div class="service-metric"><span>Total atual dos serviços</span><strong>{{ summary.estimated_total_brl }}</strong></div>
+    <section class="service-section">
+      <div class="service-section-head">
+        <div>
+          <h2>Resumo da área</h2>
+          <p>Visão rápida dos pedidos, serviços em andamento e entregas pendentes.</p>
+        </div>
+      </div>
+      <div class="service-metrics" aria-label="Resumo dos serviços">
+        <div class="service-metric"><span>Pedidos abertos</span><strong>{{ summary.requests_open }}</strong></div>
+        <div class="service-metric"><span>Serviços de hoje</span><strong>{{ today_jobs|length }}</strong></div>
+        <div class="service-metric"><span>Em execução</span><strong>{{ summary.in_progress }}</strong></div>
+        <div class="service-metric"><span>Aguardando relatório</span><strong>{{ summary.finished }}</strong></div>
+        <div class="service-metric"><span>Total atual dos serviços</span><strong>{{ summary.estimated_total_brl }}</strong></div>
+      </div>
     </section>
 
     <section class="service-section">
@@ -123,7 +131,7 @@
     <div class="service-section-head">
       <div>
         <h2>Todos os serviços</h2>
-        <p>Pesquise por cliente, categoria, período ou status.</p>
+        <p>Filtrar serviços por cliente, categoria, período ou status.</p>
       </div>
     </div>
 
@@ -165,7 +173,7 @@
         {% for job in jobs %}{% include "services/service_job_card.html" with job=job %}{% endfor %}
       </div>
     {% else %}
-      <div class="service-empty">Nenhum serviço encontrado com estes filtros.</div>
+      <div class="service-empty">Nenhum serviço encontrado. Revise a busca ou os filtros selecionados.</div>
     {% endif %}
   </section>
 </div>
