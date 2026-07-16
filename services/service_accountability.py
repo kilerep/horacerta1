@@ -53,6 +53,18 @@ def _period_label(job, work_logs):
     return "Não informado"
 
 
+def _professional_name(job, *, is_public=False):
+    employee_name = (getattr(getattr(job.contract, "employee", None), "full_name", "") or "").strip()
+    if employee_name:
+        return employee_name
+    full_name = (job.professional.get_full_name() or "").strip()
+    if full_name:
+        return full_name
+    if is_public:
+        return "Prestador de serviço"
+    return job.professional.email or job.professional.username or "Prestador de serviço"
+
+
 def _professional_contact(job, *, is_public=False):
     employee = getattr(getattr(job, "contract", None), "employee", None)
     phone = (getattr(employee, "phone", "") or "").strip()
@@ -98,12 +110,6 @@ def _accountability_context(job, request=None, *, is_public=False):
     materials = [item for item in chargeable_items if item.type not in EXPENSE_TYPES]
     expense_total = sum((item.total_value for item in expenses), Decimal("0.00"))
     material_total = sum((item.total_value for item in materials), Decimal("0.00"))
-    professional_name = (
-        getattr(getattr(job.contract, "employee", None), "full_name", "")
-        or job.professional.get_full_name()
-        or job.professional.email
-        or job.professional.username
-    )
     public_url = ""
     whatsapp_url = ""
     if request is not None and job.status == ServiceJob.Status.REPORT_SENT:
@@ -116,7 +122,7 @@ def _accountability_context(job, request=None, *, is_public=False):
     return {
         "job": job,
         "is_public": is_public,
-        "professional_name": professional_name,
+        "professional_name": _professional_name(job, is_public=is_public),
         "professional_contact": _professional_contact(job, is_public=is_public),
         "client_name": job.client_display_name,
         "service_address": job.full_service_address or job.service_location_summary,
@@ -194,7 +200,7 @@ def public_service_accountability_pdf(request, token):
         status=ServiceJob.Status.REPORT_SENT,
     )
     _record_public_document_view(job)
-    return _accountability_pdf_response(job, is_public=True)
+    return _accountability_pdf_response(job)
 
 
 def _pdf_text(value, default="-"):
@@ -224,8 +230,8 @@ def _table(rows, widths, *, header=True):
     return table
 
 
-def _accountability_pdf_response(job, *, is_public=False):
-    report = _accountability_context(job, is_public=True if is_public else True)
+def _accountability_pdf_response(job):
+    report = _accountability_context(job, is_public=True)
     buffer = BytesIO()
     document = SimpleDocTemplate(
         buffer,
