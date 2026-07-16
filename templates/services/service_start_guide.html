@@ -1,0 +1,161 @@
+{% extends "accounts/base.html" %}
+{% load static %}
+
+{% block title %}Começar um serviço{% endblock %}
+{% block page_title %}Começar um serviço{% endblock %}
+
+{% block extra_head %}
+  <link rel="stylesheet" href="{% static 'css/services_workspace.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="guide-shell">
+  <section class="service-hero">
+    <div>
+      <p class="service-eyebrow">Assistente de serviço</p>
+      <h1>Escolha como este atendimento começou.</h1>
+      <p>O HoraCerta organiza o caminho certo para cada situação: pedido recebido, evento, viagem de trabalho, visita recorrente ou serviço já combinado.</p>
+    </div>
+    <div class="service-hero-actions">
+      <a class="btn" href="{% url 'service_job_list' %}">Voltar para Serviços</a>
+    </div>
+  </section>
+
+  <section class="service-section">
+    <div class="service-section-head">
+      <div>
+        <h2>O fluxo completo</h2>
+        <p>Você não precisa preencher tudo de uma vez. O sistema acompanha cada etapa.</p>
+      </div>
+    </div>
+    <div class="guide-flow">
+      <div class="guide-step"><b>1</b><strong>Registrar o pedido</strong><span>Cliente, necessidade, origem e itens iniciais.</span></div>
+      <div class="guide-step"><b>2</b><strong>Organizar o combinado</strong><span>Escopo, local, agenda, cobrança e responsabilidades.</span></div>
+      <div class="guide-step"><b>3</b><strong>Enviar a folha</strong><span>Prévia profissional ou proposta para o cliente conferir.</span></div>
+      <div class="guide-step"><b>4</b><strong>Executar e registrar</strong><span>Horas, materiais, despesas e observações do trabalho.</span></div>
+      <div class="guide-step"><b>5</b><strong>Entregar o relatório</strong><span>Documento final com horas, consumo, despesas e valores.</span></div>
+    </div>
+  </section>
+
+  <section class="service-section">
+    <div class="service-section-head">
+      <div>
+        <h2>Qual é a sua situação agora?</h2>
+        <p>Escolha o cartão mais parecido com o trabalho que você precisa organizar.</p>
+      </div>
+    </div>
+
+    <div class="guide-scenario-grid">
+      <article class="guide-scenario is-featured">
+        <div class="guide-scenario-head">
+          <div class="service-path-icon">W</div>
+          <div>
+            <h2>Recebi um pedido no WhatsApp</h2>
+            <p>Use quando o cliente ainda está explicando o que precisa e os detalhes não estão fechados.</p>
+          </div>
+        </div>
+        <div class="guide-result">
+          <strong>O sistema vai preparar</strong>
+          <span>Pedido inicial, mensagem de retorno, itens rápidos e transformação posterior em serviço.</span>
+        </div>
+        <div class="guide-scenario-actions">
+          <a class="btn primary" href="{% url 'service_request_create' %}">Registrar pedido</a>
+          <a class="btn" href="{% url 'service_request_list' %}">Ver pedidos</a>
+        </div>
+      </article>
+
+      <article class="guide-scenario is-featured">
+        <div class="guide-scenario-head">
+          <div class="service-path-icon">E</div>
+          <div>
+            <h2>Vou fazer um evento ou sonorização</h2>
+            <p>Use para festas, cerimônias, palestras, música ao vivo, montagem e operação técnica.</p>
+          </div>
+        </div>
+        <div class="guide-result">
+          <strong>O sistema vai preparar</strong>
+          <span>Escopo técnico, equipamentos previstos, horários, logística, proposta profissional e relatório final.</span>
+        </div>
+        <div class="guide-scenario-actions">
+          <a class="btn primary" href="{% url 'service_job_create_from_template' 'evento-sonorizacao' %}">Começar evento</a>
+          <a class="btn" href="{% url 'service_event_proposal_list' %}">Ver propostas</a>
+        </div>
+      </article>
+
+      <article class="guide-scenario is-featured">
+        <div class="guide-scenario-head">
+          <div class="service-path-icon">V</div>
+          <div>
+            <h2>Vou viajar ou trabalhar fora da empresa</h2>
+            <p>Use quando o atendimento envolve deslocamento, vários dias, horas trabalhadas e despesas reembolsáveis.</p>
+          </div>
+        </div>
+        <div class="guide-result">
+          <strong>O sistema vai preparar</strong>
+          <span>Serviço por hora, pedágio, combustível, estacionamento, alimentação, hospedagem e prestação de contas.</span>
+        </div>
+        <div class="guide-scenario-actions">
+          <a class="btn primary" href="{% url 'service_travel_create' %}">Começar viagem de trabalho</a>
+        </div>
+      </article>
+
+      <article class="guide-scenario">
+        <div class="guide-scenario-head">
+          <div class="service-path-icon">R</div>
+          <div>
+            <h2>É uma visita recorrente ou manutenção</h2>
+            <p>Use para rotinas semanais, mensais, limpeza, manutenção preventiva e acompanhamento contínuo.</p>
+          </div>
+        </div>
+        <div class="guide-result">
+          <strong>O sistema vai preparar</strong>
+          <span>Checklist, previsão de atendimento, materiais sugeridos e criação da próxima visita.</span>
+        </div>
+        <div class="guide-scenario-actions">
+          <a class="btn primary" href="{% url 'service_job_create_from_template' 'manutencao-preventiva' %}">Começar manutenção</a>
+          <a class="btn" href="{% url 'service_template_library' %}">Outros modelos</a>
+        </div>
+      </article>
+
+      <article class="guide-scenario">
+        <div class="guide-scenario-head">
+          <div class="service-path-icon">C</div>
+          <div>
+            <h2>O serviço já está combinado</h2>
+            <p>Use quando cliente, escopo, data e valor já foram acertados e você só precisa organizar a execução.</p>
+          </div>
+        </div>
+        <div class="guide-result">
+          <strong>O sistema vai preparar</strong>
+          <span>Serviço direto com cliente, local, agenda, itens previstos, execução e relatório.</span>
+        </div>
+        <div class="guide-scenario-actions">
+          <a class="btn primary" href="{% url 'service_job_create' %}">Criar serviço direto</a>
+        </div>
+      </article>
+
+      <article class="guide-scenario">
+        <div class="guide-scenario-head">
+          <div class="service-path-icon">?</div>
+          <div>
+            <h2>Ainda não sei qual modelo usar</h2>
+            <p>Consulte os modelos por segmento e escolha um ponto de partida que já tenha escopo e checklist.</p>
+          </div>
+        </div>
+        <div class="guide-result">
+          <strong>O sistema vai preparar</strong>
+          <span>Uma base profissional que você pode ajustar para o cliente e para a realidade do serviço.</span>
+        </div>
+        <div class="guide-scenario-actions">
+          <a class="btn primary" href="{% url 'service_template_library' %}">Abrir modelos profissionais</a>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2 style="margin-top:0;">Exemplo: prestação de contas de uma viagem</h2>
+    <p class="muted" style="line-height:1.55;">Crie o atendimento externo, registre um período para cada dia trabalhado e marque somente as despesas realmente utilizadas. Ao final, abra <strong>Prestação de contas</strong> para gerar um documento com horas, atividades, pedágio, combustível, estacionamento, alimentação, hospedagem e referências de comprovantes.</p>
+  </section>
+</div>
+{% endblock %}
