@@ -38,11 +38,12 @@ class AccountabilityPrivacyTests(TestCase):
             name="Cliente Prestação de Contas",
             email="financeiro-cliente@example.test",
         )
+        self.legacy_phone = "47999990000"
         self.employee = Employee.objects.create(
             user=self.provider,
             company=self.company,
             full_name="Prestador de Teste",
-            phone="",
+            phone=self.legacy_phone,
             is_active=True,
         )
         self.contract = Contract.objects.create(
@@ -85,6 +86,7 @@ class AccountabilityPrivacyTests(TestCase):
         self.assertContains(response, 'content="noindex,nofollow,noarchive"')
         self.assertContains(response, "Não divulgado")
         self.assertNotContains(response, self.provider.email)
+        self.assertNotContains(response, self.legacy_phone)
 
         self.job.refresh_from_db()
         self.assertIsNotNone(self.job.public_report_first_viewed_at)
@@ -118,6 +120,8 @@ class AccountabilityPrivacyTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response["Content-Type"], "application/pdf")
         self.assert_private_document_headers(response)
+        self.assertNotIn(self.provider.email.encode(), response.content)
+        self.assertNotIn(self.legacy_phone.encode(), response.content)
         self.job.refresh_from_db()
         self.assertIsNotNone(self.job.public_report_first_viewed_at)
 
