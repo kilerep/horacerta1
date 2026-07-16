@@ -49,10 +49,11 @@ class ServiceGuidedLayoutTests(TestCase):
         )
         self.client.force_login(self.professional)
 
-    def test_guided_layout_asset_exists(self):
+    def test_guided_layout_assets_exist(self):
         self.assertIsNotNone(finders.find("css/services_guided_flow.css"))
+        self.assertIsNotNone(finders.find("css/services_theme_polish.css"))
 
-    def test_services_and_guide_load_guided_layout(self):
+    def test_services_and_guide_load_theme_aware_guided_layout(self):
         services_response = self.client.get(reverse("service_job_list"))
         guide_response = self.client.get(reverse("service_start_guide"))
 
@@ -60,8 +61,24 @@ class ServiceGuidedLayoutTests(TestCase):
         self.assertEqual(guide_response.status_code, 200)
         self.assertContains(services_response, "css/services_guided_flow.css")
         self.assertContains(guide_response, "css/services_guided_flow.css")
+        self.assertContains(services_response, "css/services_theme_polish.css")
+        self.assertContains(guide_response, "css/services_theme_polish.css")
         self.assertContains(services_response, "Entenda as etapas e os documentos")
         self.assertContains(guide_response, "Qual é a sua situação agora?")
+
+    def test_guide_explains_deliverables_and_offers_category_shortcuts(self):
+        response = self.client.get(reverse("service_start_guide"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "O que você terá ao final")
+        self.assertContains(response, "Pedido organizado")
+        self.assertContains(response, "Entrega profissional")
+        self.assertContains(response, "Encontre pelo tipo de trabalho")
+        self.assertContains(response, reverse("service_job_create_from_template", args=["visita-tecnica-diagnostico"]))
+        self.assertContains(response, reverse("service_job_create_from_template", args=["instalacao-tecnica"]))
+        self.assertContains(response, reverse("service_job_create_from_template", args=["limpeza-recorrente"]))
+        self.assertContains(response, reverse("service_job_create_from_template", args=["servico-automotivo"]))
+        self.assertContains(response, "O modelo é um ponto de partida")
 
     def test_accountability_document_loads_professional_layout_and_share_action(self):
         job = ServiceJob.objects.create(
