@@ -134,5 +134,5 @@ class AccountabilityPrivacyTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assert_private_document_headers(response)
         self.assertContains(response, "Enviar pelo WhatsApp")
-        self.assertContains(response, "prestação%20de%20contas")
+        self.assertContains(response, "presta%C3%A7%C3%A3o%20de%20contas")
         self.assertContains(response, "Atendimento%20externo%20reservado")
