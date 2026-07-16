@@ -18,9 +18,39 @@ REQUEST_TO_JOB_FIELDS = (
 )
 
 
+def _guided_request_kind(service_request):
+    """Reconhece pedidos guiados sem depender de campo novo ou migration."""
+    category_slug = getattr(getattr(service_request, "category", None), "slug", "")
+    searchable = f"{service_request.title or ''} {service_request.description or ''}".casefold()
+    if category_slug == "eventos-sonorizacao":
+        return "evento"
+    travel_terms = ("viagem", "atendimento externo", "reembolso", "destino:")
+    if any(term in searchable for term in travel_terms):
+        return "viagem"
+    return ""
+
+
+def _apply_guided_defaults(service_request, job):
+    kind = _guided_request_kind(service_request)
+    if kind == "viagem":
+        from .service_guide import _create_travel_preset_items
+
+        _create_travel_preset_items(job)
+        return
+    if kind == "evento":
+        from .service_templates import _create_template_items, get_service_template
+
+        template = get_service_template("evento-sonorizacao")
+        _create_template_items(job, template)
+        template_notes = (template.get("notes") or "").strip()
+        if template_notes and template_notes not in (job.notes or ""):
+            job.notes = f"{(job.notes or '').strip()}\n\n{template_notes}".strip()
+            job.save(update_fields=["notes", "updated_at"])
+
+
 @receiver(post_save, sender=ServiceRequest)
 def copy_request_schedule_and_address_to_service(sender, instance, **kwargs):
-    """Leva agenda e local do pedido para o serviço sem sobrescrever dados já revisados."""
+    """Leva o pedido para o serviço sem apagar dados já revisados pelo prestador."""
     if not instance.converted_service_id:
         return
 
@@ -55,3 +85,5 @@ def copy_request_schedule_and_address_to_service(sender, instance, **kwargs):
                 changed_fields.append("service_location")
 
         job.save(update_fields=[*dict.fromkeys(changed_fields), "updated_at"])
+
+    _apply_guided_defaults(instance, job)
