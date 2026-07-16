@@ -1,0 +1,104 @@
+{% extends "public/base_public.html" %}
+{% load static %}
+
+{% block title %}Portal do Prestador | HoraCerta{% endblock %}
+{% block meta_description %}Notícias, guias e análises para prestadores de serviço e empresas contratantes.{% endblock %}
+
+{% block extra_head %}
+<link rel="canonical" href="{{ canonical_url }}">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:site_name" content="HoraCerta">
+<meta property="og:title" content="Portal do Prestador | HoraCerta">
+<meta property="og:description" content="Notícias, guias e análises para quem presta e contrata serviços.">
+<meta property="og:url" content="{{ og_url }}">
+<meta property="og:image" content="{{ og_image_url }}">
+<link rel="alternate" type="application/rss+xml" title="HoraCerta — Portal do prestador" href="{% url 'editorial:feed' %}">
+<link rel="stylesheet" href="{% static 'css/editorial.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="editorial-hero">
+  <div class="container editorial-hero__grid">
+    <div>
+      <span class="editorial-eyebrow">Portal do Prestador</span>
+      <h1>Informação prática para quem trabalha com serviços</h1>
+      <p>Notícias explicadas, guias e análises sobre gestão, mercado, finanças, tecnologia e oportunidades. O conteúdo editorial é separado das funções privadas do HoraCerta.</p>
+    </div>
+    <div class="editorial-hero__actions">
+      <a class="btn" href="{% url 'editorial:editorial_policy' %}">Política editorial</a>
+      <a class="btn" href="{% url 'editorial:feed' %}">Feed RSS</a>
+    </div>
+  </div>
+</section>
+
+<section class="container editorial-filter-section">
+  <form class="editorial-filters" method="get" role="search">
+    <div class="editorial-field editorial-field--wide">
+      <label for="editorial-search">Buscar conteúdo</label>
+      <input id="editorial-search" name="q" value="{{ query }}" placeholder="Ex.: proposta, preço, cliente, tecnologia">
+    </div>
+    <div class="editorial-field">
+      <label for="editorial-category">Categoria</label>
+      <select id="editorial-category" name="categoria">
+        <option value="">Todas</option>
+        {% for category in categories %}
+          <option value="{{ category.slug }}" {% if selected_category == category.slug %}selected{% endif %}>{{ category.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="editorial-field">
+      <label for="editorial-type">Formato</label>
+      <select id="editorial-type" name="tipo">
+        <option value="">Todos</option>
+        {% for value,label in content_types %}
+          <option value="{{ value }}" {% if selected_type == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button class="btn primary" type="submit">Filtrar</button>
+  </form>
+</section>
+
+{% if featured_articles and not query and not selected_category and not selected_type %}
+<section class="container editorial-section">
+  <div class="editorial-section__head">
+    <div><span class="editorial-eyebrow">Em destaque</span><h2>Conteúdos selecionados</h2></div>
+  </div>
+  <div class="editorial-grid editorial-grid--featured">
+    {% for article in featured_articles %}{% include "editorial/_article_card.html" with article=article %}{% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<section class="container editorial-section">
+  <div class="editorial-section__head">
+    <div>
+      <span class="editorial-eyebrow">Publicações</span>
+      <h2>{% if query or selected_category or selected_type %}Resultados da busca{% else %}Conteúdos mais recentes{% endif %}</h2>
+    </div>
+    <span class="editorial-count">{{ page.paginator.count }} publicação{{ page.paginator.count|pluralize:"ões" }}</span>
+  </div>
+
+  {% if page.object_list %}
+    <div class="editorial-grid">
+      {% for article in page.object_list %}{% include "editorial/_article_card.html" with article=article %}{% endfor %}
+    </div>
+  {% else %}
+    <div class="editorial-empty">
+      <h3>Nenhum conteúdo encontrado</h3>
+      <p>Retire algum filtro ou faça uma busca diferente.</p>
+      <a class="btn" href="{% url 'editorial:article_list' %}">Limpar filtros</a>
+    </div>
+  {% endif %}
+
+  {% if page.paginator.num_pages > 1 %}
+    <nav class="editorial-pagination" aria-label="Paginação de conteúdos">
+      {% if page.has_previous %}<a class="btn" href="?pagina={{ page.previous_page_number }}&q={{ query|urlencode }}&categoria={{ selected_category|urlencode }}&tipo={{ selected_type|urlencode }}">Anterior</a>{% endif %}
+      <span>Página {{ page.number }} de {{ page.paginator.num_pages }}</span>
+      {% if page.has_next %}<a class="btn" href="?pagina={{ page.next_page_number }}&q={{ query|urlencode }}&categoria={{ selected_category|urlencode }}&tipo={{ selected_type|urlencode }}">Próxima</a>{% endif %}
+    </nav>
+  {% endif %}
+</section>
+{% endblock %}
