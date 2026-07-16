@@ -1,16 +1,37 @@
-const SW_VERSION = "hc-sw-v3";
+const SW_VERSION = "hc-sw-v4";
 const STATIC_CACHE = `hc-static-${SW_VERSION}`;
 const DYNAMIC_CACHE = `hc-dynamic-${SW_VERSION}`;
 const OFFLINE_PAGE = "/offline/";
 
 const ESSENTIAL_ASSETS = ["/", OFFLINE_PAGE, "/static/pwa/icon-192.png"];
+const SENSITIVE_PATH_PREFIXES = [
+  "/me/",
+  "/contratante/",
+  "/admin/",
+  "/api/",
+  "/accounts/",
+  "/servicos/",
+  "/media/",
+  "/login/",
+  "/logout/",
+  "/password-",
+];
+
+function isSensitiveRequest(url) {
+  if (url.origin !== self.location.origin) return true;
+  return SENSITIVE_PATH_PREFIXES.some((prefix) => url.pathname.startsWith(prefix));
+}
+
+function responseAllowsStorage(response) {
+  if (!response || !response.ok) return false;
+  const cacheControl = (response.headers.get("Cache-Control") || "").toLowerCase();
+  return !cacheControl.includes("no-store") && !cacheControl.includes("private");
+}
 
 function isCacheableAsset(request, url) {
   if (url.origin !== self.location.origin) return false;
-  if (request.mode === "navigate" || request.destination === "document") return false;
-  if (url.pathname.startsWith("/admin/")) return false;
-
-  return ["style", "script", "image", "font"].includes(request.destination) || url.pathname.startsWith("/static/");
+  if (!url.pathname.startsWith("/static/")) return false;
+  return ["style", "script", "image", "font"].includes(request.destination);
 }
 
 async function cacheEssentialAssets() {
@@ -19,7 +40,7 @@ async function cacheEssentialAssets() {
     ESSENTIAL_ASSETS.map(async (asset) => {
       try {
         const response = await fetch(asset, { cache: "no-cache" });
-        if (response.ok) await cache.put(asset, response.clone());
+        if (responseAllowsStorage(response)) await cache.put(asset, response.clone());
       } catch (error) {
         console.warn("Não foi possível pré-cachear", asset, error);
       }
@@ -32,7 +53,7 @@ async function staleWhileRevalidate(request) {
   const cached = await cache.match(request);
   const networkPromise = fetch(request)
     .then((response) => {
-      if (response && response.ok) cache.put(request, response.clone());
+      if (responseAllowsStorage(response)) cache.put(request, response.clone());
       return response;
     })
     .catch(() => null);
@@ -41,22 +62,33 @@ async function staleWhileRevalidate(request) {
   return (await networkPromise) || new Response("", { status: 504, statusText: "Gateway Timeout" });
 }
 
+async function offlineResponse(request) {
+  if (request.mode === "navigate" || request.destination === "document") {
+    return (await caches.match(OFFLINE_PAGE)) || new Response("Você está offline", { status: 503 });
+  }
+  return new Response("Recurso não disponível", { status: 503 });
+}
+
+async function networkOnly(request) {
+  try {
+    return await fetch(request);
+  } catch (error) {
+    return offlineResponse(request);
+  }
+}
+
 async function networkFirstWithFallback(request) {
   try {
     const response = await fetch(request);
-    if (response && response.ok) {
+    if (responseAllowsStorage(response)) {
       const cache = await caches.open(DYNAMIC_CACHE);
-      cache.put(request, response.clone());
+      await cache.put(request, response.clone());
     }
     return response;
   } catch (error) {
     const cached = await caches.match(request);
     if (cached) return cached;
-
-    if (request.mode === "navigate" || request.destination === "document") {
-      return (await caches.match(OFFLINE_PAGE)) || new Response("Você está offline", { status: 503 });
-    }
-    return new Response("Recurso não disponível", { status: 503 });
+    return offlineResponse(request);
   }
 }
 
@@ -89,6 +121,12 @@ self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
   const url = new URL(event.request.url);
+
+  if (isSensitiveRequest(url)) {
+    event.respondWith(networkOnly(event.request));
+    return;
+  }
+
   if (event.request.mode === "navigate" || event.request.destination === "document") {
     event.respondWith(networkFirstWithFallback(event.request));
     return;
@@ -96,11 +134,6 @@ self.addEventListener("fetch", (event) => {
 
   if (isCacheableAsset(event.request, url)) {
     event.respondWith(staleWhileRevalidate(event.request));
-    return;
-  }
-
-  if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/me/")) {
-    event.respondWith(networkFirstWithFallback(event.request));
   }
 });
 
