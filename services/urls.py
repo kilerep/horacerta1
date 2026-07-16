@@ -1,9 +1,11 @@
 from django.urls import path
 
-from . import event_proposal, service_calendar, service_repeat, service_templates, views
+from . import event_proposal, service_calendar, service_guides, service_repeat, service_statement, service_templates, views
 
 urlpatterns = [
     path("me/servicos/", views.service_job_list, name="service_job_list"),
+    path("me/servicos/comecar/", service_guides.service_start, name="service_start"),
+    path("me/servicos/viagem/novo/", service_guides.service_trip_create, name="service_trip_create"),
     path("me/servicos/modelos/", service_templates.service_template_library, name="service_template_library"),
     path(
         "me/servicos/modelos/<slug:template_slug>/usar/",
@@ -28,6 +30,7 @@ urlpatterns = [
     path("me/servicos/catalogo/<uuid:item_id>/desativar/", views.service_item_catalog_deactivate, name="service_item_catalog_deactivate"),
     path("me/servicos/novo/", views.service_job_create, name="service_job_create"),
     path("me/servicos/<uuid:job_id>/", views.service_job_detail, name="service_job_detail"),
+    path("me/servicos/<uuid:job_id>/prestacao-contas/", service_statement.service_statement, name="service_statement"),
     path("me/servicos/<uuid:job_id>/proxima-visita/", service_repeat.service_job_repeat, name="service_job_repeat"),
     path("me/servicos/<uuid:job_id>/calendario.ics", service_calendar.service_job_calendar_ics, name="service_job_calendar_ics"),
     path("me/servicos/<uuid:job_id>/proposta-evento/", event_proposal.service_event_proposal_detail, name="service_event_proposal_detail"),
@@ -51,4 +54,5 @@ urlpatterns = [
     path("servicos/previa/<uuid:token>/", views.public_service_job_preview, name="public_service_job_preview"),
     path("servicos/relatorio/<uuid:token>/", views.public_service_job_report, name="public_service_job_report"),
     path("servicos/relatorio/<uuid:token>/pdf/", views.public_service_job_report_pdf, name="public_service_job_report_pdf"),
+    path("servicos/prestacao-contas/<uuid:token>/", service_statement.public_service_statement, name="public_service_statement"),
 ]
