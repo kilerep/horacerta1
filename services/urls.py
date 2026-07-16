@@ -13,6 +13,11 @@ from . import (
 urlpatterns = [
     path("me/servicos/", views.service_job_list, name="service_job_list"),
     path("me/servicos/comecar/", service_guide.service_start_guide, name="service_start_guide"),
+    path(
+        "me/servicos/pedidos/guiado/<slug:scenario>/",
+        service_guide.service_request_create_from_scenario,
+        name="service_request_create_from_scenario",
+    ),
     path("me/servicos/viagem-trabalho/novo/", service_guide.service_travel_create, name="service_travel_create"),
     path("me/servicos/modelos/", service_templates.service_template_library, name="service_template_library"),
     path(
