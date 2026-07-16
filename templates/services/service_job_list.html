@@ -1,135 +1,112 @@
 {% extends "accounts/base.html" %}
-{% load service_format %}
+{% load static service_format %}
 
 {% block title %}Serviços{% endblock %}
 {% block page_title %}Serviços{% endblock %}
 
 {% block extra_head %}
-<style>
-  .services-page{display:grid;gap:16px;max-width:1180px}
-  .services-head{display:grid;gap:6px}
-  .services-head h1{margin:0;font-size:26px;line-height:1.12}
-  .services-head p{margin:0;color:var(--color-text-muted);line-height:1.4}
-  .services-block{display:grid;gap:10px}
-  .services-title{margin:0;font-size:16px;line-height:1.2;font-weight:900}
-  .quick-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
-  .quick-card{display:grid;gap:5px;min-height:82px;padding:13px;border:1px solid var(--color-border);border-radius:8px;background:var(--gradient-card);box-shadow:var(--shadow-soft);text-decoration:none;color:var(--color-text)}
-  .quick-card strong{font-size:15px;line-height:1.2}
-  .quick-card span{font-size:12px;line-height:1.35;color:var(--color-text-muted)}
-  .quick-card.primary{border-color:var(--color-primary);background:var(--color-primary-soft)}
-  .service-strip{display:grid;gap:10px}
-  .service-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:start;border:1px solid var(--color-border);border-radius:8px;background:var(--gradient-card);box-shadow:var(--shadow-soft);padding:14px}
-  .service-card h3{margin:0;font-size:17px;line-height:1.2;overflow-wrap:anywhere}
-  .service-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px;color:var(--color-text-muted);font-size:13px}
-  .status-chip{display:inline-flex;align-items:center;border:1px solid var(--color-border);border-radius:999px;padding:5px 9px;font-size:12px;font-weight:900;line-height:1}
-  .status-chip.draft{background:rgba(245,158,11,.14);color:#92400e}
-  .status-chip.planned{background:rgba(59,130,246,.12);color:#1d4ed8}
-  .status-chip.progress{background:rgba(34,197,94,.12);color:#15803d}
-  .status-chip.finished{background:rgba(99,102,241,.12);color:#4338ca}
-  .status-chip.report{background:rgba(20,184,166,.12);color:#0f766e}
-  .status-chip.archived{background:rgba(107,114,128,.12);color:#4b5563}
-  .service-line{margin:10px 0 0;color:var(--color-text-muted);font-size:13px;line-height:1.4}
-  .service-next{margin-top:8px;font-size:13px;line-height:1.35}
-  .service-next strong{color:var(--color-text)}
-  .service-facts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-  .fact{border:1px solid var(--color-border);border-radius:8px;background:var(--surface-soft);padding:8px 9px;min-width:112px}
-  .fact span{display:block;color:var(--color-text-muted);font-size:11px}
-  .fact strong{display:block;margin-top:3px;font-size:13px}
-  .service-actions{display:grid;gap:8px;justify-items:end;min-width:150px}
-  .filter-card{display:grid;gap:12px}
-  .search-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:end}
-  .field label{display:block;margin-bottom:5px;color:var(--color-text-muted);font-size:12px;font-weight:800}
-  .chips{display:flex;gap:8px;flex-wrap:wrap}
-  .chip{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:7px 11px;border:1px solid var(--color-border);border-radius:999px;background:var(--surface-soft);color:var(--color-text);font-size:13px;font-weight:800;text-decoration:none}
-  .chip.is-active{border-color:var(--color-primary);background:var(--color-primary-soft);color:var(--color-primary)}
-  .advanced{border-top:1px solid var(--color-border);padding-top:12px}
-  .advanced summary{display:inline-flex;min-height:36px;align-items:center;padding:8px 12px;border:1px solid var(--color-border);border-radius:8px;background:var(--surface-soft);font-weight:900;cursor:pointer}
-  .advanced[open] summary{margin-bottom:12px}
-  .advanced-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr)) auto;gap:10px;align-items:end}
-  .empty-box{border:1px dashed var(--color-border);border-radius:8px;padding:14px;color:var(--color-text-muted);line-height:1.4;background:var(--surface-soft)}
-  @media (max-width:900px){.advanced-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-  @media (max-width:680px){.services-head h1{font-size:23px}.quick-grid,.service-card,.search-row,.advanced-grid{grid-template-columns:1fr}.service-actions{justify-items:stretch;min-width:0}.service-actions .btn,.search-row .btn,.advanced-grid .btn{width:100%}.fact{flex:1 1 132px}}
-</style>
+  <link rel="stylesheet" href="{% static 'css/service_experience.css' %}">
 {% endblock %}
 
 {% block content %}
-<div class="services-page">
-  <header class="services-head">
-    <h1>Serviços</h1>
-    <p>Trabalhos avulsos com períodos, itens e relatório sem alterar seu histórico normal.</p>
-    <span hidden>Resumo da área Filtrar serviços Pedidos de serviço</span>
-  </header>
-
-  {% if not has_active_filters %}
-  <section class="services-block">
-    <h2 class="services-title">Ações rápidas</h2>
-    <div class="quick-grid">
-      <a class="quick-card primary" href="{% url 'service_request_create' %}">
-        <strong>Novo pedido</strong>
-        <span>Registrar o chamado inicial vindo do WhatsApp.</span>
-      </a>
-      <a class="quick-card" href="{% url 'service_job_create' %}">
-        <strong>Novo serviço</strong>
-        <span>Criar um trabalho já combinado com o cliente.</span>
-      </a>
-      <a class="quick-card" href="{% url 'service_template_library' %}">
-        <strong>Modelos profissionais</strong>
-        <span>Começar com escopo, checklist e itens sugeridos por tipo de serviço.</span>
-      </a>
-      <a class="quick-card" href="{% url 'service_item_catalog_list' %}">
-        <strong>Catálogo de itens</strong>
-        <span>Materiais, peças e despesas frequentes.</span>
-      </a>
-      <a class="quick-card" href="{% url 'service_event_proposal_list' %}">
-        <strong>Propostas de evento</strong>
-        <span>Revisar pacotes de valor fixo antes do envio.</span>
-      </a>
+<div class="service-experience">
+  <section class="card service-hero">
+    <div class="service-hero__copy">
+      <span class="service-hero__eyebrow">Do pedido à entrega</span>
+      <h1>Organize o serviço sem se perder nas etapas.</h1>
+      <p>Comece pelo pedido do cliente, por um modelo profissional ou por uma situação específica, como evento e viagem a trabalho. Depois acompanhe preparação, execução, despesas e entrega do documento final.</p>
+      <div class="service-hero__actions">
+        <a class="btn primary" href="{% url 'service_start' %}">Começar com orientação</a>
+        <a class="btn" href="{% url 'service_request_create' %}">Recebi um pedido</a>
+        <a class="btn" href="{% url 'service_job_create' %}">Já combinei o serviço</a>
+      </div>
+    </div>
+    <div class="service-hero__summary">
+      <div class="service-stat"><span>Serviços para hoje</span><strong>{{ today_jobs|length }}</strong></div>
+      <div class="service-stat"><span>Pendências</span><strong>{{ pending_jobs|length }}</strong></div>
+      <div class="service-stat"><span>Serviços encontrados</span><strong>{{ jobs|length }}</strong></div>
+      <div class="service-stat"><span>Fluxo recomendado</span><strong>5 etapas</strong></div>
     </div>
   </section>
 
-  <section class="services-block">
-    <h2 class="services-title">Hoje</h2>
-    {% if today_jobs %}
-      <div class="service-strip">
-        {% for job in today_jobs %}
-          {% include "services/service_job_card.html" with job=job compact=True %}
-        {% endfor %}
-      </div>
-    {% else %}
-      <div class="empty-box">Nenhum serviço previsto ou em execução para hoje.</div>
-    {% endif %}
+  <section class="service-flow-track" aria-label="Jornada do serviço">
+    <div class="service-flow-step" data-step="1"><strong>Pedido</strong><span>O que o cliente precisa.</span></div>
+    <div class="service-flow-step" data-step="2"><strong>Combinado</strong><span>Escopo, local, data e valor.</span></div>
+    <div class="service-flow-step" data-step="3"><strong>Preparação</strong><span>Itens, proposta e logística.</span></div>
+    <div class="service-flow-step" data-step="4"><strong>Execução</strong><span>Horas, itens usados e despesas.</span></div>
+    <div class="service-flow-step" data-step="5"><strong>Entrega</strong><span>Relatório ou prestação de contas.</span></div>
   </section>
+
+  {% if not has_active_filters %}
+    <section class="services-block">
+      <div class="services-section-head">
+        <div>
+          <h2>Escolha como começar</h2>
+          <p>Use o caminho que mais se parece com a situação real do atendimento.</p>
+        </div>
+      </div>
+      <div class="journey-grid">
+        <a class="journey-card is-primary" href="{% url 'service_request_create' %}">
+          <span class="journey-card__icon">W</span>
+          <span><strong>Pedido recebido pelo WhatsApp</strong><p>Registre a solicitação antes de definir preço, data e materiais.</p><span class="journey-card__next">Registrar pedido</span></span>
+        </a>
+        <a class="journey-card" href="{% url 'service_job_create_from_template' 'evento-sonorizacao' %}">
+          <span class="journey-card__icon">E</span>
+          <span><strong>Evento e sonorização</strong><p>Organize programação, local, equipamentos, horários e pacote.</p><span class="journey-card__next">Montar evento</span></span>
+        </a>
+        <a class="journey-card" href="{% url 'service_trip_create' %}">
+          <span class="journey-card__icon">V</span>
+          <span><strong>Viagem a trabalho</strong><p>Registre horas, combustível, pedágio, alimentação, hospedagem e outros gastos.</p><span class="journey-card__next">Criar viagem</span></span>
+        </a>
+        <a class="journey-card" href="{% url 'service_start' %}">
+          <span class="journey-card__icon">+</span>
+          <span><strong>Outro tipo de serviço</strong><p>Veja os caminhos guiados e escolha um modelo profissional por segmento.</p><span class="journey-card__next">Ver opções</span></span>
+        </a>
+      </div>
+    </section>
+
+    <section class="services-block">
+      <div class="services-section-head">
+        <div><h2>Ferramentas da área</h2><p>Acesse diretamente quando já souber o que precisa fazer.</p></div>
+      </div>
+      <div class="quick-grid">
+        <a class="quick-card" href="{% url 'service_request_list' %}"><strong>Pedidos de serviço</strong><span>Acompanhar solicitações antes de virar serviço.</span></a>
+        <a class="quick-card" href="{% url 'service_template_library' %}"><strong>Modelos profissionais</strong><span>Escopo, checklist e itens sugeridos.</span></a>
+        <a class="quick-card" href="{% url 'service_item_catalog_list' %}"><strong>Catálogo de itens</strong><span>Materiais, peças e despesas frequentes.</span></a>
+        <a class="quick-card" href="{% url 'service_event_proposal_list' %}"><strong>Propostas de evento</strong><span>Pacotes de valor fixo prontos para revisão.</span></a>
+      </div>
+    </section>
+
+    <section class="services-block">
+      <div class="services-section-head"><div><h2>Hoje</h2><p>Serviços previstos ou em execução na data atual.</p></div></div>
+      {% if today_jobs %}
+        <div class="service-strip">{% for job in today_jobs %}{% include "services/service_job_card.html" with job=job compact=True %}{% endfor %}</div>
+      {% else %}
+        <div class="empty-box">Nenhum serviço previsto ou em execução para hoje.</div>
+      {% endif %}
+    </section>
   {% endif %}
 
   <section class="services-block">
-    <h2 class="services-title">Pendências</h2>
+    <div class="services-section-head"><div><h2>Pendências</h2><p>Serviços que ainda precisam de uma próxima ação.</p></div></div>
     {% if pending_jobs %}
-      <div class="service-strip">
-        {% for job in pending_jobs %}
-          {% include "services/service_job_card.html" with job=job compact=True %}
-        {% endfor %}
-      </div>
+      <div class="service-strip">{% for job in pending_jobs %}{% include "services/service_job_card.html" with job=job compact=True %}{% endfor %}</div>
     {% else %}
       <div class="empty-box">Sem pendências de serviços agora.</div>
     {% endif %}
   </section>
 
   <section class="services-block">
-    <h2 class="services-title">Lista de serviços</h2>
+    <div class="services-section-head"><div><h2>Todos os serviços</h2><p>Busque por cliente, categoria, período ou situação.</p></div></div>
     <form class="card filter-card" method="get">
       <div class="search-row">
-        <div class="field" id="service-search">
-          <label for="filter-search">Busca</label>
-          <input id="filter-search" type="search" name="q" value="{{ search_query }}" placeholder="Serviço, cliente ou categoria">
-        </div>
+        <div class="field" id="service-search"><label for="filter-search">Busca</label><input id="filter-search" type="search" name="q" value="{{ search_query }}" placeholder="Serviço, cliente ou categoria"></div>
         <button class="btn" type="submit">Buscar</button>
         {% if search_query or selected_status or has_advanced_filters %}<a class="btn" href="{% url 'service_job_list' %}">Limpar</a>{% endif %}
       </div>
 
       <div class="chips" aria-label="Filtros rápidos">
-        {% for value,label,url in quick_status_choices %}
-          <a class="chip {% if selected_status == value or not selected_status and not value %}is-active{% endif %}" href="{{ url }}">{{ label }}</a>
-        {% endfor %}
+        {% for value,label,url in quick_status_choices %}<a class="chip {% if selected_status == value or not selected_status and not value %}is-active{% endif %}" href="{{ url }}">{{ label }}</a>{% endfor %}
       </div>
 
       <details class="advanced" {% if has_advanced_filters %}open{% endif %}>
@@ -151,5 +128,7 @@
       <div class="empty-box">Nenhum serviço encontrado.</div>
     {% endif %}
   </section>
+
+  <span hidden>Resumo da área Filtrar serviços Pedidos de serviço</span>
 </div>
 {% endblock %}
