@@ -1,0 +1,45 @@
+{% extends "public/base_public.html" %}
+{% load static %}
+
+{% block title %}Política editorial | HoraCerta{% endblock %}
+{% block meta_description %}Como o HoraCerta seleciona, produz, atualiza e corrige conteúdos para prestadores de serviço e empresas contratantes.{% endblock %}
+
+{% block extra_head %}
+<link rel="canonical" href="{{ canonical_url }}">
+<meta name="robots" content="index, follow">
+<link rel="stylesheet" href="{% static 'css/editorial.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="container editorial-policy">
+  <span class="editorial-eyebrow">Transparência</span>
+  <h1>Política editorial do HoraCerta</h1>
+  <p class="editorial-policy__lead">O Portal do Prestador existe para explicar assuntos relevantes com linguagem clara, fontes identificadas e separação entre conteúdo editorial e as funções privadas do sistema.</p>
+
+  <div class="editorial-policy__grid">
+    <section><h2>Conteúdo original</h2><p>Publicamos textos próprios. Quando um conteúdo parte de notícia, estudo, norma ou comunicado externo, produzimos um resumo original e indicamos a fonte consultada.</p></section>
+    <section><h2>Datas e autoria</h2><p>Cada publicação informa autor responsável, data de publicação e data de atualização. Notícias não devem receber datas artificiais para parecerem recentes.</p></section>
+    <section><h2>Fontes</h2><p>Assuntos jurídicos, fiscais, financeiros ou regulatórios devem priorizar órgãos oficiais e documentos primários. Opiniões e inferências precisam ser apresentadas como análise.</p></section>
+    <section><h2>Correções</h2><p>Erros relevantes devem ser corrigidos no texto e registrados no campo de correção ou atualização. O conteúdo arquivado deixa de aparecer ao público, mas não precisa ser apagado do histórico administrativo.</p></section>
+    <section><h2>Sem aconselhamento profissional</h2><p>Os conteúdos organizam informação geral. Eles não substituem orientação jurídica, contábil, fiscal, trabalhista, técnica ou de segurança aplicável a cada caso.</p></section>
+    <section><h2>Separação comercial</h2><p>Recursos do HoraCerta podem ser apresentados quando ajudarem a explicar um fluxo de trabalho. O texto deve deixar claro quando houver promoção do próprio produto.</p></section>
+  </div>
+
+  <div class="editorial-policy__notice">
+    <h2>O que não faremos</h2>
+    <ul>
+      <li>copiar integralmente matérias de terceiros;</li>
+      <li>publicar rumor como fato;</li>
+      <li>esconder a fonte de uma informação relevante;</li>
+      <li>usar títulos enganosos apenas para gerar cliques;</li>
+      <li>misturar dados privados de clientes ou prestadores com conteúdo público;</li>
+      <li>prometer validade jurídica, conformidade ou resultado financeiro sem base verificável.</li>
+    </ul>
+  </div>
+
+  <div class="editorial-policy__actions">
+    <a class="btn primary" href="{% url 'editorial:article_list' %}">Voltar aos conteúdos</a>
+    <a class="btn" href="{% url 'help' %}">Central de ajuda</a>
+  </div>
+</section>
+{% endblock %}
