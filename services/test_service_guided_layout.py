@@ -63,7 +63,7 @@ class ServiceGuidedLayoutTests(TestCase):
         self.assertContains(services_response, "Entenda as etapas e os documentos")
         self.assertContains(guide_response, "Qual é a sua situação agora?")
 
-    def test_accountability_document_loads_professional_layout(self):
+    def test_accountability_document_loads_professional_layout_and_share_action(self):
         job = ServiceJob.objects.create(
             professional=self.professional,
             contract=self.contract,
@@ -81,3 +81,5 @@ class ServiceGuidedLayoutTests(TestCase):
         self.assertContains(response, "css/services_guided_flow.css")
         self.assertContains(response, "accountability-page")
         self.assertContains(response, "Prestação de contas do serviço")
+        self.assertContains(response, "Enviar pelo WhatsApp")
+        self.assertContains(response, "https://wa.me/")
