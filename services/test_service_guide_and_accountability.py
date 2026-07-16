@@ -55,6 +55,12 @@ class ServiceGuideAndAccountabilityTests(TestCase):
             description="Atendimento externo e apoio administrativo.",
             is_active=True,
         )
+        self.event_category = ServiceCategory.objects.create(
+            name="Eventos e sonorização",
+            slug="eventos-sonorizacao",
+            description="Montagem, operação técnica e desmontagem.",
+            is_active=True,
+        )
         self.client.force_login(self.professional)
 
     def test_services_page_prioritizes_guided_start_paths(self):
@@ -71,7 +77,8 @@ class ServiceGuideAndAccountabilityTests(TestCase):
         self.assertContains(response, "Folha ou proposta")
         self.assertContains(response, "prestação de contas")
         self.assertContains(response, reverse("service_start_guide"))
-        self.assertContains(response, reverse("service_travel_create"))
+        self.assertContains(response, reverse("service_request_create_from_scenario", args=["evento"]))
+        self.assertContains(response, reverse("service_request_create_from_scenario", args=["viagem"]))
 
     def test_start_guide_explains_flow_from_request_to_report(self):
         response = self.client.get(reverse("service_start_guide"))
@@ -84,7 +91,21 @@ class ServiceGuideAndAccountabilityTests(TestCase):
         self.assertContains(response, "Vou fazer um evento ou sonorização")
         self.assertContains(response, "Vou viajar ou trabalhar fora da empresa")
         self.assertContains(response, "mostra a próxima ação")
+        self.assertContains(response, reverse("service_request_create_from_scenario", args=["evento"]))
+        self.assertContains(response, reverse("service_request_create_from_scenario", args=["viagem"]))
         self.assertContains(response, reverse("service_job_create_from_template", args=["evento-sonorizacao"]))
+        self.assertContains(response, reverse("service_travel_create"))
+
+    def test_guided_event_and_travel_request_forms_are_reachable(self):
+        event_response = self.client.get(reverse("service_request_create_from_scenario", args=["evento"]))
+        travel_response = self.client.get(reverse("service_request_create_from_scenario", args=["viagem"]))
+
+        self.assertEqual(event_response.status_code, 200)
+        self.assertEqual(travel_response.status_code, 200)
+        self.assertContains(event_response, "Pedido de evento ou sonorização")
+        self.assertContains(event_response, "Tipo de evento")
+        self.assertContains(travel_response, "Solicitação de viagem ou atendimento externo")
+        self.assertContains(travel_response, "Política de reembolso")
 
     def test_travel_flow_creates_zero_value_expense_presets(self):
         response = self.client.post(
