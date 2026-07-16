@@ -1,0 +1,115 @@
+{% extends "accounts/base.html" %}
+{% load static %}
+
+{% block title %}Começar atendimento{% endblock %}
+{% block page_title %}Começar atendimento{% endblock %}
+
+{% block extra_head %}
+  <link rel="stylesheet" href="{% static 'css/service_experience.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="service-start-page">
+  <section class="card service-hero">
+    <div class="service-hero__copy">
+      <span class="service-hero__eyebrow">Serviço guiado</span>
+      <h1>Comece pelo cenário, não por um formulário vazio.</h1>
+      <p class="lead">Escolha como o trabalho chegou até você. O HoraCerta indica o caminho do pedido até a entrega, sem misturar horas, despesas, proposta e relatório.</p>
+      <div class="service-hero__actions">
+        <a class="btn" href="{% url 'service_job_list' %}">Voltar para Serviços</a>
+        <a class="btn" href="{% url 'service_template_library' %}">Ver todos os modelos</a>
+      </div>
+    </div>
+    <div class="service-hero__summary">
+      <div class="service-stat"><span>Etapas do fluxo</span><strong>5</strong></div>
+      <div class="service-stat"><span>Ponto de partida</span><strong>Você escolhe</strong></div>
+      <div class="service-stat"><span>Documento para cliente</span><strong>Link profissional</strong></div>
+      <div class="service-stat"><span>GPS contínuo</span><strong>Não utilizado</strong></div>
+    </div>
+  </section>
+
+  <section class="service-flow-track" aria-label="Etapas do serviço">
+    <div class="service-flow-step" data-step="1"><strong>Pedido</strong><span>Registre o que o cliente solicitou.</span></div>
+    <div class="service-flow-step" data-step="2"><strong>Combinado</strong><span>Defina escopo, local, data e valores.</span></div>
+    <div class="service-flow-step" data-step="3"><strong>Preparação</strong><span>Organize itens, proposta e logística.</span></div>
+    <div class="service-flow-step" data-step="4"><strong>Execução</strong><span>Registre períodos, itens usados e despesas.</span></div>
+    <div class="service-flow-step" data-step="5"><strong>Entrega</strong><span>Envie relatório ou prestação de contas.</span></div>
+  </section>
+
+  <section class="service-start-section">
+    <div class="services-section-head">
+      <div>
+        <h2>Qual situação descreve melhor o trabalho?</h2>
+        <p>O caminho pode ser ajustado depois. Esta escolha apenas reduz dúvidas no começo.</p>
+      </div>
+    </div>
+
+    <div class="journey-grid">
+      <a class="journey-card is-primary" href="{% url 'service_request_create' %}">
+        <span class="journey-card__icon">W</span>
+        <span>
+          <strong>Recebi um pedido pelo WhatsApp</strong>
+          <p>Registre a mensagem inicial, cliente, urgência e itens rápidos. Depois transforme o pedido em serviço quando o combinado estiver claro.</p>
+          <span class="journey-card__next">Registrar pedido</span>
+        </span>
+      </a>
+
+      <a class="journey-card" href="{% url 'service_job_create_from_template' 'evento-sonorizacao' %}">
+        <span class="journey-card__icon">E</span>
+        <span>
+          <strong>Vou realizar um evento</strong>
+          <p>Comece com programação, local, horários, equipamentos e valor do pacote. Depois gere a proposta de evento para o cliente.</p>
+          <span class="journey-card__next">Montar evento</span>
+        </span>
+      </a>
+
+      <a class="journey-card" href="{% url 'service_trip_create' %}">
+        <span class="journey-card__icon">V</span>
+        <span>
+          <strong>Vou fazer uma viagem a trabalho</strong>
+          <p>Organize destino, objetivo, horas trabalhadas, combustível, pedágio, alimentação, hospedagem e outras despesas.</p>
+          <span class="journey-card__next">Criar viagem</span>
+        </span>
+      </a>
+
+      <a class="journey-card" href="{% url 'service_job_create_from_template' 'manutencao-preventiva' %}">
+        <span class="journey-card__icon">R</span>
+        <span>
+          <strong>É um serviço recorrente</strong>
+          <p>Use um escopo previsível, registre cada período e crie a próxima visita sem refazer todo o cadastro.</p>
+          <span class="journey-card__next">Criar serviço recorrente</span>
+        </span>
+      </a>
+
+      <a class="journey-card" href="{% url 'service_job_create_from_template' 'visita-tecnica-diagnostico' %}">
+        <span class="journey-card__icon">T</span>
+        <span>
+          <strong>Preciso avaliar antes de executar</strong>
+          <p>Registre uma visita técnica, diagnóstico e próximos passos antes de prometer reparos, peças ou prazo final.</p>
+          <span class="journey-card__next">Criar visita técnica</span>
+        </span>
+      </a>
+
+      <a class="journey-card" href="{% url 'service_template_library' %}">
+        <span class="journey-card__icon">+</span>
+        <span>
+          <strong>É outro tipo de serviço</strong>
+          <p>Escolha um modelo profissional por segmento ou crie um serviço livre com cliente, escopo, itens e cobrança.</p>
+          <span class="journey-card__next">Escolher modelo</span>
+        </span>
+      </a>
+    </div>
+  </section>
+
+  <section class="card service-start-section">
+    <h2>O que deve estar claro antes de começar?</h2>
+    <p>Esses pontos evitam retrabalho e ajudam o cliente a entender o que foi combinado.</p>
+    <ul class="start-checklist">
+      <li><span><strong>Quem contratou e onde será feito</strong><br><span class="muted">Cliente, responsável, local e referência.</span></span></li>
+      <li><span><strong>O que está incluído e o que depende de confirmação</strong><br><span class="muted">Escopo, limites, itens e alterações futuras.</span></span></li>
+      <li><span><strong>Quando começa e como será cobrado</strong><br><span class="muted">Data, horário, valor fixo, por hora ou ainda sem valor definido.</span></span></li>
+      <li><span><strong>Qual documento será enviado</strong><br><span class="muted">Proposta, folha do serviço, relatório final ou prestação de contas.</span></span></li>
+    </ul>
+  </section>
+</div>
+{% endblock %}
