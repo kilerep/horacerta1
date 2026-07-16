@@ -53,9 +53,14 @@ def _period_label(job, work_logs):
     return "Não informado"
 
 
+def _is_login_identifier(value):
+    text = (value or "").strip()
+    return "@" in text
+
+
 def _professional_name(job, *, is_public=False):
     employee_name = (getattr(getattr(job.contract, "employee", None), "full_name", "") or "").strip()
-    if employee_name:
+    if employee_name and not (is_public and _is_login_identifier(employee_name)):
         return employee_name
     full_name = (job.professional.get_full_name() or "").strip()
     if full_name:
@@ -66,13 +71,14 @@ def _professional_name(job, *, is_public=False):
 
 
 def _professional_contact(job, *, is_public=False):
+    if is_public:
+        # O campo Employee.phone é legado e, em cadastros criados a partir de cliente
+        # avulso, pode conter o telefone do próprio cliente. Só um futuro campo de
+        # contato profissional explícito deverá ser publicado.
+        return ""
     employee = getattr(getattr(job, "contract", None), "employee", None)
     phone = (getattr(employee, "phone", "") or "").strip()
-    if phone:
-        return phone
-    if is_public:
-        return ""
-    return job.professional.email or job.professional.username
+    return phone or job.professional.email or job.professional.username
 
 
 def _secure_document_response(response):
