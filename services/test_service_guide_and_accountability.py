@@ -1,4 +1,4 @@
-from datetime import time
+from datetime import time, timedelta
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
@@ -9,7 +9,7 @@ from django.utils import timezone
 from companies.models import Company, Employee
 from timeclock.models import Contract
 
-from .models import ServiceCategory, ServiceItemExpense, ServiceJob, ServiceWorkLog
+from .models import ServiceCategory, ServiceItemExpense, ServiceJob, ServiceRequest, ServiceWorkLog
 
 
 User = get_user_model()
@@ -104,8 +104,64 @@ class ServiceGuideAndAccountabilityTests(TestCase):
         self.assertEqual(travel_response.status_code, 200)
         self.assertContains(event_response, "Pedido de evento ou sonorização")
         self.assertContains(event_response, "Tipo de evento")
+        self.assertContains(event_response, "Horário de montagem")
+        self.assertContains(event_response, "Quando e onde")
+        self.assertContains(event_response, str(self.event_category.id))
         self.assertContains(travel_response, "Solicitação de viagem ou atendimento externo")
         self.assertContains(travel_response, "Política de reembolso")
+        self.assertContains(travel_response, "Documentos ou comprovantes exigidos")
+
+    def test_guided_travel_conversion_preserves_schedule_address_and_presets(self):
+        preferred_date = timezone.localdate() + timedelta(days=7)
+        response = self.client.post(
+            reverse("service_request_create_from_scenario", args=["viagem"]),
+            {
+                "client_mode": "registered",
+                "contract": str(self.contract.id),
+                "category": str(self.category.id),
+                "title": "Viagem para atendimento na filial",
+                "description": "Levantamento presencial e apoio à equipe local.",
+                "preferred_date": preferred_date.isoformat(),
+                "preferred_time": "08:30",
+                "address_zipcode": "89010-000",
+                "address_street": "Rua da Filial",
+                "address_number": "150",
+                "address_complement": "Bloco B",
+                "address_neighborhood": "Centro",
+                "address_city": "Blumenau",
+                "address_state": "sc",
+                "address_reference": "Entrada pela portaria dois",
+                "urgency": ServiceRequest.Urgency.NORMAL,
+                "source": ServiceRequest.Source.WHATSAPP,
+                "submit_action": "convert",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        service_request = ServiceRequest.objects.get(title="Viagem para atendimento na filial")
+        job = service_request.converted_service
+        self.assertEqual(response.url, reverse("service_job_detail", args=[job.id]))
+        self.assertEqual(job.start_date, preferred_date)
+        self.assertEqual(job.end_date, preferred_date)
+        self.assertEqual(job.planned_start_time, time(8, 30))
+        self.assertEqual(job.service_zip_code, "89010-000")
+        self.assertEqual(job.service_street, "Rua da Filial")
+        self.assertEqual(job.service_number, "150")
+        self.assertEqual(job.service_complement, "Bloco B")
+        self.assertEqual(job.service_district, "Centro")
+        self.assertEqual(job.service_city, "Blumenau")
+        self.assertEqual(job.service_state, "SC")
+        self.assertEqual(job.service_reference, "Entrada pela portaria dois")
+        self.assertIn("Rua da Filial", job.service_location)
+        self.assertEqual(job.item_expenses.count(), 5)
+        for item in job.item_expenses.all():
+            self.assertEqual(item.unit_value, Decimal("0.00"))
+            self.assertEqual(item.usage_status, ServiceItemExpense.UsageStatus.PLANNED)
+
+    def test_invalid_guided_request_scenario_returns_404(self):
+        response = self.client.get(reverse("service_request_create_from_scenario", args=["inexistente"]))
+
+        self.assertEqual(response.status_code, 404)
 
     def test_travel_flow_creates_zero_value_expense_presets(self):
         response = self.client.post(
@@ -199,6 +255,7 @@ class ServiceGuideAndAccountabilityTests(TestCase):
         self.assertContains(response, "R$ 550,00")
         self.assertContains(response, reverse("service_accountability_pdf", args=[job.id]))
         self.assertContains(response, reverse("public_service_accountability", args=[job.public_token]))
+        self.assertContains(response, "Enviar pelo WhatsApp")
 
     def test_public_accountability_requires_final_report(self):
         job = self._create_completed_job()
