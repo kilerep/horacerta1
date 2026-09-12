@@ -91,6 +91,25 @@ def mei_panel(request):
     ).select_related("company", "contract")
     pending_reports_count = pending_report_requests_qs.count()
     pending_report_requests = list(pending_report_requests_qs[:20])
+    pending_payment_reports_qs = (
+        ServiceReport.objects.filter(
+            employee__user=request.user,
+            payment_status=ServiceReport.PaymentStatus.PENDING,
+            conference_first_viewed_at__isnull=False,
+        )
+        .exclude(status=ServiceReport.Status.CANCELED)
+        .select_related("company", "contract")
+        .order_by("conference_first_viewed_at")
+    )
+    pending_payment_reports_count = pending_payment_reports_qs.count()
+    pending_payment_alerts = [
+        {
+            "report": report,
+            "company_name": report.company.name,
+            "viewed_label": _service_report_view_label(report),
+        }
+        for report in pending_payment_reports_qs[:10]
+    ]
     service_today_count = ServiceJob.objects.filter(
         professional=request.user,
         start_date=today,
@@ -119,6 +138,8 @@ def mei_panel(request):
         "incomplete_days": incomplete_days,
         "pending_days": incomplete_days,
         "pending_reports_count": pending_reports_count,
+        "pending_payment_reports_count": pending_payment_reports_count,
+        "pending_payment_alerts": pending_payment_alerts,
         "service_today_count": service_today_count,
         "new_service_requests_count": new_service_requests_count,
         "important_notifications_count": important_notifications_count,

@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from companies.models import Company, Employee
-from timeclock.models import ActivityReportRequest, Contract, Punch
+from timeclock.models import ActivityReportRequest, Contract, Punch, ServiceReport
 
 
 User = get_user_model()
@@ -106,6 +106,106 @@ class MeiDashboardAttentionTests(TestCase):
         self.assertContains(response, f"contract={self.contract_a.id}")
         self.assertContains(response, f"date_from={today.isoformat()}")
         self.assertContains(response, f"date_to={today.isoformat()}")
+
+    def test_attention_panel_shows_pending_payment_after_client_views_report(self):
+        today = timezone.localdate()
+        viewed_report = ServiceReport.objects.create(
+            company=self.company_a,
+            employee=self.employee_a,
+            contract=self.contract_a,
+            report_date=today,
+            date_from=today - timedelta(days=7),
+            date_to=today,
+            title="Relatório de horas - semana",
+            status=ServiceReport.Status.VIEWED,
+            payment_status=ServiceReport.PaymentStatus.PENDING,
+            conference_first_viewed_at=timezone.now() - timedelta(days=1),
+        )
+        self.client.force_login(self.mei_user)
+
+        response = self.client.get(reverse("mei_panel"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Recebimento pendente")
+        self.assertContains(response, "Cliente com pendências")
+        self.assertContains(response, reverse("mei_service_report_detail", args=[viewed_report.id]))
+
+    def test_attention_panel_hides_reports_not_yet_viewed_or_already_paid(self):
+        today = timezone.localdate()
+        ServiceReport.objects.create(
+            company=self.company_a,
+            employee=self.employee_a,
+            contract=self.contract_a,
+            report_date=today,
+            title="Relatório enviado, ainda não visto",
+            status=ServiceReport.Status.SENT,
+            payment_status=ServiceReport.PaymentStatus.PENDING,
+        )
+        ServiceReport.objects.create(
+            company=self.company_a,
+            employee=self.employee_a,
+            contract=self.contract_a,
+            report_date=today,
+            title="Relatório já pago",
+            status=ServiceReport.Status.PAID,
+            payment_status=ServiceReport.PaymentStatus.PAID,
+            conference_first_viewed_at=timezone.now() - timedelta(days=2),
+            paid_at=timezone.now() - timedelta(days=1),
+        )
+        self.client.force_login(self.mei_user)
+
+        response = self.client.get(reverse("mei_panel"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Recebimento pendente")
+
+    def test_attention_panel_never_shows_pending_payment_reports_from_another_professional(self):
+        other_mei_user = User.objects.create_user(
+            username="outro-resumo-mei@example.com",
+            email="outro-resumo-mei@example.com",
+            password="Teste@12345",
+            role=User.Role.FUNCIONARIO,
+        )
+        other_owner = User.objects.create_user(
+            username="cliente-resumo-c@example.com",
+            email="cliente-resumo-c@example.com",
+            password="Teste@12345",
+            role=User.Role.EMPRESA,
+        )
+        other_company = Company.objects.create(
+            owner=other_owner,
+            name="Cliente de outro prestador",
+            email="cliente-c@example.com",
+        )
+        other_employee = Employee.objects.create(
+            user=other_mei_user,
+            company=other_company,
+            full_name="Outro prestador",
+            is_active=True,
+        )
+        other_contract = Contract.objects.create(
+            employee=other_employee,
+            company=other_company,
+            hourly_rate=Decimal("80.00"),
+            start_date=timezone.localdate() - timedelta(days=7),
+            is_active=True,
+        )
+        ServiceReport.objects.create(
+            company=other_company,
+            employee=other_employee,
+            contract=other_contract,
+            report_date=timezone.localdate(),
+            title="Relatório de outro prestador",
+            status=ServiceReport.Status.VIEWED,
+            payment_status=ServiceReport.PaymentStatus.PENDING,
+            conference_first_viewed_at=timezone.now() - timedelta(days=1),
+        )
+        self.client.force_login(self.mei_user)
+
+        response = self.client.get(reverse("mei_panel"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Cliente de outro prestador")
 
     def test_attention_panel_has_a_clear_empty_state_when_there_are_no_priority_items(self):
         self.contract_b.hourly_rate = Decimal("50.00")

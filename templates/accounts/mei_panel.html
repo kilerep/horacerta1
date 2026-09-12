@@ -161,6 +161,18 @@
             </article>
           {% endfor %}
         {% endif %}
+        {% if pending_payment_alerts %}
+          {% for item in pending_payment_alerts %}
+            <article class="attention-item attention-item--warn">
+              <div>
+                <span class="attention-item__eyebrow">Recebimento pendente</span>
+                <strong class="attention-item__title">{{ item.company_name }}</strong>
+                <p class="attention-item__text">Relatório {{ item.viewed_label|lower }} pelo cliente, ainda sem pagamento marcado.</p>
+              </div>
+              <a class="btn" href="{% url 'mei_service_report_detail' item.report.id %}">Ver relatório</a>
+            </article>
+          {% endfor %}
+        {% endif %}
         {% if pending_report_requests %}
           {% for req in pending_report_requests %}
             <article class="attention-item attention-item--warn">
@@ -193,7 +205,7 @@
             <a class="btn" href="{% url 'mei_notifications' %}">Abrir avisos</a>
           </article>
         {% endif %}
-        {% if not incomplete_alerts and not missing_rate_contracts and not pending_report_requests and not new_service_requests_count and not important_notifications_count %}
+        {% if not incomplete_alerts and not missing_rate_contracts and not pending_payment_alerts and not pending_report_requests and not new_service_requests_count and not important_notifications_count %}
           <article class="attention-item attention-item--neutral">
             <div>
               <span class="attention-item__eyebrow">Tudo em ordem</span>
@@ -270,7 +282,14 @@
             </div>
           {% endfor %}
         {% endif %}
-        {% if not incomplete_alerts and not paused_contracts and not missing_rate_contracts and not pending_report_requests %}
+        {% if pending_payment_alerts %}
+          {% for item in pending_payment_alerts %}
+            <div class="summary-alert">
+              <strong>{{ item.company_name }}</strong>: relatório {{ item.viewed_label|lower }} pelo cliente, recebimento ainda pendente.
+            </div>
+          {% endfor %}
+        {% endif %}
+        {% if not incomplete_alerts and not paused_contracts and not missing_rate_contracts and not pending_report_requests and not pending_payment_alerts %}
           <div class="summary-alert neutral">Nenhuma pendência relevante encontrada para o período.</div>
         {% endif %}
       </div>
