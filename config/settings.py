@@ -225,3 +225,65 @@ if not DEBUG:
     SECURE_HSTS_SECONDS = int(os.getenv("SECURE_HSTS_SECONDS", "31536000"))
     SECURE_HSTS_INCLUDE_SUBDOMAINS = _env_bool("SECURE_HSTS_INCLUDE_SUBDOMAINS", True)
     SECURE_HSTS_PRELOAD = _env_bool("SECURE_HSTS_PRELOAD", False)
+
+# ---------------------------------------------------------------------------
+# LOGGING
+# ---------------------------------------------------------------------------
+# Sem isso, erros em produção não ficam registrados em lugar nenhum (o Django
+# só mostra uma página 500 genérica para o usuário e não sobra rastro). Aqui
+# tudo de nível WARNING+ vai para o console (Render/journald/gunicorn já
+# capturam stdout/stderr como log), e erros não tratados (nível ERROR) também
+# são enviados por e-mail para os endereços em ADMINS, reaproveitando o SMTP
+# que já está configurado para reset de senha.
+#
+# Evolução recomendada: trocar/complementar por um serviço tipo Sentry
+# (plano gratuito cobre bem o volume de um MVP) para ter stack trace completo,
+# agrupamento de erros repetidos e alertas — e-mail sozinho não escala.
+ADMINS = [
+    tuple(item.strip() for item in pair.split(":", 1))
+    for pair in os.getenv("ADMINS", "").split(",")
+    if pair.strip() and ":" in pair
+]
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "[{asctime}] {levelname} {name}: {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+            "level": "WARNING",
+        },
+        "mail_admins": {
+            "class": "django.utils.log.AdminEmailHandler",
+            "level": "ERROR",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "WARNING",
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+        "django.request": {
+            "handlers": ["console", "mail_admins"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+        "django.security": {
+            "handlers": ["console", "mail_admins"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+    },
+}

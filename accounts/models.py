@@ -12,6 +12,7 @@ class User(AbstractUser):
         NEUTRAL = "professional-neutral", "Neutro Profissional"
         BRAZIL = "brazil-corporate", "Brasil Corporativo"
         RUBRO = "rubro-professional", "Rubro Profissional"
+        CLARO = "claro-operacional", "Claro Operacional"
 
     role = models.CharField(
         max_length=20,
