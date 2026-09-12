@@ -44,19 +44,37 @@ Isso quer dizer que os "bloqueadores críticos antes de produção" listados em
 `HORACERTA_RELATORIO_INTERNO_STATUS_E_ROADMAP.md` (seção 6) já foram resolvidos na prática —
 o sistema está no ar, testado e sincronizado entre servidor/GitHub/local.
 
-## Próximo passo pendente
+## Decisão de engenharia executada em 2026-09-12
 
-Conforme o encerramento da última sessão de deploy, ficou em aberto uma escolha do usuário entre
-duas frentes (ainda não decidida):
+O usuário delegou a escolha entre "mais ajustes visuais" e "refatorar `accounts/views.py`" ao
+julgamento técnico. Optamos pela refatoração: o arquivo tinha **6.647 linhas e ~120 views**
+misturando back-office interno, telas de empresa, autoatendimento do MEI e páginas públicas no
+mesmo módulo — e o Bloco 5 (segurança/LGPD), próximo na fila, precisa adicionar várias views
+novas de conta (troca de e-mail, histórico de login, exportação/exclusão de dados) exatamente
+nesse arquivo. Fazer isso em cima de um monólito de 6,6 mil linhas custa mais caro quanto mais
+se espera.
 
-1. Mais uma rodada de ajustes visuais (o usuário já validou o resultado da rodada anterior no
-   celular).
-2. Refatoração de `accounts/views.py` (limpeza técnica, sem mudança visível para o usuário).
+Resultado: `accounts/views.py` virou o pacote `accounts/views/`, dividido só por organização —
+nenhum comportamento mudou:
 
-Ambas cabem em [[horacerta-feature]]. A escolha entre elas é de produto — usar
-[[horacerta-product]] (Bloco 0 do roadmap prioriza estabilização; refatoração técnica pura
-tende a valer menos pontos de prioridade do que os itens de UX já sequenciados, mas a decisão
-final é do usuário).
+| Módulo | Conteúdo |
+|---|---|
+| `_shared.py` | Imports, constantes e ~70 helpers privados usados por mais de uma audiência |
+| `auth.py` | `signup`, `login_view`, `logout_view`, redirect genérico por papel |
+| `internal.py` | Back-office interno (`interno/...`) |
+| `company.py` | Telas da empresa cliente (`empresa/...`) |
+| `mei.py` | Autoatendimento do prestador/MEI (`me/...`) |
+| `public.py` | Páginas públicas (landing, termos, link público de relatório) |
+
+Verificação: superfície de nomes do módulo (`vars(accounts.views)`) comparada byte a byte antes
+e depois — idêntica, à exceção da adição esperada dos próprios submódulos como atributos. Suíte
+de testes completa (174 testes) reexecutada com as mesmas variáveis de ambiente da CI antes do
+commit. Também removido `accounts/views.py.backup.2026-06-22-220845`, um backup de 286 KB
+esquecido no repositório e já apontado como lixo em auditoria anterior
+(`Claude outputs/relatorio_1_codigo_projeto_horacerta.md`).
+
+A rodada de ajustes visuais continua na fila para uma próxima sessão — não foi descartada, só
+adiada por ter menos urgência estrutural que este item.
 
 ## Convenção de manutenção
 
