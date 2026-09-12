@@ -3,6 +3,10 @@
 # ._shared; this file only holds the views for its own audience.
 from ._shared import *  # noqa: F401,F403
 
+# Grace period before nudging the MEI about a report the client hasn't
+# opened yet - avoids a false-urgency alert right after sending it.
+UNVIEWED_REPORT_REMINDER_DAYS = 2
+
 
 @login_required
 def dashboard_employee(request):
@@ -110,6 +114,27 @@ def mei_panel(request):
         }
         for report in pending_payment_reports_qs[:10]
     ]
+    unviewed_reminder_cutoff = timezone.now() - timedelta(days=UNVIEWED_REPORT_REMINDER_DAYS)
+    unviewed_report_alerts_qs = (
+        ServiceReport.objects.filter(
+            employee__user=request.user,
+            status=ServiceReport.Status.SENT,
+            conference_first_viewed_at__isnull=True,
+            conference_link_created_at__isnull=False,
+            conference_link_created_at__lte=unviewed_reminder_cutoff,
+        )
+        .select_related("company", "contract")
+        .order_by("conference_link_created_at")
+    )
+    unviewed_report_alerts_count = unviewed_report_alerts_qs.count()
+    unviewed_report_alerts = [
+        {
+            "report": report,
+            "company_name": report.company.name,
+            "sent_days_ago": (timezone.now() - report.conference_link_created_at).days,
+        }
+        for report in unviewed_report_alerts_qs[:10]
+    ]
     service_today_count = ServiceJob.objects.filter(
         professional=request.user,
         start_date=today,
@@ -140,6 +165,8 @@ def mei_panel(request):
         "pending_reports_count": pending_reports_count,
         "pending_payment_reports_count": pending_payment_reports_count,
         "pending_payment_alerts": pending_payment_alerts,
+        "unviewed_report_alerts_count": unviewed_report_alerts_count,
+        "unviewed_report_alerts": unviewed_report_alerts,
         "service_today_count": service_today_count,
         "new_service_requests_count": new_service_requests_count,
         "important_notifications_count": important_notifications_count,

@@ -185,6 +185,18 @@
             </article>
           {% endfor %}
         {% endif %}
+        {% if unviewed_report_alerts %}
+          {% for item in unviewed_report_alerts %}
+            <article class="attention-item">
+              <div>
+                <span class="attention-item__eyebrow">Relatório não visualizado</span>
+                <strong class="attention-item__title">{{ item.company_name }}</strong>
+                <p class="attention-item__text">Enviado há {{ item.sent_days_ago }} dia(s) e o cliente ainda não abriu. Considere lembrar por WhatsApp.</p>
+              </div>
+              <a class="btn" href="{% url 'mei_service_report_whatsapp' item.report.id %}">Lembrar no WhatsApp</a>
+            </article>
+          {% endfor %}
+        {% endif %}
         {% if new_service_requests_count %}
           <article class="attention-item">
             <div>
@@ -205,7 +217,7 @@
             <a class="btn" href="{% url 'mei_notifications' %}">Abrir avisos</a>
           </article>
         {% endif %}
-        {% if not incomplete_alerts and not missing_rate_contracts and not pending_payment_alerts and not pending_report_requests and not new_service_requests_count and not important_notifications_count %}
+        {% if not incomplete_alerts and not missing_rate_contracts and not pending_payment_alerts and not pending_report_requests and not unviewed_report_alerts and not new_service_requests_count and not important_notifications_count %}
           <article class="attention-item attention-item--neutral">
             <div>
               <span class="attention-item__eyebrow">Tudo em ordem</span>
