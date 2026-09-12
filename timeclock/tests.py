@@ -415,3 +415,130 @@ class ServiceReportSharingTests(TestCase):
         self.assertEqual(second_response.status_code, 200)
         self.report.refresh_from_db()
         self.assertEqual(self.report.conference_first_viewed_at, expected_first_viewed_at)
+
+
+class ManualPunchReportLockTests(TestCase):
+    """Regressao do bug de auditoria (12/09/2026): 'Registrar horario manual'
+    aceitava lancamentos em dias ja cobertos por um relatorio de horas ja
+    gerado/enviado, mesmo o sistema prometendo (na tela de Historico e ao
+    gerar um relatorio) que esses dias ficam bloqueados para edicao."""
+
+    def setUp(self):
+        self.owner = User.objects.create_user(
+            username="owner.manuallock@example.com",
+            email="owner.manuallock@example.com",
+            password="Teste@12345",
+            role=User.Role.EMPRESA,
+        )
+        self.company = Company.objects.create(
+            name="Ensimec Lock",
+            owner=self.owner,
+            email="ensimec.lock@example.com",
+        )
+        self.mei_user = User.objects.create_user(
+            username="mei.manuallock@example.com",
+            email="mei.manuallock@example.com",
+            password="Teste@12345",
+            role=User.Role.FUNCIONARIO,
+        )
+        self.employee = Employee.objects.create(user=self.mei_user, company=self.company, full_name="MEI Lock")
+        self.contract = Contract.objects.create(
+            employee=self.employee,
+            company=self.company,
+            hourly_rate="10.00",
+            start_date=date(2026, 4, 1),
+            is_active=True,
+        )
+        self.client.force_login(self.mei_user)
+
+    def _post_manual_punch(self, launch_date, times=("09:00", "13:00")):
+        return self.client.post(
+            reverse("create_manual_punches"),
+            {
+                "contract": str(self.contract.id),
+                "manual_date": launch_date.isoformat(),
+                "manual_note": "",
+                "times": list(times),
+            },
+        )
+
+    def test_manual_punch_is_blocked_for_day_covered_by_generated_report(self):
+        report = ServiceReport.objects.create(
+            company=self.company,
+            employee=self.employee,
+            contract=self.contract,
+            report_date=date(2026, 6, 4),
+            date_from=date(2026, 6, 1),
+            date_to=date(2026, 6, 4),
+            title="horas da semana",
+        )
+        report.ensure_conference_link()
+        report.save()
+
+        response = self._post_manual_punch(date(2026, 6, 2))
+
+        self.assertEqual(response.status_code, 400)
+        payload = response.json()
+        self.assertFalse(payload["ok"])
+        self.assertTrue(any("bloqueado" in msg for msg in payload["errors"]))
+        self.assertEqual(
+            Punch.objects.filter(contract=self.contract, timestamp__date=date(2026, 6, 2)).count(),
+            0,
+        )
+
+    def test_manual_punch_is_blocked_even_for_draft_report(self):
+        # A propria tela de Relatorios avisa: "Ao gerar este relatorio, os dias
+        # incluidos no periodo serao bloqueados para edicao" - a promessa vale
+        # assim que o relatorio e gerado, mesmo ainda em rascunho (nao enviado).
+        ServiceReport.objects.create(
+            company=self.company,
+            employee=self.employee,
+            contract=self.contract,
+            report_date=date(2026, 7, 10),
+            date_from=date(2026, 7, 7),
+            date_to=date(2026, 7, 10),
+            title="Rascunho de julho",
+        )
+
+        response = self._post_manual_punch(date(2026, 7, 8))
+
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(response.json()["ok"])
+
+    def test_manual_punch_still_allowed_for_day_outside_any_report(self):
+        ServiceReport.objects.create(
+            company=self.company,
+            employee=self.employee,
+            contract=self.contract,
+            report_date=date(2026, 6, 4),
+            date_from=date(2026, 6, 1),
+            date_to=date(2026, 6, 4),
+            title="horas da semana",
+        )
+
+        response = self._post_manual_punch(date(2026, 6, 10))
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertTrue(payload["ok"])
+        self.assertEqual(
+            Punch.objects.filter(contract=self.contract, timestamp__date=date(2026, 6, 10)).count(),
+            2,
+        )
+
+    def test_manual_punch_allowed_again_after_report_is_canceled(self):
+        report = ServiceReport.objects.create(
+            company=self.company,
+            employee=self.employee,
+            contract=self.contract,
+            report_date=date(2026, 6, 4),
+            date_from=date(2026, 6, 1),
+            date_to=date(2026, 6, 4),
+            title="horas da semana",
+            status=ServiceReport.Status.CANCELED,
+        )
+
+        response = self._post_manual_punch(date(2026, 6, 2))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["ok"])

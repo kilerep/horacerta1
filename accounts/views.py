@@ -68,6 +68,7 @@ from timeclock.services import (
     compute_day_total,
     filter_punches_by_period,
     format_hhmm,
+    report_locks_day,
     restore_punch,
 )
 from timeclock.state import (
@@ -1249,11 +1250,11 @@ def _build_service_report_whatsapp_url(report, conference_url):
 
 
 def _report_locks_day_for_user(user, day):
-    return ServiceReport.objects.filter(
-        employee__user=user,
-        date_from__lte=day,
-        date_to__gte=day,
-    ).exclude(status=ServiceReport.Status.CANCELED).exists()
+    # Mantido como fino wrapper de compatibilidade: a checagem em si agora
+    # vive em timeclock.services.report_locks_day, unica fonte de verdade
+    # tambem usada por timeclock.views.create_manual_punches (ver bug da
+    # auditoria de 12/09/2026 sobre essa checagem estar faltando la).
+    return report_locks_day(day, user=user)
 
 
 def _today_bounds(day):
@@ -5990,11 +5991,23 @@ def mei_reports(request):
                 employee__user=request.user,
             )
             if payment_status == ServiceReport.PaymentStatus.PAID:
-                report.payment_status = ServiceReport.PaymentStatus.PAID
-                report.paid_at = timezone.now()
-                report.paid_note = (request.POST.get("paid_note") or "").strip()[:1000]
-                report.save(update_fields=["payment_status", "paid_at", "paid_note", "updated_at"])
-                event = "report_received"
+                # O relatorio precisa ter sido de fato compartilhado (link
+                # gerado) antes de poder ser marcado como "Recebido" - sem essa
+                # checagem, um relatorio ainda em Rascunho (nunca visto pelo
+                # cliente) podia ser marcado como recebido, quebrando a logica
+                # de confirmacao de recebimento. Bug da auditoria de 12/09/2026.
+                if report.status == ServiceReport.Status.DRAFT:
+                    messages.error(
+                        request,
+                        "Gere e compartilhe o link deste relatorio antes de marca-lo como recebido.",
+                    )
+                    event = "receive_invalid"
+                else:
+                    report.payment_status = ServiceReport.PaymentStatus.PAID
+                    report.paid_at = timezone.now()
+                    report.paid_note = (request.POST.get("paid_note") or "").strip()[:1000]
+                    report.save(update_fields=["payment_status", "paid_at", "paid_note", "updated_at"])
+                    event = "report_received"
             elif payment_status == ServiceReport.PaymentStatus.PENDING:
                 report.payment_status = ServiceReport.PaymentStatus.PENDING
                 report.paid_at = None

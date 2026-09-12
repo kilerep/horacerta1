@@ -33,6 +33,20 @@
     .security-summary h2{margin:0}
     .security-summary p{margin:8px 0 0}
     @media (max-width:640px){.security-summary{grid-template-columns:1fr}.security-summary .btn{width:100%;justify-content:center}}
+    .profile-scope-note{
+      margin-top:10px;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.04);
+      font-size:13px;
+      color:var(--muted);
+    }
+    .profile-scope-note--empty{
+      border-color:#c9a13b;
+      background:rgba(201,161,59,.12);
+      color:var(--text);
+    }
   </style>
 
   <section class="panel">
@@ -51,6 +65,24 @@
           </select>
         </div>
       </form>
+    {% endif %}
+    {% if contracts|length > 1 %}
+      {% if not employee.full_name %}
+        <div class="profile-scope-note profile-scope-note--empty">
+          <strong>Atencao:</strong> nome, CPF, telefone, endereco e foto sao cadastrados
+          <strong>separadamente para cada cliente</strong> acima - nao existe um perfil
+          unico compartilhado entre eles. Este vinculo (<strong>{{ selected_contract.company.name }}</strong>)
+          ainda nao tem nome cadastrado; confira se e realmente o cliente que voce quer
+          editar antes de preencher os dados.
+        </div>
+      {% else %}
+        <div class="profile-scope-note">
+          Voce esta editando os dados cadastrados especificamente para
+          <strong>{{ selected_contract.company.name }}</strong>. Como esses campos valem
+          por cliente, trocar a empresa acima mostra (e permite editar) um cadastro
+          diferente.
+        </div>
+      {% endif %}
     {% endif %}
     <form method="post" enctype="multipart/form-data" style="margin-top:10px;">
       {% csrf_token %}

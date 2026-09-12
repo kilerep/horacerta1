@@ -238,6 +238,7 @@
               {% endif %}
               <a class="btn" href="{{ row.pdf_url }}">PDF</a>
               {% if report.payment_status != "paid" %}
+                {% if report.status != "DRAFT" %}
                 <form method="post" data-submit-once="true">
                   {% csrf_token %}
                   <input type="hidden" name="action" value="set_payment_status">
@@ -245,6 +246,7 @@
                   <input type="hidden" name="payment_status" value="paid">
                   <button class="btn" type="submit">Recebido</button>
                 </form>
+                {% endif %}
               {% else %}
                 <form method="post" data-submit-once="true" onsubmit="return confirm('Voltar este relatorio para pendente?')">
                   {% csrf_token %}

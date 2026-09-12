@@ -21,7 +21,13 @@ from accounts.models import User
 from accounts.mei_context import resolve_mei_context
 from companies.models import CompanyAttendancePolicy, CompanyAuthorizedLocation
 from .models import ActivityReportRequest, Contract, Punch
-from .services import build_daily_summary, evaluate_punch_confidence, filter_punches_by_period, format_hhmm
+from .services import (
+    build_daily_summary,
+    evaluate_punch_confidence,
+    filter_punches_by_period,
+    format_hhmm,
+    locked_report_for_day,
+)
 from .state import contract_operational_q, employee_lifecycle_summary
 
 QR_PRESENCE_SESSION_KEY = "hc_qr_presence_claims"
@@ -520,6 +526,34 @@ def create_manual_punches(request):
     contract = _active_contracts_for_employee_user(request.user).filter(id=contract_id).first()
     if not contract:
         return JsonResponse({"ok": False, "errors": ["Vinculo invalido ou inativo."]}, status=400)
+
+    # O sistema promete (na tela de Historico e ao gerar um relatorio) que dias
+    # ja incluidos num relatorio de horas ficam bloqueados para edicao, "para
+    # preservar a seguranca dos relatorios" - e "editar horarios de hoje" ja
+    # aplicava essa regra (ver accounts.views.mei_edit_today_punches). O
+    # registro manual, porem, nao verificava isso e aceitava novos horarios em
+    # qualquer data passada - inclusive dias de relatorios ja enviados/
+    # visualizados/recebidos pelo cliente, quebrando totais que o cliente ja
+    # havia confirmado. Bug encontrado na auditoria de 12/09/2026.
+    locked_report = locked_report_for_day(launch_date, contract=contract)
+    if locked_report:
+        return JsonResponse(
+            {
+                "ok": False,
+                "errors": [
+                    "Este dia (%s) ja faz parte do relatorio \"%s\" (periodo %s a %s) e esta bloqueado "
+                    "para novos lancamentos. Fale com o suporte se precisar corrigir um horario "
+                    "desse periodo."
+                    % (
+                        launch_date.strftime("%d/%m/%Y"),
+                        locked_report.title,
+                        locked_report.date_from.strftime("%d/%m/%Y"),
+                        locked_report.date_to.strftime("%d/%m/%Y"),
+                    )
+                ],
+            },
+            status=400,
+        )
 
     tz = timezone.get_current_timezone()
     day_start = timezone.make_aware(datetime.combine(launch_date, time.min), tz)
