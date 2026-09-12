@@ -17,7 +17,6 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model, login, logout
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required
-from django.core.cache import cache
 from django.db import transaction
 from django.db.models import Count, Max, Q
 from django.core.exceptions import PermissionDenied
@@ -1345,50 +1344,24 @@ def signup(request):
     return render(request, "accounts/signup.html", {"form": form})
 
 
-# Proteção simples contra força bruta no login: limita tentativas com senha
-# errada por IP usando o cache do Django (sem precisar de migração nova).
-# Em deploy com mais de um worker/dyno atrás de um cache local (LocMemCache),
-# a contagem é por processo — funciona, mas para bloqueio compartilhado entre
-# todos os workers vale migrar o CACHES para Redis mais adiante.
-LOGIN_ATTEMPT_LIMIT = 5
-LOGIN_ATTEMPT_WINDOW_SECONDS = 300  # 5 minutos
-
-
-def _get_client_ip(request):
-    forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR", "")
-    if forwarded_for:
-        return forwarded_for.split(",")[0].strip()
-    return request.META.get("REMOTE_ADDR", "unknown")
-
-
-def _login_attempts_cache_key(request):
-    return f"login_attempts:{_get_client_ip(request)}"
+# A proteção contra força bruta no login (bloqueio por IP + usuário após
+# várias senhas erradas) é feita pelo django-axes — ver AUTHENTICATION_BACKENDS
+# e AXES_* em config/settings.py, e accounts/axes_lockout.py para a resposta
+# customizada. Ele age no nível do backend de autenticação, então cobre tanto
+# esta view quanto o /admin/ nativo do Django com a mesma configuração.
+LOGIN_ATTEMPT_LIMIT = settings.AXES_FAILURE_LIMIT
 
 
 def login_view(request):
     if request.user.is_authenticated:
         return _redirect_for_role(request.user)
 
-    cache_key = _login_attempts_cache_key(request)
-    attempts = cache.get(cache_key, 0)
-    blocked = attempts >= LOGIN_ATTEMPT_LIMIT
-
     if request.method == "POST":
-        if blocked:
-            messages.error(
-                request,
-                "Muitas tentativas de login com dados incorretos. "
-                "Aguarde alguns minutos antes de tentar novamente.",
-            )
-            form = LoginForm(request)
-        else:
-            form = LoginForm(request, data=request.POST)
-            if form.is_valid():
-                cache.delete(cache_key)
-                user = form.get_user()
-                login(request, user)
-                return _redirect_for_role(user)
-            cache.set(cache_key, attempts + 1, LOGIN_ATTEMPT_WINDOW_SECONDS)
+        form = LoginForm(request, data=request.POST)
+        if form.is_valid():
+            user = form.get_user()
+            login(request, user)
+            return _redirect_for_role(user)
     else:
         form = LoginForm(request)
 

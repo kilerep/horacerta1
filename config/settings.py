@@ -87,6 +87,7 @@ INSTALLED_APPS = [
     "companies",
     "services",
     "timeclock",
+    "axes",
 ]
 
 MIDDLEWARE = [
@@ -97,6 +98,10 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # Deve ser o último: intercepta tentativas de login bloqueadas antes de
+    # qualquer outra view rodar. Protege tanto o login customizado quanto o
+    # /admin/ nativo do Django, porque age no nível do backend de autenticação.
+    "axes.middleware.AxesMiddleware",
 ]
 if USE_WHITENOISE:
     MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")
@@ -164,9 +169,36 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 AUTHENTICATION_BACKENDS = [
+    # Precisa vir primeiro: é ele quem barra a tentativa (retorna None) quando
+    # o IP/usuário já estourou o limite de tentativas, antes de qualquer
+    # backend real chegar a checar a senha.
+    "axes.backends.AxesStandaloneBackend",
     "accounts.backends.EmailOrUsernameBackend",
     "django.contrib.auth.backends.ModelBackend",
 ]
+
+# ---------------------------------------------------------------------------
+# django-axes — bloqueio de força bruta no login (cobre tanto o login
+# customizado quanto o /admin/ nativo do Django, por agir no backend de
+# autenticação em vez de em uma view específica).
+# ---------------------------------------------------------------------------
+AXES_FAILURE_LIMIT = 5
+AXES_COOLOFF_TIME = 0.0833  # ~5 minutos, em horas
+# Bloqueia pela COMBINAÇÃO IP + usuário (lista dentro de lista — uma lista
+# "achatada" faria o axes bloquear por IP OU por usuário isoladamente).
+# Assim, uma tentativa errada em uma conta não derruba o acesso de todo
+# mundo atrás do mesmo IP (ex: NAT de escritório tentando contas diferentes).
+AXES_LOCKOUT_PARAMETERS = [["ip_address", "username"]]
+AXES_RESET_ON_SUCCESS = True
+# O site roda atrás de exatamente um proxy reverso confiável (nginx, que
+# sempre ACRESCENTA o IP real ao final do X-Forwarded-For via
+# $proxy_add_x_forwarded_for) — por isso pegamos o último IP da lista, nunca
+# o primeiro, que um cliente poderia forjar livremente.
+AXES_IPWARE_PROXY_COUNT = 1
+AXES_IPWARE_META_PRECEDENCE_ORDER = ["HTTP_X_FORWARDED_FOR", "REMOTE_ADDR"]
+# Sem isso, o axes mostra uma página de bloqueio genérica em inglês. Esta
+# função reaproveita a tela de login em português (accounts/axes_lockout.py).
+AXES_LOCKOUT_CALLABLE = "accounts.axes_lockout.axes_lockout_response"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 LOGIN_URL = "login"
