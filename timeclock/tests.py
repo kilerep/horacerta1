@@ -417,6 +417,10 @@ class ServiceReportSharingTests(TestCase):
         self.assertEqual(self.report.conference_first_viewed_at, expected_first_viewed_at)
 
 
+@override_settings(
+    ALLOWED_HOSTS=["testserver", "localhost", "127.0.0.1"],
+    SECURE_SSL_REDIRECT=False,
+)
 class ManualPunchReportLockTests(TestCase):
     """Regressao do bug de auditoria (12/09/2026): 'Registrar horario manual'
     aceitava lancamentos em dias ja cobertos por um relatorio de horas ja
