@@ -1,46 +1,31 @@
 {% load service_format %}
+{% service_playbook job.category.slug as playbook %}
 <!doctype html>
 <html lang="pt-br">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% if is_preview %}Prévia do serviço{% else %}Relatório de serviço{% endif %} - HoraCerta</title>
+  <title>{% if is_preview %}{{ playbook.document_title }}{% else %}Relatório de serviço{% endif %} - HoraCerta</title>
   <style>
     *{box-sizing:border-box}
     body{margin:0;font-family:"Segoe UI",Arial,sans-serif;background:#f3f4f6;color:#111827}
     .page{max-width:980px;margin:0 auto;padding:18px;display:grid;gap:14px}
     .card{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:16px;box-shadow:0 8px 20px rgba(15,23,42,.06)}
-    .head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}
-    .brand{font-weight:900;font-size:18px}
-    h1{margin:6px 0 0;font-size:28px;line-height:1.1;overflow-wrap:anywhere}
-    h2{margin:0 0 10px;font-size:18px}
+    .head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;background:linear-gradient(135deg,#111827,#1f2937);color:#fff;border-color:#111827}
+    .head p{color:#d1d5db}.brand{font-weight:900;font-size:18px;letter-spacing:.04em;text-transform:uppercase}
+    h1{margin:6px 0 0;font-size:28px;line-height:1.1;overflow-wrap:anywhere}h2{margin:0 0 10px;font-size:18px}h3{margin:0 0 8px;font-size:15px}
     p{margin:0;color:#4b5563;line-height:1.5;overflow-wrap:anywhere}
     .pill{display:inline-flex;border:1px solid #d1d5db;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:700;color:#374151;background:#f9fafb}
-    .meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-    .summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-    .cell{border:1px solid #e5e7eb;border-radius:8px;padding:10px;background:#f9fafb;min-width:0}
-    .cell span{display:block;color:#6b7280;font-size:12px}
-    .cell strong{display:block;margin-top:4px;font-size:17px;overflow-wrap:anywhere}
-    .cell.total{grid-column:1 / -1;background:#eef2ff;border-color:#c7d2fe}
-    .data{display:grid;gap:8px}
-    .data div{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid #e5e7eb;padding-bottom:8px}
-    .data span{color:#6b7280}
-    .data strong{text-align:right;overflow-wrap:anywhere}
-    .list{display:grid;gap:10px}
-    .entry{border:1px solid #e5e7eb;border-radius:8px;padding:12px;background:#f9fafb;display:grid;gap:7px}
-    .entry-head{display:flex;justify-content:space-between;gap:10px}
-    .entry-title{font-weight:900;overflow-wrap:anywhere}
-    .entry-meta{display:flex;flex-wrap:wrap;gap:7px;color:#6b7280;font-size:13px}
-    .entry-total{font-weight:900;text-align:right;white-space:nowrap}
-    .footer{text-align:center;color:#6b7280;font-size:12px}
-    @media (max-width:720px){
-      .page{padding:10px}
-      .head,.grid,.summary,.data div,.entry-head{display:grid;grid-template-columns:1fr}
-      .cell.total{grid-column:auto}
-      .data strong,.entry-total{text-align:left}
-      h1{font-size:24px}
-    }
+    .head .pill{background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.28)}
+    .meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+    .cell{border:1px solid #e5e7eb;border-radius:8px;padding:10px;background:#f9fafb;min-width:0}.cell span{display:block;color:#6b7280;font-size:12px}.cell strong{display:block;margin-top:4px;font-size:17px;overflow-wrap:anywhere}.cell.total{grid-column:1 / -1;background:#eef2ff;border-color:#c7d2fe}
+    .data{display:grid;gap:8px}.data div{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid #e5e7eb;padding-bottom:8px}.data span{color:#6b7280}.data strong{text-align:right;overflow-wrap:anywhere}
+    .list{display:grid;gap:10px}.entry{border:1px solid #e5e7eb;border-radius:8px;padding:12px;background:#f9fafb;display:grid;gap:7px}.entry-head{display:flex;justify-content:space-between;gap:10px}.entry-title{font-weight:900;overflow-wrap:anywhere}.entry-meta{display:flex;flex-wrap:wrap;gap:7px;color:#6b7280;font-size:13px}.entry-total{font-weight:900;text-align:right;white-space:nowrap}
+    .notice{border:1px solid #bfdbfe;background:#eff6ff;border-radius:8px;padding:12px;color:#1e3a8a;line-height:1.5}.warning{border:1px solid #fde68a;background:#fffbeb;border-radius:8px;padding:12px;color:#78350f;line-height:1.5}
+    .contract-box{display:grid;gap:8px;border:1px solid #d1d5db;border-radius:8px;padding:12px;background:#fafafa}.checklist{margin:0;padding-left:18px;color:#4b5563;display:grid;gap:7px}.steps{counter-reset:step;list-style:none;margin:0;padding:0;display:grid;gap:8px}.steps li{counter-increment:step;border:1px solid #e5e7eb;background:#f9fafb;border-radius:8px;padding:10px 10px 10px 44px;position:relative;color:#4b5563}.steps li::before{content:counter(step);position:absolute;left:12px;top:9px;width:22px;height:22px;border-radius:999px;background:#111827;color:#fff;display:grid;place-items:center;font-size:12px;font-weight:900}
+    .signature-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}.signature{border-top:1px solid #9ca3af;padding-top:8px;color:#4b5563;text-align:center;font-size:13px}.footer{text-align:center;color:#6b7280;font-size:12px}
+    @media print{body{background:#fff}.page{max-width:none;padding:0}.card{box-shadow:none;break-inside:avoid}.head{background:#111827!important;color:#fff!important}.footer{margin-top:12px}}
+    @media (max-width:720px){.page{padding:10px}.head,.grid,.summary,.data div,.entry-head,.signature-grid{display:grid;grid-template-columns:1fr}.cell.total{grid-column:auto}.data strong,.entry-total{text-align:left}h1{font-size:24px}}
   </style>
 </head>
 <body>
@@ -48,153 +33,71 @@
     <section class="card head">
       <div>
         <div class="brand">HoraCerta</div>
-        <h1>{% if is_preview %}Prévia do serviço{% else %}Relatório de serviço{% endif %}</h1>
-        <div class="meta">
-          <span class="pill">{{ job.get_status_display }}</span>
-          <span class="pill">Emitido em {{ emitted_at|date:"d/m/Y" }} às {{ emitted_at|time:"H:i" }}</span>
-        </div>
+        <h1>{% if is_preview %}{{ playbook.document_title }}{% else %}Relatório de serviço{% endif %}</h1>
+        <p style="margin-top:8px;">{% if is_preview %}{{ playbook.client_focus }}{% else %}Resumo final do serviço executado, com horários, itens usados e valores consolidados.{% endif %}</p>
+        <div class="meta"><span class="pill">{{ job.get_status_display }}</span><span class="pill">Emitido em {{ emitted_at|date:"d/m/Y" }} às {{ emitted_at|time:"H:i" }}</span><span class="pill">{{ job.category.name }}</span></div>
       </div>
     </section>
 
+    {% if is_preview %}
+      <section class="card">
+        <h2>Natureza da folha</h2>
+        <div class="contract-box">
+          <p><strong>Tipo:</strong> {{ playbook.document_title }} para conferência.</p>
+          <p><strong>Finalidade:</strong> organizar escopo, local, data, recursos, valores e próximos passos antes da execução.</p>
+          <p><strong>Limite:</strong> esta folha não substitui contrato formal assinado, nota fiscal, ART/RRT, laudo técnico ou obrigação regulatória quando aplicável.</p>
+        </div>
+      </section>
+    {% endif %}
+
     <section class="grid">
-      <article class="card">
-        <h2>Prestador</h2>
-        <div class="data">
-          <div><span>Prestador</span><strong>{{ professional_name }}</strong></div>
-          <div><span>Contato</span><strong>{{ professional_contact|default:"-" }}</strong></div>
-        </div>
-      </article>
-      <article class="card">
-        <h2>Cliente e local</h2>
-        <div class="data">
-          <div><span>Cliente</span><strong>{{ client_name }}</strong></div>
-          <div><span>WhatsApp</span><strong>{{ client_whatsapp|default:"-" }}</strong></div>
-          <div><span>Endereço</span><strong>{{ service_address|default:"-" }}</strong></div>
-        </div>
-      </article>
+      <article class="card"><h2>Prestador</h2><div class="data"><div><span>Prestador</span><strong>{{ professional_name }}</strong></div><div><span>Contato</span><strong>{{ professional_contact|default:"-" }}</strong></div></div></article>
+      <article class="card"><h2>Cliente e local</h2><div class="data"><div><span>Cliente</span><strong>{{ client_name }}</strong></div><div><span>WhatsApp</span><strong>{{ client_whatsapp|default:"-" }}</strong></div><div><span>Endereço/local combinado</span><strong>{{ service_address|default:"-" }}</strong></div></div></article>
     </section>
 
     <section class="card">
-      <h2>Serviço solicitado</h2>
+      <h2>{% if is_preview %}{{ playbook.scope_title }}{% else %}Serviço solicitado{% endif %}</h2>
       <div class="data">
-        <div><span>Título</span><strong>{{ job.title }}</strong></div>
-        <div><span>Categoria</span><strong>{{ job.category.name }}</strong></div>
-        <div><span>Data prevista</span><strong>{% if job.start_date %}{{ job.start_date|date:"d/m/Y" }}{% else %}-{% endif %}</strong></div>
-        <div><span>Hora prevista de início</span><strong>{% if job.planned_start_time %}{{ job.planned_start_time|time:"H:i" }}{% else %}-{% endif %}</strong></div>
-        <div><span>Hora prevista de término</span><strong>{% if job.planned_end_time %}{{ job.planned_end_time|time:"H:i" }}{% else %}-{% endif %}</strong></div>
-        <div><span>Status</span><strong>{{ job.get_status_display }}</strong></div>
+        <div><span>Título</span><strong>{{ job.title }}</strong></div><div><span>Categoria</span><strong>{{ job.category.name }}</strong></div><div><span>Data prevista</span><strong>{% if job.start_date %}{{ job.start_date|date:"d/m/Y" }}{% else %}-{% endif %}</strong></div><div><span>Hora prevista de início</span><strong>{% if job.planned_start_time %}{{ job.planned_start_time|time:"H:i" }}{% else %}-{% endif %}</strong></div><div><span>Hora prevista de término</span><strong>{% if job.planned_end_time %}{{ job.planned_end_time|time:"H:i" }}{% else %}-{% endif %}</strong></div><div><span>Status</span><strong>{{ job.get_status_display }}</strong></div>
       </div>
       <p style="margin-top:10px;">{{ job.description|default:"Sem descrição registrada." }}</p>
       {% if job.notes %}<p style="margin-top:10px;">{{ job.notes }}</p>{% endif %}
     </section>
 
     {% if is_preview %}
+      <section class="card"><h2>Checklist profissional</h2><ul class="checklist">{% for item in playbook.checklist %}<li>{{ item }}</li>{% endfor %}</ul></section>
+      <section class="card"><h2>Logística do atendimento</h2><ol class="steps">{% for step in playbook.logistics %}<li>{{ step }}</li>{% endfor %}</ol></section>
+
       <section class="card">
-        <h2>Itens previstos</h2>
+        <h2>{{ playbook.items_title }}</h2>
         <div class="list">
           {% for item in planned_items %}
-            <article class="entry">
-              <div class="entry-head">
-                <div>
-                  <div class="entry-title">{{ item.name }}</div>
-                  <div class="entry-meta"><span>{{ item.get_type_display }}</span><span>{{ item.short_usage_status }}</span><span>Quantidade: {{ item.quantity }} {{ item.get_unit_display }}</span><span>Un.: {{ item.unit_value|brl }}</span></div>
-                </div>
-                <div class="entry-total">Estimado: {{ item.total_value|brl }}</div>
-              </div>
-              {% if item.description %}<p>{{ item.description }}</p>{% endif %}
-            </article>
+            <article class="entry"><div class="entry-head"><div><div class="entry-title">{{ item.name }}</div><div class="entry-meta"><span>{{ item.get_type_display }}</span><span>{{ item.short_usage_status }}</span><span>Quantidade: {{ item.quantity }} {{ item.get_unit_display }}</span><span>Un.: {{ item.unit_value|brl }}</span></div></div><div class="entry-total">Estimado: {{ item.total_value|brl }}</div></div>{% if item.description %}<p>{{ item.description }}</p>{% endif %}</article>
           {% empty %}
             <p>Nenhum item previsto registrado.</p>
           {% endfor %}
         </div>
       </section>
+
+      <section class="card"><h2>Valores estimados</h2><div class="summary"><div class="cell"><span>Total estimado de itens</span><strong>{{ summary.preview_items_total_brl }}</strong></div><div class="cell"><span>Mão de obra estimada</span><strong>{{ summary.preview_labor_total_brl }}</strong></div><div class="cell total"><span>Total estimado do serviço</span><strong>{{ summary.preview_estimated_total_brl }}</strong></div></div><p style="margin-top:10px;">Valores estimados e sujeitos à confirmação na compra e execução do serviço.</p><p style="margin-top:8px;">Esta prévia serve para conferência antes da execução. Ela não é o relatório final.</p></section>
+
       <section class="card">
-        <h2>Valores estimados</h2>
-        <div class="summary">
-          <div class="cell"><span>Total estimado de itens</span><strong>{{ summary.preview_items_total_brl }}</strong></div>
-          <div class="cell"><span>Mão de obra estimada</span><strong>{{ summary.preview_labor_total_brl }}</strong></div>
-          <div class="cell total"><span>Total estimado do serviço</span><strong>{{ summary.preview_estimated_total_brl }}</strong></div>
-        </div>
-        <p style="margin-top:10px;">Valores estimados e sujeitos à confirmação na compra e execução do serviço.</p>
-        <p style="margin-top:8px;">Esta prévia serve para conferência antes da execução. Ela não é o relatório final.</p>
+        <h2>Acompanhamento do serviço pelo cliente</h2>
+        <div class="data"><div><span>Status atual</span><strong>{{ job.get_status_display }}</strong></div><div><span>Link público</span><strong>Disponível somente para quem recebeu este endereço.</strong></div><div><span>Local combinado</span><strong>{{ service_address|default:"Não informado" }}</strong></div></div>
+        {% if work_logs %}<div class="list" style="margin-top:12px;">{% for log in work_logs %}<article class="entry"><div class="entry-head"><div><div class="entry-title">{{ log.work_date|date:"d/m/Y" }}</div><div class="entry-meta"><span>{{ log.start_time|time:"H:i" }} até {% if log.end_time %}{{ log.end_time|time:"H:i" }}{% else %}em andamento{% endif %}</span></div></div><div class="entry-total">{% if log.end_time %}Total: {{ log.duration_label }}{% else %}Período aberto{% endif %}</div></div>{% if log.description %}<p>{{ log.description }}</p>{% endif %}</article>{% endfor %}</div>{% else %}<p style="margin-top:10px;">A execução ainda não possui períodos registrados.</p>{% endif %}
+        <p class="warning" style="margin-top:12px;">Presença/GPS deve ser opcional, transparente e proporcional. Nesta folha, o HoraCerta registra o local combinado e os períodos informados; rastreamento contínuo não deve ser ativado automaticamente.</p>
       </section>
+
+      <section class="card"><h2>Conferência e aceite</h2><p>Ao seguir com o atendimento, cliente e prestador confirmam que os dados acima representam o combinado inicial do serviço. Qualquer mudança de escopo, material, horário, local ou valor deve ser registrada em nova atualização da folha.</p><div class="signature-grid"><div class="signature">Cliente / responsável</div><div class="signature">Prestador</div></div></section>
     {% else %}
-      <section class="card">
-        <h2>Horas realizadas</h2>
-        <div class="list">
-          {% for log in work_logs %}
-            <article class="entry">
-              <div class="entry-head">
-                <div>
-                  <div class="entry-title">{{ log.work_date|date:"d/m/Y" }}</div>
-                  <div class="entry-meta"><span>{{ log.start_time|time:"H:i" }} até {% if log.end_time %}{{ log.end_time|time:"H:i" }}{% else %}em andamento{% endif %}</span></div>
-                </div>
-                <div class="entry-total">{% if log.end_time %}Total: {{ log.duration_label }}{% else %}Período aberto{% endif %}</div>
-              </div>
-              {% if log.description %}<p>{{ log.description }}</p>{% endif %}
-            </article>
-          {% empty %}
-            <p>Nenhum período de trabalho registrado.</p>
-          {% endfor %}
-        </div>
-      </section>
-
-      <section class="card">
-        <h2>Itens usados/cobrados</h2>
-        <div class="list">
-          {% for item in used_items %}
-            <article class="entry">
-              <div class="entry-head">
-                <div>
-                  <div class="entry-title">{{ item.name }}</div>
-                  <div class="entry-meta"><span>{{ item.get_type_display }}</span><span>{{ item.quantity }} {{ item.get_unit_display }} x {{ item.unit_value|brl }}</span></div>
-                </div>
-                <div class="entry-total">Total: {{ item.total_value|brl }}</div>
-              </div>
-            </article>
-          {% empty %}
-            <p>Nenhum item usado/cobrado registrado.</p>
-          {% endfor %}
-        </div>
-      </section>
-
-      <section class="card">
-        <h2>Itens não usados/devolvidos</h2>
-        <div class="list">
-          {% for item in not_used_items %}
-            <article class="entry">
-              <div class="entry-head">
-                <div>
-                  <div class="entry-title">{{ item.name }}</div>
-                  <div class="entry-meta"><span>{{ item.get_type_display }}</span><span>{{ item.short_usage_status }}</span><span>{{ item.quantity }} {{ item.get_unit_display }} x {{ item.unit_value|brl }}</span></div>
-                </div>
-                <div class="entry-total">Fora do total: {{ item.total_value|brl }}</div>
-              </div>
-              {% if item.receipt_note or item.description %}<p>{{ item.receipt_note|default:item.description }}</p>{% endif %}
-            </article>
-          {% empty %}
-            <p>Nenhum item não usado ou devolvido registrado.</p>
-          {% endfor %}
-        </div>
-      </section>
-
-      <section class="card">
-        <h2>Resumo</h2>
-        <div class="summary">
-          <div class="cell"><span>Total de horas</span><strong>{{ summary.total_hours }}</strong></div>
-          <div class="cell"><span>Mão de obra</span><strong>{{ summary.labor_total_brl }}</strong></div>
-          <div class="cell"><span>Itens/despesas usados</span><strong>{{ summary.used_items_total_brl }}</strong></div>
-          <div class="cell total"><span>Total do serviço</span><strong>{{ summary.estimated_total_brl }}</strong></div>
-        </div>
-      </section>
-
-      <section class="card">
-        <h2>Observações finais</h2>
-        <p>{{ job.notes|default:"Sem observações finais." }}</p>
-      </section>
+      <section class="card"><h2>Horas realizadas</h2><div class="list">{% for log in work_logs %}<article class="entry"><div class="entry-head"><div><div class="entry-title">{{ log.work_date|date:"d/m/Y" }}</div><div class="entry-meta"><span>{{ log.start_time|time:"H:i" }} até {% if log.end_time %}{{ log.end_time|time:"H:i" }}{% else %}em andamento{% endif %}</span></div></div><div class="entry-total">{% if log.end_time %}Total: {{ log.duration_label }}{% else %}Período aberto{% endif %}</div></div>{% if log.description %}<p>{{ log.description }}</p>{% endif %}</article>{% empty %}<p>Nenhum período de trabalho registrado.</p>{% endfor %}</div></section>
+      <section class="card"><h2>Itens usados/cobrados</h2><div class="list">{% for item in used_items %}<article class="entry"><div class="entry-head"><div><div class="entry-title">{{ item.name }}</div><div class="entry-meta"><span>{{ item.get_type_display }}</span><span>{{ item.quantity }} {{ item.get_unit_display }} x {{ item.unit_value|brl }}</span></div></div><div class="entry-total">Total: {{ item.total_value|brl }}</div></div></article>{% empty %}<p>Nenhum item usado/cobrado registrado.</p>{% endfor %}</div></section>
+      <section class="card"><h2>Itens não usados/devolvidos</h2><div class="list">{% for item in not_used_items %}<article class="entry"><div class="entry-head"><div><div class="entry-title">{{ item.name }}</div><div class="entry-meta"><span>{{ item.get_type_display }}</span><span>{{ item.short_usage_status }}</span><span>{{ item.quantity }} {{ item.get_unit_display }} x {{ item.unit_value|brl }}</span></div></div><div class="entry-total">Fora do total: {{ item.total_value|brl }}</div></div>{% if item.receipt_note or item.description %}<p>{{ item.receipt_note|default:item.description }}</p>{% endif %}</article>{% empty %}<p>Nenhum item não usado ou devolvido registrado.</p>{% endfor %}</div></section>
+      <section class="card"><h2>Resumo</h2><div class="summary"><div class="cell"><span>Total de horas</span><strong>{{ summary.total_hours }}</strong></div><div class="cell"><span>Mão de obra</span><strong>{{ summary.labor_total_brl }}</strong></div><div class="cell"><span>Itens/despesas usados</span><strong>{{ summary.used_items_total_brl }}</strong></div><div class="cell total"><span>Total do serviço</span><strong>{{ summary.estimated_total_brl }}</strong></div></div></section>
+      <section class="card"><h2>Observações finais</h2><p>{{ job.notes|default:"Sem observações finais." }}</p></section>
     {% endif %}
 
-    <div class="footer">{% if is_preview %}Prévia gerada pelo HoraCerta.{% else %}Relatório gerado pelo HoraCerta.{% endif %}</div>
+    <div class="footer">{% if is_preview %}Folha profissional gerada pelo HoraCerta. Prévia do serviço.{% else %}Relatório gerado pelo HoraCerta.{% endif %}</div>
   </main>
 </body>
 </html>

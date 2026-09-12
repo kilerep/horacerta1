@@ -796,7 +796,31 @@ class MEIClientForm(forms.Form):
 
             employee.company = company
             employee.user = self.user
-            employee.full_name = self.user.get_full_name() or self.user.email or self.user.username
+            if not employee.full_name:
+                # O nome/CPF/telefone/endereco do profissional sao guardados
+                # por vinculo (Employee), um registro por cliente - nao existe
+                # um "perfil unico" do usuario. Antes, um cliente novo caia
+                # direto no fallback de e-mail (self.user.email) porque o
+                # User do Django normalmente nao tem first_name/last_name
+                # preenchidos aqui. Isso fazia a tela "Meu Perfil" parecer ter
+                # perdido o nome cadastrado assim que esse vinculo novo virava
+                # o "contrato atual" selecionado - bug da auditoria de
+                # 12/09/2026. Preferimos reaproveitar um nome ja cadastrado
+                # pelo mesmo profissional em outro vinculo antes de cair no
+                # e-mail/usuario.
+                known_full_name = (
+                    Employee.objects.filter(user=self.user)
+                    .exclude(full_name="")
+                    .order_by("-created_at")
+                    .values_list("full_name", flat=True)
+                    .first()
+                )
+                employee.full_name = (
+                    known_full_name
+                    or self.user.get_full_name()
+                    or self.user.email
+                    or self.user.username
+                )
             employee.phone = employee.phone or company.whatsapp or company.phone
             employee.is_active = True
             employee.save()

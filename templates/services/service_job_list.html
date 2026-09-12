@@ -12,7 +12,7 @@
   .services-head p{margin:0;color:var(--color-text-muted);line-height:1.4}
   .services-block{display:grid;gap:10px}
   .services-title{margin:0;font-size:16px;line-height:1.2;font-weight:900}
-  .quick-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+  .quick-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
   .quick-card{display:grid;gap:5px;min-height:82px;padding:13px;border:1px solid var(--color-border);border-radius:8px;background:var(--gradient-card);box-shadow:var(--shadow-soft);text-decoration:none;color:var(--color-text)}
   .quick-card strong{font-size:15px;line-height:1.2}
   .quick-card span{font-size:12px;line-height:1.35;color:var(--color-text-muted)}
@@ -47,17 +47,9 @@
   .advanced[open] summary{margin-bottom:12px}
   .advanced-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr)) auto;gap:10px;align-items:end}
   .empty-box{border:1px dashed var(--color-border);border-radius:8px;padding:14px;color:var(--color-text-muted);line-height:1.4;background:var(--surface-soft)}
-  @media (max-width:900px){
-    .quick-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-    .advanced-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-  }
-  @media (max-width:680px){
-    .services-head h1{font-size:23px}
-    .quick-grid,.service-card,.search-row,.advanced-grid{grid-template-columns:1fr}
-    .service-actions{justify-items:stretch;min-width:0}
-    .service-actions .btn,.search-row .btn,.advanced-grid .btn{width:100%}
-    .fact{flex:1 1 132px}
-  }
+  @media (max-width:1000px){.quick-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media (max-width:900px){.advanced-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media (max-width:680px){.services-head h1{font-size:23px}.quick-grid,.service-card,.search-row,.advanced-grid{grid-template-columns:1fr}.service-actions{justify-items:stretch;min-width:0}.service-actions .btn,.search-row .btn,.advanced-grid .btn{width:100%}.fact{flex:1 1 132px}}
 </style>
 {% endblock %}
 
@@ -79,11 +71,15 @@
       </a>
       <a class="quick-card" href="{% url 'service_job_create' %}">
         <strong>Novo serviço</strong>
-        <span>Criar um trabalho ja combinado com o cliente.</span>
+        <span>Criar um trabalho já combinado com o cliente.</span>
       </a>
       <a class="quick-card" href="{% url 'service_item_catalog_list' %}">
         <strong>Catálogo de itens</strong>
-        <span>Materiais, pecas e despesas frequentes.</span>
+        <span>Materiais, peças e despesas frequentes.</span>
+      </a>
+      <a class="quick-card" href="{% url 'service_event_proposal_list' %}">
+        <strong>Propostas de evento</strong>
+        <span>Revisar pacotes de valor fixo antes do envio.</span>
       </a>
     </div>
   </section>
@@ -103,7 +99,7 @@
   {% endif %}
 
   <section class="services-block">
-    <h2 class="services-title">Pendencias</h2>
+    <h2 class="services-title">Pendências</h2>
     {% if pending_jobs %}
       <div class="service-strip">
         {% for job in pending_jobs %}
@@ -124,66 +120,30 @@
           <input id="filter-search" type="search" name="q" value="{{ search_query }}" placeholder="Serviço, cliente ou categoria">
         </div>
         <button class="btn" type="submit">Buscar</button>
-        {% if search_query or selected_status or has_advanced_filters %}
-          <a class="btn" href="{% url 'service_job_list' %}">Limpar</a>
-        {% endif %}
+        {% if search_query or selected_status or has_advanced_filters %}<a class="btn" href="{% url 'service_job_list' %}">Limpar</a>{% endif %}
       </div>
 
-      <div class="chips" aria-label="Filtros rapidos">
+      <div class="chips" aria-label="Filtros rápidos">
         {% for value,label,url in quick_status_choices %}
           <a class="chip {% if selected_status == value or not selected_status and not value %}is-active{% endif %}" href="{{ url }}">{{ label }}</a>
         {% endfor %}
       </div>
 
       <details class="advanced" {% if has_advanced_filters %}open{% endif %}>
-        <summary>Filtros avancados</summary>
+        <summary>Filtros avançados</summary>
         <div class="advanced-grid">
-          <div class="field">
-            <label for="filter-status">Status</label>
-            <select id="filter-status" name="status">
-              <option value="">Todos</option>
-              {% for value,label in status_choices %}
-                <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="field">
-            <label for="filter-category">Categoria</label>
-            <select id="filter-category" name="category">
-              <option value="">Todas</option>
-              {% for category in categories %}
-                <option value="{{ category.slug }}" {% if selected_category == category.slug %}selected{% endif %}>{{ category.name }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="field">
-            <label for="filter-contract">Cliente</label>
-            <select id="filter-contract" name="contract">
-              <option value="">Todos</option>
-              {% for contract in contracts %}
-                <option value="{{ contract.id }}" {% if selected_contract == contract.id|stringformat:"s" %}selected{% endif %}>{{ contract.company.name }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="field">
-            <label for="filter-date-from">De</label>
-            <input id="filter-date-from" type="date" name="date_from" value="{{ date_from }}">
-          </div>
-          <div class="field">
-            <label for="filter-date-to">Até</label>
-            <input id="filter-date-to" type="date" name="date_to" value="{{ date_to }}">
-          </div>
+          <div class="field"><label for="filter-status">Status</label><select id="filter-status" name="status"><option value="">Todos</option>{% for value,label in status_choices %}<option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+          <div class="field"><label for="filter-category">Categoria</label><select id="filter-category" name="category"><option value="">Todas</option>{% for category in categories %}<option value="{{ category.slug }}" {% if selected_category == category.slug %}selected{% endif %}>{{ category.name }}</option>{% endfor %}</select></div>
+          <div class="field"><label for="filter-contract">Cliente</label><select id="filter-contract" name="contract"><option value="">Todos</option>{% for contract in contracts %}<option value="{{ contract.id }}" {% if selected_contract == contract.id|stringformat:"s" %}selected{% endif %}>{{ contract.company.name }}</option>{% endfor %}</select></div>
+          <div class="field"><label for="filter-date-from">De</label><input id="filter-date-from" type="date" name="date_from" value="{{ date_from }}"></div>
+          <div class="field"><label for="filter-date-to">Até</label><input id="filter-date-to" type="date" name="date_to" value="{{ date_to }}"></div>
           <button class="btn" type="submit">Filtrar</button>
         </div>
       </details>
     </form>
 
     {% if jobs %}
-      <div class="service-strip">
-        {% for job in jobs %}
-          {% include "services/service_job_card.html" with job=job %}
-        {% endfor %}
-      </div>
+      <div class="service-strip">{% for job in jobs %}{% include "services/service_job_card.html" with job=job %}{% endfor %}</div>
     {% else %}
       <div class="empty-box">Nenhum serviço encontrado.</div>
     {% endif %}

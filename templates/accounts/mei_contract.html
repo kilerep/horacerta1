@@ -29,6 +29,7 @@
     .clients-section-head p{margin:3px 0 0;color:var(--muted);font-size:13px}
     .client-list{display:grid;gap:10px}
     .client-card{padding:14px;display:grid;gap:12px}
+    .client-card[hidden]{display:none}
     .client-card.is-selected,.client-card.is-details-open{border-color:var(--border-brand);box-shadow:0 0 0 2px var(--color-primary-soft),var(--shadow)}
     .client-card__head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
     .client-name{margin:0;font-size:19px;line-height:1.2;overflow-wrap:anywhere}
@@ -37,6 +38,8 @@
     .client-status.success,.mini-badge.success{color:var(--color-success);border-color:var(--border-brand);background:var(--surface-brand-soft)}
     .client-status.pending,.mini-badge.pending{color:var(--muted)}
     .client-status.warn{color:var(--danger-text);background:var(--danger-bg)}
+    .client-next-action{margin:0;padding:9px 10px;border:1px solid var(--line-soft);border-radius:10px;background:color-mix(in oklab,var(--surface-soft) 62%,transparent);font-size:12px;line-height:1.45;color:var(--muted)}
+    .client-next-action strong{color:var(--color-text-strong)}
     .btn[aria-disabled="true"]{opacity:.48;cursor:not-allowed}
     .client-detail-panel{border-top:1px solid var(--line-soft);padding-top:12px}
     .client-detail-panel[hidden],.client-reports-panel[hidden]{display:none}
@@ -65,13 +68,21 @@
     .clients-note{color:var(--muted);font-size:12px;margin:10px 0 0}
     .feedback{border:1px solid var(--border-brand);background:var(--surface-brand-soft);border-radius:12px;padding:11px;color:var(--color-text-strong)}
     .copy-status{min-height:18px;color:var(--muted);font-size:12px}
+    .client-filters{display:grid;grid-template-columns:minmax(0,1fr) minmax(180px,.35fr) auto;gap:8px;align-items:end;padding:12px;border:1px solid var(--line-soft);border-radius:12px;background:color-mix(in oklab,var(--surface-soft) 66%,transparent)}
+    .client-filter-field{display:grid;gap:5px;min-width:0}
+    .client-filter-field label{font-size:12px;font-weight:800;color:var(--muted)}
+    .client-filter-field input,.client-filter-field select{min-height:40px;border:1px solid var(--line-soft);border-radius:10px;background:var(--surface-raised);color:var(--color-text-strong);padding:0 10px;font:inherit}
+    .clients-filter-result{margin:10px 0 0;color:var(--muted);font-size:12px}
+    .clients-filter-empty{margin-top:10px}
     @media (max-width:900px){
       .clients-summary,.client-metrics,.client-detail-grid,.quick-closure-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .client-filters{grid-template-columns:1fr 1fr}
+      .client-filters .btn{grid-column:1/-1}
     }
     @media (max-width:640px){
       .clients-hero__top,.client-card__head{display:grid}
       .clients-actions .btn,.client-actions .btn{width:100%;justify-content:center}
-      .clients-summary,.client-metrics,.client-detail-grid,.quick-closure-grid,.client-detail-item,.client-report-totals{grid-template-columns:1fr}
+      .clients-summary,.client-metrics,.client-detail-grid,.quick-closure-grid,.client-detail-item,.client-report-totals,.client-filters{grid-template-columns:1fr}
       .client-report-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}
       .client-report-actions form,.client-report-actions .btn,.client-report-actions form .btn{width:100%;justify-content:center}
     }
@@ -79,9 +90,9 @@
 
   <div class="clients-page">
     {% if request.GET.event == "report_received" %}
-      <section class="feedback" role="status">Relatorio marcado como recebido.</section>
+      <section class="feedback" role="status">Relatório marcado como recebido.</section>
     {% elif request.GET.event == "report_receive_pending" %}
-      <section class="feedback" role="status">Relatorio voltou para pendente.</section>
+      <section class="feedback" role="status">Relatório voltou para pendente.</section>
     {% endif %}
 
     <section class="clients-hero">
@@ -89,11 +100,11 @@
         <div>
           <p class="clients-eyebrow">Carteira de clientes</p>
           <h1 class="clients-title">Meus clientes</h1>
-          <p class="clients-subtitle">Acompanhe contratos, horas registradas e valores estimados por cliente no mes atual.</p>
+          <p class="clients-subtitle">Acompanhe contratos, horas registradas e valores estimados por cliente no mês atual.</p>
         </div>
         <div class="clients-actions">
           <a class="btn primary" href="{% url 'mei_client_create' %}">Adicionar cliente</a>
-          <a class="btn" href="{% url 'mei_reports' %}">Gerar relatorio</a>
+          <a class="btn" href="{% url 'mei_reports' %}">Gerar relatório</a>
         </div>
       </div>
 
@@ -110,8 +121,30 @@
         <div class="clients-section-head">
           <div>
             <h2>Clientes vinculados</h2>
-            <p>{{ client_rows|length }} contrato(s) encontrado(s) para sua conta.</p>
+            <p><span data-client-result-count>{{ client_rows|length }}</span> contrato(s) visível(is) para sua conta.</p>
           </div>
+        </div>
+
+        <form class="client-filters" data-client-filter-form role="search">
+          <div class="client-filter-field">
+            <label for="client-search">Buscar cliente</label>
+            <input id="client-search" type="search" autocomplete="off" placeholder="Nome do cliente" data-client-search>
+          </div>
+          <div class="client-filter-field">
+            <label for="client-status-filter">Exibir</label>
+            <select id="client-status-filter" data-client-status-filter>
+              <option value="all">Todos os clientes</option>
+              <option value="active">Somente ativos</option>
+              <option value="not-active">Inativos ou encerrados</option>
+              <option value="no-rate">Sem valor por hora</option>
+            </select>
+          </div>
+          <button class="btn" type="button" data-client-filter-reset>Limpar filtros</button>
+        </form>
+        <p class="clients-filter-result" data-client-filter-feedback aria-live="polite">Use a busca ou os filtros para localizar um cliente.</p>
+        <div class="clients-empty clients-filter-empty" data-client-filter-empty hidden>
+          <h2>Nenhum cliente encontrado</h2>
+          <p>Altere a busca ou limpe os filtros para ver novamente todos os seus clientes.</p>
         </div>
 
         <div class="client-list">
@@ -120,23 +153,36 @@
               class="client-card {% if active_contract and row.contract.id == active_contract.id %}is-selected is-details-open{% endif %}"
               data-client-details-card
               data-client-id="{{ row.contract.id }}"
+              data-client-searchable="{{ row.contract.company.name|lower }} {{ row.status.label|lower }}"
+              data-client-state="{{ row.status.tone }}"
+              data-client-rate="{{ row.contract.hourly_rate|default:0 }}"
             >
               <header class="client-card__head">
                 <div>
                   <h3 class="client-name">{{ row.contract.company.name }}</h3>
                   <p class="client-period">
                     Desde {{ row.contract.start_date|date:"d/m/Y" }}
-                    {% if row.contract.end_date %} ate {{ row.contract.end_date|date:"d/m/Y" }}{% else %} | contrato em aberto{% endif %}
+                    {% if row.contract.end_date %} até {{ row.contract.end_date|date:"d/m/Y" }}{% else %} | contrato em aberto{% endif %}
                   </p>
                 </div>
                 <span class="client-status {{ row.status.tone }}">{{ row.status.label }}</span>
               </header>
 
               <div class="client-metrics">
-                <div class="client-metric"><span>Valor por hora</span><strong>R$ {{ row.contract.hourly_rate }}/h</strong></div>
-                <div class="client-metric"><span>Horas no mes</span><strong>{{ row.total_hours_month }}</strong></div>
+                <div class="client-metric"><span>Valor por hora</span><strong>{% if row.contract.hourly_rate %}R$ {{ row.contract.hourly_rate }}/h{% else %}Não definido{% endif %}</strong></div>
+                <div class="client-metric"><span>Horas no mês</span><strong>{{ row.total_hours_month }}</strong></div>
                 <div class="client-metric"><span>Valor estimado</span><strong>{{ row.estimated_value_brl }}</strong></div>
               </div>
+
+              {% if not row.contract.hourly_rate %}
+                <p class="client-next-action"><strong>Próximo passo:</strong> defina o valor por hora para estimar corretamente seus fechamentos.</p>
+              {% elif row.status.tone == "warn" %}
+                <p class="client-next-action"><strong>Contrato inativo:</strong> consulte os detalhes antes de voltar a registrar horas para este cliente.</p>
+              {% elif row.quick_closure.is_custom %}
+                <p class="client-next-action"><strong>Fechamento personalizado:</strong> revise as datas antes de gerar o próximo relatório.</p>
+              {% else %}
+                <p class="client-next-action"><strong>Próximo fechamento:</strong> {{ row.quick_closure.period_label }}.</p>
+              {% endif %}
 
               <div class="client-actions">
                 <a
@@ -160,7 +206,7 @@
                   <div class="clients-section-head">
                     <div>
                       <h2>Detalhes do cliente</h2>
-                      <p>Dados, resumo e fechamento rapido de {{ company.name }}.</p>
+                      <p>Dados, resumo e fechamento rápido de {{ company.name }}.</p>
                     </div>
                     <span class="client-status {{ row.status.tone }}">{{ row.status.label }}</span>
                   </div>
@@ -171,49 +217,49 @@
                       <div class="client-detail-list">
                         <div class="client-detail-item"><span>Nome</span><strong>{{ company.name }}</strong></div>
                         <div class="client-detail-item"><span>Status</span><strong>{{ row.status.label }}</strong></div>
-                        <div class="client-detail-item"><span>Valor/hora</span><strong>R$ {{ contract.hourly_rate }}/h</strong></div>
-                        <div class="client-detail-item"><span>Data de inicio</span><strong>{{ contract.start_date|date:"d/m/Y"|default:"-" }}</strong></div>
-                        <div class="client-detail-item"><span>Frequencia</span><strong>{{ contract.get_closure_type_display }}</strong></div>
+                        <div class="client-detail-item"><span>Valor/hora</span><strong>{% if contract.hourly_rate %}R$ {{ contract.hourly_rate }}/h{% else %}Não definido{% endif %}</strong></div>
+                        <div class="client-detail-item"><span>Data de início</span><strong>{{ contract.start_date|date:"d/m/Y"|default:"-" }}</strong></div>
+                        <div class="client-detail-item"><span>Frequência</span><strong>{{ contract.get_closure_type_display }}</strong></div>
                         {% if company.contact_name %}<div class="client-detail-item"><span>Contato</span><strong>{{ company.contact_name }}</strong></div>{% endif %}
                         {% if company.whatsapp or company.phone %}<div class="client-detail-item"><span>WhatsApp</span><strong>{{ company.whatsapp|default:company.phone }}</strong></div>{% endif %}
-                        {% if contract.notes %}<div class="client-detail-item"><span>Observacoes</span><strong>{{ contract.notes }}</strong></div>{% endif %}
+                        {% if contract.notes %}<div class="client-detail-item"><span>Observações</span><strong>{{ contract.notes }}</strong></div>{% endif %}
                       </div>
                     </article>
 
                     <article class="client-detail-box">
                       <h3>Resumo</h3>
                       <div class="client-detail-list">
-                        <div class="client-detail-item"><span>Horas no mes</span><strong>{{ row.total_hours_month }}</strong></div>
+                        <div class="client-detail-item"><span>Horas no mês</span><strong>{{ row.total_hours_month }}</strong></div>
                         <div class="client-detail-item"><span>Valor estimado</span><strong>{{ row.estimated_value_brl }}</strong></div>
-                        <div class="client-detail-item"><span>Ultimo registro</span><strong>{{ row.last_punch_label }}</strong></div>
-                        <div class="client-detail-item"><span>Relatorios gerados</span><strong>{{ row.reports_count }}</strong></div>
+                        <div class="client-detail-item"><span>Último registro</span><strong>{{ row.last_punch_label }}</strong></div>
+                        <div class="client-detail-item"><span>Relatórios gerados</span><strong>{{ row.reports_count }}</strong></div>
                       </div>
                     </article>
                   </div>
 
                   <article class="client-detail-box">
-                    <h3>Fechamento rapido</h3>
+                    <h3>Fechamento rápido</h3>
                     <div class="quick-closure-grid">
-                      <div class="client-metric"><span>Frequencia</span><strong>{{ contract.get_closure_type_display }}</strong></div>
-                      <div class="client-metric"><span>Periodo</span><strong>{{ row.quick_closure.period_label }}</strong></div>
-                      <div class="client-metric"><span>Horas no periodo</span><strong>{{ row.quick_closure.total_hours }}</strong></div>
+                      <div class="client-metric"><span>Frequência</span><strong>{{ contract.get_closure_type_display }}</strong></div>
+                      <div class="client-metric"><span>Período</span><strong>{{ row.quick_closure.period_label }}</strong></div>
+                      <div class="client-metric"><span>Horas no período</span><strong>{{ row.quick_closure.total_hours }}</strong></div>
                       <div class="client-metric"><span>Valor estimado</span><strong>{{ row.quick_closure.estimated_value_brl }}</strong></div>
                     </div>
                     {% if row.quick_closure.is_custom %}
                       <p class="clients-note">Este cliente usa fechamento personalizado. Revise as datas manualmente antes de gerar.</p>
                     {% else %}
-                      <p class="clients-note">O relatorio so sera criado depois da revisao e confirmacao na tela Relatorios.</p>
+                      <p class="clients-note">O relatório só será criado depois da revisão e confirmação na tela Relatórios.</p>
                     {% endif %}
                     <div class="quick-closure-actions" style="margin-top:10px">
-                      <a class="btn primary" href="{{ row.quick_closure.report_url }}">Gerar relatorio</a>
+                      <a class="btn primary" href="{{ row.quick_closure.report_url }}">Gerar relatório</a>
                     </div>
                   </article>
 
                   <div class="client-actions client-actions--detail">
                     <a class="btn" href="{{ row.edit_url }}">Editar cliente/contrato</a>
-                    <a class="btn" href="{{ row.history_url }}">Ver historico</a>
-                    <a class="btn" href="{{ row.services_url }}">Ver servicos deste cliente</a>
-                    <a class="btn" href="{{ row.new_service_url }}">Novo servico para este cliente</a>
+                    <a class="btn" href="{{ row.history_url }}">Ver histórico</a>
+                    <a class="btn" href="{{ row.services_url }}">Ver serviços deste cliente</a>
+                    <a class="btn" href="{{ row.new_service_url }}">Novo serviço para este cliente</a>
                     <button
                       class="btn"
                       type="button"
@@ -233,8 +279,8 @@
                   >
                     <div class="clients-section-head">
                       <div>
-                        <h3>Ultimos fechamentos</h3>
-                        <p>Ultimos 3. Lista completa em Relatorios.</p>
+                        <h3>Últimos fechamentos</h3>
+                        <p>Últimos 3. A lista completa fica em Relatórios.</p>
                       </div>
                     </div>
                     <div class="client-report-list">
@@ -272,7 +318,7 @@
                                     <button class="btn" type="submit">Recebido</button>
                                   </form>
                                 {% else %}
-                                  <form method="post" data-submit-once="true" onsubmit="return confirm('Voltar este relatorio para pendente?')">
+                                  <form method="post" data-submit-once="true" onsubmit="return confirm('Voltar este relatório para pendente?')">
                                     {% csrf_token %}
                                     <input type="hidden" name="action" value="set_payment_status">
                                     <input type="hidden" name="report_id" value="{{ report.id }}">
@@ -285,11 +331,11 @@
                           </div>
                         {% endwith %}
                       {% empty %}
-                        <div class="clients-empty">Nenhum relatorio gerado para este cliente ainda.</div>
+                        <div class="clients-empty">Nenhum relatório gerado para este cliente ainda.</div>
                       {% endfor %}
                     </div>
                     <div class="quick-closure-actions">
-                      <a class="btn" href="{{ row.reports_all_url }}">{% if row.has_more_reports %}Ver todos em Relatorios{% else %}Abrir em Relatorios{% endif %}</a>
+                      <a class="btn" href="{{ row.reports_all_url }}">{% if row.has_more_reports %}Ver todos em Relatórios{% else %}Abrir em Relatórios{% endif %}</a>
                     </div>
                     <div class="copy-status" data-copy-status></div>
                   </article>
@@ -303,7 +349,7 @@
       <section class="clients-panel">
         <div class="clients-empty">
           <h2>Nenhum cliente cadastrado ainda</h2>
-          <p>Quando um cliente estiver vinculado a sua conta, ele aparecera aqui com contrato, valor por hora, horas do mes e historico de registros.</p>
+          <p>Quando um cliente estiver vinculado à sua conta, ele aparecerá aqui com contrato, valor por hora, horas do mês e histórico de registros.</p>
           <div class="clients-actions" style="margin-top:12px;">
             <a class="btn primary" href="{% url 'mei_client_create' %}">Adicionar cliente</a>
             <a class="btn" href="{% url 'mei_panel' %}">Voltar ao painel</a>
@@ -317,12 +363,39 @@
     (function () {
       var cards = Array.prototype.slice.call(document.querySelectorAll("[data-client-details-card]"));
       var toggles = Array.prototype.slice.call(document.querySelectorAll("[data-client-details-toggle]"));
+      var filterForm = document.querySelector("[data-client-filter-form]");
+      var searchInput = document.querySelector("[data-client-search]");
+      var statusFilter = document.querySelector("[data-client-status-filter]");
+      var resetButton = document.querySelector("[data-client-filter-reset]");
+      var feedback = document.querySelector("[data-client-filter-feedback]");
+      var emptyState = document.querySelector("[data-client-filter-empty]");
+      var resultCount = document.querySelector("[data-client-result-count]");
 
       function findByClient(selector, clientId) {
         return document.querySelector(selector + '[data-client-id="' + clientId + '"]');
       }
 
-      function setOpen(clientId, shouldOpen) {
+      function setReportsOpen(clientId, shouldOpen) {
+        var reportsPanel = findByClient("[data-client-reports-panel]", clientId);
+        var reportsToggle = document.querySelector('[data-client-reports-toggle][data-client-id="' + clientId + '"]');
+        if (!reportsPanel || !reportsToggle) return;
+        reportsPanel.hidden = !shouldOpen;
+        reportsToggle.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
+        reportsToggle.textContent = shouldOpen ? "Ocultar fechamentos" : "Ver fechamentos";
+      }
+
+      function updateContractInUrl(clientId, shouldOpen) {
+        if (!window.history || !window.history.replaceState) return;
+        var url = new URL(window.location.href);
+        if (shouldOpen) {
+          url.searchParams.set("contract", clientId);
+        } else {
+          url.searchParams.delete("contract");
+        }
+        window.history.replaceState({}, "", url.toString());
+      }
+
+      function setOpen(clientId, shouldOpen, updateUrl) {
         var panel = findByClient("[data-client-details-panel]", clientId);
         var toggle = findByClient("[data-client-details-toggle]", clientId);
         var card = findByClient("[data-client-details-card]", clientId);
@@ -333,12 +406,52 @@
         card.classList.toggle("is-selected", shouldOpen);
         toggle.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
         toggle.textContent = shouldOpen ? "Fechar detalhes" : "Ver detalhes";
+        if (!shouldOpen) setReportsOpen(clientId, false);
+        if (updateUrl) updateContractInUrl(clientId, shouldOpen);
       }
 
       function closeOthers(clientId) {
         cards.forEach(function (card) {
           var otherId = card.getAttribute("data-client-id");
-          if (otherId && otherId !== clientId) setOpen(otherId, false);
+          if (otherId && otherId !== clientId) setOpen(otherId, false, false);
+        });
+      }
+
+      function applyFilters() {
+        if (!cards.length) return;
+        var query = (searchInput ? searchInput.value : "").trim().toLocaleLowerCase("pt-BR");
+        var selectedFilter = statusFilter ? statusFilter.value : "all";
+        var visibleCount = 0;
+
+        cards.forEach(function (card) {
+          var searchable = (card.getAttribute("data-client-searchable") || "").toLocaleLowerCase("pt-BR");
+          var state = card.getAttribute("data-client-state") || "";
+          var rawRate = (card.getAttribute("data-client-rate") || "0").replace(",", ".");
+          var rate = Number(rawRate) || 0;
+          var matchesQuery = !query || searchable.indexOf(query) !== -1;
+          var matchesFilter = selectedFilter === "all" ||
+            (selectedFilter === "active" && state === "success") ||
+            (selectedFilter === "not-active" && state !== "success") ||
+            (selectedFilter === "no-rate" && rate <= 0);
+          var visible = matchesQuery && matchesFilter;
+          card.hidden = !visible;
+          if (!visible) setOpen(card.getAttribute("data-client-id"), false, false);
+          if (visible) visibleCount += 1;
+        });
+
+        if (resultCount) resultCount.textContent = String(visibleCount);
+        if (emptyState) emptyState.hidden = visibleCount !== 0;
+        if (feedback) {
+          feedback.textContent = visibleCount === cards.length
+            ? "Use a busca ou os filtros para localizar um cliente."
+            : visibleCount + " cliente(s) encontrado(s).";
+        }
+      }
+
+      var urlParams = new URLSearchParams(window.location.search);
+      if (!urlParams.get("contract")) {
+        cards.forEach(function (card) {
+          setOpen(card.getAttribute("data-client-id"), false, false);
         });
       }
 
@@ -348,20 +461,30 @@
           var clientId = toggle.getAttribute("data-client-id");
           var isOpen = toggle.getAttribute("aria-expanded") === "true";
           closeOthers(clientId);
-          setOpen(clientId, !isOpen);
+          setOpen(clientId, !isOpen, true);
         });
       });
+
+      if (filterForm) {
+        filterForm.addEventListener("submit", function (event) { event.preventDefault(); });
+      }
+      if (searchInput) searchInput.addEventListener("input", applyFilters);
+      if (statusFilter) statusFilter.addEventListener("change", applyFilters);
+      if (resetButton) {
+        resetButton.addEventListener("click", function () {
+          if (searchInput) searchInput.value = "";
+          if (statusFilter) statusFilter.value = "all";
+          applyFilters();
+          if (searchInput) searchInput.focus();
+        });
+      }
 
       document.addEventListener("click", function (event) {
         var reportsToggle = event.target.closest("[data-client-reports-toggle]");
         if (reportsToggle) {
           var clientId = reportsToggle.getAttribute("data-client-id");
-          var reportsPanel = findByClient("[data-client-reports-panel]", clientId);
-          if (!reportsPanel) return;
           var shouldOpen = reportsToggle.getAttribute("aria-expanded") !== "true";
-          reportsPanel.hidden = !shouldOpen;
-          reportsToggle.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
-          reportsToggle.textContent = shouldOpen ? "Ocultar fechamentos" : "Ver fechamentos";
+          setReportsOpen(clientId, shouldOpen);
           return;
         }
 
@@ -378,11 +501,11 @@
           navigator.clipboard.writeText(value).then(function () {
             setCopyStatus("Link copiado.");
           }).catch(function () {
-            setCopyStatus("Nao foi possivel copiar automaticamente. Abra o relatorio e copie o link.");
+            setCopyStatus("Não foi possível copiar automaticamente. Abra o relatório e copie o link.");
           });
           return;
         }
-        setCopyStatus("Abra o relatorio e copie o link.");
+        setCopyStatus("Abra o relatório e copie o link.");
       });
     })();
   </script>

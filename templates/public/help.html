@@ -5,51 +5,78 @@
   .wrap{display:grid;gap:14px}
   .hero,.card{border:1px solid var(--line);border-radius:16px;padding:16px;background:color-mix(in oklab, var(--color-card) 86%, transparent)}
   .hero h1{margin:0;font-size:2rem;letter-spacing:-.03em}
-  .hero p{margin:10px 0 0;color:var(--muted);max-width:860px}
+  .hero p{margin:10px 0 0;color:var(--muted);max-width:860px;line-height:1.55}
   .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
   .card h2{margin:0;font-size:1.1rem}
-  .card p,.card li{color:var(--muted)}
-  .steps{margin:10px 0 0;padding-left:18px;display:grid;gap:6px}
+  .card p,.card li{color:var(--muted);line-height:1.5}
+  .steps{margin:10px 0 0;padding-left:18px;display:grid;gap:7px}
+  .step-number{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;margin-right:6px;border-radius:999px;background:var(--color-primary-soft);border:1px solid var(--color-primary-soft);color:var(--text);font-size:12px;font-weight:800}
+  .notice{border-color:color-mix(in oklab, var(--color-primary) 36%, var(--line));background:color-mix(in oklab, var(--color-primary-soft) 62%, var(--color-card))}
+  .notice strong{display:block;color:var(--text)}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .muted-note{margin:10px 0 0;color:var(--muted);font-size:.92rem}
   @media (max-width:920px){.grid{grid-template-columns:1fr}}
 </style>
 <div class="container wrap">
   <section class="hero">
     <h1>Central de Ajuda</h1>
-    <p>Guia rapido da camada publica do HoraCerta: proposta clara, uso objetivo e rotina organizada para profissionais e MEIs.</p>
+    <p>Guia rápido do HoraCerta para MEIs e prestadores organizarem clientes, horas, serviços e relatórios em um só lugar.</p>
   </section>
+
   <section class="grid">
-    <article class="card">
-      <h2>Como comecar</h2>
+    <article class="card notice">
+      <h2>Por onde começar</h2>
       <ol class="steps">
-        <li>Criar ou receber acesso a uma conta do HoraCerta.</li>
-        <li>Cadastrar profissionais MEI.</li>
-        <li>Configurar a rotina de registro de horas.</li>
-        <li>Acompanhar dashboard, historico e relatorios.</li>
+        <li><span class="step-number">1</span>Entre na sua conta do HoraCerta.</li>
+        <li><span class="step-number">2</span>Cadastre o primeiro cliente e informe os dados do contrato.</li>
+        <li><span class="step-number">3</span>Defina valor/hora e frequência de fechamento quando já tiver essas informações.</li>
+        <li><span class="step-number">4</span>Registre os horários e acompanhe o resumo antes do fechamento.</li>
+      </ol>
+      <div class="actions">
+        <a class="btn primary" href="{% url 'login' %}">Entrar no HoraCerta</a>
+        <a class="btn" href="{% url 'signup' %}">Criar conta</a>
+      </div>
+    </article>
+
+    <article class="card">
+      <h2>O que o HoraCerta organiza</h2>
+      <ul class="steps">
+        <li><strong>Clientes e contratos:</strong> dados do cliente, valor/hora, período de trabalho e fechamento.</li>
+        <li><strong>Horas:</strong> registros diários, resumo por período e alerta de dia incompleto.</li>
+        <li><strong>Pedidos e serviços:</strong> solicitação, planejamento, execução e itens do catálogo.</li>
+        <li><strong>Relatórios:</strong> horas e serviços realizados para compartilhar com o cliente.</li>
+      </ul>
+    </article>
+
+    <article class="card">
+      <h2>Rotina recomendada</h2>
+      <ol class="steps">
+        <li>No começo do dia, confira o painel e as pendências em <strong>Ação de hoje</strong>.</li>
+        <li>Registre os horários no cliente correto.</li>
+        <li>Use <strong>Meus Clientes</strong> para ajustar contrato, valor/hora ou consultar fechamentos.</li>
+        <li>Ao terminar um período, gere o relatório e envie o link ao cliente.</li>
       </ol>
     </article>
+
     <article class="card">
-      <h2>Dicas de operacao</h2>
+      <h2>Dúvidas rápidas</h2>
       <ul class="steps">
-        <li>Mantenha o cadastro de profissionais sempre atualizado.</li>
-        <li>Use filtros de periodo para conferencia recorrente.</li>
-        <li>Trate pendencias no dashboard diariamente.</li>
+        <li><strong>Posso editar horário antigo?</strong> Não. O prestador edita apenas o dia atual; correções retroativas são tratadas pelo administrador interno.</li>
+        <li><strong>Por que o valor estimado está vazio?</strong> Verifique se o cliente tem valor/hora definido no contrato.</li>
+        <li><strong>O cliente precisa de conta?</strong> Não para consultar um relatório compartilhado: ele acessa pelo link público do relatório.</li>
+        <li><strong>O HoraCerta usa GPS?</strong> Não. O foco do produto é gestão de horas, serviços e documentação do trabalho.</li>
       </ul>
     </article>
+
     <article class="card">
-      <h2>Mensagem publica do produto</h2>
-      <ul class="steps">
-        <li>Empresa cadastra o MEI.</li>
-        <li>MEI registra horarios.</li>
-        <li>Empresa acompanha em tempo real com historico organizado.</li>
-      </ul>
+      <h2>Segurança da conta</h2>
+      <p>Não compartilhe sua senha. Para alterar a senha depois de entrar, acesse <strong>Meu Perfil → Segurança da conta</strong>. Para recuperar acesso, use a opção de redefinição de senha na tela de login.</p>
+      <p class="muted-note">Antes de compartilhar um relatório, revise cliente, período, horas e valores estimados.</p>
     </article>
-    <article class="card">
-      <h2>Acesso ao sistema</h2>
-      <p>Para entrar no ambiente interno, use a tela de <a href="{% url 'login' %}">login</a>. A area interna e separada desta camada publica.</p>
-    </article>
+
     <article class="card">
       <h2>Documentos institucionais</h2>
-      <p>Consulte <a href="{% url 'terms' %}">Termos</a> e <a href="{% url 'privacy' %}">Privacidade</a> para uso e tratamento de dados da plataforma.</p>
+      <p>Consulte os <a href="{% url 'terms' %}">Termos de uso</a> e a <a href="{% url 'privacy' %}">Política de Privacidade</a> para entender as regras de utilização e tratamento de dados da plataforma.</p>
     </article>
   </section>
 </div>

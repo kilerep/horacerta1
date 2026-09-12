@@ -936,6 +936,87 @@ class ServiceJobAreaTests(TestCase):
         self.assertEqual(service_request.client_name, self.company.name)
         self.assertEqual(service_request.source, ServiceRequest.Source.PHONE)
 
+    def _service_request_post_data(self, **overrides):
+        data = {
+            "client_mode": "registered",
+            "contract": str(self.contract.id),
+            "client_name": "",
+            "client_whatsapp": "",
+            "client_email": "",
+            "address_city": "Sao Paulo",
+            "address_state": "SP",
+            "category": str(self.category.id),
+            "title": "Pedido sem itens",
+            "description": "Cliente pediu revisao rapida.",
+            "urgency": ServiceRequest.Urgency.NORMAL,
+            "preferred_date": "",
+            "preferred_time": "",
+            "source": ServiceRequest.Source.WHATSAPP,
+            "submit_action": "save",
+        }
+        data.update(overrides)
+        return data
+
+    def test_new_service_request_form_does_not_prefill_quick_item_quantity(self):
+        """A tela de "Novo pedido" (GET) nao pode renderizar a linha opcional de
+        "Itens rapidos" com a Quantidade ja preenchida (valor padrao do modelo,
+        1.00) — isso faz o navegador enviar esse campo mesmo sem o usuario tocar
+        na secao, e o back-end entao exige "Nome do item" e bloqueia o envio do
+        pedido inteiro. Regressao do bug encontrado na auditoria de 12/09/2026."""
+        response = self.client.get(reverse("service_request_create"))
+        self.assertEqual(response.status_code, 200)
+        item_form = response.context["item_form"]
+        self.assertIsNone(item_form["quantity"].value())
+
+    def test_save_service_request_without_touching_quick_items_succeeds(self):
+        """Reproduz o envio real do navegador depois da correcao: com a
+        Quantidade nao mais pre-preenchida (ver teste acima), o campo chega
+        vazio quando o profissional nao mexe na secao "Itens rapidos". O
+        pedido tem que ser salvo mesmo assim, sem exigir "Nome do item" e sem
+        criar nenhum ServiceRequestItem. Antes da correcao, o navegador enviava
+        "quick-quantity=1.00" mesmo sem nenhuma interacao do usuario, o que
+        disparava esse mesmo erro e bloqueava o envio do pedido."""
+        data = self._service_request_post_data()
+        data.update(
+            {
+                "quick-name": "",
+                "quick-quantity": "",
+                "quick-note": "",
+                "quick-estimated_unit_value": "",
+            }
+        )
+        response = self.client.post(reverse("service_request_create"), data, follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Informe o nome do item.")
+        service_request = ServiceRequest.objects.get(title="Pedido sem itens")
+        self.assertEqual(service_request.quick_items.count(), 0)
+
+    def test_save_and_convert_service_request_without_touching_quick_items_succeeds(self):
+        """Mesmo cenario acima, mas pelo botao "Salvar e transformar em
+        servico" — o segundo caminho de envio afetado pelo bug."""
+        data = self._service_request_post_data(
+            title="Pedido sem itens para servico",
+            submit_action="convert",
+        )
+        data.update(
+            {
+                "quick-name": "",
+                "quick-quantity": "",
+                "quick-note": "",
+                "quick-estimated_unit_value": "",
+            }
+        )
+        response = self.client.post(reverse("service_request_create"), data, follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Informe o nome do item.")
+        service_request = ServiceRequest.objects.get(title="Pedido sem itens para servico")
+        self.assertEqual(service_request.status, ServiceRequest.Status.CONVERTED)
+        self.assertEqual(service_request.quick_items.count(), 0)
+        service_request.refresh_from_db()
+        self.assertIsNotNone(service_request.converted_service)
+
     def test_service_request_quick_item_initial_quote_and_save_casual_client(self):
         before_contract_count = Contract.objects.filter(employee__user=self.mei_user).count()
         response = self.client.post(
