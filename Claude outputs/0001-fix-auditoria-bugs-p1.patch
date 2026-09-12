@@ -1,0 +1,730 @@
+From 1605adba19e17a0b3cd86ab72844e64528bc2a68 Mon Sep 17 00:00:00 2001
+From: Claude Sonnet 5 <noreply@anthropic.com>
+Date: Sat, 12 Sep 2026 18:52:45 +0000
+Subject: [PATCH] Corrige bugs P1 da auditoria de 12/09/2026
+
+- services/forms.py: campo "Quantidade" do item rapido de "Novo pedido" nao
+  vem mais pre-preenchido com o default do model (1.00). Isso fazia o
+  navegador enviar esse campo mesmo com a secao "Itens rapidos" (opcional)
+  intocada, disparando "Informe o nome do item." e bloqueando o envio do
+  pedido inteiro (tanto "Salvar pedido" quanto "Salvar e transformar em
+  servico").
+
+- timeclock/services.py, timeclock/views.py, accounts/views.py: "Registrar
+  horario manual" agora respeita a mesma trava que "editar horarios de hoje"
+  ja tinha: nao aceita mais lancamentos em dias ja cobertos por um relatorio
+  de horas gerado (inclusive ja enviado/visualizado/recebido pelo cliente).
+  A checagem foi extraida para timeclock.services.locked_report_for_day /
+  report_locks_day, fonte unica reaproveitada nos dois fluxos.
+
+- accounts/forms.py (MEIClientForm.save): cadastrar ou editar um cliente nao
+  sobrescreve mais employee.full_name incondicionalmente com o e-mail de
+  login. Um vinculo novo agora reaproveita o nome ja cadastrado em outro
+  vinculo do mesmo profissional (em vez de cair no fallback de e-mail), e
+  editar os dados de um cliente existente nao apaga mais o nome que o
+  profissional cadastrou manualmente em "Meu Perfil" para aquele vinculo.
+
+- templates/accounts/mei_profile.html: aviso explicando que nome/CPF/
+  telefone/endereco/foto sao por cliente (nao um perfil unico), com destaque
+  extra quando o vinculo selecionado ainda nao tem nome cadastrado.
+
+- accounts/views.py, templates/accounts/mei_reports.html: acao "Recebido"
+  deixa de aparecer/funcionar para relatorios ainda em Rascunho (nunca
+  compartilhados com o cliente).
+
+- templates/accounts/mei_service_report_detail.html: rotulo "Status:" ao
+  lado do estado de conferencia do cliente renomeado para "Conferencia do
+  cliente:", removendo a contradicao com o "Enviado" ja mostrado no topo da
+  mesma pagina (dois campos diferentes - status vs conference_final_status -
+  mostrados sem essa distincao).
+
+Cobertura de teste: 118 testes passando (accounts, services, timeclock),
+incluindo 12 testes novos que reproduzem cada bug antes da correcao.
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01BUPZJaMP1dWRjk6KxnFT8R
+---
+ accounts/forms.py                             |  26 +++-
+ accounts/tests.py                             | 106 +++++++++++++++
+ accounts/views.py                             |  33 +++--
+ services/forms.py                             |  24 ++++
+ services/tests.py                             |  81 +++++++++++
+ templates/accounts/mei_profile.html           |  32 +++++
+ templates/accounts/mei_reports.html           |   2 +
+ .../accounts/mei_service_report_detail.html   |   2 +-
+ timeclock/services.py                         |  34 +++++
+ timeclock/tests.py                            | 127 ++++++++++++++++++
+ timeclock/views.py                            |  36 ++++-
+ 11 files changed, 490 insertions(+), 13 deletions(-)
+
+diff --git a/accounts/forms.py b/accounts/forms.py
+index 9353733..b61a97b 100644
+--- a/accounts/forms.py
++++ b/accounts/forms.py
+@@ -796,7 +796,31 @@ class MEIClientForm(forms.Form):
+ 
+             employee.company = company
+             employee.user = self.user
+-            employee.full_name = self.user.get_full_name() or self.user.email or self.user.username
++            if not employee.full_name:
++                # O nome/CPF/telefone/endereco do profissional sao guardados
++                # por vinculo (Employee), um registro por cliente - nao existe
++                # um "perfil unico" do usuario. Antes, um cliente novo caia
++                # direto no fallback de e-mail (self.user.email) porque o
++                # User do Django normalmente nao tem first_name/last_name
++                # preenchidos aqui. Isso fazia a tela "Meu Perfil" parecer ter
++                # perdido o nome cadastrado assim que esse vinculo novo virava
++                # o "contrato atual" selecionado - bug da auditoria de
++                # 12/09/2026. Preferimos reaproveitar um nome ja cadastrado
++                # pelo mesmo profissional em outro vinculo antes de cair no
++                # e-mail/usuario.
++                known_full_name = (
++                    Employee.objects.filter(user=self.user)
++                    .exclude(full_name="")
++                    .order_by("-created_at")
++                    .values_list("full_name", flat=True)
++                    .first()
++                )
++                employee.full_name = (
++                    known_full_name
++                    or self.user.get_full_name()
++                    or self.user.email
++                    or self.user.username
++                )
+             employee.phone = employee.phone or company.whatsapp or company.phone
+             employee.is_active = True
+             employee.save()
+diff --git a/accounts/tests.py b/accounts/tests.py
+index 5e8824a..ec61b56 100644
+--- a/accounts/tests.py
++++ b/accounts/tests.py
+@@ -1090,6 +1090,54 @@ class MeiMultiCompanyContextTests(TestCase):
+         self.assertEqual(self.employee_b.full_name, "MEI Atualizado B")
+         self.assertNotEqual(self.employee_a.full_name, "MEI Atualizado B")
+ 
++    def test_new_client_inherits_known_name_instead_of_falling_back_to_email(self):
++        """Regressao do bug de auditoria (12/09/2026): cadastrar um cliente
++        novo criava um Employee com full_name = self.user.email (porque o
++        User do Django normalmente nao tem first_name/last_name preenchidos
++        aqui), fazendo a tela "Meu Perfil" parecer ter perdido o nome do
++        profissional assim que esse vinculo novo virava o "contrato atual"
++        selecionado. O setUp ja cadastrou nomes reais (nao vazios) em outros
++        vinculos deste mesmo usuario ("MEI Multi A/B/C") - o cliente novo deve
++        reaproveitar um desses nomes em vez de cair no e-mail de login."""
++        response = self.client.post(
++            reverse("mei_client_create"),
++            {
++                "name": "Cliente Totalmente Novo",
++                "hourly_rate": "60.00",
++                "start_date": timezone.localdate().isoformat(),
++                "closure_type": Contract.ClosureType.WEEKLY,
++            },
++            follow=True,
++        )
++        self.assertEqual(response.status_code, 200)
++        new_contract = Contract.objects.get(company__name="Cliente Totalmente Novo")
++        self.assertIn(new_contract.employee.full_name, {"MEI Multi A", "MEI Multi B", "MEI Multi C"})
++        self.assertNotEqual(new_contract.employee.full_name, self.mei_user.email)
++        self.assertNotEqual(new_contract.employee.full_name, self.mei_user.email)
++
++    def test_editing_client_info_does_not_reset_employee_full_name(self):
++        """Mesma causa raiz: salvar o formulario de "Editar cliente" (que so
++        tem campos da EMPRESA - nome, cnpj, valor/hora etc.) tambem
++        sobrescrevia employee.full_name incondicionalmente a cada edicao,
++        podendo apagar silenciosamente um nome que o profissional tinha
++        cadastrado manualmente em "Meu Perfil" para aquele cliente."""
++        self.employee_a.full_name = "Nome Cadastrado Manualmente"
++        self.employee_a.save(update_fields=["full_name"])
++
++        response = self.client.post(
++            reverse("mei_client_edit", args=[self.contract_a.id]),
++            {
++                "name": self.company_a.name,
++                "hourly_rate": "85.00",
++                "start_date": self.contract_a.start_date.isoformat(),
++                "closure_type": Contract.ClosureType.WEEKLY,
++            },
++            follow=True,
++        )
++        self.assertEqual(response.status_code, 200)
++        self.employee_a.refresh_from_db()
++        self.assertEqual(self.employee_a.full_name, "Nome Cadastrado Manualmente")
++
+     def test_header_company_name_follows_selected_contract(self):
+         response = self.client.get(reverse("mei_reports"), {"contract": str(self.contract_b.id)})
+         self.assertEqual(response.status_code, 200)
+@@ -1510,6 +1558,64 @@ class MeiMultiCompanyContextTests(TestCase):
+             public_xlsx_response["Content-Type"],
+         )
+ 
++    def test_report_cannot_be_marked_received_while_still_draft(self):
++        """Regressao do bug de auditoria (12/09/2026): a acao "Recebido"
++        ficava disponivel mesmo para relatorios em Rascunho, nunca
++        compartilhados/visualizados pelo cliente - quebrando a logica de
++        confirmacao de recebimento."""
++        report = ServiceReport.objects.create(
++            company=self.company_b,
++            employee=self.employee_b,
++            contract=self.contract_b,
++            report_date=timezone.localdate(),
++            date_from=timezone.localdate(),
++            date_to=timezone.localdate(),
++            title="Relatorio ainda em rascunho",
++        )
++        self.assertEqual(report.status, ServiceReport.Status.DRAFT)
++
++        list_response = self.client.get(reverse("mei_reports"), {"contract": str(self.contract_b.id)})
++        self.assertNotContains(list_response, "Marcar pendente")
++        # O botao "Recebido" so pode aparecer para relatorios ja enviados;
++        # em rascunho, o unico botao de acao correlato deve ser "Gerar link".
++        self.assertContains(list_response, "Gerar link")
++
++        response = self.client.post(
++            reverse("mei_reports"),
++            {
++                "action": "set_payment_status",
++                "report_id": str(report.id),
++                "payment_status": ServiceReport.PaymentStatus.PAID,
++                "selected_contract": str(self.contract_b.id),
++            },
++            follow=True,
++        )
++        self.assertEqual(response.status_code, 200)
++        self.assertContains(response, "Gere e compartilhe o link deste relatorio antes de marca-lo como recebido.")
++        report.refresh_from_db()
++        self.assertEqual(report.payment_status, ServiceReport.PaymentStatus.PENDING)
++        self.assertIsNone(report.paid_at)
++
++        # Depois que o link e gerado (relatorio deixa de ser Rascunho), marcar
++        # como recebido volta a funcionar normalmente.
++        report.ensure_conference_link()
++        report.save()
++        self.assertEqual(report.status, ServiceReport.Status.SENT)
++
++        ok_response = self.client.post(
++            reverse("mei_reports"),
++            {
++                "action": "set_payment_status",
++                "report_id": str(report.id),
++                "payment_status": ServiceReport.PaymentStatus.PAID,
++                "selected_contract": str(self.contract_b.id),
++            },
++        )
++        self.assertEqual(ok_response.status_code, 302)
++        report.refresh_from_db()
++        self.assertEqual(report.payment_status, ServiceReport.PaymentStatus.PAID)
++        self.assertIsNotNone(report.paid_at)
++
+     def test_mei_notifications_center_shows_smart_cards_and_is_scoped(self):
+         today = timezone.localdate()
+         start = timezone.make_aware(datetime.combine(today, datetime.min.time()))
+diff --git a/accounts/views.py b/accounts/views.py
+index 3b8850d..47f9f02 100644
+--- a/accounts/views.py
++++ b/accounts/views.py
+@@ -69,6 +69,7 @@ from timeclock.services import (
+     compute_day_total,
+     filter_punches_by_period,
+     format_hhmm,
++    report_locks_day,
+     restore_punch,
+ )
+ from timeclock.state import (
+@@ -1250,11 +1251,11 @@ def _build_service_report_whatsapp_url(report, conference_url):
+ 
+ 
+ def _report_locks_day_for_user(user, day):
+-    return ServiceReport.objects.filter(
+-        employee__user=user,
+-        date_from__lte=day,
+-        date_to__gte=day,
+-    ).exclude(status=ServiceReport.Status.CANCELED).exists()
++    # Mantido como fino wrapper de compatibilidade: a checagem em si agora
++    # vive em timeclock.services.report_locks_day, unica fonte de verdade
++    # tambem usada por timeclock.views.create_manual_punches (ver bug da
++    # auditoria de 12/09/2026 sobre essa checagem estar faltando la).
++    return report_locks_day(day, user=user)
+ 
+ 
+ def _today_bounds(day):
+@@ -5983,11 +5984,23 @@ def mei_reports(request):
+                 employee__user=request.user,
+             )
+             if payment_status == ServiceReport.PaymentStatus.PAID:
+-                report.payment_status = ServiceReport.PaymentStatus.PAID
+-                report.paid_at = timezone.now()
+-                report.paid_note = (request.POST.get("paid_note") or "").strip()[:1000]
+-                report.save(update_fields=["payment_status", "paid_at", "paid_note", "updated_at"])
+-                event = "report_received"
++                # O relatorio precisa ter sido de fato compartilhado (link
++                # gerado) antes de poder ser marcado como "Recebido" - sem essa
++                # checagem, um relatorio ainda em Rascunho (nunca visto pelo
++                # cliente) podia ser marcado como recebido, quebrando a logica
++                # de confirmacao de recebimento. Bug da auditoria de 12/09/2026.
++                if report.status == ServiceReport.Status.DRAFT:
++                    messages.error(
++                        request,
++                        "Gere e compartilhe o link deste relatorio antes de marca-lo como recebido.",
++                    )
++                    event = "receive_invalid"
++                else:
++                    report.payment_status = ServiceReport.PaymentStatus.PAID
++                    report.paid_at = timezone.now()
++                    report.paid_note = (request.POST.get("paid_note") or "").strip()[:1000]
++                    report.save(update_fields=["payment_status", "paid_at", "paid_note", "updated_at"])
++                    event = "report_received"
+             elif payment_status == ServiceReport.PaymentStatus.PENDING:
+                 report.payment_status = ServiceReport.PaymentStatus.PENDING
+                 report.paid_at = None
+diff --git a/services/forms.py b/services/forms.py
+index 5eb42e5..31ac944 100644
+--- a/services/forms.py
++++ b/services/forms.py
+@@ -397,11 +397,35 @@ class ServiceRequestItemForm(forms.ModelForm):
+         }
+ 
+     def __init__(self, *args, service_request=None, **kwargs):
++        # Precisa ser calculado ANTES do super().__init__(): o model usa
++        # id = UUIDField(default=uuid.uuid4), entao uma instancia nova ja nasce
++        # com pk preenchido (self.instance.pk nunca e None/falsy aqui) - o unico
++        # jeito confiavel de saber se e uma linha nova (vs. edicao) e checar se
++        # um "instance" foi passado explicitamente para o form.
++        is_new_item = kwargs.get("instance") is None
+         super().__init__(*args, **kwargs)
+         self.service_request = service_request
+         self.fields["name"].required = False
+         self.fields["note"].required = False
+         self.fields["estimated_unit_value"].required = False
++        self.fields["quantity"].required = False
++        if is_new_item:
++            # Nao usar o valor padrao do modelo (1.00) como initial numa linha de
++            # item nova/vazia: isso fazia o campo "Quantidade" chegar pre-preenchido
++            # na tela de "Novo pedido" e, por causa disso, has_item_data()/clean()
++            # tratavam a secao opcional "Itens rapidos" como preenchida mesmo sem o
++            # usuario tocar nela - exigindo "Nome do item" e bloqueando o envio do
++            # pedido (tanto "Salvar pedido" quanto "Salvar e transformar em
++            # servico"). Ao editar um item existente (instance= passado), o
++            # initial continua vindo do proprio valor salvo (nao e afetado).
++            #
++            # Duas fontes de initial precisam ser limpas: ModelForm.__init__ ja
++            # capturou o default do model field em self.initial (via
++            # model_to_dict de uma instancia nova, que aplica os defaults do
++            # model assim que e construida) - so mexer em field.initial nao e
++            # suficiente, porque BoundField.value() prioriza self.initial.
++            self.initial["quantity"] = None
++            self.fields["quantity"].initial = None
+         for field in self.fields.values():
+             field.widget.attrs.setdefault("class", "hc-input")
+ 
+diff --git a/services/tests.py b/services/tests.py
+index 5d3dc68..6ddf7f7 100644
+--- a/services/tests.py
++++ b/services/tests.py
+@@ -936,6 +936,87 @@ class ServiceJobAreaTests(TestCase):
+         self.assertEqual(service_request.client_name, self.company.name)
+         self.assertEqual(service_request.source, ServiceRequest.Source.PHONE)
+ 
++    def _service_request_post_data(self, **overrides):
++        data = {
++            "client_mode": "registered",
++            "contract": str(self.contract.id),
++            "client_name": "",
++            "client_whatsapp": "",
++            "client_email": "",
++            "address_city": "Sao Paulo",
++            "address_state": "SP",
++            "category": str(self.category.id),
++            "title": "Pedido sem itens",
++            "description": "Cliente pediu revisao rapida.",
++            "urgency": ServiceRequest.Urgency.NORMAL,
++            "preferred_date": "",
++            "preferred_time": "",
++            "source": ServiceRequest.Source.WHATSAPP,
++            "submit_action": "save",
++        }
++        data.update(overrides)
++        return data
++
++    def test_new_service_request_form_does_not_prefill_quick_item_quantity(self):
++        """A tela de "Novo pedido" (GET) nao pode renderizar a linha opcional de
++        "Itens rapidos" com a Quantidade ja preenchida (valor padrao do modelo,
++        1.00) — isso faz o navegador enviar esse campo mesmo sem o usuario tocar
++        na secao, e o back-end entao exige "Nome do item" e bloqueia o envio do
++        pedido inteiro. Regressao do bug encontrado na auditoria de 12/09/2026."""
++        response = self.client.get(reverse("service_request_create"))
++        self.assertEqual(response.status_code, 200)
++        item_form = response.context["item_form"]
++        self.assertIsNone(item_form["quantity"].value())
++
++    def test_save_service_request_without_touching_quick_items_succeeds(self):
++        """Reproduz o envio real do navegador depois da correcao: com a
++        Quantidade nao mais pre-preenchida (ver teste acima), o campo chega
++        vazio quando o profissional nao mexe na secao "Itens rapidos". O
++        pedido tem que ser salvo mesmo assim, sem exigir "Nome do item" e sem
++        criar nenhum ServiceRequestItem. Antes da correcao, o navegador enviava
++        "quick-quantity=1.00" mesmo sem nenhuma interacao do usuario, o que
++        disparava esse mesmo erro e bloqueava o envio do pedido."""
++        data = self._service_request_post_data()
++        data.update(
++            {
++                "quick-name": "",
++                "quick-quantity": "",
++                "quick-note": "",
++                "quick-estimated_unit_value": "",
++            }
++        )
++        response = self.client.post(reverse("service_request_create"), data, follow=True)
++
++        self.assertEqual(response.status_code, 200)
++        self.assertNotContains(response, "Informe o nome do item.")
++        service_request = ServiceRequest.objects.get(title="Pedido sem itens")
++        self.assertEqual(service_request.quick_items.count(), 0)
++
++    def test_save_and_convert_service_request_without_touching_quick_items_succeeds(self):
++        """Mesmo cenario acima, mas pelo botao "Salvar e transformar em
++        servico" — o segundo caminho de envio afetado pelo bug."""
++        data = self._service_request_post_data(
++            title="Pedido sem itens para servico",
++            submit_action="convert",
++        )
++        data.update(
++            {
++                "quick-name": "",
++                "quick-quantity": "",
++                "quick-note": "",
++                "quick-estimated_unit_value": "",
++            }
++        )
++        response = self.client.post(reverse("service_request_create"), data, follow=True)
++
++        self.assertEqual(response.status_code, 200)
++        self.assertNotContains(response, "Informe o nome do item.")
++        service_request = ServiceRequest.objects.get(title="Pedido sem itens para servico")
++        self.assertEqual(service_request.status, ServiceRequest.Status.CONVERTED)
++        self.assertEqual(service_request.quick_items.count(), 0)
++        service_request.refresh_from_db()
++        self.assertIsNotNone(service_request.converted_service)
++
+     def test_service_request_quick_item_initial_quote_and_save_casual_client(self):
+         before_contract_count = Contract.objects.filter(employee__user=self.mei_user).count()
+         response = self.client.post(
+diff --git a/templates/accounts/mei_profile.html b/templates/accounts/mei_profile.html
+index 1ef5fd9..9272014 100644
+--- a/templates/accounts/mei_profile.html
++++ b/templates/accounts/mei_profile.html
+@@ -29,6 +29,20 @@
+       width:70px;height:70px;border-radius:999px;object-fit:cover;border:1px solid var(--border);
+       background:rgba(255,255,255,.05);
+     }
++    .profile-scope-note{
++      margin-top:10px;
++      padding:10px 12px;
++      border-radius:12px;
++      border:1px solid var(--border);
++      background:rgba(255,255,255,.04);
++      font-size:13px;
++      color:var(--muted);
++    }
++    .profile-scope-note--empty{
++      border-color:#c9a13b;
++      background:rgba(201,161,59,.12);
++      color:var(--text);
++    }
+   </style>
+ 
+   <section class="panel">
+@@ -48,6 +62,24 @@
+         </div>
+       </form>
+     {% endif %}
++    {% if contracts|length > 1 %}
++      {% if not employee.full_name %}
++        <div class="profile-scope-note profile-scope-note--empty">
++          <strong>Atencao:</strong> nome, CPF, telefone, endereco e foto sao cadastrados
++          <strong>separadamente para cada cliente</strong> acima - nao existe um perfil
++          unico compartilhado entre eles. Este vinculo (<strong>{{ selected_contract.company.name }}</strong>)
++          ainda nao tem nome cadastrado; confira se e realmente o cliente que voce quer
++          editar antes de preencher os dados.
++        </div>
++      {% else %}
++        <div class="profile-scope-note">
++          Voce esta editando os dados cadastrados especificamente para
++          <strong>{{ selected_contract.company.name }}</strong>. Como esses campos valem
++          por cliente, trocar a empresa acima mostra (e permite editar) um cadastro
++          diferente.
++        </div>
++      {% endif %}
++    {% endif %}
+     <form method="post" enctype="multipart/form-data" style="margin-top:10px;">
+       {% csrf_token %}
+       {% if selected_contract %}
+diff --git a/templates/accounts/mei_reports.html b/templates/accounts/mei_reports.html
+index c259717..3c8488c 100644
+--- a/templates/accounts/mei_reports.html
++++ b/templates/accounts/mei_reports.html
+@@ -238,6 +238,7 @@
+               {% endif %}
+               <a class="btn" href="{{ row.pdf_url }}">PDF</a>
+               {% if report.payment_status != "paid" %}
++                {% if report.status != "DRAFT" %}
+                 <form method="post" data-submit-once="true">
+                   {% csrf_token %}
+                   <input type="hidden" name="action" value="set_payment_status">
+@@ -245,6 +246,7 @@
+                   <input type="hidden" name="payment_status" value="paid">
+                   <button class="btn" type="submit">Recebido</button>
+                 </form>
++                {% endif %}
+               {% else %}
+                 <form method="post" data-submit-once="true" onsubmit="return confirm('Voltar este relatorio para pendente?')">
+                   {% csrf_token %}
+diff --git a/templates/accounts/mei_service_report_detail.html b/templates/accounts/mei_service_report_detail.html
+index 6fa8425..ebeaca7 100644
+--- a/templates/accounts/mei_service_report_detail.html
++++ b/templates/accounts/mei_service_report_detail.html
+@@ -78,7 +78,7 @@
+         </div>
+         <div class="share-status" data-copy-status></div>
+         <div class="detail-sub">
+-          Status: {{ report.get_conference_final_status_display }}
++          Conferencia do cliente: {{ report.get_conference_final_status_display }}
+           {% if report.conference_expires_at %} | Expira em {{ report.conference_expires_at|date:"d/m/Y H:i" }}{% endif %}
+           {% if report.conference_revoked_at %} | Revogado em {{ report.conference_revoked_at|date:"d/m/Y H:i" }}{% endif %}
+           {% if report.conference_first_viewed_at %} | Visto: {{ report.conference_first_viewed_at|date:"d/m/Y H:i" }}{% else %} | Nao visualizado{% endif %}
+diff --git a/timeclock/services.py b/timeclock/services.py
+index 735394c..9931a0e 100644
+--- a/timeclock/services.py
++++ b/timeclock/services.py
+@@ -28,6 +28,40 @@ def compute_day_total(local_datetimes):
+     return total_seconds, bool(len(minute_aligned) % 2)
+ 
+ 
++def locked_report_for_day(day, *, user=None, contract=None):
++    """Retorna o ServiceReport (nao cancelado) mais recente que cobre `day`,
++    ou None se o dia nao estiver coberto por nenhum relatorio ja gerado.
++
++    Fonte unica desta checagem: o app promete ao profissional (na tela de
++    Historico e ao gerar um relatorio) que "dias anteriores ficam bloqueados
++    para preservar a seguranca dos relatorios". Antes desta funcao existir,
++    cada tela reimplementava essa regra por conta propria e "Registrar
++    horario manual" (timeclock.views.create_manual_punches) tinha ficado de
++    fora, permitindo lancar horas em dias ja cobertos por relatorios
++    enviados/recebidos pelo cliente (bug da auditoria de 12/09/2026).
++
++    Passe `contract` para checar um vinculo especifico, ou `user` para checar
++    todos os vinculos desse profissional de uma vez (usado por telas que
++    trabalham com "o dia de hoje" independente de qual contrato esta
++    selecionado). Pelo menos um dos dois precisa ser informado.
++    """
++    from .models import ServiceReport  # import local evita ciclo de import no carregamento do app
++
++    if contract is None and user is None:
++        raise ValueError("Informe 'contract' ou 'user' para checar o bloqueio do dia.")
++
++    qs = ServiceReport.objects.filter(date_from__lte=day, date_to__gte=day)
++    if contract is not None:
++        qs = qs.filter(contract=contract)
++    if user is not None:
++        qs = qs.filter(employee__user=user)
++    return qs.exclude(status=ServiceReport.Status.CANCELED).order_by("-report_date").first()
++
++
++def report_locks_day(day, *, user=None, contract=None):
++    return locked_report_for_day(day, user=user, contract=contract) is not None
++
++
+ def filter_punches_by_period(base_qs, date_from_raw, date_to_raw, field_name="timestamp"):
+     date_from = None
+     date_to = None
+diff --git a/timeclock/tests.py b/timeclock/tests.py
+index cad8ca0..e0edd86 100644
+--- a/timeclock/tests.py
++++ b/timeclock/tests.py
+@@ -415,3 +415,130 @@ class ServiceReportSharingTests(TestCase):
+         self.assertEqual(second_response.status_code, 200)
+         self.report.refresh_from_db()
+         self.assertEqual(self.report.conference_first_viewed_at, expected_first_viewed_at)
++
++
++class ManualPunchReportLockTests(TestCase):
++    """Regressao do bug de auditoria (12/09/2026): 'Registrar horario manual'
++    aceitava lancamentos em dias ja cobertos por um relatorio de horas ja
++    gerado/enviado, mesmo o sistema prometendo (na tela de Historico e ao
++    gerar um relatorio) que esses dias ficam bloqueados para edicao."""
++
++    def setUp(self):
++        self.owner = User.objects.create_user(
++            username="owner.manuallock@example.com",
++            email="owner.manuallock@example.com",
++            password="Teste@12345",
++            role=User.Role.EMPRESA,
++        )
++        self.company = Company.objects.create(
++            name="Ensimec Lock",
++            owner=self.owner,
++            email="ensimec.lock@example.com",
++        )
++        self.mei_user = User.objects.create_user(
++            username="mei.manuallock@example.com",
++            email="mei.manuallock@example.com",
++            password="Teste@12345",
++            role=User.Role.FUNCIONARIO,
++        )
++        self.employee = Employee.objects.create(user=self.mei_user, company=self.company, full_name="MEI Lock")
++        self.contract = Contract.objects.create(
++            employee=self.employee,
++            company=self.company,
++            hourly_rate="10.00",
++            start_date=date(2026, 4, 1),
++            is_active=True,
++        )
++        self.client.force_login(self.mei_user)
++
++    def _post_manual_punch(self, launch_date, times=("09:00", "13:00")):
++        return self.client.post(
++            reverse("create_manual_punches"),
++            {
++                "contract": str(self.contract.id),
++                "manual_date": launch_date.isoformat(),
++                "manual_note": "",
++                "times": list(times),
++            },
++        )
++
++    def test_manual_punch_is_blocked_for_day_covered_by_generated_report(self):
++        report = ServiceReport.objects.create(
++            company=self.company,
++            employee=self.employee,
++            contract=self.contract,
++            report_date=date(2026, 6, 4),
++            date_from=date(2026, 6, 1),
++            date_to=date(2026, 6, 4),
++            title="horas da semana",
++        )
++        report.ensure_conference_link()
++        report.save()
++
++        response = self._post_manual_punch(date(2026, 6, 2))
++
++        self.assertEqual(response.status_code, 400)
++        payload = response.json()
++        self.assertFalse(payload["ok"])
++        self.assertTrue(any("bloqueado" in msg for msg in payload["errors"]))
++        self.assertEqual(
++            Punch.objects.filter(contract=self.contract, timestamp__date=date(2026, 6, 2)).count(),
++            0,
++        )
++
++    def test_manual_punch_is_blocked_even_for_draft_report(self):
++        # A propria tela de Relatorios avisa: "Ao gerar este relatorio, os dias
++        # incluidos no periodo serao bloqueados para edicao" - a promessa vale
++        # assim que o relatorio e gerado, mesmo ainda em rascunho (nao enviado).
++        ServiceReport.objects.create(
++            company=self.company,
++            employee=self.employee,
++            contract=self.contract,
++            report_date=date(2026, 7, 10),
++            date_from=date(2026, 7, 7),
++            date_to=date(2026, 7, 10),
++            title="Rascunho de julho",
++        )
++
++        response = self._post_manual_punch(date(2026, 7, 8))
++
++        self.assertEqual(response.status_code, 400)
++        self.assertFalse(response.json()["ok"])
++
++    def test_manual_punch_still_allowed_for_day_outside_any_report(self):
++        ServiceReport.objects.create(
++            company=self.company,
++            employee=self.employee,
++            contract=self.contract,
++            report_date=date(2026, 6, 4),
++            date_from=date(2026, 6, 1),
++            date_to=date(2026, 6, 4),
++            title="horas da semana",
++        )
++
++        response = self._post_manual_punch(date(2026, 6, 10))
++
++        self.assertEqual(response.status_code, 200)
++        payload = response.json()
++        self.assertTrue(payload["ok"])
++        self.assertEqual(
++            Punch.objects.filter(contract=self.contract, timestamp__date=date(2026, 6, 10)).count(),
++            2,
++        )
++
++    def test_manual_punch_allowed_again_after_report_is_canceled(self):
++        report = ServiceReport.objects.create(
++            company=self.company,
++            employee=self.employee,
++            contract=self.contract,
++            report_date=date(2026, 6, 4),
++            date_from=date(2026, 6, 1),
++            date_to=date(2026, 6, 4),
++            title="horas da semana",
++            status=ServiceReport.Status.CANCELED,
++        )
++
++        response = self._post_manual_punch(date(2026, 6, 2))
++
++        self.assertEqual(response.status_code, 200)
++        self.assertTrue(response.json()["ok"])
+diff --git a/timeclock/views.py b/timeclock/views.py
+index 454a4da..d0cf0c9 100644
+--- a/timeclock/views.py
++++ b/timeclock/views.py
+@@ -21,7 +21,13 @@ from accounts.models import User
+ from accounts.mei_context import resolve_mei_context
+ from companies.models import CompanyAttendancePolicy, CompanyAuthorizedLocation
+ from .models import ActivityReportRequest, Contract, Punch
+-from .services import build_daily_summary, evaluate_punch_confidence, filter_punches_by_period, format_hhmm
++from .services import (
++    build_daily_summary,
++    evaluate_punch_confidence,
++    filter_punches_by_period,
++    format_hhmm,
++    locked_report_for_day,
++)
+ from .state import contract_operational_q, employee_lifecycle_summary
+ 
+ QR_PRESENCE_SESSION_KEY = "hc_qr_presence_claims"
+@@ -521,6 +527,34 @@ def create_manual_punches(request):
+     if not contract:
+         return JsonResponse({"ok": False, "errors": ["Vinculo invalido ou inativo."]}, status=400)
+ 
++    # O sistema promete (na tela de Historico e ao gerar um relatorio) que dias
++    # ja incluidos num relatorio de horas ficam bloqueados para edicao, "para
++    # preservar a seguranca dos relatorios" - e "editar horarios de hoje" ja
++    # aplicava essa regra (ver accounts.views.mei_edit_today_punches). O
++    # registro manual, porem, nao verificava isso e aceitava novos horarios em
++    # qualquer data passada - inclusive dias de relatorios ja enviados/
++    # visualizados/recebidos pelo cliente, quebrando totais que o cliente ja
++    # havia confirmado. Bug encontrado na auditoria de 12/09/2026.
++    locked_report = locked_report_for_day(launch_date, contract=contract)
++    if locked_report:
++        return JsonResponse(
++            {
++                "ok": False,
++                "errors": [
++                    "Este dia (%s) ja faz parte do relatorio \"%s\" (periodo %s a %s) e esta bloqueado "
++                    "para novos lancamentos. Fale com o suporte se precisar corrigir um horario "
++                    "desse periodo."
++                    % (
++                        launch_date.strftime("%d/%m/%Y"),
++                        locked_report.title,
++                        locked_report.date_from.strftime("%d/%m/%Y"),
++                        locked_report.date_to.strftime("%d/%m/%Y"),
++                    )
++                ],
++            },
++            status=400,
++        )
++
+     tz = timezone.get_current_timezone()
+     day_start = timezone.make_aware(datetime.combine(launch_date, time.min), tz)
+     day_end = timezone.make_aware(datetime.combine(launch_date, time.max), tz)
+-- 
+2.43.0
+

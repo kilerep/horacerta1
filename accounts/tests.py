@@ -1090,6 +1090,54 @@ class MeiMultiCompanyContextTests(TestCase):
         self.assertEqual(self.employee_b.full_name, "MEI Atualizado B")
         self.assertNotEqual(self.employee_a.full_name, "MEI Atualizado B")
 
+    def test_new_client_inherits_known_name_instead_of_falling_back_to_email(self):
+        """Regressao do bug de auditoria (12/09/2026): cadastrar um cliente
+        novo criava um Employee com full_name = self.user.email (porque o
+        User do Django normalmente nao tem first_name/last_name preenchidos
+        aqui), fazendo a tela "Meu Perfil" parecer ter perdido o nome do
+        profissional assim que esse vinculo novo virava o "contrato atual"
+        selecionado. O setUp ja cadastrou nomes reais (nao vazios) em outros
+        vinculos deste mesmo usuario ("MEI Multi A/B/C") - o cliente novo deve
+        reaproveitar um desses nomes em vez de cair no e-mail de login."""
+        response = self.client.post(
+            reverse("mei_client_create"),
+            {
+                "name": "Cliente Totalmente Novo",
+                "hourly_rate": "60.00",
+                "start_date": timezone.localdate().isoformat(),
+                "closure_type": Contract.ClosureType.WEEKLY,
+            },
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        new_contract = Contract.objects.get(company__name="Cliente Totalmente Novo")
+        self.assertIn(new_contract.employee.full_name, {"MEI Multi A", "MEI Multi B", "MEI Multi C"})
+        self.assertNotEqual(new_contract.employee.full_name, self.mei_user.email)
+        self.assertNotEqual(new_contract.employee.full_name, self.mei_user.email)
+
+    def test_editing_client_info_does_not_reset_employee_full_name(self):
+        """Mesma causa raiz: salvar o formulario de "Editar cliente" (que so
+        tem campos da EMPRESA - nome, cnpj, valor/hora etc.) tambem
+        sobrescrevia employee.full_name incondicionalmente a cada edicao,
+        podendo apagar silenciosamente um nome que o profissional tinha
+        cadastrado manualmente em "Meu Perfil" para aquele cliente."""
+        self.employee_a.full_name = "Nome Cadastrado Manualmente"
+        self.employee_a.save(update_fields=["full_name"])
+
+        response = self.client.post(
+            reverse("mei_client_edit", args=[self.contract_a.id]),
+            {
+                "name": self.company_a.name,
+                "hourly_rate": "85.00",
+                "start_date": self.contract_a.start_date.isoformat(),
+                "closure_type": Contract.ClosureType.WEEKLY,
+            },
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.employee_a.refresh_from_db()
+        self.assertEqual(self.employee_a.full_name, "Nome Cadastrado Manualmente")
+
     def test_header_company_name_follows_selected_contract(self):
         response = self.client.get(reverse("mei_reports"), {"contract": str(self.contract_b.id)})
         self.assertEqual(response.status_code, 200)
@@ -1509,6 +1557,64 @@ class MeiMultiCompanyContextTests(TestCase):
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             public_xlsx_response["Content-Type"],
         )
+
+    def test_report_cannot_be_marked_received_while_still_draft(self):
+        """Regressao do bug de auditoria (12/09/2026): a acao "Recebido"
+        ficava disponivel mesmo para relatorios em Rascunho, nunca
+        compartilhados/visualizados pelo cliente - quebrando a logica de
+        confirmacao de recebimento."""
+        report = ServiceReport.objects.create(
+            company=self.company_b,
+            employee=self.employee_b,
+            contract=self.contract_b,
+            report_date=timezone.localdate(),
+            date_from=timezone.localdate(),
+            date_to=timezone.localdate(),
+            title="Relatorio ainda em rascunho",
+        )
+        self.assertEqual(report.status, ServiceReport.Status.DRAFT)
+
+        list_response = self.client.get(reverse("mei_reports"), {"contract": str(self.contract_b.id)})
+        self.assertNotContains(list_response, "Marcar pendente")
+        # O botao "Recebido" so pode aparecer para relatorios ja enviados;
+        # em rascunho, o unico botao de acao correlato deve ser "Gerar link".
+        self.assertContains(list_response, "Gerar link")
+
+        response = self.client.post(
+            reverse("mei_reports"),
+            {
+                "action": "set_payment_status",
+                "report_id": str(report.id),
+                "payment_status": ServiceReport.PaymentStatus.PAID,
+                "selected_contract": str(self.contract_b.id),
+            },
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Gere e compartilhe o link deste relatorio antes de marca-lo como recebido.")
+        report.refresh_from_db()
+        self.assertEqual(report.payment_status, ServiceReport.PaymentStatus.PENDING)
+        self.assertIsNone(report.paid_at)
+
+        # Depois que o link e gerado (relatorio deixa de ser Rascunho), marcar
+        # como recebido volta a funcionar normalmente.
+        report.ensure_conference_link()
+        report.save()
+        self.assertEqual(report.status, ServiceReport.Status.SENT)
+
+        ok_response = self.client.post(
+            reverse("mei_reports"),
+            {
+                "action": "set_payment_status",
+                "report_id": str(report.id),
+                "payment_status": ServiceReport.PaymentStatus.PAID,
+                "selected_contract": str(self.contract_b.id),
+            },
+        )
+        self.assertEqual(ok_response.status_code, 302)
+        report.refresh_from_db()
+        self.assertEqual(report.payment_status, ServiceReport.PaymentStatus.PAID)
+        self.assertIsNotNone(report.paid_at)
 
     def test_mei_notifications_center_shows_smart_cards_and_is_scoped(self):
         today = timezone.localdate()

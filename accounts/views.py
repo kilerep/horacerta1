@@ -26,7 +26,6 @@ from django.templatetags.static import static
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils import timezone
-from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_RIGHT
@@ -69,6 +68,7 @@ from timeclock.services import (
     compute_day_total,
     filter_punches_by_period,
     format_hhmm,
+    report_locks_day,
     restore_punch,
 )
 from timeclock.state import (
@@ -1250,11 +1250,11 @@ def _build_service_report_whatsapp_url(report, conference_url):
 
 
 def _report_locks_day_for_user(user, day):
-    return ServiceReport.objects.filter(
-        employee__user=user,
-        date_from__lte=day,
-        date_to__gte=day,
-    ).exclude(status=ServiceReport.Status.CANCELED).exists()
+    # Mantido como fino wrapper de compatibilidade: a checagem em si agora
+    # vive em timeclock.services.report_locks_day, unica fonte de verdade
+    # tambem usada por timeclock.views.create_manual_punches (ver bug da
+    # auditoria de 12/09/2026 sobre essa checagem estar faltando la).
+    return report_locks_day(day, user=user)
 
 
 def _today_bounds(day):
@@ -1343,6 +1343,14 @@ def signup(request):
         form = UnifiedSignupForm()
 
     return render(request, "accounts/signup.html", {"form": form})
+
+
+# A proteção contra força bruta no login (bloqueio por IP + usuário após
+# várias senhas erradas) é feita pelo django-axes — ver AUTHENTICATION_BACKENDS
+# e AXES_* em config/settings.py, e accounts/axes_lockout.py para a resposta
+# customizada. Ele age no nível do backend de autenticação, então cobre tanto
+# esta view quanto o /admin/ nativo do Django com a mesma configuração.
+LOGIN_ATTEMPT_LIMIT = settings.AXES_FAILURE_LIMIT
 
 
 def login_view(request):
@@ -5983,11 +5991,23 @@ def mei_reports(request):
                 employee__user=request.user,
             )
             if payment_status == ServiceReport.PaymentStatus.PAID:
-                report.payment_status = ServiceReport.PaymentStatus.PAID
-                report.paid_at = timezone.now()
-                report.paid_note = (request.POST.get("paid_note") or "").strip()[:1000]
-                report.save(update_fields=["payment_status", "paid_at", "paid_note", "updated_at"])
-                event = "report_received"
+                # O relatorio precisa ter sido de fato compartilhado (link
+                # gerado) antes de poder ser marcado como "Recebido" - sem essa
+                # checagem, um relatorio ainda em Rascunho (nunca visto pelo
+                # cliente) podia ser marcado como recebido, quebrando a logica
+                # de confirmacao de recebimento. Bug da auditoria de 12/09/2026.
+                if report.status == ServiceReport.Status.DRAFT:
+                    messages.error(
+                        request,
+                        "Gere e compartilhe o link deste relatorio antes de marca-lo como recebido.",
+                    )
+                    event = "receive_invalid"
+                else:
+                    report.payment_status = ServiceReport.PaymentStatus.PAID
+                    report.paid_at = timezone.now()
+                    report.paid_note = (request.POST.get("paid_note") or "").strip()[:1000]
+                    report.save(update_fields=["payment_status", "paid_at", "paid_note", "updated_at"])
+                    event = "report_received"
             elif payment_status == ServiceReport.PaymentStatus.PENDING:
                 report.payment_status = ServiceReport.PaymentStatus.PENDING
                 report.paid_at = None
@@ -6617,171 +6637,11 @@ def evaluation_next_step_view(request):
     return render(request, "public/evaluation_next_step.html", context)
 
 
-@require_GET
-def pwa_manifest(request):
-    manifest = {
-        "id": "/",
-        "name": "HoraCerta - Gestão de Horas",
-        "short_name": "HoraCerta",
-        "description": "Plataforma de gestão de horas entre empresa e MEI. Controle suas horas, clientes e serviços na palma da mão.",
-        "start_url": "/",
-        "scope": "/",
-        "display": "standalone",
-        "orientation": "portrait-primary",
-        "theme_color": "#0b1220",
-        "background_color": "#0b1220",
-        "categories": ["business", "productivity"],
-        "lang": "pt-BR",
-        "screenshots": [
-            {
-                "src": static("screenshots/screenshot-540x720.png"),
-                "sizes": "540x720",
-                "type": "image/png",
-                "form_factor": "narrow",
-                "label": "Dashboard do HoraCerta"
-            },
-            {
-                "src": static("screenshots/screenshot-1280x720.png"),
-                "sizes": "1280x720",
-                "type": "image/png",
-                "form_factor": "wide",
-                "label": "Dashboard em tablet"
-            }
-        ],
-        "icons": [
-            {
-                "src": static("pwa/icon-192.png"),
-                "sizes": "192x192",
-                "type": "image/png",
-                "purpose": "any",
-            },
-            {
-                "src": static("pwa/icon-512.png"),
-                "sizes": "512x512",
-                "type": "image/png",
-                "purpose": "any",
-            },
-            {
-                "src": static("pwa/icon-maskable-192.png"),
-                "sizes": "192x192",
-                "type": "image/png",
-                "purpose": "maskable",
-            },
-            {
-                "src": static("pwa/icon-maskable-512.png"),
-                "sizes": "512x512",
-                "type": "image/png",
-                "purpose": "maskable",
-            },
-        ],
-        "shortcuts": [
-            {
-                "name": "Registrar Ponto",
-                "short_name": "Ponto",
-                "description": "Registre suas horas rapidamente",
-                "url": "/timeclock/me/",
-                "icons": [
-                    {
-                        "src": static("pwa/shortcut-punch-96.png"),
-                        "sizes": "96x96",
-                        "type": "image/png"
-                    }
-                ]
-            },
-            {
-                "name": "Meus Clientes",
-                "short_name": "Clientes",
-                "description": "Veja seus clientes e contratos",
-                "url": "/app/clientes/",
-                "icons": [
-                    {
-                        "src": static("pwa/shortcut-clients-96.png"),
-                        "sizes": "96x96",
-                        "type": "image/png"
-                    }
-                ]
-            },
-            {
-                "name": "Meus Serviços",
-                "short_name": "Serviços",
-                "description": "Gerencie seus serviços e pedidos",
-                "url": "/services/",
-                "icons": [
-                    {
-                        "src": static("pwa/shortcut-services-96.png"),
-                        "sizes": "96x96",
-                        "type": "image/png"
-                    }
-                ]
-            }
-        ],
-        "prefer_related_applications": False
-    }
-    response = HttpResponse(
-        json.dumps(manifest, ensure_ascii=False),
-        content_type="application/manifest+json; charset=utf-8",
-    )
-    response["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    return response
-
-
-@require_GET
-def pwa_service_worker(request):
-    sw_path = settings.BASE_DIR / "static" / "js" / "sw.js"
-    source = sw_path.read_text(encoding="utf-8")
-    response = HttpResponse(source, content_type="application/javascript; charset=utf-8")
-    response["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    response["Service-Worker-Allowed"] = "/"
-    return response
-
-
-
-# ============================================================================
-# PWA - PUSH NOTIFICATIONS
-# ============================================================================
-
-@csrf_exempt
-@require_http_methods(["POST"])
-def register_push_subscription(request):
-    """Registrar subscription de push notification"""
-    
-    if not request.user.is_authenticated:
-        return JsonResponse({'error': 'Não autenticado'}, status=401)
-    
-    try:
-        data = json.loads(request.body)
-        
-        # Aqui você pode armazenar a subscription no banco de dados
-        # Por enquanto, apenas retornar sucesso
-        
-        logger.info(f"Push subscription registrada para usuário {request.user.id}")
-        
-        return JsonResponse({
-            'success': True,
-            'message': 'Notificações push ativadas com sucesso',
-            'timestamp': timezone.now().isoformat()
-        })
-    
-    except json.JSONDecodeError:
-        return JsonResponse({'error': 'JSON inválido'}, status=400)
-    except Exception as e:
-        logger.error(f"Erro ao registrar push subscription: {str(e)}")
-        return JsonResponse({'error': str(e)}, status=400)
-
-
-@login_required
-@require_http_methods(["GET"])
-def pwa_status(request):
-    """Retornar status do PWA para o usuário"""
-    
-    return JsonResponse({
-        'pwa_installed': True,
-        'service_worker_active': True,
-        'notifications_enabled': True,
-        'offline_mode': True,
-        'user': {
-            'id': request.user.id,
-            'email': request.user.email,
-            'role': request.user.role,
-        }
-    })
+# Observação: as views "pwa_manifest", "pwa_service_worker" e a seção
+# "PWA - PUSH NOTIFICATIONS" que existiam aqui foram removidas em 12/09/2026.
+# Eram todas duplicatas mortas do módulo accounts/pwa.py, que é o que de fato
+# está ligado nas URLs (config/urls.py usa `pwa.*`, nunca
+# essas funções). Essas views nunca foram chamadas em produção, mas deixavam
+# um `@csrf_exempt` e respostas de sucesso falsas soltas no código — risco de
+# alguém religar isso sem perceber. accounts/pwa.py já responde de forma
+# honesta (HTTP 501 / "ainda não disponível"), então nada muda pro usuário.
