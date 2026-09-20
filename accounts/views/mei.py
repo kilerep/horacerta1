@@ -29,6 +29,44 @@ def mei_panel(request):
     month_start_dt = timezone.make_aware(datetime.combine(month_start, time.min))
     month_end_dt = timezone.make_aware(datetime.combine(today, time.max))
     contract_ids = [contract.id for contract in contracts]
+
+    # "Modo de uso" para quem acabou de criar a conta: checklist dos 4
+    # primeiros passos reais do fluxo MEI-first. Cada passo verifica dado de
+    # verdade (nunca um "marcar como feito" manual), e o card some sozinho
+    # assim que o prestador ja tiver feito tudo - nao fica poluindo o painel
+    # de quem ja usa o sistema no dia a dia.
+    has_any_contract = bool(contract_ids)
+    has_rate_defined = any((contract.hourly_rate or Decimal("0")) > Decimal("0") for contract in contracts)
+    has_any_punch = bool(contract_ids) and Punch.objects.filter(contract_id__in=contract_ids).exists()
+    has_any_report = ServiceReport.objects.filter(employee__user=request.user).exists()
+    onboarding_steps = [
+        {
+            "label": "Cadastre seu primeiro cliente",
+            "done": has_any_contract,
+            "cta_label": "Adicionar cliente",
+            "cta_url": reverse("mei_client_create"),
+        },
+        {
+            "label": "Defina o valor por hora do contrato",
+            "done": has_rate_defined,
+            "cta_label": "Meus clientes",
+            "cta_url": reverse("mei_contract"),
+        },
+        {
+            "label": "Registre seu primeiro horário",
+            "done": has_any_punch,
+            "cta_label": "Registrar horário",
+            "cta_url": reverse("employee_dashboard"),
+        },
+        {
+            "label": "Gere seu primeiro relatório",
+            "done": has_any_report,
+            "cta_label": "Ir para Relatórios",
+            "cta_url": reverse("mei_reports"),
+        },
+    ]
+    show_onboarding_checklist = not all(step["done"] for step in onboarding_steps)
+
     monthly_punches_by_contract = defaultdict(list)
 
     if contract_ids:
@@ -152,6 +190,8 @@ def mei_panel(request):
     context = {
         "contracts": contracts,
         "selected_contract": selected_contract,
+        "onboarding_steps": onboarding_steps,
+        "show_onboarding_checklist": show_onboarding_checklist,
         "contracts_count": len(contracts),
         "active_clients_count": len(active_contracts),
         "current_period_label": _month_label_ptbr(today),

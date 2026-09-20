@@ -229,6 +229,7 @@
     </div>
     <div class="reports-actions" style="margin-top:12px">
       <a class="btn" href="{{ csv_url }}">Exportar CSV</a>
+      <a class="btn" href="{% url 'help' %}#categoria-relatorios">Duvidas sobre relatorios?</a>
     </div>
     <div class="reports-list">
       {% for row in report_rows %}
