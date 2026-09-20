@@ -26,6 +26,14 @@ class User(AbstractUser):
         choices=VisualTheme.choices,
         default=VisualTheme.GRAPHITE,
     )
+    # Chaves dos tours guiados (baloes explicativos por tela) que o usuario
+    # ja dispensou - fechou ou concluiu. Guardado no servidor (nao em
+    # localStorage) para nao repetir o tour quando o mesmo usuario troca de
+    # aparelho (ex.: viu no celular, depois abre no PC).
+    dismissed_tours = models.JSONField(default=list, blank=True)
+
+    def has_dismissed_tour(self, tour_key):
+        return tour_key in (self.dismissed_tours or [])
 
     def resolve_employee_profile(self, *, contract_id=None, company_id=None):
         """

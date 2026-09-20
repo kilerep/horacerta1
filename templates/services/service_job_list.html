@@ -1,5 +1,6 @@
 {% extends "accounts/base.html" %}
 {% load service_format %}
+{% load static %}
 
 {% block title %}Serviços{% endblock %}
 {% block page_title %}Serviços{% endblock %}
@@ -10,6 +11,7 @@
   .services-head{display:grid;gap:6px}
   .services-head h1{margin:0;font-size:26px;line-height:1.12}
   .services-head p{margin:0;color:var(--color-text-muted);line-height:1.4}
+  .link-button{margin-top:2px;padding:0;border:0;background:none;color:var(--color-primary);font:inherit;font-weight:800;cursor:pointer;text-decoration:underline;text-align:left;width:max-content}
   .services-block{display:grid;gap:10px}
   .services-title{margin:0;font-size:16px;line-height:1.2;font-weight:900}
   .quick-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
@@ -17,6 +19,9 @@
   .quick-card strong{font-size:15px;line-height:1.2}
   .quick-card span{font-size:12px;line-height:1.35;color:var(--color-text-muted)}
   .quick-card.primary{border-color:var(--color-primary);background:var(--color-primary-soft)}
+  .quick-card.muted{opacity:.78}
+  .quick-card.muted:hover{opacity:1}
+  .flow-hint{margin:0;color:var(--color-text-muted);font-size:13px;line-height:1.4}
   .service-strip{display:grid;gap:10px}
   .service-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:start;border:1px solid var(--color-border);border-radius:8px;background:var(--gradient-card);box-shadow:var(--shadow-soft);padding:14px}
   .service-card h3{margin:0;font-size:17px;line-height:1.2;overflow-wrap:anywhere}
@@ -58,33 +63,35 @@
   <header class="services-head">
     <h1>Serviços</h1>
     <p>Trabalhos avulsos com períodos, itens e relatório sem alterar seu histórico normal.</p>
+    <button type="button" id="service-list-tour-replay" class="link-button">▶ Ver tour desta tela</button>
     <span hidden>Resumo da área Filtrar serviços Pedidos de serviço</span>
   </header>
 
   {% if not has_active_filters %}
-  <section class="services-block">
+  <section class="services-block" id="services-quick-actions">
     <h2 class="services-title">Ações rápidas</h2>
+    <p class="flow-hint">O fluxo normal é: <strong>pedido</strong> chega do cliente → você aceita e ele vira um <strong>serviço</strong> → executa, registra itens e horas → gera o relatório final.</p>
     <div class="quick-grid">
       <a class="quick-card primary" href="{% url 'service_request_create' %}">
         <strong>Novo pedido</strong>
         <span>Registrar o chamado inicial vindo do WhatsApp.</span>
       </a>
-      <a class="quick-card" href="{% url 'service_job_create' %}">
+      <a class="quick-card primary" href="{% url 'service_job_create' %}">
         <strong>Novo serviço</strong>
         <span>Criar um trabalho já combinado com o cliente.</span>
       </a>
-      <a class="quick-card" href="{% url 'service_item_catalog_list' %}">
+      <a class="quick-card muted" href="{% url 'service_item_catalog_list' %}">
         <strong>Catálogo de itens</strong>
         <span>Materiais, peças e despesas frequentes.</span>
       </a>
-      <a class="quick-card" href="{% url 'service_event_proposal_list' %}">
+      <a class="quick-card muted" href="{% url 'service_event_proposal_list' %}">
         <strong>Propostas de evento</strong>
         <span>Revisar pacotes de valor fixo antes do envio.</span>
       </a>
     </div>
   </section>
 
-  <section class="services-block">
+  <section class="services-block" id="services-today">
     <h2 class="services-title">Hoje</h2>
     {% if today_jobs %}
       <div class="service-strip">
@@ -98,7 +105,7 @@
   </section>
   {% endif %}
 
-  <section class="services-block">
+  <section class="services-block" id="services-pending">
     <h2 class="services-title">Pendências</h2>
     {% if pending_jobs %}
       <div class="service-strip">
@@ -149,4 +156,48 @@
     {% endif %}
   </section>
 </div>
+
+<script src="{% static 'js/product_tour.js' %}"></script>
+<script>
+  (function () {
+    var tourConfig = {
+      tourKey: "service_job_list",
+      dismissUrl: "{% url 'mei_dismiss_tour' %}",
+      csrfToken: "{{ csrf_token }}",
+      steps: [
+        {
+          selector: "#services-quick-actions",
+          title: "Pedido e serviço não são a mesma coisa",
+          text: "Pedido é a solicitação que chega do cliente (ex.: WhatsApp). Serviço é o trabalho já combinado, com itens, execução e relatório. Um pedido aceito vira um serviço.",
+        },
+        {
+          selector: "#services-today",
+          title: "Hoje",
+          text: "Serviços previstos ou em execução hoje aparecem aqui, para você não precisar procurar na lista completa.",
+        },
+        {
+          selector: "#services-pending",
+          title: "Pendências",
+          text: "Serviços que ainda precisam de alguma ação sua — planejamento, execução ou relatório.",
+        },
+        {
+          selector: ".filter-card",
+          title: "Buscar e filtrar",
+          text: "Busque por nome, cliente ou categoria, ou use os filtros rápidos para ver só um status por vez.",
+        },
+      ],
+    };
+
+    var replayButton = document.getElementById("service-list-tour-replay");
+    if (replayButton) {
+      replayButton.addEventListener("click", function () {
+        window.HoraCertaTour.start(tourConfig);
+      });
+    }
+
+    if ({{ show_service_list_tour|yesno:"true,false" }}) {
+      window.HoraCertaTour.start(tourConfig);
+    }
+  })();
+</script>
 {% endblock %}

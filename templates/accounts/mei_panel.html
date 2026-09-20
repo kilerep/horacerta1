@@ -1,4 +1,5 @@
 {% extends "accounts/base.html" %}
+{% load static %}
 {% block title %}Meu Resumo{% endblock %}
 {% block page_title %}Meu Resumo{% endblock %}
 
@@ -21,6 +22,7 @@
     .summary-title{margin:0;font-size:clamp(22px,4vw,32px);line-height:1.1}
     .summary-subtitle{margin:6px 0 0;color:var(--muted);max-width:720px}
     .summary-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .link-button{margin-top:8px;padding:0;border:0;background:none;color:var(--color-primary-strong,#3b82f6);font:inherit;font-weight:800;cursor:pointer;text-decoration:underline}
     .pillar-shortcuts{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
     .pillar-shortcut{border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:12px;color:var(--text);text-decoration:none;min-width:0}
     .pillar-shortcut span{display:block;color:var(--muted);font-size:11px;font-weight:800;line-height:1.25}
@@ -94,6 +96,7 @@
         <p class="summary-eyebrow">Visão do profissional</p>
         <h1 class="summary-title">Meu Resumo</h1>
         <p class="summary-subtitle">Acompanhe horas, valores estimados e pendências por cliente em {{ current_period_label }}.</p>
+        <button type="button" id="mei-panel-tour-replay" class="link-button">▶ Ver tour desta tela</button>
       </div>
       <div class="summary-actions">
         <a class="btn primary" href="{% url 'employee_dashboard' %}">Registrar horário</a>
@@ -336,4 +339,55 @@
       </p>
     </section>
   </div>
+
+  <script src="{% static 'js/product_tour.js' %}"></script>
+  <script>
+    (function () {
+      var tourConfig = {
+        tourKey: "mei_panel",
+        dismissUrl: "{% url 'mei_dismiss_tour' %}",
+        csrfToken: "{{ csrf_token }}",
+        steps: [
+          {
+            selector: ".summary-hero",
+            title: "Bem-vindo ao Meu Resumo",
+            text: "Esta é a sua tela principal. Aqui você acompanha horas, valores estimados e pendências do período atual.",
+          },
+          {% if show_onboarding_checklist %}
+          {
+            selector: ".onboarding-panel",
+            title: "Primeiros passos",
+            text: "Enquanto sua conta é nova, esses passos te guiam pelo essencial. O card some sozinho assim que você já estiver usando o sistema normalmente.",
+          },
+          {% endif %}
+          {
+            selector: ".pillar-shortcuts",
+            title: "Atalhos rápidos",
+            text: "Acesso direto para horários, serviços, relatórios, pedidos e notificações — sem precisar navegar pelo menu.",
+          },
+          {
+            selector: ".summary-cards",
+            title: "Indicadores do período",
+            text: "Horas, valor estimado e pendências, sempre calculados a partir dos seus registros reais.",
+          },
+          {
+            selector: "#attention-title",
+            title: "Ação de hoje",
+            text: "Tudo que precisa da sua atenção agora aparece aqui, com um botão direto para resolver ou revisar.",
+          },
+        ],
+      };
+
+      var replayButton = document.getElementById("mei-panel-tour-replay");
+      if (replayButton) {
+        replayButton.addEventListener("click", function () {
+          window.HoraCertaTour.start(tourConfig);
+        });
+      }
+
+      if ({{ show_mei_panel_tour|yesno:"true,false" }}) {
+        window.HoraCertaTour.start(tourConfig);
+      }
+    })();
+  </script>
 {% endblock %}

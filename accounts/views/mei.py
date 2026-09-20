@@ -7,6 +7,11 @@ from ._shared import *  # noqa: F401,F403
 # opened yet - avoids a false-urgency alert right after sending it.
 UNVIEWED_REPORT_REMINDER_DAYS = 2
 
+# Chaves validas de tour guiado (baloes explicativos por tela). Uma lista
+# fechada evita que o endpoint de dispensar aceite qualquer string arbitraria
+# vinda do cliente. Adicionar aqui conforme novas telas ganham tour.
+VALID_TOUR_KEYS = {"mei_panel", "service_job_list"}
+
 
 @login_required
 def dashboard_employee(request):
@@ -220,8 +225,28 @@ def mei_panel(request):
             if (mei_context.invalid_requested_contract or mei_context.invalid_session_contract)
             else ""
         ),
+        "show_mei_panel_tour": not request.user.has_dismissed_tour("mei_panel"),
     }
     return render(request, "accounts/mei_panel.html", context)
+
+
+@login_required
+@require_POST
+def mei_dismiss_tour(request):
+    """Marca um tour guiado (baloes explicativos) como ja visto/dispensado.
+
+    Guardado no proprio usuario (nao em localStorage) para o tour nao voltar
+    a aparecer quando o mesmo prestador troca de aparelho. Aceita apenas
+    chaves conhecidas para nao virar um deposito arbitrario de dados.
+    """
+    tour_key = (request.POST.get("tour") or "").strip()
+    if tour_key not in VALID_TOUR_KEYS:
+        return JsonResponse({"error": "Tour desconhecido."}, status=400)
+
+    if tour_key not in (request.user.dismissed_tours or []):
+        request.user.dismissed_tours = [*(request.user.dismissed_tours or []), tour_key]
+        request.user.save(update_fields=["dismissed_tours"])
+    return JsonResponse({"dismissed": tour_key})
 
 
 @login_required

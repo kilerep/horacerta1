@@ -103,6 +103,7 @@ urlpatterns = [
     path("empresa/configuracoes/", views.company_settings, name="company_settings"),
 
     path("me/painel/", views.mei_panel, name="mei_panel"),
+    path("me/tour/dispensar/", views.mei_dismiss_tour, name="mei_dismiss_tour"),
     path("me/profile/", views.mei_profile, name="mei_profile"),
     path("me/historico/", views.mei_history, name="mei_history"),
     path("me/editar-horarios-hoje/", views.mei_edit_today_punches, name="mei_edit_today_punches"),
