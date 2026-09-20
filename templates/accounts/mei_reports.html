@@ -43,6 +43,13 @@
   .feedback.warn{border-color:rgba(255,176,32,.38);background:rgba(255,176,32,.12);color:#ffe7ad}
   .error{margin-top:5px;color:#ffd8d8;font-size:12px}
   .copy-status{min-height:18px;color:var(--muted);font-size:12px}
+  .comparison-list{display:grid;gap:12px;margin-top:12px}
+  .comparison-row{display:grid;gap:6px}
+  .comparison-row__head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;font-size:13px}
+  .comparison-row__head strong{overflow-wrap:anywhere}
+  .comparison-row__head span{color:var(--muted);white-space:nowrap}
+  .comparison-bar{height:8px;border-radius:999px;overflow:hidden;background:var(--surface-soft);border:1px solid var(--line-soft)}
+  .comparison-bar span{display:block;height:100%;width:var(--comparison-width);background:var(--color-primary-strong)}
   @media (min-width: 760px){
     .reports-form{grid-template-columns:repeat(2,minmax(0,1fr));align-items:end}
     .reports-field.full{grid-column:1 / -1}
@@ -194,6 +201,26 @@
       </div>
     </form>
   </section>
+
+  {% if client_comparison_rows %}
+    <section class="reports-panel">
+      <div class="reports-head">
+        <h2 class="reports-title">Comparativo por cliente</h2>
+        <p class="reports-sub">Horas e valor estimado no periodo de {{ comparison_period_label }}. Use o filtro de data acima para comparar outro periodo.</p>
+      </div>
+      <div class="comparison-list">
+        {% for row in client_comparison_rows %}
+          <div class="comparison-row">
+            <div class="comparison-row__head">
+              <strong>{{ row.contract.company.name }}</strong>
+              <span>{{ row.total_hours }} | {{ row.estimated_value_brl }}</span>
+            </div>
+            <div class="comparison-bar" aria-hidden="true"><span style="--comparison-width: {{ row.bar_percent }}%;"></span></div>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
 
   <section class="reports-panel">
     <div class="reports-head">

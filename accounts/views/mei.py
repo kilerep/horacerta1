@@ -991,6 +991,39 @@ def mei_reports(request):
     else:
         receive_filter = "all"
 
+    # Comparativo simples por cliente e periodo (Bloco 4 do roadmap). Usa o
+    # mesmo periodo do filtro de data quando os dois limites estao presentes;
+    # sem filtro (ou com apenas um limite), cai no mes corrente para dar uma
+    # leitura util por padrao. So faz sentido "comparar" com 2+ clientes.
+    comparison_period_from = date_from
+    comparison_period_to = date_to
+    if not comparison_period_from or not comparison_period_to:
+        today = timezone.localdate()
+        comparison_period_from = today.replace(day=1)
+        comparison_period_to = today
+    client_comparison_rows = []
+    if len(contracts_list) > 1:
+        comparison_totals = [
+            (contract, _compute_contract_period_totals(contract, comparison_period_from, comparison_period_to))
+            for contract in contracts_list
+        ]
+        max_seconds = max((totals["total_seconds"] for _contract, totals in comparison_totals), default=0)
+        client_comparison_rows = sorted(
+            (
+                {
+                    "contract": contract,
+                    "total_hours": totals["total_hours"],
+                    "estimated_value_brl": totals["estimated_value_brl"],
+                    "bar_percent": round((totals["total_seconds"] / max_seconds) * 100) if max_seconds else 0,
+                }
+                for contract, totals in comparison_totals
+            ),
+            # Desempate por id do contrato para manter ordem estavel quando
+            # dois clientes tem o mesmo total no periodo.
+            key=lambda row: (-row["bar_percent"], row["contract"].id),
+        )
+    comparison_period_label = f"{comparison_period_from:%d/%m/%Y} ate {comparison_period_to:%d/%m/%Y}"
+
     pending_requests = [item for item in requests_qs[:300] if item.status == ActivityReportRequest.Status.PENDING]
     responded_requests = [item for item in requests_qs[:300] if item.status != ActivityReportRequest.Status.PENDING]
     form_initial = {"contract": form_contract}
@@ -1137,6 +1170,8 @@ def mei_reports(request):
                 for value, label in ServiceReport.Status.choices
             ],
             "csv_url": csv_url,
+            "client_comparison_rows": client_comparison_rows,
+            "comparison_period_label": comparison_period_label,
         },
     )
 
