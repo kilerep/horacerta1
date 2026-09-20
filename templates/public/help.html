@@ -15,6 +15,19 @@
   .notice strong{display:block;color:var(--text)}
   .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
   .muted-note{margin:10px 0 0;color:var(--muted);font-size:.92rem}
+  .search-box{position:relative}
+  .search-box input{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:12px;padding:13px 14px;background:var(--color-card);color:var(--text);font:inherit}
+  .search-hint{margin:8px 0 0;color:var(--muted);font-size:.85rem}
+  .faq-categories{display:grid;gap:16px}
+  .faq-category h2{margin:0 0 4px;font-size:1.15rem;scroll-margin-top:90px}
+  .faq-list{display:grid;gap:8px}
+  .faq-item{border:1px solid var(--line);border-radius:12px;background:color-mix(in oklab, var(--color-card) 86%, transparent);scroll-margin-top:90px}
+  .faq-item summary{cursor:pointer;padding:12px 14px;font-weight:700;color:var(--text);list-style:none}
+  .faq-item summary::-webkit-details-marker{display:none}
+  .faq-item summary::before{content:"+";display:inline-block;width:16px;color:var(--color-primary);font-weight:900}
+  .faq-item[open] summary::before{content:"–"}
+  .faq-item .answer{margin:0;padding:0 14px 14px 30px;color:var(--muted);line-height:1.55}
+  .faq-empty{display:none;color:var(--muted);padding:14px;border:1px dashed var(--line);border-radius:12px}
   @media (max-width:920px){.grid{grid-template-columns:1fr}}
 </style>
 <div class="container wrap">
@@ -59,25 +72,202 @@
     </article>
 
     <article class="card">
-      <h2>Dúvidas rápidas</h2>
-      <ul class="steps">
-        <li><strong>Posso editar horário antigo?</strong> Não. O prestador edita apenas o dia atual; correções retroativas são tratadas pelo administrador interno.</li>
-        <li><strong>Por que o valor estimado está vazio?</strong> Verifique se o cliente tem valor/hora definido no contrato.</li>
-        <li><strong>O cliente precisa de conta?</strong> Não para consultar um relatório compartilhado: ele acessa pelo link público do relatório.</li>
-        <li><strong>O HoraCerta usa GPS?</strong> Não. O foco do produto é gestão de horas, serviços e documentação do trabalho.</li>
-      </ul>
-    </article>
-
-    <article class="card">
       <h2>Segurança da conta</h2>
       <p>Não compartilhe sua senha. Para alterar a senha depois de entrar, acesse <strong>Meu Perfil → Segurança da conta</strong>. Para recuperar acesso, use a opção de redefinição de senha na tela de login.</p>
       <p class="muted-note">Antes de compartilhar um relatório, revise cliente, período, horas e valores estimados.</p>
     </article>
+  </section>
 
-    <article class="card">
+  <section class="card">
+    <h2>Buscar uma dúvida</h2>
+    <div class="search-box">
+      <input type="search" id="help-search" placeholder="Ex.: relatório, senha, cliente, offline..." autocomplete="off">
+    </div>
+    <p class="search-hint">Digite uma palavra-chave para filtrar as perguntas abaixo. Deixe em branco para ver tudo.</p>
+  </section>
+
+  <section class="faq-categories" id="faq-categories">
+    <div class="card faq-category" id="categoria-clientes-contratos">
+      <h2>Clientes e contratos</h2>
+      <div class="faq-list">
+        <details class="faq-item" data-search="como cadastro um cliente novo empresa contrato">
+          <summary>Como cadastro um novo cliente?</summary>
+          <p class="answer">Em <strong>Meus Clientes</strong>, use o botão de adicionar cliente e preencha os dados da empresa/contrato. Você já pode informar o valor/hora e o tipo de fechamento nesse cadastro.</p>
+        </details>
+        <details class="faq-item" data-search="valor por hora vazio estimado contrato hourly rate">
+          <summary>Por que o valor estimado está vazio?</summary>
+          <p class="answer">Verifique se o cliente tem valor/hora definido no contrato. Sem esse valor, o HoraCerta não consegue calcular a estimativa de horas trabalhadas.</p>
+        </details>
+        <details class="faq-item" data-search="pausar encerrar contrato cliente inativo">
+          <summary>Posso pausar ou encerrar um contrato?</summary>
+          <p class="answer">Sim. Em <strong>Editar cliente/contrato</strong> você define o status do vínculo. Contratos encerrados continuam disponíveis no histórico, apenas saem da lista de clientes ativos.</p>
+        </details>
+      </div>
+    </div>
+
+    <div class="card faq-category" id="categoria-horas">
+      <h2>Registro de horas</h2>
+      <div class="faq-list">
+        <details class="faq-item" data-search="registrar horario bater ponto entrada saida hoje">
+          <summary>Como registro meu horário?</summary>
+          <p class="answer">Na tela de horários de hoje, adicione os horários de entrada e saída do cliente correto. O HoraCerta calcula o total do dia automaticamente.</p>
+        </details>
+        <details class="faq-item" data-search="editar horario antigo passado correcao retroativa">
+          <summary>Posso editar horário antigo?</summary>
+          <p class="answer">Não. O prestador edita apenas o dia atual; correções retroativas são tratadas pelo administrador interno. Use o formulário de solicitação de correção para pedir o ajuste.</p>
+        </details>
+        <details class="faq-item" data-search="dia incompleto o que significa dois pares horario">
+          <summary>O que significa "dia incompleto"?</summary>
+          <p class="answer">Um dia aparece como incompleto quando falta um par de horários (por exemplo, uma saída sem entrada correspondente). Revise os horários do dia para completar o registro.</p>
+        </details>
+      </div>
+    </div>
+
+    <div class="card faq-category" id="categoria-pedidos-servicos">
+      <h2>Pedidos e serviços</h2>
+      <div class="faq-list">
+        <details class="faq-item" data-search="diferenca pedido servico solicitacao transformar">
+          <summary>Qual a diferença entre pedido e serviço?</summary>
+          <p class="answer">Um pedido é uma solicitação recebida (do cliente ou cadastrada por você). Ao aceitar e planejar, o pedido vira um serviço executável, com itens, checklist e cronômetro de execução.</p>
+        </details>
+        <details class="faq-item" data-search="cotacao orcamento enviar cliente whatsapp valor">
+          <summary>Como envio uma cotação/orçamento pro cliente?</summary>
+          <p class="answer">No detalhe do serviço, gere a cotação com os itens e valores previstos e envie o link por WhatsApp direto pela tela do serviço.</p>
+        </details>
+        <details class="faq-item" data-search="previa relatorio final servico gerar enviar cliente">
+          <summary>Como envio a prévia ou o relatório final de um serviço?</summary>
+          <p class="answer">Durante a execução, gere a prévia para o cliente acompanhar o andamento. Ao concluir, gere o relatório final com o resumo do que foi feito, itens usados e horas trabalhadas.</p>
+        </details>
+      </div>
+    </div>
+
+    <div class="card faq-category" id="categoria-relatorios">
+      <h2>Relatórios</h2>
+      <div class="faq-list">
+        <details class="faq-item" data-search="cliente visualizou relatorio nao visualizado link conferencia">
+          <summary>Como sei se o cliente visualizou o relatório?</summary>
+          <p class="answer">Cada relatório mostra o status de visualização (visualizado ou não visualizado). Se o link de conferência ficar muito tempo sem ser aberto, o HoraCerta mostra um lembrete no Meu Resumo para você reenviar.</p>
+        </details>
+        <details class="faq-item" data-search="marcar recebido pago pendente pagamento relatorio">
+          <summary>Como marco um relatório como recebido/pago?</summary>
+          <p class="answer">Na lista de relatórios, use a ação "Recebido" depois que o link já tiver sido compartilhado com o cliente. É possível voltar para pendente se precisar corrigir.</p>
+        </details>
+        <details class="faq-item" data-search="cliente precisa de conta login relatorio publico">
+          <summary>O cliente precisa de conta?</summary>
+          <p class="answer">Não para consultar um relatório compartilhado: ele acessa pelo link público do relatório, sem precisar criar login no HoraCerta.</p>
+        </details>
+      </div>
+    </div>
+
+    <div class="card faq-category" id="categoria-notificacoes">
+      <h2>Central de Notificações</h2>
+      <div class="faq-list">
+        <details class="faq-item" data-search="notificacoes central o que aparece avisos">
+          <summary>O que aparece na Central de Notificações?</summary>
+          <p class="answer">Avisos internos como pedidos novos, solicitações de relatório, correções de ponto e lembretes de fechamento próximo — tudo em um só lugar, sem depender de e-mail ou WhatsApp automático.</p>
+        </details>
+        <details class="faq-item" data-search="marcar lida notificacao nao lida">
+          <summary>Como marco notificações como lidas?</summary>
+          <p class="answer">Abra a notificação para marcá-la como lida individualmente, ou use a opção de marcar todas como lidas de uma vez na própria Central de Notificações.</p>
+        </details>
+      </div>
+    </div>
+
+    <div class="card faq-category" id="categoria-conta-seguranca">
+      <h2>Conta e segurança</h2>
+      <div class="faq-list">
+        <details class="faq-item" data-search="esqueci senha redefinir recuperar acesso login">
+          <summary>Esqueci minha senha, e agora?</summary>
+          <p class="answer">Na tela de login, use a opção de redefinição de senha e siga as instruções enviadas para o seu e-mail cadastrado.</p>
+        </details>
+        <details class="faq-item" data-search="trocar senha depois de logado meu perfil">
+          <summary>Como troco minha senha depois de já estar logado?</summary>
+          <p class="answer">Acesse <strong>Meu Perfil → Segurança da conta</strong> e siga o fluxo de troca de senha por lá.</p>
+        </details>
+        <details class="faq-item" data-search="tema visual escuro claro cores aparencia">
+          <summary>Posso trocar o tema visual do sistema?</summary>
+          <p class="answer">Sim. Em Meu Perfil você escolhe entre os temas visuais disponíveis (incluindo opções mais claras para ambientes operacionais).</p>
+        </details>
+        <details class="faq-item" data-search="gps localizacao rastreamento continuo privacidade">
+          <summary>O HoraCerta usa GPS?</summary>
+          <p class="answer">Não. O foco do produto é gestão de horas, serviços e documentação do trabalho — sem rastreamento contínuo de localização.</p>
+        </details>
+      </div>
+    </div>
+
+    <div class="card faq-category" id="categoria-pwa">
+      <h2>Instalar como app</h2>
+      <div class="faq-list">
+        <details class="faq-item" data-search="instalar celular tela inicial app aplicativo pwa">
+          <summary>Dá pra instalar o HoraCerta no celular?</summary>
+          <p class="answer">Sim. Pelo navegador do celular, use a opção "Adicionar à tela inicial" (Android) ou "Adicionar à Tela de Início" (iPhone) para instalar o HoraCerta como um app.</p>
+        </details>
+        <details class="faq-item" data-search="offline sem internet conexao funciona">
+          <summary>O HoraCerta funciona offline?</summary>
+          <p class="answer">As telas principais carregam mesmo com conexão instável, mas registrar horários e enviar relatórios exige conexão para confirmar a gravação no servidor — nada é salvo como definitivo antes dessa confirmação.</p>
+        </details>
+      </div>
+    </div>
+
+    <div class="card faq-category" id="categoria-institucional">
       <h2>Documentos institucionais</h2>
-      <p>Consulte os <a href="{% url 'terms' %}">Termos de uso</a> e a <a href="{% url 'privacy' %}">Política de Privacidade</a> para entender as regras de utilização e tratamento de dados da plataforma.</p>
-    </article>
+      <div class="faq-list">
+        <details class="faq-item" data-search="termos de uso politica de privacidade dados lgpd">
+          <summary>Onde encontro os termos de uso e a política de privacidade?</summary>
+          <p class="answer">Consulte os <a href="{% url 'terms' %}">Termos de uso</a> e a <a href="{% url 'privacy' %}">Política de Privacidade</a> para entender as regras de utilização e tratamento de dados da plataforma.</p>
+        </details>
+      </div>
+    </div>
+
+    <p class="faq-empty" id="faq-empty">Nenhuma dúvida encontrada para essa busca. Tente outra palavra-chave.</p>
   </section>
 </div>
+<script>
+  (function () {
+    var input = document.getElementById("help-search");
+    var categories = document.querySelectorAll(".faq-category");
+    var emptyState = document.getElementById("faq-empty");
+    if (!input) return;
+
+    function normalize(text) {
+      return (text || "").toLowerCase();
+    }
+
+    function applyFilter() {
+      var query = normalize(input.value).trim();
+      var totalVisible = 0;
+
+      categories.forEach(function (category) {
+        var items = category.querySelectorAll(".faq-item");
+        var visibleInCategory = 0;
+
+        items.forEach(function (item) {
+          var haystack = normalize(item.dataset.search) + " " + normalize(item.textContent);
+          var matches = !query || haystack.indexOf(query) !== -1;
+          item.hidden = !matches;
+          if (matches) {
+            visibleInCategory += 1;
+            if (query) item.open = true;
+          }
+        });
+
+        category.hidden = visibleInCategory === 0;
+        totalVisible += visibleInCategory;
+      });
+
+      emptyState.style.display = totalVisible === 0 ? "block" : "none";
+    }
+
+    input.addEventListener("input", applyFilter);
+
+    if (window.location.hash) {
+      var target = document.querySelector(window.location.hash);
+      if (target) {
+        target.hidden = false;
+        var detail = target.closest(".faq-item");
+        if (detail) detail.open = true;
+      }
+    }
+  })();
+</script>
 {% endblock %}
