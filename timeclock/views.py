@@ -440,7 +440,9 @@ def employee_dashboard(request):
         "show_first_report_cta": (
             total_punches_today >= 2
             and total_punches_today % 2 == 0
-            and not ServiceReport.objects.filter(employee__user=request.user).exists()
+            and not ServiceReport.objects.filter(employee__user=request.user)
+            .exclude(status=ServiceReport.Status.CANCELED)
+            .exists()
         ),
         "punch_button_label": punch_button_label,
         "journey_status_tone": journey_status_tone,
