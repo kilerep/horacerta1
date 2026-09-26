@@ -1,4 +1,5 @@
 {% extends "accounts/base.html" %}
+{% load static %}
 {% block title %}Meu Resumo{% endblock %}
 {% block page_title %}Meu Resumo{% endblock %}
 
@@ -21,6 +22,7 @@
     .summary-title{margin:0;font-size:clamp(22px,4vw,32px);line-height:1.1}
     .summary-subtitle{margin:6px 0 0;color:var(--muted);max-width:720px}
     .summary-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .link-button{margin-top:8px;padding:0;border:0;background:none;color:var(--color-primary-strong,#3b82f6);font:inherit;font-weight:800;cursor:pointer;text-decoration:underline}
     .pillar-shortcuts{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
     .pillar-shortcut{border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:12px;color:var(--text);text-decoration:none;min-width:0}
     .pillar-shortcut span{display:block;color:var(--muted);font-size:11px;font-weight:800;line-height:1.25}
@@ -48,6 +50,23 @@
     .client-metric{border:1px solid rgba(255,255,255,.09);border-radius:12px;padding:10px;background:rgba(255,255,255,.03)}
     .client-metric span{display:block;color:var(--muted);font-size:11px}
     .client-metric strong{display:block;margin-top:3px;font-size:15px}
+    .onboarding-list{margin:12px 0 0;padding:0;list-style:none;display:grid;gap:8px}
+    .onboarding-step{display:flex;align-items:center;gap:12px;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px 12px;background:rgba(255,255,255,.035)}
+    .onboarding-step__check{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:999px;background:var(--color-primary-soft);border:1px solid var(--color-primary-soft);font-weight:900;font-size:13px}
+    .onboarding-step--done{opacity:.6}
+    .onboarding-step--done .onboarding-step__check{background:rgba(45,211,145,.18);border-color:rgba(45,211,145,.42);color:#dcffe9}
+    .onboarding-step--done .onboarding-step__label{text-decoration:line-through}
+    .onboarding-step__label{flex:1 1 auto;font-size:14px;line-height:1.35}
+    .attention-list{display:grid;gap:8px}
+    .attention-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:12px;background:rgba(255,255,255,.035)}
+    .attention-item--warn{border-color:rgba(255,176,32,.36);background:rgba(255,176,32,.09)}
+    .attention-item--danger{border-color:rgba(255,94,94,.34);background:rgba(255,94,94,.1)}
+    .attention-item--neutral{border-color:rgba(255,255,255,.12);background:rgba(255,255,255,.04)}
+    .attention-item__eyebrow{display:block;color:var(--muted);font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.04em}
+    .attention-item__title{display:block;margin-top:3px;color:var(--text);font-size:15px;line-height:1.25}
+    .attention-item__text{margin:4px 0 0;color:var(--muted);font-size:13px;line-height:1.45}
+    .attention-item--warn .attention-item__text{color:#ffe7ad}
+    .attention-item--danger .attention-item__text{color:#ffd8d8}
     .alert-list{display:grid;gap:8px}
     .summary-alert{border:1px solid rgba(255,176,32,.36);border-radius:12px;padding:11px 12px;background:rgba(255,176,32,.1);color:#ffe7ad}
     .summary-alert.danger{border-color:rgba(255,94,94,.34);background:rgba(255,94,94,.1);color:#ffd8d8}
@@ -62,8 +81,9 @@
     }
     @media (max-width: 640px){
       .summary-hero,
-      .client-row__head{display:grid}
-      .summary-actions .btn{width:100%;justify-content:center}
+      .client-row__head,
+      .attention-item{display:grid;grid-template-columns:1fr}
+      .summary-actions .btn,.attention-item .btn{width:100%;justify-content:center}
       .pillar-shortcuts,
       .summary-cards,
       .client-metrics{grid-template-columns:1fr}
@@ -76,12 +96,31 @@
         <p class="summary-eyebrow">Visão do profissional</p>
         <h1 class="summary-title">Meu Resumo</h1>
         <p class="summary-subtitle">Acompanhe horas, valores estimados e pendências por cliente em {{ current_period_label }}.</p>
+        <button type="button" id="mei-panel-tour-replay" class="link-button">▶ Ver tour desta tela</button>
       </div>
       <div class="summary-actions">
         <a class="btn primary" href="{% url 'employee_dashboard' %}">Registrar horário</a>
         <a class="btn" href="{% url 'mei_contract' %}">Meus clientes</a>
       </div>
     </section>
+
+    {% if show_onboarding_checklist %}
+      <section class="summary-panel onboarding-panel" aria-labelledby="onboarding-title">
+        <h2 id="onboarding-title">Primeiros passos</h2>
+        <p class="summary-panel__sub">Complete esses 4 passos para deixar o HoraCerta rodando com seus clientes de verdade. Precisa de ajuda em algum deles? Veja a <a href="{% url 'help' %}">Central de ajuda</a>.</p>
+        <ol class="onboarding-list">
+          {% for step in onboarding_steps %}
+            <li class="onboarding-step {% if step.done %}onboarding-step--done{% endif %}">
+              <span class="onboarding-step__check" aria-hidden="true">{% if step.done %}✓{% else %}{{ forloop.counter }}{% endif %}</span>
+              <span class="onboarding-step__label">{{ step.label }}</span>
+              {% if not step.done %}
+                <a class="btn" href="{{ step.cta_url }}">{{ step.cta_label }}</a>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ol>
+      </section>
+    {% endif %}
 
     <section class="pillar-shortcuts" aria-label="Atalhos principais">
       <a class="pillar-shortcut" href="{% url 'employee_dashboard' %}">
@@ -120,6 +159,103 @@
       <article class="summary-card"><span>Dias incompletos</span><strong>{{ incomplete_days }}</strong></article>
       <article class="summary-card"><span>Relatórios pendentes</span><strong>{{ pending_reports_count }}</strong></article>
       <article class="summary-card"><span>Clientes vinculados</span><strong>{{ contracts_count }}</strong></article>
+    </section>
+
+    <section class="summary-panel" aria-labelledby="attention-title">
+      <h2 id="attention-title">Ação de hoje</h2>
+      <p class="summary-panel__sub">Pendências com um caminho direto para resolver ou revisar.</p>
+      <div class="attention-list">
+        {% if incomplete_alerts %}
+          {% for item in incomplete_alerts %}
+            <article class="attention-item attention-item--warn">
+              <div>
+                <span class="attention-item__eyebrow">Registro incompleto</span>
+                <strong class="attention-item__title">{{ item.contract.company.name }}</strong>
+                <p class="attention-item__text">{{ item.count }} dia(s) incompleto(s). Último em {{ item.latest_date|date:"d/m/Y" }}.</p>
+              </div>
+              <a class="btn" href="{% url 'mei_history' %}?contract={{ item.contract.id }}&amp;date_from={{ item.latest_date|date:"Y-m-d" }}&amp;date_to={{ item.latest_date|date:"Y-m-d" }}">Ver dia</a>
+            </article>
+          {% endfor %}
+        {% endif %}
+        {% if missing_rate_contracts %}
+          {% for contract in missing_rate_contracts %}
+            <article class="attention-item attention-item--danger">
+              <div>
+                <span class="attention-item__eyebrow">Valor por hora pendente</span>
+                <strong class="attention-item__title">{{ contract.company.name }}</strong>
+                <p class="attention-item__text">Defina o valor/hora para que o fechamento apresente uma estimativa correta.</p>
+              </div>
+              <a class="btn" href="{% url 'mei_client_edit' contract.id %}">Definir valor/hora</a>
+            </article>
+          {% endfor %}
+        {% endif %}
+        {% if pending_payment_alerts %}
+          {% for item in pending_payment_alerts %}
+            <article class="attention-item attention-item--warn">
+              <div>
+                <span class="attention-item__eyebrow">Recebimento pendente</span>
+                <strong class="attention-item__title">{{ item.company_name }}</strong>
+                <p class="attention-item__text">Relatório {{ item.viewed_label|lower }} pelo cliente, ainda sem pagamento marcado.</p>
+              </div>
+              <a class="btn" href="{% url 'mei_service_report_detail' item.report.id %}">Ver relatório</a>
+            </article>
+          {% endfor %}
+        {% endif %}
+        {% if pending_report_requests %}
+          {% for req in pending_report_requests %}
+            <article class="attention-item attention-item--warn">
+              <div>
+                <span class="attention-item__eyebrow">Relatório solicitado</span>
+                <strong class="attention-item__title">{{ req.company.name }}</strong>
+                <p class="attention-item__text">{% if req.subject %}{{ req.subject }}{% else %}Há uma solicitação de relatório pendente para revisão.{% endif %}</p>
+              </div>
+              <a class="btn" href="{% url 'mei_service_report_request_detail' req.id %}">Abrir solicitação</a>
+            </article>
+          {% endfor %}
+        {% endif %}
+        {% if unviewed_report_alerts %}
+          {% for item in unviewed_report_alerts %}
+            <article class="attention-item">
+              <div>
+                <span class="attention-item__eyebrow">Relatório não visualizado</span>
+                <strong class="attention-item__title">{{ item.company_name }}</strong>
+                <p class="attention-item__text">Enviado há {{ item.sent_days_ago }} dia(s) e o cliente ainda não abriu. Considere lembrar por WhatsApp.</p>
+              </div>
+              <a class="btn" href="{% url 'mei_service_report_whatsapp' item.report.id %}">Lembrar no WhatsApp</a>
+            </article>
+          {% endfor %}
+        {% endif %}
+        {% if new_service_requests_count %}
+          <article class="attention-item">
+            <div>
+              <span class="attention-item__eyebrow">Pedidos novos</span>
+              <strong class="attention-item__title">{{ new_service_requests_count }} pedido(s) aguardando análise</strong>
+              <p class="attention-item__text">Organize o que foi solicitado antes de transformar em serviço.</p>
+            </div>
+            <a class="btn" href="{% url 'service_request_list' %}">Ver pedidos</a>
+          </article>
+        {% endif %}
+        {% if important_notifications_count %}
+          <article class="attention-item">
+            <div>
+              <span class="attention-item__eyebrow">Notificações</span>
+              <strong class="attention-item__title">{{ important_notifications_count }} aviso(s) não lido(s)</strong>
+              <p class="attention-item__text">Revise os avisos importantes da sua conta.</p>
+            </div>
+            <a class="btn" href="{% url 'mei_notifications' %}">Abrir avisos</a>
+          </article>
+        {% endif %}
+        {% if not incomplete_alerts and not missing_rate_contracts and not pending_payment_alerts and not pending_report_requests and not unviewed_report_alerts and not new_service_requests_count and not important_notifications_count %}
+          <article class="attention-item attention-item--neutral">
+            <div>
+              <span class="attention-item__eyebrow">Tudo em ordem</span>
+              <strong class="attention-item__title">Nenhuma pendência prioritária agora</strong>
+              <p class="attention-item__text">Continue registrando os horários e confira o resumo antes do próximo fechamento.</p>
+            </div>
+            <a class="btn" href="{% url 'employee_dashboard' %}">Registrar horário</a>
+          </article>
+        {% endif %}
+      </div>
     </section>
 
     <section class="summary-panel">
@@ -186,14 +322,72 @@
             </div>
           {% endfor %}
         {% endif %}
-        {% if not incomplete_alerts and not paused_contracts and not missing_rate_contracts and not pending_report_requests %}
+        {% if pending_payment_alerts %}
+          {% for item in pending_payment_alerts %}
+            <div class="summary-alert">
+              <strong>{{ item.company_name }}</strong>: relatório {{ item.viewed_label|lower }} pelo cliente, recebimento ainda pendente.
+            </div>
+          {% endfor %}
+        {% endif %}
+        {% if not incomplete_alerts and not paused_contracts and not missing_rate_contracts and not pending_report_requests and not pending_payment_alerts %}
           <div class="summary-alert neutral">Nenhuma pendência relevante encontrada para o período.</div>
         {% endif %}
       </div>
       <p class="formula-note">
-        Fórmula: o HoraCerta soma pares de registros por dia em cada contrato. O valor estimado do mês é
-        horas apuradas no mês × valor/hora do cliente. Dias com quantidade ímpar de registros continuam marcados como incompletos.
+        Como calculamos: somamos o tempo entre cada entrada e sua saída, por dia e por cliente. O valor estimado do mês é
+        horas apuradas no mês × valor/hora do cliente. Se você registrou uma entrada e esqueceu a saída, o dia fica marcado como incompleto até você corrigir.
       </p>
     </section>
   </div>
+
+  <script src="{% static 'js/product_tour.js' %}"></script>
+  <script>
+    (function () {
+      var tourConfig = {
+        tourKey: "mei_panel",
+        dismissUrl: "{% url 'mei_dismiss_tour' %}",
+        csrfToken: "{{ csrf_token }}",
+        steps: [
+          {
+            selector: ".summary-hero",
+            title: "Bem-vindo ao Meu Resumo",
+            text: "Esta é a sua tela principal. Aqui você acompanha horas, valores estimados e pendências do período atual.",
+          },
+          {% if show_onboarding_checklist %}
+          {
+            selector: ".onboarding-panel",
+            title: "Primeiros passos",
+            text: "Enquanto sua conta é nova, esses passos te guiam pelo essencial. O card some sozinho assim que você já estiver usando o sistema normalmente.",
+          },
+          {% endif %}
+          {
+            selector: ".pillar-shortcuts",
+            title: "Atalhos rápidos",
+            text: "Acesso direto para horários, serviços, relatórios, pedidos e notificações — sem precisar navegar pelo menu.",
+          },
+          {
+            selector: ".summary-cards",
+            title: "Indicadores do período",
+            text: "Horas, valor estimado e pendências, sempre calculados a partir dos seus registros reais.",
+          },
+          {
+            selector: "#attention-title",
+            title: "Ação de hoje",
+            text: "Tudo que precisa da sua atenção agora aparece aqui, com um botão direto para resolver ou revisar.",
+          },
+        ],
+      };
+
+      var replayButton = document.getElementById("mei-panel-tour-replay");
+      if (replayButton) {
+        replayButton.addEventListener("click", function () {
+          window.HoraCertaTour.start(tourConfig);
+        });
+      }
+
+      if ({{ show_mei_panel_tour|yesno:"true,false" }}) {
+        window.HoraCertaTour.start(tourConfig);
+      }
+    })();
+  </script>
 {% endblock %}
