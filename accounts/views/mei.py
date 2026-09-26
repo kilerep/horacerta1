@@ -1270,6 +1270,7 @@ def mei_service_report_whatsapp(request, report_id):
         report.save(update_fields=["whatsapp_sent_attempted_at", "updated_at"])
 
     conference_url = request.build_absolute_uri(reverse("public_service_report_conference", args=[report.conference_token]))
+    track(request.user, REPORT_SHARE_CLICKED, channel="whatsapp")
     return redirect(_build_service_report_whatsapp_url(report, conference_url))
 
 

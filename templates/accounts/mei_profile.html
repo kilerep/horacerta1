@@ -141,9 +141,12 @@
     <div class="security-summary">
       <div>
         <h2>Segurança da conta</h2>
-        <p class="muted">Altere sua senha usando a senha atual como confirmação.</p>
+        <p class="muted">Seu e-mail de acesso é <strong>{{ request.user.email }}</strong>. Altere a senha ou corrija o e-mail usando a senha atual como confirmação.</p>
       </div>
-      <a class="btn" href="{% url 'password_change' %}">Alterar senha</a>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <a class="btn" href="{% url 'password_change' %}">Alterar senha</a>
+        <a class="btn" href="{% url 'change_email' %}">Alterar e-mail</a>
+      </div>
     </div>
   </section>
 

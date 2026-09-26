@@ -94,6 +94,24 @@ def login_view(request):
     return render(request, "accounts/login.html", {"form": form})
 
 
+@login_required
+def change_email(request):
+    """Permite corrigir o proprio e-mail (login) - ex.: digitado errado no cadastro."""
+    if request.method == "POST":
+        form = ChangeEmailForm(request.POST, user=request.user)
+        if form.is_valid():
+            user = request.user
+            email = form.cleaned_data["new_email"]
+            user.email = email
+            user.username = email
+            user.save(update_fields=["email", "username"])
+            messages.success(request, "E-mail atualizado. Use o novo e-mail para entrar.")
+            return redirect("mei_profile" if user.role == User.Role.FUNCIONARIO else "dashboard")
+    else:
+        form = ChangeEmailForm(user=request.user)
+    return render(request, "accounts/change_email.html", {"form": form})
+
+
 def logout_view(request):
     logout(request)
     response = redirect("login")

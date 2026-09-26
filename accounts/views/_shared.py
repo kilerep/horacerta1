@@ -18,6 +18,7 @@ from accounts.analytics import (  # noqa: F401
     CLIENT_CREATED,
     REPORT_GENERATED,
     REPORT_PUBLIC_VIEWED,
+    REPORT_SHARE_CLICKED,
     SIGNUP_COMPLETED,
     track,
 )
@@ -104,6 +105,7 @@ from ..forms import (
     ServiceReportCreateForm,
     MEIProfileForm,
     PeriodSearchForm,
+    ChangeEmailForm,
     MEISignupForm,
     UnifiedSignupForm,
     UserThemeForm,
