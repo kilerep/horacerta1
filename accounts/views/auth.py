@@ -58,7 +58,12 @@ def login_view(request):
 
 def logout_view(request):
     logout(request)
-    return redirect("login")
+    response = redirect("login")
+    # Pede ao navegador que descarte caches HTTP deste site ao sair (aparelho
+    # compartilhado). Só "cache": "storage" apagaria também o localStorage
+    # (tema, tours dispensados) e desregistraria o service worker.
+    response["Clear-Site-Data"] = '"cache"'
+    return response
 
 
 @login_required
