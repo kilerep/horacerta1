@@ -58,7 +58,7 @@ class MeiSelfSignupTests(TestCase):
         response = self.client.post(reverse("signup_mei"), VALID)
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Já existe uma conta com este e-mail")
+        self.assertContains(response, "Não foi possível usar este e-mail")
         self.assertEqual(User.objects.filter(email__iexact="maria@example.com").count(), 1)
 
     def test_weak_and_mismatched_passwords_are_rejected(self):
@@ -98,3 +98,77 @@ class MeiSelfSignupTests(TestCase):
 
         self.assertContains(landing, reverse("signup_mei"))
         self.assertContains(login, reverse("signup_mei"))
+
+
+@override_settings(ALLOWED_HOSTS=["testserver", "localhost"], SECURE_SSL_REDIRECT=False)
+class MeiSignupHardeningTests(TestCase):
+    def test_duplicate_email_message_does_not_confirm_the_account_exists(self):
+        User.objects.create_user(username="maria@example.com", email="maria@example.com", password="x-Senha-123456")
+
+        response = self.client.post(reverse("signup_mei"), VALID)
+
+        self.assertContains(response, "Não foi possível usar este e-mail")
+        self.assertNotContains(response, "Já existe uma conta")
+
+    @override_settings(MEI_SIGNUP_MAX_PER_10_MIN=2)
+    def test_global_velocity_cap_returns_429(self):
+        for i in range(2):
+            User.objects.create_user(username=f"u{i}@example.com", email=f"u{i}@example.com", password="x-Senha-123456")
+
+        response = self.client.post(reverse("signup_mei"), VALID)
+
+        self.assertEqual(response.status_code, 429)
+        self.assertFalse(User.objects.filter(email="maria@example.com").exists())
+
+    def test_signup_records_terms_version_and_signup_event(self):
+        from accounts.models import ProductEvent
+
+        with self.captureOnCommitCallbacks(execute=True):
+            self.client.post(reverse("signup_mei"), VALID)
+
+        user = User.objects.get(email="maria@example.com")
+        self.assertEqual(user.terms_version, "2026-09")
+        self.assertTrue(ProductEvent.objects.filter(user=user, event="signup_completed").exists())
+
+    def test_first_client_sends_mei_to_the_first_punch(self):
+        from django.utils import timezone
+
+        self.client.post(reverse("signup_mei"), VALID)
+
+        response = self.client.post(
+            reverse("mei_client_create"),
+            {
+                "name": "Cliente ABC",
+                "hourly_rate": "40.00",
+                "start_date": timezone.localdate().isoformat(),
+                "closure_type": "MONTHLY",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response["Location"].startswith(reverse("employee_dashboard")))
+
+        second = self.client.post(
+            reverse("mei_client_create"),
+            {
+                "name": "Cliente XYZ",
+                "hourly_rate": "50.00",
+                "start_date": timezone.localdate().isoformat(),
+                "closure_type": "MONTHLY",
+            },
+        )
+        self.assertTrue(second["Location"].startswith(reverse("mei_contract")))
+
+
+class ProductEventPrivacyTests(TestCase):
+    def test_track_drops_properties_outside_the_allowlist(self):
+        from accounts.analytics import track
+        from accounts.models import ProductEvent
+
+        user = User.objects.create_user(username="t@example.com", email="t@example.com", password="x-Senha-123456")
+
+        with self.captureOnCommitCallbacks(execute=True):
+            track(user, "client_created", is_first=True, email="t@example.com", client_name="Fulano")
+
+        event = ProductEvent.objects.get(user=user)
+        self.assertEqual(event.properties, {"is_first": True})

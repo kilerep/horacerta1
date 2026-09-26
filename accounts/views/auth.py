@@ -41,6 +41,11 @@ def signup_mei(request):
         return render(request, "accounts/signup_mei_closed.html", status=403)
 
     if request.method == "POST":
+        recent_signups = User.objects.filter(
+            role=User.Role.FUNCIONARIO, date_joined__gte=timezone.now() - timedelta(minutes=10)
+        ).count()
+        if recent_signups >= settings.MEI_SIGNUP_MAX_PER_10_MIN:
+            return render(request, "accounts/signup_mei_closed.html", {"busy": True}, status=429)
         form = MEISignupForm(request.POST)
         if form.is_valid():
             data = form.cleaned_data
@@ -54,7 +59,9 @@ def signup_mei(request):
                     first_name=first_name[:150],
                     last_name=last_name[:150],
                     terms_accepted_at=timezone.now(),
+                    terms_version=settings.TERMS_VERSION,
                 )
+                track(user, SIGNUP_COMPLETED)
             login(request, user, backend="accounts.backends.EmailOrUsernameBackend")
             return _redirect_for_role(user)
     else:

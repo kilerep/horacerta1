@@ -34,6 +34,7 @@ class User(AbstractUser):
     # Quando a pessoa aceitou os Termos de Uso/Privacidade no autocadastro.
     # Nulo para contas criadas antes desse fluxo (empresa/admin ou manuais).
     terms_accepted_at = models.DateTimeField(null=True, blank=True)
+    terms_version = models.CharField(max_length=20, blank=True, default="")
 
     def has_dismissed_tour(self, tour_key):
         return tour_key in (self.dismissed_tours or [])
@@ -91,3 +92,25 @@ class User(AbstractUser):
 
     def __str__(self):
         return f"{self.username} ({self.role})"
+
+
+class ProductEvent(models.Model):
+    """Evento de produto para medir ativacao/retencao (funil de uso).
+
+    Sem PII: so o usuario (FK) e propriedades de uma allowlist fixa - ver
+    accounts/analytics.py. Nada de nome, e-mail, cliente, token ou URL.
+    """
+
+    user = models.ForeignKey("accounts.User", on_delete=models.CASCADE, related_name="product_events")
+    event = models.CharField(max_length=64)
+    occurred_at = models.DateTimeField(auto_now_add=True)
+    properties = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["event", "occurred_at"]),
+            models.Index(fields=["user", "event", "occurred_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.event} ({self.user_id})"

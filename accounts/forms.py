@@ -80,7 +80,7 @@ class MEISignupForm(forms.Form):
     def clean_email(self):
         email = (self.cleaned_data.get("email") or "").strip().lower()
         if User.objects.filter(email__iexact=email).exists() or User.objects.filter(username__iexact=email).exists():
-            raise ValidationError("Já existe uma conta com este e-mail. Tente entrar ou recuperar a senha.")
+            raise ValidationError("Não foi possível usar este e-mail. Se você já tem cadastro, tente entrar ou recuperar a senha.")
         return email
 
     def clean_website(self):

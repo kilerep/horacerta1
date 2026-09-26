@@ -13,6 +13,14 @@ import json
 from uuid import UUID
 
 from django.conf import settings
+
+from accounts.analytics import (  # noqa: F401
+    CLIENT_CREATED,
+    REPORT_GENERATED,
+    REPORT_PUBLIC_VIEWED,
+    SIGNUP_COMPLETED,
+    track,
+)
 from django.contrib import messages
 from django.contrib.auth import get_user_model, login, logout
 from django.contrib.auth import views as auth_views

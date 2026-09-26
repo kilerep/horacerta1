@@ -49,6 +49,7 @@ def public_service_report_conference(request, token):
         report.save(update_fields=update_fields)
         if first_viewed_now:
             _notify_service_report_viewed(report, now)
+            track(getattr(report.employee, "user", None), REPORT_PUBLIC_VIEWED)
 
     public_pdf_url = reverse("public_service_report_pdf", args=[report.conference_token])
     public_xlsx_url = reverse("public_service_report_xlsx", args=[report.conference_token])
