@@ -96,6 +96,7 @@ from ..forms import (
     ServiceReportCreateForm,
     MEIProfileForm,
     PeriodSearchForm,
+    MEISignupForm,
     UnifiedSignupForm,
     UserThemeForm,
 )

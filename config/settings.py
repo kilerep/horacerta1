@@ -151,6 +151,9 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 AUTH_USER_MODEL = "accounts.User"
 
+# Interruptor de emergencia do autocadastro publico de prestadores (/cadastro/).
+MEI_SIGNUP_ENABLED = _env_bool("MEI_SIGNUP_ENABLED", True)
+
 LANGUAGE_CODE = "pt-br"
 TIME_ZONE = "America/Sao_Paulo"
 USE_I18N = True

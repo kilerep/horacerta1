@@ -31,6 +31,9 @@ class User(AbstractUser):
     # localStorage) para nao repetir o tour quando o mesmo usuario troca de
     # aparelho (ex.: viu no celular, depois abre no PC).
     dismissed_tours = models.JSONField(default=list, blank=True)
+    # Quando a pessoa aceitou os Termos de Uso/Privacidade no autocadastro.
+    # Nulo para contas criadas antes desse fluxo (empresa/admin ou manuais).
+    terms_accepted_at = models.DateTimeField(null=True, blank=True)
 
     def has_dismissed_tour(self, tour_key):
         return tour_key in (self.dismissed_tours or [])

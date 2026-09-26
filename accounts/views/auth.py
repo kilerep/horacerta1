@@ -32,6 +32,37 @@ def signup(request):
     return render(request, "accounts/signup.html", {"form": form})
 
 
+def signup_mei(request):
+    """Autocadastro publico do prestador/MEI (fluxo principal do produto)."""
+    if request.user.is_authenticated:
+        return _redirect_for_role(request.user)
+
+    if not getattr(settings, "MEI_SIGNUP_ENABLED", True):
+        return render(request, "accounts/signup_mei_closed.html", status=403)
+
+    if request.method == "POST":
+        form = MEISignupForm(request.POST)
+        if form.is_valid():
+            data = form.cleaned_data
+            first_name, _sep, last_name = data["full_name"].partition(" ")
+            with transaction.atomic():
+                user = User.objects.create_user(
+                    username=data["email"],
+                    email=data["email"],
+                    password=data["password1"],
+                    role=User.Role.FUNCIONARIO,
+                    first_name=first_name[:150],
+                    last_name=last_name[:150],
+                    terms_accepted_at=timezone.now(),
+                )
+            login(request, user, backend="accounts.backends.EmailOrUsernameBackend")
+            return _redirect_for_role(user)
+    else:
+        form = MEISignupForm()
+
+    return render(request, "accounts/signup_mei.html", {"form": form})
+
+
 # A proteção contra força bruta no login (bloqueio por IP + usuário após
 # várias senhas erradas) é feita pelo django-axes — ver AUTHENTICATION_BACKENDS
 # e AXES_* em config/settings.py, e accounts/axes_lockout.py para a resposta
