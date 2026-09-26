@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 SIGNUP_COMPLETED = "signup_completed"
 CLIENT_CREATED = "client_created"
 PUNCH_RECORDED = "punch_recorded"
+WORK_PERIOD_COMPLETED = "work_period_completed"  # entrada + saida do mesmo dia
 REPORT_GENERATED = "report_generated"
 REPORT_SHARE_CLICKED = "report_share_clicked"
 REPORT_PUBLIC_VIEWED = "report_public_viewed"
@@ -51,13 +52,14 @@ FUNNEL_STEPS = (
     (SIGNUP_COMPLETED, "Criaram conta"),
     (CLIENT_CREATED, "Cadastraram um cliente"),
     (PUNCH_RECORDED, "Registraram um horário"),
+    (WORK_PERIOD_COMPLETED, "Completaram entrada + saída"),
     (REPORT_GENERATED, "Geraram um relatório"),
     (REPORT_SHARE_CLICKED, "Clicaram em compartilhar"),
     (REPORT_PUBLIC_VIEWED, "Cliente abriu o relatório"),
 )
 
 # Acoes de produto que contam como "uso de verdade" (login nao conta).
-ACTIVE_EVENTS = (PUNCH_RECORDED, REPORT_GENERATED)
+ACTIVE_EVENTS = (PUNCH_RECORDED, WORK_PERIOD_COMPLETED, REPORT_GENERATED)
 
 
 def funnel_summary(*, days=30, now=None):
@@ -103,12 +105,14 @@ def funnel_summary(*, days=30, now=None):
 
     with_client = users_with(CLIENT_CREATED)
     with_punch = users_with(PUNCH_RECORDED)
+    with_period = users_with(WORK_PERIOD_COMPLETED)
     with_report = users_with(REPORT_GENERATED)
     with_view = users_with(REPORT_PUBLIC_VIEWED)
     stuck = [
         {"label": "Cadastro → sem cliente", "users": len(signup_users - with_client)},
         {"label": "Cliente → sem horário", "users": len((signup_users & with_client) - with_punch)},
-        {"label": "Horário → sem relatório", "users": len((signup_users & with_punch) - with_report)},
+        {"label": "Horário → sem saída registrada", "users": len((signup_users & with_punch) - with_period)},
+        {"label": "Entrada + saída → sem relatório", "users": len((signup_users & with_period) - with_report)},
         {"label": "Relatório → nunca visualizado", "users": len((signup_users & with_report) - with_view)},
     ]
 

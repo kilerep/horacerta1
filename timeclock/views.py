@@ -5,7 +5,7 @@ from io import BytesIO
 
 from django.contrib.auth.decorators import login_required
 
-from accounts.analytics import PUNCH_RECORDED, track
+from accounts.analytics import PUNCH_RECORDED, WORK_PERIOD_COMPLETED, track
 from django.db import transaction
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -22,7 +22,7 @@ from reportlab.lib.styles import getSampleStyleSheet
 from accounts.models import User
 from accounts.mei_context import resolve_mei_context
 from companies.models import CompanyAttendancePolicy, CompanyAuthorizedLocation, Employee
-from .models import ActivityReportRequest, Contract, Punch
+from .models import ActivityReportRequest, Contract, Punch, ServiceReport
 from .services import (
     build_daily_summary,
     evaluate_punch_confidence,
@@ -346,6 +346,12 @@ def employee_dashboard(request):
             },
         )
         track(request.user, PUNCH_RECORDED)
+        punches_recorded_today = Punch.objects.filter(
+            contract=selected_contract, timestamp__date=timezone.localdate()
+        ).count()
+        if punches_recorded_today % 2 == 0:
+            # A saida fechou um periodo (entrada + saida do mesmo dia).
+            track(request.user, WORK_PERIOD_COMPLETED)
         if qr_required and not qr_location:
             return redirect(f"{request.path}?event=punch_saved_qr_missing&contract={selected_contract.id}")
         return redirect(f"{request.path}?event=punch_saved&contract={selected_contract.id}")
@@ -384,26 +390,33 @@ def employee_dashboard(request):
     else:
         greeting = "Boa noite"
     day_status_label = "Dia fechado" if total_punches_today % 2 == 0 else "Dia em andamento"
+    # Linguagem do prestador: o proximo toque e sempre "entrada" ou "saida" (o
+    # backend continua decidindo pela quantidade de registros do dia).
+    next_punch_kind = "saida" if total_punches_today % 2 == 1 else "entrada"
+    punch_button_label = "Registrar saída" if next_punch_kind == "saida" else "Registrar entrada"
     if total_punches_today == 0:
         journey_status_key = "no_records"
         journey_status_label = "Sem registros hoje"
         journey_status_tone = "neutral"
-        journey_next_action = "Registre o primeiro horario do dia para iniciar a jornada."
+        journey_next_action = "Toque em “Registrar entrada” quando começar a trabalhar."
     elif total_punches_today % 2 == 1 and current_hour >= 20:
         journey_status_key = "incomplete"
         journey_status_label = "Dia incompleto"
         journey_status_tone = "warn"
-        journey_next_action = "Dia encerrado com horario pendente. Ajustes operacionais devem ser tratados com o encarregado."
+        journey_next_action = (
+            f"Você registrou entrada às {last_punch_today_label} e ainda não registrou a saída. "
+            "Toque em “Registrar saída” ou use “Editar horários de hoje” para informar o horário correto."
+        )
     elif total_punches_today % 2 == 1:
         journey_status_key = "in_progress"
-        journey_status_label = "Jornada em andamento"
+        journey_status_label = f"Trabalhando desde {last_punch_today_label}"
         journey_status_tone = "progress"
-        journey_next_action = "Registre o proximo horario ao concluir a etapa atual da jornada."
+        journey_next_action = "Quando terminar, toque em “Registrar saída”."
     else:
         journey_status_key = "finished"
-        journey_status_label = "Dia finalizado"
+        journey_status_label = f"Saída registrada às {last_punch_today_label}"
         journey_status_tone = "ok"
-        journey_next_action = "Jornada do dia fechada. Acompanhe o historico e os totais para conferencia."
+        journey_next_action = "Se voltar a trabalhar hoje, toque em “Registrar entrada”. Veja abaixo os totais do dia."
 
     history_filtered = list(qs_filtered.order_by("timestamp"))
     history_days, history_punch_columns = build_daily_summary(history_filtered, min_punch_columns=4)
@@ -422,6 +435,14 @@ def employee_dashboard(request):
         "day_status_label": day_status_label,
         "journey_status_key": journey_status_key,
         "journey_status_label": journey_status_label,
+        "next_punch_kind": next_punch_kind,
+        # Primeiro periodo fechado e nenhum relatorio ainda: proximo passo do onboarding.
+        "show_first_report_cta": (
+            total_punches_today >= 2
+            and total_punches_today % 2 == 0
+            and not ServiceReport.objects.filter(employee__user=request.user).exists()
+        ),
+        "punch_button_label": punch_button_label,
         "journey_status_tone": journey_status_tone,
         "journey_next_action": journey_next_action,
         "today_total_partial_hhmm": today_total_partial_hhmm,
