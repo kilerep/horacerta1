@@ -134,6 +134,7 @@ urlpatterns = [
         name="mei_service_report_request_detail",
     ),
     path("conferencia/relatorio/<uuid:token>/", views.public_service_report_conference, name="public_service_report_conference"),
+    path("conferencia/relatorio/<uuid:token>/responder/", views.public_service_report_respond, name="public_service_report_respond"),
     path("conferencia/relatorio/<uuid:token>/pdf/", views.public_service_report_pdf, name="public_service_report_pdf"),
     path("conferencia/relatorio/<uuid:token>/excel/", views.public_service_report_xlsx, name="public_service_report_xlsx"),
 

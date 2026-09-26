@@ -23,6 +23,7 @@ WORK_PERIOD_COMPLETED = "work_period_completed"  # entrada + saida do mesmo dia
 REPORT_GENERATED = "report_generated"
 REPORT_SHARE_CLICKED = "report_share_clicked"
 REPORT_PUBLIC_VIEWED = "report_public_viewed"
+REPORT_CLIENT_RESPONDED = "report_client_responded"  # kind: confirm | contest
 
 ALLOWED_PROPERTIES = {"channel", "is_first", "kind"}
 
