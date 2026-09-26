@@ -172,3 +172,66 @@ class ProductEventPrivacyTests(TestCase):
 
         event = ProductEvent.objects.get(user=user)
         self.assertEqual(event.properties, {"is_first": True})
+
+
+@override_settings(ALLOWED_HOSTS=["testserver", "localhost"], SECURE_SSL_REDIRECT=False)
+class NewMeiFirstScreenTests(TestCase):
+    def test_new_mei_sees_a_welcome_with_one_clear_next_step(self):
+        self.client.post(reverse("signup_mei"), VALID)
+
+        response = self.client.get(reverse("employee_dashboard"))
+
+        self.assertContains(response, "Bem-vindo ao HoraCerta, Maria")
+        self.assertContains(response, reverse("mei_client_create"))
+        self.assertNotContains(response, "aguardando liberacao operacional")
+        self.assertNotContains(response, "Solicite ao cliente")
+
+    def test_mei_with_a_link_but_no_active_contract_keeps_the_waiting_message(self):
+        from companies.models import Company, Employee
+
+        user = User.objects.create_user(
+            username="vinculado@example.com", email="vinculado@example.com", password="x-Senha-123456",
+            role=User.Role.FUNCIONARIO,
+        )
+        company = Company.objects.create(owner=user, name="Cliente Sem Contrato")
+        Employee.objects.create(user=user, company=company, full_name="Vinculado", is_active=True)
+        self.client.force_login(user)
+
+        response = self.client.get(reverse("employee_dashboard"))
+
+        self.assertNotContains(response, "Bem-vindo ao HoraCerta")
+
+
+@override_settings(ALLOWED_HOSTS=["testserver", "localhost"], SECURE_SSL_REDIRECT=False)
+class FirstClientFormTests(TestCase):
+    def test_new_client_form_shows_essentials_first_and_prefills_todays_date(self):
+        from django.utils import timezone
+
+        self.client.post(reverse("signup_mei"), VALID)
+
+        response = self.client.get(reverse("mei_client_create"))
+
+        html = response.content.decode()
+        self.assertContains(response, f'value="{timezone.localdate().isoformat()}"')
+        self.assertLess(html.index('name="hourly_rate"'), html.index("Mais informações do cliente"))
+        self.assertLess(html.index("Mais informações do cliente"), html.index('name="cnpj"'))
+        self.assertNotIn("<details class=\"client-form-more\" open", html)
+
+    def test_errors_in_optional_fields_keep_the_details_open(self):
+        from django.utils import timezone
+
+        self.client.post(reverse("signup_mei"), VALID)
+
+        response = self.client.post(
+            reverse("mei_client_create"),
+            {
+                "name": "Cliente ABC",
+                "hourly_rate": "40.00",
+                "start_date": timezone.localdate().isoformat(),
+                "closure_type": "MONTHLY",
+                "email": "isto-nao-e-email",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '<details class="client-form-more" open')

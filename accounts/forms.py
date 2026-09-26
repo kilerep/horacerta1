@@ -799,7 +799,8 @@ class MEIClientForm(forms.Form):
     )
     start_date = forms.DateField(
         label="Data de inicio",
-        widget=forms.DateInput(attrs={"type": "date"}),
+        # format ISO: <input type="date"> so mostra o valor inicial nesse formato.
+        widget=forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
     )
     closure_type = forms.ChoiceField(
         label="Frequencia",

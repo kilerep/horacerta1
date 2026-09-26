@@ -93,7 +93,18 @@
       </section>
     {% endif %}
 
-    {% if no_contracts %}
+    {% if no_contracts and is_new_mei %}
+      <section class="hc-panel" id="new-mei-welcome">
+        <h2 class="hc-section-title">Bem-vindo ao HoraCerta{% if request.user.first_name %}, {{ request.user.first_name }}{% endif %}!</h2>
+        <p class="hc-muted" style="margin:0 0 10px;">Falta só um passo para começar: cadastre o primeiro cliente para quem você trabalha e quanto cobra por hora.</p>
+        <ol class="hc-muted" style="margin:0 0 14px;padding-left:1.2rem;display:grid;gap:4px;">
+          <li>Cadastre o cliente e o valor da sua hora (1 minuto).</li>
+          <li>Registre sua entrada e saída quando trabalhar.</li>
+          <li>Veja quanto já ganhou e envie o relatório ao cliente.</li>
+        </ol>
+        <a class="btn primary" href="{% url 'mei_client_create' %}">Cadastrar meu primeiro cliente</a>
+      </section>
+    {% elif no_contracts %}
       <section class="hc-panel">
         <h2 class="hc-section-title">Cadastro confirmado, aguardando liberacao operacional</h2>
         <p class="hc-muted" style="margin:0 0 8px;">
