@@ -43,6 +43,7 @@ urlpatterns = [
 
     path("interno/", views.internal_dashboard, name="internal_dashboard"),
     path("interno/funil/", views.internal_funnel, name="internal_funnel"),
+    path("interno/email/", views.internal_email, name="internal_email"),
     path("interno/empresas/", views.internal_companies, name="internal_companies"),
     path("interno/empresas/<uuid:company_id>/", views.internal_company_detail, name="internal_company_detail"),
     path("interno/funcionarios/", views.internal_employees, name="internal_employees"),

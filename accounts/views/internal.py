@@ -4,6 +4,66 @@
 from ._shared import *  # noqa: F401,F403
 
 
+def _email_diagnostics():
+    """Configuracao efetiva de e-mail, sem expor a senha."""
+    from django.conf import settings
+
+    backend = settings.EMAIL_BACKEND
+    user = settings.EMAIL_HOST_USER or ""
+    masked_user = (user[:2] + "***" + user[user.find("@"):]) if "@" in user else ("(vazio)" if not user else user[:2] + "***")
+    problems = []
+    if backend.endswith("console.EmailBackend"):
+        problems.append(
+            "O sistema está no modo CONSOLE: os e-mails só são impressos no log do servidor e nunca saem. "
+            "Defina USE_CONSOLE_EMAIL=False no .env do servidor."
+        )
+    else:
+        if not settings.EMAIL_HOST_USER:
+            problems.append("EMAIL_HOST_USER está vazio no .env do servidor.")
+        if not settings.EMAIL_HOST_PASSWORD:
+            problems.append("EMAIL_HOST_PASSWORD está vazio no .env do servidor.")
+        if settings.DEFAULT_FROM_EMAIL.endswith(".local"):
+            problems.append("DEFAULT_FROM_EMAIL está com valor de exemplo (.local).")
+    return {
+        "backend": backend.rsplit(".", 2)[-2] if "." in backend else backend,
+        "host": settings.EMAIL_HOST,
+        "port": settings.EMAIL_PORT,
+        "use_tls": settings.EMAIL_USE_TLS,
+        "use_ssl": settings.EMAIL_USE_SSL,
+        "user_masked": masked_user,
+        "password_set": bool(settings.EMAIL_HOST_PASSWORD),
+        "from_email": settings.DEFAULT_FROM_EMAIL,
+        "app_base_url": settings.APP_BASE_URL or "(não definido)",
+        "problems": problems,
+    }
+
+
+@internal_staff_required
+def internal_email(request):
+    """Diagnostico do envio de e-mail (recuperacao de senha) + envio de teste."""
+    from django.core.mail import send_mail
+
+    result = None
+    if request.method == "POST":
+        to_email = (request.POST.get("to_email") or request.user.email or "").strip()
+        try:
+            send_mail(
+                subject="HoraCerta - Teste de envio",
+                message="Este é um e-mail de teste do HoraCerta. Se você recebeu, o envio de e-mail está funcionando.",
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[to_email],
+                fail_silently=False,
+            )
+            result = {"ok": True, "to": to_email, "error": ""}
+        except Exception as exc:  # noqa: BLE001 - mostrar a causa real ao administrador
+            result = {"ok": False, "to": to_email, "error": f"{type(exc).__name__}: {exc}"}
+    return render(
+        request,
+        "accounts/internal_email.html",
+        {"diag": _email_diagnostics(), "result": result, "default_to": request.user.email},
+    )
+
+
 @internal_staff_required
 def internal_funnel(request):
     """Funil de ativacao e retencao dos prestadores (so metricas agregadas)."""
