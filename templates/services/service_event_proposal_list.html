@@ -1,0 +1,85 @@
+{% extends "accounts/base.html" %}
+{% load service_format %}
+
+{% block title %}Propostas de evento{% endblock %}
+{% block page_title %}Serviços{% endblock %}
+
+{% block extra_head %}
+<style>
+  .proposal-list-page{max-width:1080px;display:grid;gap:16px}.proposal-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.proposal-head h1{margin:0;font-size:26px}.proposal-head p{margin:6px 0 0;color:var(--color-text-muted);line-height:1.45}.proposal-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.proposal-card{display:grid;gap:12px;border:1px solid var(--color-border);border-radius:8px;background:var(--gradient-card);box-shadow:var(--shadow-soft);padding:14px}.proposal-card h2{margin:0;font-size:18px;overflow-wrap:anywhere}.proposal-meta{display:flex;gap:7px;flex-wrap:wrap;color:var(--color-text-muted);font-size:12px}.proposal-chip{display:inline-flex;align-items:center;border:1px solid var(--color-border);border-radius:999px;padding:5px 8px;background:var(--surface-soft);font-weight:800}.proposal-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.proposal-fact{border:1px solid var(--color-border);border-radius:8px;background:var(--surface-soft);padding:9px}.proposal-fact span{display:block;color:var(--color-text-muted);font-size:11px}.proposal-fact strong{display:block;margin-top:4px;overflow-wrap:anywhere}.proposal-state{border-left:3px solid var(--color-primary);padding-left:10px;color:var(--color-text-muted);font-size:13px;line-height:1.45}.proposal-actions{display:flex;gap:8px;flex-wrap:wrap}.proposal-actions .btn{flex:1 1 150px}.empty-box{border:1px dashed var(--color-border);border-radius:8px;background:var(--surface-soft);padding:16px;color:var(--color-text-muted);line-height:1.5}@media(max-width:760px){.proposal-head,.proposal-grid,.proposal-facts{display:grid;grid-template-columns:1fr}.proposal-actions{display:grid}.proposal-actions .btn{width:100%}}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="proposal-list-page">
+  <header class="proposal-head">
+    <div>
+      <p class="sub">Serviços com valor fechado</p>
+      <h1>Propostas de evento</h1>
+      <p>Revise os pacotes de valor fixo, confira dados técnicos e abra a proposta profissional antes de enviar ao cliente.</p>
+    </div>
+    <a class="btn primary" href="{% url 'service_job_create' %}">Novo serviço</a>
+  </header>
+
+  {% if jobs %}
+    <section class="proposal-grid" aria-label="Lista de propostas de evento">
+      {% for job in jobs %}
+        <article class="proposal-card">
+          <div>
+            <h2>{{ job.title }}</h2>
+            <div class="proposal-meta">
+              <span class="proposal-chip">{{ job.client_display_name }}</span>
+              <span class="proposal-chip">{{ job.category.name }}</span>
+              <span class="proposal-chip">{{ job.get_status_display }}</span>
+            </div>
+          </div>
+
+          <div class="proposal-facts">
+            <div class="proposal-fact">
+              <span>Data</span>
+              <strong>{% if job.start_date %}{{ job.start_date|date:"d/m/Y" }}{% else %}A combinar{% endif %}</strong>
+            </div>
+            <div class="proposal-fact">
+              <span>Valor fechado</span>
+              <strong>{{ job.fixed_labor_value|brl }}</strong>
+            </div>
+            <div class="proposal-fact">
+              <span>Local</span>
+              <strong>{{ job.full_service_address|default:job.service_location_summary|default:"A combinar" }}</strong>
+            </div>
+            <div class="proposal-fact">
+              <span>Itens na composição</span>
+              <strong>{{ job.item_expenses.all|length }}</strong>
+            </div>
+          </div>
+
+          <div class="proposal-state">
+            {% if job.preview_first_viewed_at %}
+              Cliente visualizou em {{ job.preview_first_viewed_at|date:"d/m/Y" }} às {{ job.preview_first_viewed_at|time:"H:i" }}.
+            {% elif job.preview_sent_at %}
+              Proposta enviada; aguardando primeira visualização do cliente.
+            {% elif job.preview_generated_at %}
+              Proposta gerada e pronta para envio.
+            {% else %}
+              Proposta ainda não revisada. Abra para conferir dados, itens e condições.
+            {% endif %}
+          </div>
+
+          <div class="proposal-actions">
+            <a class="btn primary" href="{% url 'service_event_proposal_detail' job.id %}">Revisar proposta</a>
+            <a class="btn" href="{% url 'service_job_detail' job.id %}">Abrir serviço</a>
+          </div>
+        </article>
+      {% endfor %}
+    </section>
+  {% else %}
+    <section class="empty-box">
+      Nenhum serviço com valor fixo está disponível para proposta. Crie ou edite um serviço, selecione <strong>Valor fixo</strong> e informe o valor fechado do pacote.
+    </section>
+  {% endif %}
+
+  <div>
+    <a class="btn" href="{% url 'service_job_list' %}">Voltar para Serviços</a>
+  </div>
+</div>
+{% endblock %}

@@ -1,7 +1,7 @@
 {% extends "public/base_public.html" %}
 {% load static %}
 {% block title %}HoraCerta | Gestão de Horas para MEIs e Prestadores de Serviço{% endblock %}
-{% block meta_description %}Plataforma completa para MEIs e prestadores de serviço controlarem horas, organizarem clientes, gerarem relatórios e emitirem notas fiscais. Conforme com LGPD e regulamentações brasileiras.{% endblock %}
+{% block meta_description %}Plataforma para MEIs e prestadores de serviço controlarem horas, organizarem clientes e gerarem relatórios profissionais para compartilhar.{% endblock %}
 
 {% block extra_head %}
 <link rel="canonical" href="{{ canonical_url }}">
@@ -30,8 +30,7 @@
       "name": "HoraCerta",
       "url": "{{ canonical_url|escapejs }}",
       "logo": "{{ request.scheme }}://{{ request.get_host }}{% static 'pwa/icon-512.png' %}",
-      "description": "Plataforma de gestão de horas para MEIs, PJs e prestadores de serviço.",
-      "sameAs": ["https://www.instagram.com/horacerta", "https://www.facebook.com/horacerta"]
+      "description": "Plataforma de gestão de horas para MEIs, PJs e prestadores de serviço."
     },
     {
       "@type": "SoftwareApplication",
@@ -44,11 +43,6 @@
       "publisher": {
         "@type": "Organization",
         "name": "HoraCerta"
-      },
-      "aggregateRating": {
-        "@type": "AggregateRating",
-        "ratingValue": "4.8",
-        "ratingCount": "150"
       }
     }
   ]
@@ -68,8 +62,8 @@
       <p class="hero-subtitle">Controle suas horas, organize clientes, gere relatórios e compartilhe com seus clientes. Tudo que você precisa para crescer seu negócio.</p>
       
       <div class="hero-cta-group">
-        <a href="{% url 'login' %}" class="btn btn-primary btn-lg">Começar Agora</a>
-        <a href="#recursos" class="btn btn-secondary btn-lg">Conhecer Recursos</a>
+        <a href="{% url 'signup_mei' %}" class="btn btn-primary btn-lg">Criar Conta Grátis</a>
+        <a href="{% url 'login' %}" class="btn btn-secondary btn-lg">Já tenho conta</a>
       </div>
 
       <div class="hero-stats">
@@ -78,12 +72,12 @@
           <span>MEIs no Brasil</span>
         </div>
         <div class="stat">
-          <strong>100%</strong>
-          <span>Conforme LGPD</span>
+          <strong>Grátis</strong>
+          <span>Para começar a usar</span>
         </div>
         <div class="stat">
-          <strong>∞</strong>
-          <span>Funciona Offline</span>
+          <strong>PWA</strong>
+          <span>Instalável no celular</span>
         </div>
       </div>
     </div>
@@ -174,8 +168,8 @@
 
       <div class="problem-card">
         <div class="icon">⚖️</div>
-        <h3>Conformidade Legal</h3>
-        <p>Estar em dia com LGPD, CLT e regulamentações brasileiras</p>
+        <h3>Documentação do Trabalho</h3>
+        <p>Ter horas, valores e serviços registrados de forma organizada, sem depender só da confiança</p>
       </div>
     </div>
   </div>
@@ -247,11 +241,11 @@
 
       <div class="resource-card">
         <div class="resource-icon">🔒</div>
-        <h3>Segurança & Conformidade</h3>
-        <p>Seus dados estão protegidos conforme LGPD e regulamentações brasileiras.</p>
+        <h3>Dados Isolados e Protegidos</h3>
+        <p>Cada prestador só acessa os próprios dados. Conexão sempre criptografada.</p>
         <ul class="feature-list">
-          <li>Criptografia de dados</li>
-          <li>Conformidade LGPD</li>
+          <li>Conexão HTTPS</li>
+          <li>Isolamento por prestador</li>
           <li>Backup automático</li>
         </ul>
       </div>
@@ -378,20 +372,20 @@
 
       <div class="benefit">
         <div class="benefit-icon">💰</div>
-        <h3>Preços Acessíveis</h3>
-        <p>Plano gratuito para começar. Planos profissionais com excelente custo-benefício.</p>
+        <h3>Gratuito por Enquanto</h3>
+        <p>HoraCerta está em fase de testes e é totalmente gratuito para usar. Planos pagos, se vierem a existir, serão anunciados com antecedência.</p>
       </div>
 
       <div class="benefit">
         <div class="benefit-icon">🔒</div>
-        <h3>Seus Dados Seguros</h3>
-        <p>Criptografia de ponta a ponta. Backup automático. Conformidade LGPD.</p>
+        <h3>Seus Dados Protegidos</h3>
+        <p>Conexão criptografada (HTTPS) e dados armazenados de forma isolada por prestador. Backup automático do banco de dados.</p>
       </div>
 
       <div class="benefit">
         <div class="benefit-icon">🤝</div>
-        <h3>Suporte Dedicado</h3>
-        <p>Equipe pronta para ajudar. Respostas rápidas. Comunidade ativa.</p>
+        <h3>Contato Direto</h3>
+        <p>HoraCerta é construído por quem usa o produto no dia a dia. Seu feedback chega direto e vira melhoria real no sistema.</p>
       </div>
     </div>
   </div>
@@ -411,7 +405,7 @@
           <span>Preciso pagar para começar?</span>
           <span class="icon">+</span>
         </summary>
-        <p>Não! HoraCerta tem um plano gratuito completo para você começar. Upgrade para planos profissionais quando estiver pronto.</p>
+        <p>Não! HoraCerta está em fase de testes e é totalmente gratuito para usar agora.</p>
       </details>
 
       <details class="faq-item">
@@ -419,7 +413,7 @@
           <span>HoraCerta emite nota fiscal?</span>
           <span class="icon">+</span>
         </summary>
-        <p>HoraCerta não emite nota fiscal diretamente (responsabilidade do prestador), mas facilita a integração com plataformas de emissão como Webmania e NotaAS.</p>
+        <p>Não. A emissão da nota fiscal continua sendo responsabilidade do prestador, na plataforma que ele já usa. O HoraCerta organiza as horas e valores que você precisa para emitir.</p>
       </details>
 
       <details class="faq-item">
@@ -427,7 +421,7 @@
           <span>Meus dados estão seguros?</span>
           <span class="icon">+</span>
         </summary>
-        <p>Sim! Seus dados são criptografados, fazemos backup automático e somos 100% conforme com LGPD. Você tem direito ao esquecimento e pode exportar seus dados a qualquer momento.</p>
+        <p>A conexão é sempre criptografada (HTTPS) e cada prestador só acessa os próprios dados. Fazemos backup automático do banco de dados. Recursos de exportação e exclusão completa de conta estão em desenvolvimento.</p>
       </details>
 
       <details class="faq-item">
@@ -435,7 +429,7 @@
           <span>Funciona sem internet?</span>
           <span class="icon">+</span>
         </summary>
-        <p>Sim! HoraCerta é um app PWA que funciona completamente offline. Registre suas horas sem internet e sincronize quando voltar online.</p>
+        <p>As telas principais carregam mesmo com conexão instável, mas registrar horários e enviar relatórios exige conexão para confirmar a gravação — nada é salvo como definitivo antes dessa confirmação.</p>
       </details>
 
       <details class="faq-item">
@@ -451,7 +445,7 @@
           <span>Como faço para mudar meu email ou senha?</span>
           <span class="icon">+</span>
         </summary>
-        <p>Você pode mudar seu email e senha a qualquer momento nas configurações da sua conta. Implementaremos essa funcionalidade em breve com recuperação segura.</p>
+        <p>A troca de senha já está disponível em Meu Perfil → Segurança da conta (ou pela opção de redefinição na tela de login). A troca de email está planejada para uma fase futura.</p>
       </details>
     </div>
   </div>
@@ -468,31 +462,25 @@
     <div class="compliance-grid">
       <div class="compliance-card">
         <div class="compliance-icon">🛡️</div>
-        <h3>LGPD Compliant</h3>
-        <p>Seus dados pessoais são protegidos conforme Lei Geral de Proteção de Dados. Você tem direito ao esquecimento e acesso aos seus dados.</p>
-      </div>
-
-      <div class="compliance-card">
-        <div class="compliance-icon">⚖️</div>
-        <h3>Conforme CLT</h3>
-        <p>HoraCerta respeita direitos trabalhistas e regulamentações. Ideal para MEIs, PJs e prestadores de serviço.</p>
-      </div>
-
-      <div class="compliance-card">
-        <div class="compliance-icon">📋</div>
-        <h3>NFS-e Integrado</h3>
-        <p>Integração com plataformas de emissão de Nota Fiscal de Serviço Eletrônica. Facilita sua conformidade fiscal.</p>
+        <h3>Atenção à LGPD</h3>
+        <p>Estamos organizando o produto seguindo os princípios da Lei Geral de Proteção de Dados. Exportação e exclusão completa de dados estão em desenvolvimento.</p>
       </div>
 
       <div class="compliance-card">
         <div class="compliance-icon">🔐</div>
         <h3>Segurança de Dados</h3>
-        <p>Criptografia de ponta a ponta. Backup automático. Auditoria completa de todas as mudanças.</p>
+        <p>Conexão criptografada (HTTPS), dados isolados por prestador e backup automático do banco de dados.</p>
+      </div>
+
+      <div class="compliance-card">
+        <div class="compliance-icon">📋</div>
+        <h3>Nota Fiscal é com Você</h3>
+        <p>HoraCerta organiza horas e valores para você emitir a nota fiscal do seu jeito, na plataforma que já usa. Ainda não temos integração direta com emissores de NFS-e.</p>
       </div>
     </div>
 
     <div class="compliance-note">
-      <p><strong>Importante:</strong> HoraCerta não substitui um contador ou advogado. Recomendamos consultar um profissional para questões fiscais e legais específicas do seu negócio.</p>
+      <p><strong>Importante:</strong> HoraCerta não substitui um contador ou advogado, nem é um sistema de ponto eletrônico para empregados CLT. Recomendamos consultar um profissional para questões fiscais e legais específicas do seu negócio.</p>
     </div>
   </div>
 </section>
@@ -503,7 +491,7 @@
     <div class="cta-content">
       <h2>Pronto para Crescer seu Negócio?</h2>
       <p>Comece agora com HoraCerta. É gratuito, rápido e fácil.</p>
-      <a href="{% url 'login' %}" class="btn btn-primary btn-lg">Começar Agora</a>
+      <a href="{% url 'signup_mei' %}" class="btn btn-primary btn-lg">Criar Conta Grátis</a>
     </div>
   </div>
 </section>

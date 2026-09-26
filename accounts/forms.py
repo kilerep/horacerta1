@@ -1,6 +1,8 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
@@ -46,6 +48,94 @@ class UnifiedSignupForm(forms.Form):
                 self.add_error("rh_email", "Ja existe um usuario com esse email.")
 
         return data
+
+
+class MEISignupForm(forms.Form):
+    """Autocadastro de prestador/MEI: so o essencial para entrar e comecar.
+
+    Cliente, valor/hora e demais dados vem depois, guiados pelo checklist de
+    primeiros passos do painel. O cadastro cria apenas o usuario (papel
+    FUNCIONARIO/MEI) - nenhuma empresa, para nao repetir o modelo antigo.
+    """
+
+    full_name = forms.CharField(label="Seu nome", max_length=150)
+    email = forms.EmailField(label="E-mail")
+    password1 = forms.CharField(label="Senha", widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}))
+    password2 = forms.CharField(
+        label="Confirmar senha", widget=forms.PasswordInput(attrs={"autocomplete": "new-password"})
+    )
+    accept_terms = forms.BooleanField(
+        label="Li e aceito os Termos de Uso e a Política de Privacidade",
+        error_messages={"required": "Para criar a conta, aceite os Termos de Uso e a Política de Privacidade."},
+    )
+    # Isca para robos: pessoas nao veem nem preenchem este campo.
+    website = forms.CharField(required=False, widget=forms.TextInput(attrs={"tabindex": "-1", "autocomplete": "off"}))
+
+    def clean_full_name(self):
+        name = " ".join((self.cleaned_data.get("full_name") or "").split())
+        if len(name) < 2:
+            raise ValidationError("Informe seu nome.")
+        return name
+
+    def clean_email(self):
+        email = (self.cleaned_data.get("email") or "").strip().lower()
+        if User.objects.filter(email__iexact=email).exists() or User.objects.filter(username__iexact=email).exists():
+            raise ValidationError("Não foi possível usar este e-mail. Se você já tem cadastro, tente entrar ou recuperar a senha.")
+        return email
+
+    def clean_website(self):
+        if self.cleaned_data.get("website"):
+            raise ValidationError("Não foi possível concluir o cadastro.")
+        return ""
+
+    def clean(self):
+        data = super().clean()
+        pwd1, pwd2 = data.get("password1"), data.get("password2")
+        if pwd1 and pwd2 and pwd1 != pwd2:
+            self.add_error("password2", "As senhas não conferem.")
+        elif pwd1:
+            candidate = User(
+                username=data.get("email") or "", email=data.get("email") or "", first_name=data.get("full_name") or ""
+            )
+            try:
+                validate_password(pwd1, user=candidate)
+            except ValidationError as exc:
+                self.add_error("password1", exc)
+        return data
+
+
+class ChangeEmailForm(forms.Form):
+    """Troca do e-mail (que tambem e o login) pelo proprio usuario logado.
+
+    Exige a senha atual: sem isso, quem pegasse uma sessao aberta poderia
+    redirecionar a recuperacao de senha para um e-mail proprio.
+    """
+
+    new_email = forms.EmailField(label="Novo e-mail")
+    current_password = forms.CharField(
+        label="Senha atual", widget=forms.PasswordInput(attrs={"autocomplete": "current-password"})
+    )
+
+    def __init__(self, *args, user, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user = user
+
+    def clean_current_password(self):
+        password = self.cleaned_data.get("current_password") or ""
+        if not self.user.check_password(password):
+            raise ValidationError("Senha atual incorreta.")
+        return password
+
+    def clean_new_email(self):
+        email = (self.cleaned_data.get("new_email") or "").strip().lower()
+        if email == (self.user.email or "").lower():
+            raise ValidationError("Este já é o seu e-mail atual.")
+        taken = (
+            User.objects.filter(Q(email__iexact=email) | Q(username__iexact=email)).exclude(pk=self.user.pk).exists()
+        )
+        if taken:
+            raise ValidationError("Não foi possível usar este e-mail. Tente outro.")
+        return email
 
 
 class LoginForm(AuthenticationForm):
@@ -709,7 +799,8 @@ class MEIClientForm(forms.Form):
     )
     start_date = forms.DateField(
         label="Data de inicio",
-        widget=forms.DateInput(attrs={"type": "date"}),
+        # format ISO: <input type="date"> so mostra o valor inicial nesse formato.
+        widget=forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
     )
     closure_type = forms.ChoiceField(
         label="Frequencia",
@@ -796,7 +887,31 @@ class MEIClientForm(forms.Form):
 
             employee.company = company
             employee.user = self.user
-            employee.full_name = self.user.get_full_name() or self.user.email or self.user.username
+            if not employee.full_name:
+                # O nome/CPF/telefone/endereco do profissional sao guardados
+                # por vinculo (Employee), um registro por cliente - nao existe
+                # um "perfil unico" do usuario. Antes, um cliente novo caia
+                # direto no fallback de e-mail (self.user.email) porque o
+                # User do Django normalmente nao tem first_name/last_name
+                # preenchidos aqui. Isso fazia a tela "Meu Perfil" parecer ter
+                # perdido o nome cadastrado assim que esse vinculo novo virava
+                # o "contrato atual" selecionado - bug da auditoria de
+                # 12/09/2026. Preferimos reaproveitar um nome ja cadastrado
+                # pelo mesmo profissional em outro vinculo antes de cair no
+                # e-mail/usuario.
+                known_full_name = (
+                    Employee.objects.filter(user=self.user)
+                    .exclude(full_name="")
+                    .order_by("-created_at")
+                    .values_list("full_name", flat=True)
+                    .first()
+                )
+                employee.full_name = (
+                    known_full_name
+                    or self.user.get_full_name()
+                    or self.user.email
+                    or self.user.username
+                )
             employee.phone = employee.phone or company.whatsapp or company.phone
             employee.is_active = True
             employee.save()

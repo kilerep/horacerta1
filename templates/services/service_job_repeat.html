@@ -1,0 +1,67 @@
+{% extends "accounts/base.html" %}
+
+{% block title %}Criar próxima visita{% endblock %}
+{% block page_title %}Serviços{% endblock %}
+
+{% block extra_head %}
+<style>
+  .repeat-page{max-width:840px;display:grid;gap:14px}.repeat-hero{display:grid;gap:8px}.repeat-hero h1{margin:0;font-size:26px}.repeat-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.repeat-summary div{border:1px solid var(--color-border);border-radius:8px;background:var(--surface-soft);padding:10px}.repeat-summary span{display:block;color:var(--color-text-muted);font-size:12px}.repeat-summary strong{display:block;margin-top:4px;overflow-wrap:anywhere}.repeat-form{display:grid;gap:12px}.repeat-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.field{display:grid;gap:6px}.field.full{grid-column:1/-1}.field label{font-weight:900;font-size:13px}.field input{width:100%}.field-errors{color:var(--danger-text);font-size:12px}.check{display:flex;gap:9px;align-items:flex-start;border:1px solid var(--color-border);border-radius:8px;background:var(--surface-soft);padding:10px}.check input{margin-top:3px}.check label{font-weight:700;line-height:1.4}.actions{display:flex;gap:8px;flex-wrap:wrap}.note{border:1px solid var(--warning-border);background:var(--warning-bg);color:var(--warning-text);border-radius:8px;padding:11px 12px;line-height:1.45}@media(max-width:720px){.repeat-summary,.repeat-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.actions .btn{width:100%}}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="repeat-page">
+  <section class="card repeat-hero">
+    <div>
+      <p class="sub">Serviço recorrente ou nova visita</p>
+      <h1>Criar próxima visita</h1>
+      <p class="sub">Reaproveite cliente, local, escopo e valores do serviço anterior sem copiar horas trabalhadas, relatório, visualizações ou status de execução.</p>
+    </div>
+    <div class="repeat-summary">
+      <div><span>Serviço anterior</span><strong>{{ source.title }}</strong></div>
+      <div><span>Cliente</span><strong>{{ source.client_display_name }}</strong></div>
+      <div><span>Categoria</span><strong>{{ source.category.name }}</strong></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <form method="post" class="repeat-form">
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="note">{{ form.non_field_errors }}</div>{% endif %}
+      <div class="repeat-grid">
+        <div class="field full">
+          <label for="{{ form.title.id_for_label }}">{{ form.title.label }}</label>
+          {{ form.title }}
+          {% for error in form.title.errors %}<div class="field-errors">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="field">
+          <label for="{{ form.next_date.id_for_label }}">{{ form.next_date.label }}</label>
+          {{ form.next_date }}
+          {% for error in form.next_date.errors %}<div class="field-errors">{{ error }}</div>{% endfor %}
+        </div>
+        <div></div>
+        <div class="field">
+          <label for="{{ form.planned_start_time.id_for_label }}">{{ form.planned_start_time.label }}</label>
+          {{ form.planned_start_time }}
+          {% for error in form.planned_start_time.errors %}<div class="field-errors">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="field">
+          <label for="{{ form.planned_end_time.id_for_label }}">{{ form.planned_end_time.label }}</label>
+          {{ form.planned_end_time }}
+          {% for error in form.planned_end_time.errors %}<div class="field-errors">{{ error }}</div>{% endfor %}
+        </div>
+      </div>
+
+      <div class="check">{{ form.copy_items }}<label for="{{ form.copy_items.id_for_label }}">{{ form.copy_items.label }}<br><span class="sub">Os itens serão criados novamente como “Previstos”, mesmo que no serviço anterior tenham sido usados ou devolvidos.</span></label></div>
+      <div class="check">{{ form.copy_notes }}<label for="{{ form.copy_notes.id_for_label }}">{{ form.copy_notes.label }}</label></div>
+
+      <div class="note">A nova visita terá um link público, prévia, execução e relatório independentes. Nenhum período trabalhado do serviço anterior será copiado.</div>
+
+      <div class="actions">
+        <button class="btn primary" type="submit">Criar próxima visita</button>
+        <a class="btn" href="{% url 'service_job_detail' source.id %}">Cancelar</a>
+      </div>
+    </form>
+  </section>
+</div>
+{% endblock %}

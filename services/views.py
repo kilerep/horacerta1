@@ -521,6 +521,7 @@ def service_job_list(request):
             "estimated_total_brl": _format_brl(estimated_total),
             "requests_open": (request_counts["new"] or 0) + (request_counts["waiting"] or 0) + (request_counts["in_review"] or 0),
         },
+        "show_service_list_tour": not request.user.has_dismissed_tour("service_job_list"),
     }
     return render(request, "services/service_job_list.html", context)
 

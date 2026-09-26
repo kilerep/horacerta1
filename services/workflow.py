@@ -26,13 +26,7 @@ class ServiceAction:
 def has_minimum_service_data(service):
     has_client = bool(service.client_id or service.contract_id or service.manual_client_name)
     has_address = bool(service.service_location_summary or service.full_service_address)
-    return bool(
-        has_client
-        and service.description
-        and service.category_id
-        and has_address
-        and service.start_date
-    )
+    return bool(has_client and service.description and service.category_id and has_address and service.start_date)
 
 
 def normalize_service_status(service):
@@ -142,6 +136,9 @@ def get_next_service_action(service, *, open_work_log=None):
     else:
         primary = ServiceAction("details", "Ver detalhes", "get", anchor="#details")
         secondary = []
+
+    if service.billing_mode == ServiceJob.BillingMode.FIXED and service.fixed_labor_value is not None:
+        secondary.insert(0, ServiceAction("event_proposal", "Proposta do evento", "get", "service_event_proposal_detail", external=True))
 
     return {
         "status": status,

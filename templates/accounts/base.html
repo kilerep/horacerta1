@@ -180,6 +180,10 @@
             <div class="icon">T</div>
             <div><strong>Termos de uso</strong><div class="muted" style="font-size:12px">condições da plataforma</div></div>
           </a>
+          <a class="item" href="{% url 'change_email' %}">
+            <div class="icon">@</div>
+            <div><strong>E-mail de acesso</strong><div class="muted" style="font-size:12px">corrigir ou trocar</div></div>
+          </a>
           <a class="item" href="{% url 'logout' %}">
             <div class="icon">X</div>
             <div><strong>Sair</strong><div class="muted" style="font-size:12px">logout</div></div>
@@ -222,6 +226,7 @@
                 <option value="professional-neutral">Neutro Profissional</option>
                 <option value="brazil-corporate">Brasil Corporativo</option>
                 <option value="rubro-professional">Rubro Profissional</option>
+                <option value="claro-operacional">Claro Operacional</option>
               </select>
             </div>
           </div>
@@ -252,6 +257,7 @@
               <option value="professional-neutral">Neutro Profissional</option>
               <option value="brazil-corporate">Brasil Corporativo</option>
               <option value="rubro-professional">Rubro Profissional</option>
+              <option value="claro-operacional">Claro Operacional</option>
             </select>
           </div>
           <a class="btn" href="{% url 'help' %}">Central de ajuda</a>
@@ -275,6 +281,7 @@
     <script src="{% static 'js/form_feedback.js' %}"></script>
   {% endif %}
   <script src="{% static 'js/theme_engine.js' %}"></script>
+  <script src="{% static 'js/connection_guard.js' %}"></script>
   <script src="{% static 'js/pwa-register.js' %}"></script>
 </body>
 </html>

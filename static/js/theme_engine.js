@@ -1,6 +1,6 @@
 (function () {
   var STORAGE_KEY = "hc_theme";
-  var THEMES = ["graphite-premium", "professional-neutral", "brazil-corporate", "rubro-professional"];
+  var THEMES = ["graphite-premium", "professional-neutral", "brazil-corporate", "rubro-professional", "claro-operacional"];
 
   function isValidTheme(theme) {
     return THEMES.indexOf(theme) !== -1;

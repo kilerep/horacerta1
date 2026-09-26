@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Proposta de evento | HoraCerta</title>
+  <style>
+    *{box-sizing:border-box} body{margin:0;font-family:Arial,sans-serif;background:#f4f5f7;color:#111827}.page{max-width:940px;margin:0 auto;padding:20px;display:grid;gap:14px}.card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:18px;box-shadow:0 8px 22px rgba(15,23,42,.06)}.head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}.eyebrow{margin:0;color:#64748b;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em}h1{margin:6px 0 0;font-size:30px}.lead,p{color:#475569;line-height:1.55}.badge{border:1px solid #c7d2fe;border-radius:999px;padding:6px 10px;background:#eef2ff;color:#3730a3;font-size:12px;font-weight:800}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.data{display:grid;gap:8px}.data div{display:grid;grid-template-columns:minmax(115px,.4fr) 1fr;gap:10px;border-bottom:1px solid #e5e7eb;padding-bottom:8px}.data dt{color:#64748b}.data dd{margin:0;font-weight:700}.items{display:grid;gap:9px}.item{display:flex;justify-content:space-between;gap:12px;border:1px solid #e5e7eb;border-radius:10px;padding:12px;background:#f8fafc}.item strong{display:block}.item p{margin:4px 0 0;font-size:13px}.item span{font-weight:800;white-space:nowrap}.total{background:#111827;color:#fff}.total span{display:block;color:#cbd5e1;font-size:13px}.total strong{display:block;margin-top:5px;font-size:30px}.total p{margin:5px 0 0;color:#cbd5e1}.footer{text-align:center;color:#64748b;font-size:12px}@media(max-width:680px){.page{padding:10px}.head,.grid,.data div{display:grid;grid-template-columns:1fr}.badge{width:max-content}.item{display:grid;grid-template-columns:1fr}.item span{white-space:normal}}
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="card head">
+      <div>
+        <p class="eyebrow">HoraCerta · proposta comercial</p>
+        <h1>Proposta de evento</h1>
+        <p class="lead">Sonorização, operação e itens técnicos reunidos em um pacote único.</p>
+      </div>
+      <span class="badge">Valor fechado</span>
+    </section>
+
+    <section class="grid">
+      <article class="card"><h2>Prestador</h2><dl class="data"><div><dt>Responsável</dt><dd>{{ professional_name }}</dd></div><div><dt>Contato</dt><dd>{{ professional_contact|default:"-" }}</dd></div></dl></article>
+      <article class="card"><h2>Cliente e evento</h2><dl class="data"><div><dt>Cliente</dt><dd>{{ job.client_display_name }}</dd></div><div><dt>Evento</dt><dd>{{ job.title }}</dd></div><div><dt>Data</dt><dd>{{ event_date }}</dd></div><div><dt>Horário</dt><dd>{{ planned_time }}</dd></div><div><dt>Local</dt><dd>{{ service_address }}</dd></div></dl></article>
+    </section>
+
+    <section class="card"><h2>Escopo do atendimento</h2><p>{{ job.description|default:"Descrição do atendimento a combinar." }}</p></section>
+
+    <section class="card">
+      <h2>Composição técnica inclusa</h2>
+      <p>Os itens abaixo fazem parte do pacote. Não há preço individual por equipamento nesta proposta.</p>
+      <div class="items">
+        {% for item in included_items %}
+          <article class="item"><div><strong>{{ item.name }}</strong>{% if item.description %}<p>{{ item.description }}</p>{% endif %}</div><span>{{ item.quantity }} {{ item.get_unit_display }}</span></article>
+        {% empty %}
+          <p>Nenhum equipamento ou item técnico foi listado ainda.</p>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="card total"><span>Investimento do pacote</span><strong>{{ package_value_brl }}</strong><p>Valor fechado para a composição descrita nesta proposta.</p></section>
+
+    <section class="card"><h2>Observações e condições</h2><p>{{ job.notes|default:"Condições de pagamento, sinal e demais combinados devem ser confirmados entre prestador e cliente antes do evento." }}</p></section>
+
+    <footer class="footer">Proposta gerada em {{ generated_at|date:"d/m/Y" }} às {{ generated_at|time:"H:i" }} pelo HoraCerta.</footer>
+  </main>
+</body>
+</html>

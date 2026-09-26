@@ -397,11 +397,35 @@ class ServiceRequestItemForm(forms.ModelForm):
         }
 
     def __init__(self, *args, service_request=None, **kwargs):
+        # Precisa ser calculado ANTES do super().__init__(): o model usa
+        # id = UUIDField(default=uuid.uuid4), entao uma instancia nova ja nasce
+        # com pk preenchido (self.instance.pk nunca e None/falsy aqui) - o unico
+        # jeito confiavel de saber se e uma linha nova (vs. edicao) e checar se
+        # um "instance" foi passado explicitamente para o form.
+        is_new_item = kwargs.get("instance") is None
         super().__init__(*args, **kwargs)
         self.service_request = service_request
         self.fields["name"].required = False
         self.fields["note"].required = False
         self.fields["estimated_unit_value"].required = False
+        self.fields["quantity"].required = False
+        if is_new_item:
+            # Nao usar o valor padrao do modelo (1.00) como initial numa linha de
+            # item nova/vazia: isso fazia o campo "Quantidade" chegar pre-preenchido
+            # na tela de "Novo pedido" e, por causa disso, has_item_data()/clean()
+            # tratavam a secao opcional "Itens rapidos" como preenchida mesmo sem o
+            # usuario tocar nela - exigindo "Nome do item" e bloqueando o envio do
+            # pedido (tanto "Salvar pedido" quanto "Salvar e transformar em
+            # servico"). Ao editar um item existente (instance= passado), o
+            # initial continua vindo do proprio valor salvo (nao e afetado).
+            #
+            # Duas fontes de initial precisam ser limpas: ModelForm.__init__ ja
+            # capturou o default do model field em self.initial (via
+            # model_to_dict de uma instancia nova, que aplica os defaults do
+            # model assim que e construida) - so mexer em field.initial nao e
+            # suficiente, porque BoundField.value() prioriza self.initial.
+            self.initial["quantity"] = None
+            self.fields["quantity"].initial = None
         for field in self.fields.values():
             field.widget.attrs.setdefault("class", "hc-input")
 

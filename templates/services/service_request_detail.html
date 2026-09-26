@@ -27,6 +27,14 @@
   .rq-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
   .rq-field.full{grid-column:1 / -1}
   .rq-field label{display:block;margin-bottom:5px;color:var(--color-text-muted);font-size:12px;font-weight:800}
+  .catalog-suggest{position:relative}
+  .catalog-results{display:none;position:absolute;z-index:20;top:100%;left:0;right:0;border:1px solid var(--color-border);border-radius:8px;background:var(--surface-card);box-shadow:var(--shadow-soft);max-height:220px;overflow:auto}
+  .catalog-results.is-visible{display:grid}
+  .catalog-result{border:0;background:transparent;text-align:left;padding:9px 10px;cursor:pointer;color:var(--color-text)}
+  .catalog-result:hover{background:var(--surface-soft)}
+  .catalog-result strong{display:block}
+  .catalog-result span{display:block;color:var(--color-text-muted);font-size:12px;margin-top:2px}
+  .catalog-selection{margin:0;color:var(--color-text-muted);font-size:12px;line-height:1.4;min-height:18px}
   @media (max-width:820px){
     .request-top,.request-grid,.rq-grid,.request-data div{grid-template-columns:1fr}
     .request-actions .btn,.request-actions button{width:100%}
@@ -90,9 +98,17 @@
           {% endfor %}
         </div>
         {% if service_request.status != 'CONVERTED' and service_request.status != 'ARCHIVED' %}
-          <form class="inline-form" method="post" action="{% url 'service_request_item_create' service_request.id %}">
+          <form class="inline-form" method="post" action="{% url 'service_request_item_create' service_request.id %}" data-request-item-form>
             {% csrf_token %}
             <div class="rq-grid">
+              <div class="rq-field full">
+                <label for="request-item-catalog-search">Buscar no catálogo</label>
+                <div class="catalog-suggest">
+                  <input id="request-item-catalog-search" class="hc-input" type="search" autocomplete="off" placeholder="Código interno ou nome do item" data-request-item-catalog-search>
+                  <div class="catalog-results" data-request-item-catalog-results></div>
+                </div>
+                <p class="catalog-selection" data-request-item-catalog-selection aria-live="polite">Digite um código interno ou nome para preencher o item rápido.</p>
+              </div>
               <div class="rq-field"><label for="{{ item_form.name.id_for_label }}">{{ item_form.name.label }}</label>{{ item_form.name }}</div>
               <div class="rq-field"><label for="{{ item_form.quantity.id_for_label }}">{{ item_form.quantity.label }}</label>{{ item_form.quantity }}</div>
               <div class="rq-field full"><label for="{{ item_form.note.id_for_label }}">{{ item_form.note.label }}</label>{{ item_form.note }}</div>
@@ -161,7 +177,7 @@
     function bindCopy(buttonSelector, sourceSelector, copiedText){
       var button = document.querySelector(buttonSelector);
       var source = document.querySelector(sourceSelector);
-      if(!button || !source) return;
+      if(!button || !source || !navigator.clipboard) return;
       button.addEventListener("click", function(){
         navigator.clipboard.writeText(source.value).then(function(){
           var original = button.textContent;
@@ -172,6 +188,81 @@
     }
     bindCopy("[data-copy-message]", "[data-whatsapp-message]", "Mensagem copiada");
     bindCopy("[data-copy-quote]", "[data-quote-message]", "Cotação copiada");
+
+    var itemForm = document.querySelector("[data-request-item-form]");
+    if(!itemForm) return;
+    var searchUrl = "{% url 'service_item_catalog_search' %}";
+    var searchInput = itemForm.querySelector("[data-request-item-catalog-search]");
+    var results = itemForm.querySelector("[data-request-item-catalog-results]");
+    var selection = itemForm.querySelector("[data-request-item-catalog-selection]");
+    var nameField = document.getElementById("{{ item_form.name.id_for_label }}");
+    var quantityField = document.getElementById("{{ item_form.quantity.id_for_label }}");
+    var noteField = document.getElementById("{{ item_form.note.id_for_label }}");
+    var valueField = document.getElementById("{{ item_form.estimated_unit_value.id_for_label }}");
+
+    function clearResults(){
+      if(!results) return;
+      results.innerHTML = "";
+      results.classList.remove("is-visible");
+    }
+    function selectItem(item){
+      if(nameField) nameField.value = item.name || "";
+      if(quantityField) quantityField.value = item.default_quantity || "1";
+      if(valueField) valueField.value = item.estimated_unit_value || item.last_used_value || "";
+      if(noteField && !noteField.value) noteField.value = item.description || "";
+      if(searchInput) searchInput.value = item.internal_code ? item.internal_code + " — " + item.name : item.name;
+      if(selection){
+        var price = item.estimated_unit_value || item.last_used_value;
+        selection.textContent = "Item selecionado: " + (item.internal_code ? item.internal_code + " — " : "") + item.name + (price ? " | valor sugerido: R$ " + price.replace(".", ",") : " | sem valor sugerido.");
+      }
+      clearResults();
+    }
+    function showResults(items){
+      if(!results) return;
+      results.innerHTML = "";
+      if(!items.length){
+        results.classList.remove("is-visible");
+        if(selection) selection.textContent = "Nenhum item encontrado. Você pode preencher manualmente.";
+        return;
+      }
+      items.forEach(function(item){
+        var button = document.createElement("button");
+        button.type = "button";
+        button.className = "catalog-result";
+        var title = document.createElement("strong");
+        var detail = document.createElement("span");
+        title.textContent = (item.internal_code ? item.internal_code + " — " : "") + item.name;
+        var price = item.estimated_unit_value || item.last_used_value;
+        detail.textContent = item.item_type_label + " · " + item.unit_label + (price ? " · R$ " + price.replace(".", ",") : " · sem valor estimado");
+        button.appendChild(title);
+        button.appendChild(detail);
+        button.addEventListener("click", function(){ selectItem(item); });
+        results.appendChild(button);
+      });
+      results.classList.add("is-visible");
+      if(selection) selection.textContent = items.length + " item(ns) encontrado(s). Selecione um para preencher.";
+    }
+    if(searchInput){
+      var timer;
+      searchInput.addEventListener("input", function(){
+        clearTimeout(timer);
+        var query = searchInput.value.trim();
+        if(!query){
+          clearResults();
+          if(selection) selection.textContent = "Digite um código interno ou nome para preencher o item rápido.";
+          return;
+        }
+        timer = setTimeout(function(){
+          fetch(searchUrl + "?q=" + encodeURIComponent(query), {headers:{"X-Requested-With":"XMLHttpRequest"}})
+            .then(function(response){ return response.ok ? response.json() : {items:[]}; })
+            .then(function(data){ showResults(data.items || []); })
+            .catch(function(){
+              clearResults();
+              if(selection) selection.textContent = "Não foi possível consultar o catálogo agora. Preencha o item manualmente.";
+            });
+        }, 180);
+      });
+    }
   })();
 </script>
 {% endblock %}
