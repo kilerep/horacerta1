@@ -80,7 +80,7 @@ class FunnelSummaryTests(TestCase):
 
         self.assertEqual(stuck["Cadastro → sem cliente"], 1)
         self.assertEqual(stuck["Cliente → sem horário"], 1)
-        self.assertEqual(stuck["Horário → sem relatório"], 1)
+        self.assertEqual(stuck["Horário → sem saída registrada"], 1)
 
     def test_retention_needs_action_in_week_one_and_week_two(self):
         signup = self.now - timedelta(days=20)

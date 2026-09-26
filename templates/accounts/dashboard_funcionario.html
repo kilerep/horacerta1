@@ -133,6 +133,9 @@
           <span class="hc-journey-status__label">{{ journey_status_label }}</span>
         </div>
         <p class="hc-journey-next">{{ journey_next_action }}</p>
+        {% if show_first_report_cta %}
+          <a class="btn primary" id="first-report-cta" href="{% url 'mei_reports' %}?contract={{ selected_contract.id }}" style="margin:8px 0 4px;">Gerar meu primeiro relatório</a>
+        {% endif %}
 
         <section class="hc-client-current" aria-labelledby="hcClientCurrentTitle">
           <div class="hc-client-current__head">
@@ -179,7 +182,7 @@
             <input type="hidden" name="geo_longitude" id="hcGeoLongitude" value="">
             <input type="hidden" name="geo_accuracy_m" id="hcGeoAccuracy" value="">
             <button id="hcPunchBtn" class="hc-punch-btn" type="submit">
-              <span class="hc-punch-btn__label">Registrar horário na {{ selected_contract.company.name }}</span>
+              <span class="hc-punch-btn__label">{{ punch_button_label|default:"Registrar horário" }} · {{ selected_contract.company.name }}</span>
               <span class="hc-punch-btn__spinner" aria-hidden="true"></span>
             </button>
             <button id="hcManualOpen" class="btn hc-manual-open-btn" type="button">Registrar horario manual</button>
