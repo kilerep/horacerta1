@@ -65,6 +65,14 @@ def internal_email(request):
 
 
 @internal_staff_required
+def internal_health(request):
+    """Saude da configuracao de producao (so superusuario)."""
+    from accounts.health import run_checks
+
+    return render(request, "accounts/internal_health.html", {"health": run_checks()})
+
+
+@internal_staff_required
 def internal_funnel(request):
     """Funil de ativacao e retencao dos prestadores (so metricas agregadas)."""
     from accounts.analytics import funnel_summary

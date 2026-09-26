@@ -6,10 +6,14 @@ set -euo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
-sudo -u ubuntu venv/bin/python manage.py check
+sudo -u ubuntu venv/bin/python manage.py check --deploy
 sudo -u ubuntu venv/bin/python manage.py migrate
+sudo -u ubuntu venv/bin/python manage.py migrate --check
 sudo -u ubuntu venv/bin/python manage.py collectstatic --noinput
 systemctl restart horacerta
 sleep 3
 systemctl status horacerta --no-pager -l | head -15
 git -c safe.directory="$PWD" log --oneline -1
+echo
+echo "== Saude da configuracao (falhas aparecem como [FALHA]) =="
+sudo -u ubuntu venv/bin/python manage.py check_health || echo "ATENCAO: ha falhas de configuracao acima."
