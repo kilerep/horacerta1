@@ -1,6 +1,8 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
@@ -45,6 +47,60 @@ class UnifiedSignupForm(forms.Form):
             if User.objects.filter(email__iexact=rh_email).exists() or User.objects.filter(username__iexact=rh_email).exists():
                 self.add_error("rh_email", "Ja existe um usuario com esse email.")
 
+        return data
+
+
+class MEISignupForm(forms.Form):
+    """Autocadastro de prestador/MEI: so o essencial para entrar e comecar.
+
+    Cliente, valor/hora e demais dados vem depois, guiados pelo checklist de
+    primeiros passos do painel. O cadastro cria apenas o usuario (papel
+    FUNCIONARIO/MEI) - nenhuma empresa, para nao repetir o modelo antigo.
+    """
+
+    full_name = forms.CharField(label="Seu nome", max_length=150)
+    email = forms.EmailField(label="E-mail")
+    password1 = forms.CharField(label="Senha", widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}))
+    password2 = forms.CharField(
+        label="Confirmar senha", widget=forms.PasswordInput(attrs={"autocomplete": "new-password"})
+    )
+    accept_terms = forms.BooleanField(
+        label="Li e aceito os Termos de Uso e a Política de Privacidade",
+        error_messages={"required": "Para criar a conta, aceite os Termos de Uso e a Política de Privacidade."},
+    )
+    # Isca para robos: pessoas nao veem nem preenchem este campo.
+    website = forms.CharField(required=False, widget=forms.TextInput(attrs={"tabindex": "-1", "autocomplete": "off"}))
+
+    def clean_full_name(self):
+        name = " ".join((self.cleaned_data.get("full_name") or "").split())
+        if len(name) < 2:
+            raise ValidationError("Informe seu nome.")
+        return name
+
+    def clean_email(self):
+        email = (self.cleaned_data.get("email") or "").strip().lower()
+        if User.objects.filter(email__iexact=email).exists() or User.objects.filter(username__iexact=email).exists():
+            raise ValidationError("Não foi possível usar este e-mail. Se você já tem cadastro, tente entrar ou recuperar a senha.")
+        return email
+
+    def clean_website(self):
+        if self.cleaned_data.get("website"):
+            raise ValidationError("Não foi possível concluir o cadastro.")
+        return ""
+
+    def clean(self):
+        data = super().clean()
+        pwd1, pwd2 = data.get("password1"), data.get("password2")
+        if pwd1 and pwd2 and pwd1 != pwd2:
+            self.add_error("password2", "As senhas não conferem.")
+        elif pwd1:
+            candidate = User(
+                username=data.get("email") or "", email=data.get("email") or "", first_name=data.get("full_name") or ""
+            )
+            try:
+                validate_password(pwd1, user=candidate)
+            except ValidationError as exc:
+                self.add_error("password1", exc)
         return data
 
 

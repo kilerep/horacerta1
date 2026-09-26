@@ -917,7 +917,14 @@ def mei_client_create(request):
     if request.method == "POST":
         form = MEIClientForm(request.POST, user=request.user)
         if form.is_valid():
+            is_first_client = not Employee.objects.filter(user=request.user).exists()
             contract = form.save()
+            track(request.user, CLIENT_CREATED, is_first=is_first_client)
+            if is_first_client:
+                # Primeiro cliente: leva direto ao registro de horario, que e o
+                # proximo passo do onboarding, em vez de parar na lista de clientes.
+                messages.success(request, "Cliente cadastrado! Agora registre sua primeira entrada.")
+                return redirect(f"{reverse('employee_dashboard')}?contract={contract.id}")
             messages.success(request, "Cliente cadastrado com sucesso.")
             return redirect(f"{reverse('mei_contract')}?contract={contract.id}")
         messages.error(request, "Revise os campos destacados antes de salvar.")
@@ -1112,6 +1119,7 @@ def mei_reports(request):
                 )
                 report.ensure_conference_link()
                 report.save()
+                track(request.user, REPORT_GENERATED)
                 _notify_service_report_created(report)
                 redirect_url = f"{reverse('mei_reports')}?event=report_created"
                 if not report.summary_payload.get("total_seconds"):
@@ -1422,6 +1430,7 @@ def mei_service_report_request_detail(request, request_id):
                 )
                 report.ensure_conference_link()
                 report.save()
+                track(request.user, REPORT_GENERATED)
                 _notify_service_report_created(report)
                 report_request.response_report = report
                 report_request.response_text = report.description

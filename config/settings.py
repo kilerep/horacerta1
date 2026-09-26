@@ -151,6 +151,14 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 AUTH_USER_MODEL = "accounts.User"
 
+# Interruptor de emergencia do autocadastro publico de prestadores (/cadastro/).
+MEI_SIGNUP_ENABLED = _env_bool("MEI_SIGNUP_ENABLED", True)
+# Teto global de autocadastros por janela de 10 minutos. Conta no banco (vale
+# para todos os workers do gunicorn, ao contrario de um cache local por processo).
+MEI_SIGNUP_MAX_PER_10_MIN = int(os.getenv("MEI_SIGNUP_MAX_PER_10_MIN", "20"))
+# Versao vigente dos Termos/Politica, gravada junto do aceite (auditoria).
+TERMS_VERSION = os.getenv("TERMS_VERSION", "2026-09")
+
 LANGUAGE_CODE = "pt-br"
 TIME_ZONE = "America/Sao_Paulo"
 USE_I18N = True

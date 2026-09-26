@@ -4,6 +4,8 @@ from decimal import Decimal, InvalidOperation
 from io import BytesIO
 
 from django.contrib.auth.decorators import login_required
+
+from accounts.analytics import PUNCH_RECORDED, track
 from django.db import transaction
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -340,6 +342,7 @@ def employee_dashboard(request):
                 "request_user_agent": (request.META.get("HTTP_USER_AGENT") or "")[:180],
             },
         )
+        track(request.user, PUNCH_RECORDED)
         if qr_required and not qr_location:
             return redirect(f"{request.path}?event=punch_saved_qr_missing&contract={selected_contract.id}")
         return redirect(f"{request.path}?event=punch_saved&contract={selected_contract.id}")
