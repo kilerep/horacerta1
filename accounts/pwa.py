@@ -22,6 +22,21 @@ def offline(request):
 
 
 @require_GET
+def ping(request):
+    """Sonda mínima de alcance do servidor, usada pela página offline e pelo
+    aviso de conexão do app.
+
+    ``navigator.onLine`` só diz se o aparelho tem uma interface de rede ativa
+    (Wi-Fi conectado, por exemplo) — não se o servidor responde de verdade.
+    Um fetch real a esta rota é a única prova confiável de que voltamos a
+    conseguir falar com o HoraCerta. Pública, sem sessão e nunca cacheada.
+    """
+    response = HttpResponse(status=204)
+    response["Cache-Control"] = "no-store"
+    return response
+
+
+@require_GET
 def manifest(request):
     """Serve o manifest com rotas atuais do produto."""
     manifest_data = {

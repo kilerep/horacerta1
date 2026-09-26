@@ -21,6 +21,7 @@ urlpatterns = [
     path("manifest.webmanifest", pwa.manifest, name="pwa_manifest"),
     path("sw.js", pwa.service_worker, name="pwa_service_worker"),
     path("offline/", pwa.offline, name="offline"),
+    path("ping/", pwa.ping, name="pwa_ping"),
     path(ADMIN_URL_PATH, admin.site.urls),
     path(
         "password-change/",

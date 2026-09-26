@@ -51,7 +51,7 @@ class PwaFoundationTests(TestCase):
     def test_service_worker_is_served_from_root_scope(self):
         response = self.client.get(reverse("pwa_service_worker"))
         self.assertEqual(response["Service-Worker-Allowed"], "/")
-        self.assertContains(response, 'const SW_VERSION = "hc-sw-v3";')
+        self.assertContains(response, 'const SW_VERSION = "hc-sw-v4";')
         self.assertContains(response, 'const OFFLINE_PAGE = "/offline/";')
 
     def test_pwa_status_requires_login_and_reports_only_available_capabilities(self):

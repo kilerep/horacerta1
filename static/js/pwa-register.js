@@ -1,8 +1,8 @@
 (function () {
   if (!("serviceWorker" in navigator)) return;
 
-  var isRefreshing = false;
   var TOAST_ID = "hcPwaToast";
+  var userRequestedUpdate = false;
 
   function ensureToast() {
     var existing = document.getElementById(TOAST_ID);
@@ -12,44 +12,58 @@
     toast.id = TOAST_ID;
     toast.setAttribute("role", "status");
     toast.setAttribute("aria-live", "polite");
-    toast.style.position = "fixed";
-    toast.style.left = "12px";
-    toast.style.right = "12px";
-    toast.style.bottom = "14px";
-    toast.style.zIndex = "2200";
-    toast.style.padding = "10px 12px";
-    toast.style.borderRadius = "12px";
-    toast.style.border = "1px solid var(--border-brand)";
-    toast.style.background = "rgba(16,24,46,.94)";
-    toast.style.color = "rgba(255,255,255,.94)";
-    toast.style.fontSize = "13px";
-    toast.style.lineHeight = "1.35";
-    toast.style.boxShadow = "0 12px 28px rgba(3,7,20,.4)";
-    toast.style.display = "none";
+    toast.style.cssText =
+      "position:fixed;left:12px;right:12px;bottom:14px;z-index:2200;padding:10px 12px;" +
+      "border-radius:12px;border:1px solid var(--border-brand);background:rgba(16,24,46,.94);" +
+      "color:rgba(255,255,255,.94);font-size:13px;line-height:1.35;" +
+      "box-shadow:0 12px 28px rgba(3,7,20,.4);display:none";
     document.body.appendChild(toast);
     return toast;
   }
 
-  function showToast(message) {
+  function showToast(message, action) {
     var toast = ensureToast();
     toast.textContent = message;
+
+    if (action) {
+      var button = document.createElement("button");
+      button.type = "button";
+      button.textContent = action.label;
+      button.style.cssText =
+        "margin-left:10px;padding:5px 10px;border-radius:8px;border:0;font-weight:700;cursor:pointer";
+      button.addEventListener("click", action.run);
+      toast.appendChild(button);
+    }
+
     toast.style.display = "block";
     clearTimeout(window.__hcPwaToastTimeout__);
-    window.__hcPwaToastTimeout__ = setTimeout(function () {
-      toast.style.display = "none";
-    }, 3200);
+    if (!action) {
+      window.__hcPwaToastTimeout__ = setTimeout(function () {
+        toast.style.display = "none";
+      }, 3200);
+    }
   }
 
-  function handleWaitingWorker(registration) {
-    if (!registration || !registration.waiting) return;
-    registration.waiting.postMessage({ type: "SKIP_WAITING" });
+  // A atualização NÃO recarrega a página sozinha: recarregar no meio de um
+  // formulário perderia o que a pessoa digitou. Só depois do clique em "Atualizar".
+  function offerUpdate(worker) {
+    showToast("Nova versão do HoraCerta disponível.", {
+      label: "Atualizar",
+      run: function () {
+        userRequestedUpdate = true;
+        worker.postMessage({ type: "SKIP_WAITING" });
+      },
+    });
   }
 
-  function trackInstallingWorker(registration) {
-    if (!registration || !registration.installing) return;
-    registration.installing.addEventListener("statechange", function () {
-      if (registration.installing && registration.installing.state === "installed" && navigator.serviceWorker.controller) {
-        handleWaitingWorker(registration);
+  function watchInstalling(registration) {
+    var worker = registration.installing;
+    if (!worker) return;
+    worker.addEventListener("statechange", function () {
+      // Com controller ativo, um worker "installed" é uma atualização em espera
+      // (o v4 de migração de segurança ativa sozinho e nem chega a este estado).
+      if (worker.state === "installed" && navigator.serviceWorker.controller) {
+        offerUpdate(worker);
       }
     });
   }
@@ -68,15 +82,13 @@
           registration.update();
         }, 60 * 60 * 1000);
 
-        handleWaitingWorker(registration);
-        trackInstallingWorker(registration);
-        registration.addEventListener("updatefound", function () {
-          trackInstallingWorker(registration);
-        });
-
-        if (!navigator.serviceWorker.controller) {
-          showToast("Modo offline ativado para uso mais estavel.");
+        if (registration.waiting && navigator.serviceWorker.controller) {
+          offerUpdate(registration.waiting);
         }
+        watchInstalling(registration);
+        registration.addEventListener("updatefound", function () {
+          watchInstalling(registration);
+        });
       })
       .catch(function () {
         // Falha silenciosa para nao impactar fluxo principal.
@@ -88,8 +100,10 @@
   });
 
   navigator.serviceWorker.addEventListener("controllerchange", function () {
-    if (isRefreshing) return;
-    isRefreshing = true;
+    // Só recarrega quando a pessoa pediu a atualização. A troca automática do
+    // SW v4 (migração de segurança) vale a partir da próxima navegação.
+    if (!userRequestedUpdate) return;
+    userRequestedUpdate = false;
     sessionStorage.setItem("hc_pwa_updated", "1");
     window.location.reload();
   });
