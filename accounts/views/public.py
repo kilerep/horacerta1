@@ -62,8 +62,77 @@ def public_service_report_conference(request, token):
             "conference_url": request.build_absolute_uri(),
             "pdf_url": public_pdf_url,
             "xlsx_url": public_xlsx_url,
+            "respond_url": reverse("public_service_report_respond", args=[report.conference_token]),
+            "contest_reasons": CONTEST_REASONS,
+            "already_responded": report.conference_final_status
+            in {ServiceReport.ConferenceStatus.REVIEWED, ServiceReport.ConferenceStatus.DIVERGENT},
+            "contest_error": request.GET.get("erro") == "contestacao",
         },
     )
+
+
+CONTEST_REASONS = {
+    "horarios": "Horários",
+    "valor": "Valor",
+    "periodo": "Período",
+    "servico": "Serviço",
+    "outro": "Outro",
+}
+
+
+@require_POST
+def public_service_report_respond(request, token):
+    """Resposta do cliente final ao relatorio, sem conta.
+
+    "Confirmar recebimento" NAO e aprovacao de pagamento nem verificacao de
+    identidade: so registra que alguem com o link recebeu e conferiu. So por POST
+    (GET nunca confirma), so em link ativo, e a primeira resposta nao e
+    sobrescrita por quem tem o mesmo link.
+    """
+    report = get_object_or_404(
+        ServiceReport.objects.select_related("company", "contract", "employee", "employee__user"),
+        conference_token=token,
+    )
+    back = reverse("public_service_report_conference", args=[report.conference_token])
+    if not report.conference_is_accessible:
+        return render(
+            request,
+            "public/service_report_conference.html",
+            {"report": None, "payload": {}, "unavailable_reason": "Este link nao aceita mais respostas."},
+            status=410,
+        )
+    if report.conference_final_status in {
+        ServiceReport.ConferenceStatus.REVIEWED,
+        ServiceReport.ConferenceStatus.DIVERGENT,
+    }:
+        return redirect(back)
+
+    action = (request.POST.get("action") or "").strip()
+    now = timezone.now()
+    if action == "confirm":
+        report.conference_final_status = ServiceReport.ConferenceStatus.REVIEWED
+        report.conference_reviewed_at = now
+        report.save(update_fields=["conference_final_status", "conference_reviewed_at", "updated_at"])
+        _notify_service_report_client_response(report, contested=False)
+        track(getattr(report.employee, "user", None), REPORT_CLIENT_RESPONDED, kind="confirm")
+        return redirect(back)
+
+    if action == "contest":
+        reason_key = (request.POST.get("reason") or "").strip()
+        text = " ".join((request.POST.get("message") or "").split())[:1000]
+        if reason_key not in CONTEST_REASONS or len(text) < 3:
+            return redirect(f"{back}?erro=contestacao")
+        report.conference_final_status = ServiceReport.ConferenceStatus.DIVERGENT
+        report.conference_reviewed_at = now
+        report.conference_comment = f"[{CONTEST_REASONS[reason_key]}] {text}"
+        report.save(
+            update_fields=["conference_final_status", "conference_reviewed_at", "conference_comment", "updated_at"]
+        )
+        _notify_service_report_client_response(report, contested=True)
+        track(getattr(report.employee, "user", None), REPORT_CLIENT_RESPONDED, kind="contest")
+        return redirect(back)
+
+    return redirect(back)
 
 
 @require_GET

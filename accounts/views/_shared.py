@@ -18,6 +18,7 @@ from django.conf import settings
 from accounts.analytics import (  # noqa: F401
     CLIENT_CREATED,
     REPORT_GENERATED,
+    REPORT_CLIENT_RESPONDED,
     REPORT_PUBLIC_VIEWED,
     REPORT_SHARE_CLICKED,
     SIGNUP_COMPLETED,
@@ -1043,6 +1044,22 @@ def _notify_service_report_viewed(report, viewed_at=None):
         report=report,
         title="Relatorio visualizado",
         message=f"O relatorio da {company_name} foi aberto pelo cliente em {local_viewed_at}.",
+        target_url=reverse("mei_service_report_detail", args=[report.id]),
+    )
+
+
+def _notify_service_report_client_response(report, *, contested):
+    company_name = getattr(getattr(report, "company", None), "name", "cliente")
+    if contested:
+        title = "Cliente contestou o relatorio"
+        message = f"A {company_name} registrou uma divergencia no relatorio. Abra o relatorio para ler a mensagem."
+    else:
+        title = "Cliente confirmou o recebimento"
+        message = f"A {company_name} confirmou que recebeu e conferiu o relatorio."
+    return _create_mei_report_notification(
+        report=report,
+        title=title,
+        message=message,
         target_url=reverse("mei_service_report_detail", args=[report.id]),
     )
 
