@@ -48,6 +48,10 @@
     }
     .client-form-check input{ width:auto; }
     .client-form-error{ color:#ffd8d8; font-size:12px; }
+    .client-form-hint{ display:block; margin-top:4px; opacity:.72; font-size:12px; line-height:1.4; }
+    .client-form-more{ margin-top:14px; border:1px solid var(--border); border-radius:12px; padding:10px 12px; }
+    .client-form-more summary{ cursor:pointer; font-weight:800; min-height:36px; display:flex; align-items:center; }
+    .client-form-more[open] summary{ margin-bottom:10px; }
     .client-form-actions{ display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
     @media (max-width: 720px){
       .client-form-grid{ grid-template-columns:1fr; }
@@ -60,7 +64,7 @@
       <header class="client-form-head">
         <div>
           <h1>{{ title }}</h1>
-          <p>Cadastre o cliente, defina o contrato e escolha se o registro de horário deve validar localização.</p>
+          <p>Comece pelo essencial: nome do cliente, quanto você cobra por hora e desde quando. O resto é opcional.</p>
         </div>
         <a class="btn" href="{% url 'mei_contract' %}">Voltar</a>
       </header>
@@ -72,34 +76,15 @@
         {% endif %}
 
         <div class="client-form-grid">
-          <div class="client-form-field">
+          <div class="client-form-field full">
             {{ form.name.label_tag }}
             {{ form.name }}
             {% for error in form.name.errors %}<span class="client-form-error">{{ error }}</span>{% endfor %}
           </div>
           <div class="client-form-field">
-            {{ form.cnpj.label_tag }}
-            {{ form.cnpj }}
-            {% for error in form.cnpj.errors %}<span class="client-form-error">{{ error }}</span>{% endfor %}
-          </div>
-          <div class="client-form-field">
-            {{ form.contact_name.label_tag }}
-            {{ form.contact_name }}
-            {% for error in form.contact_name.errors %}<span class="client-form-error">{{ error }}</span>{% endfor %}
-          </div>
-          <div class="client-form-field">
-            {{ form.whatsapp.label_tag }}
-            {{ form.whatsapp }}
-            {% for error in form.whatsapp.errors %}<span class="client-form-error">{{ error }}</span>{% endfor %}
-          </div>
-          <div class="client-form-field">
-            {{ form.email.label_tag }}
-            {{ form.email }}
-            {% for error in form.email.errors %}<span class="client-form-error">{{ error }}</span>{% endfor %}
-          </div>
-          <div class="client-form-field">
             {{ form.hourly_rate.label_tag }}
             {{ form.hourly_rate }}
+            <small class="client-form-hint">Quanto você cobra por hora deste cliente. Usamos só para calcular seus ganhos.</small>
             {% for error in form.hourly_rate.errors %}<span class="client-form-error">{{ error }}</span>{% endfor %}
           </div>
           <div class="client-form-field">
@@ -107,24 +92,51 @@
             {{ form.start_date }}
             {% for error in form.start_date.errors %}<span class="client-form-error">{{ error }}</span>{% endfor %}
           </div>
-          <div class="client-form-field">
+          <div class="client-form-field full">
             {{ form.closure_type.label_tag }}
             {{ form.closure_type }}
+            <small class="client-form-hint">De quanto em quanto tempo você fecha e envia o relatório a este cliente.</small>
             {% for error in form.closure_type.errors %}<span class="client-form-error">{{ error }}</span>{% endfor %}
           </div>
-          <div class="client-form-field full">
-            <label class="client-form-check">
-              {{ form.require_location }}
-              <span>Exigir localização no registro</span>
-            </label>
-            {% for error in form.require_location.errors %}<span class="client-form-error">{{ error }}</span>{% endfor %}
-          </div>
-          <div class="client-form-field full">
-            {{ form.notes.label_tag }}
-            {{ form.notes }}
-            {% for error in form.notes.errors %}<span class="client-form-error">{{ error }}</span>{% endfor %}
-          </div>
         </div>
+
+        <details class="client-form-more"{% if form.cnpj.errors or form.contact_name.errors or form.whatsapp.errors or form.email.errors or form.require_location.errors or form.notes.errors or form.instance %} open{% endif %}>
+          <summary>Mais informações do cliente (opcional)</summary>
+          <div class="client-form-grid">
+            <div class="client-form-field">
+              {{ form.cnpj.label_tag }}
+              {{ form.cnpj }}
+              {% for error in form.cnpj.errors %}<span class="client-form-error">{{ error }}</span>{% endfor %}
+            </div>
+            <div class="client-form-field">
+              {{ form.contact_name.label_tag }}
+              {{ form.contact_name }}
+              {% for error in form.contact_name.errors %}<span class="client-form-error">{{ error }}</span>{% endfor %}
+            </div>
+            <div class="client-form-field">
+              {{ form.whatsapp.label_tag }}
+              {{ form.whatsapp }}
+              {% for error in form.whatsapp.errors %}<span class="client-form-error">{{ error }}</span>{% endfor %}
+            </div>
+            <div class="client-form-field">
+              {{ form.email.label_tag }}
+              {{ form.email }}
+              {% for error in form.email.errors %}<span class="client-form-error">{{ error }}</span>{% endfor %}
+            </div>
+            <div class="client-form-field full">
+              <label class="client-form-check">
+                {{ form.require_location }}
+                <span>Exigir localização no registro</span>
+              </label>
+              {% for error in form.require_location.errors %}<span class="client-form-error">{{ error }}</span>{% endfor %}
+            </div>
+            <div class="client-form-field full">
+              {{ form.notes.label_tag }}
+              {{ form.notes }}
+              {% for error in form.notes.errors %}<span class="client-form-error">{{ error }}</span>{% endfor %}
+            </div>
+          </div>
+        </details>
 
         <footer class="client-form-actions">
           <button class="btn primary" type="submit">Salvar cliente</button>

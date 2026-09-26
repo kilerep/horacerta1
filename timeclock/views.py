@@ -21,7 +21,7 @@ from reportlab.lib.styles import getSampleStyleSheet
 
 from accounts.models import User
 from accounts.mei_context import resolve_mei_context
-from companies.models import CompanyAttendancePolicy, CompanyAuthorizedLocation
+from companies.models import CompanyAttendancePolicy, CompanyAuthorizedLocation, Employee
 from .models import ActivityReportRequest, Contract, Punch
 from .services import (
     build_daily_summary,
@@ -269,6 +269,9 @@ def employee_dashboard(request):
             "accounts/dashboard_funcionario.html",
             {
                 "no_contracts": True,
+                # Prestador recem-cadastrado (autocadastro): ainda nao tem nenhum
+                # vinculo. Nao e "aguardando liberacao" - falta cadastrar o 1o cliente.
+                "is_new_mei": not Employee.objects.filter(user=request.user).exists(),
                 "contracts": [],
                 "state_context": state_context,
                 "employee_company_name": employee_company_name,
