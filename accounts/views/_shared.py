@@ -10,6 +10,7 @@ import re
 from calendar import monthrange
 from collections import defaultdict
 import json
+import logging
 from uuid import UUID
 
 from django.conf import settings
@@ -148,7 +149,10 @@ class RenderAwarePasswordResetView(auth_views.PasswordResetView):
                 opts["use_https"] = parsed.scheme == "https"
                 opts["domain_override"] = parsed.netloc
 
-        form.save(**opts)
+        try:
+            form.save(**opts)
+        except Exception:  # noqa: BLE001 - falha de SMTP nao pode virar erro 500 nem revelar se o e-mail existe
+            logging.getLogger(__name__).exception("Falha ao enviar e-mail de redefinicao de senha")
         return super(auth_views.PasswordResetView, self).form_valid(form)
 
 
