@@ -43,7 +43,9 @@ def mei_panel(request):
     has_any_contract = bool(contract_ids)
     has_rate_defined = any((contract.hourly_rate or Decimal("0")) > Decimal("0") for contract in contracts)
     has_any_punch = bool(contract_ids) and Punch.objects.filter(contract_id__in=contract_ids).exists()
-    has_any_report = ServiceReport.objects.filter(employee__user=request.user).exists()
+    has_any_report = (
+        ServiceReport.objects.filter(employee__user=request.user).exclude(status=ServiceReport.Status.CANCELED).exists()
+    )
     onboarding_steps = [
         {
             "label": "Cadastre seu primeiro cliente",
@@ -730,6 +732,9 @@ def mei_contract(request):
                 id=report_id,
                 employee__user=request.user,
             )
+            if report.status == ServiceReport.Status.CANCELED:
+                messages.error(request, "Relatorio cancelado nao pode ser marcado como recebido.")
+                return redirect(f"{reverse('mei_contract')}?contract={report.contract_id}&event=receive_invalid")
             if payment_status == ServiceReport.PaymentStatus.PAID:
                 report.payment_status = ServiceReport.PaymentStatus.PAID
                 report.paid_at = timezone.now()
@@ -1287,6 +1292,39 @@ def mei_service_report_detail(request, report_id):
     )
     if request.method == "POST":
         action = (request.POST.get("action") or "").strip()
+        if report.status == ServiceReport.Status.CANCELED and action != "cancel_report":
+            messages.error(request, "Este relatorio foi cancelado. Gere um novo relatorio para enviar ao cliente.")
+            return redirect("mei_service_report_detail", report_id=report.id)
+        if action == "cancel_report":
+            if not report.can_be_canceled:
+                messages.error(
+                    request,
+                    "Este relatorio ja esta cancelado ou ja foi marcado como recebido/pago e nao pode ser cancelado.",
+                )
+                return redirect("mei_service_report_detail", report_id=report.id)
+            if request.POST.get("confirm_cancel") != "on":
+                messages.error(request, "Marque a confirmacao para cancelar o relatorio.")
+                return redirect("mei_service_report_detail", report_id=report.id)
+            report.cancel(request.POST.get("cancel_reason") or "")
+            report.save(
+                update_fields=[
+                    "status",
+                    "canceled_at",
+                    "cancel_reason",
+                    "conference_revoked_at",
+                    "conference_final_status",
+                    "updated_at",
+                ]
+            )
+            messages.success(
+                request,
+                "Relatorio cancelado. Os dias desse periodo podem ser editados de novo. "
+                "Depois de corrigir, gere um novo relatorio.",
+            )
+            reports_url = reverse("mei_reports")
+            if report.contract_id:
+                reports_url = f"{reports_url}?contract={report.contract_id}"
+            return redirect(reports_url)
         if action == "generate_conference_link":
             expires_at = None
             expires_at_raw = (request.POST.get("conference_expires_at") or "").strip()
@@ -1350,6 +1388,7 @@ def mei_service_report_detail(request, report_id):
             "whatsapp_url": whatsapp_url,
             "pdf_url": reverse("mei_service_report_pdf", args=[report.id]),
             "status_label": _service_report_status_label(report),
+            "can_cancel": report.can_be_canceled,
         },
     )
 
