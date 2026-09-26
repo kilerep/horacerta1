@@ -6,6 +6,7 @@ from . import views
 urlpatterns = [
     path("signup/", views.signup, name="signup"),
     path("cadastro/", views.signup_mei, name="signup_mei"),
+    path("conta/email/", views.change_email, name="change_email"),
     path("login/", views.login_view, name="login"),
     path("logout/", views.logout_view, name="logout"),
     path(
@@ -41,6 +42,7 @@ urlpatterns = [
     ),
 
     path("interno/", views.internal_dashboard, name="internal_dashboard"),
+    path("interno/funil/", views.internal_funnel, name="internal_funnel"),
     path("interno/empresas/", views.internal_companies, name="internal_companies"),
     path("interno/empresas/<uuid:company_id>/", views.internal_company_detail, name="internal_company_detail"),
     path("interno/funcionarios/", views.internal_employees, name="internal_employees"),

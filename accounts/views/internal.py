@@ -5,6 +5,14 @@ from ._shared import *  # noqa: F401,F403
 
 
 @internal_staff_required
+def internal_funnel(request):
+    """Funil de ativacao e retencao dos prestadores (so metricas agregadas)."""
+    from accounts.analytics import funnel_summary
+
+    return render(request, "accounts/internal_funnel.html", {"funnel": funnel_summary(days=30)})
+
+
+@internal_staff_required
 def internal_dashboard(request):
     now = timezone.now()
     today = timezone.localdate()

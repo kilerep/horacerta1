@@ -104,6 +104,40 @@ class MEISignupForm(forms.Form):
         return data
 
 
+class ChangeEmailForm(forms.Form):
+    """Troca do e-mail (que tambem e o login) pelo proprio usuario logado.
+
+    Exige a senha atual: sem isso, quem pegasse uma sessao aberta poderia
+    redirecionar a recuperacao de senha para um e-mail proprio.
+    """
+
+    new_email = forms.EmailField(label="Novo e-mail")
+    current_password = forms.CharField(
+        label="Senha atual", widget=forms.PasswordInput(attrs={"autocomplete": "current-password"})
+    )
+
+    def __init__(self, *args, user, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user = user
+
+    def clean_current_password(self):
+        password = self.cleaned_data.get("current_password") or ""
+        if not self.user.check_password(password):
+            raise ValidationError("Senha atual incorreta.")
+        return password
+
+    def clean_new_email(self):
+        email = (self.cleaned_data.get("new_email") or "").strip().lower()
+        if email == (self.user.email or "").lower():
+            raise ValidationError("Este já é o seu e-mail atual.")
+        taken = (
+            User.objects.filter(Q(email__iexact=email) | Q(username__iexact=email)).exclude(pk=self.user.pk).exists()
+        )
+        if taken:
+            raise ValidationError("Não foi possível usar este e-mail. Tente outro.")
+        return email
+
+
 class LoginForm(AuthenticationForm):
     username = forms.CharField(label="Email ou usuario")  # aceita email via backend
 

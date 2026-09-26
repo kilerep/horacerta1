@@ -1,0 +1,61 @@
+{% extends "accounts/internal_base.html" %}
+{% block title %}HoraCerta - Funil de ativação{% endblock %}
+{% block page_title %}Funil de ativação{% endblock %}
+{% block internal_title %}Funil de ativação{% endblock %}
+{% block internal_subtitle %}Quantas pessoas chegam em cada etapa e onde desistem. Só números agregados, sem dados pessoais.{% endblock %}
+
+{% block internal_content %}
+  <section class="internal-panel">
+    <div class="internal-head">
+      <div>
+        <h2>Funil dos últimos {{ funnel.days }} dias</h2>
+        <p class="internal-subtitle">Conta pessoas distintas, não eventos: quem registra 15 horários conta como 1.</p>
+      </div>
+    </div>
+    <div class="metric-grid">
+      {% for step in funnel.steps %}
+        <div class="metric-card">
+          <div class="label">{{ step.label }}</div>
+          <div class="value">{{ step.users }}</div>
+          <div class="hint">{% if step.percent_of_signups is not None %}{{ step.percent_of_signups }}% de quem criou conta{% else %}—{% endif %}</div>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="internal-panel">
+    <div class="internal-head">
+      <div>
+        <h2>Onde travaram</h2>
+        <p class="internal-subtitle">Pessoas que criaram conta há mais de 24 horas e não passaram para a etapa seguinte. Estas são as conversas para você ter.</p>
+      </div>
+    </div>
+    <div class="metric-grid">
+      {% for item in funnel.stuck %}
+        <div class="metric-card">
+          <div class="label">{{ item.label }}</div>
+          <div class="value">{{ item.users }}</div>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="internal-panel">
+    <div class="internal-head">
+      <div>
+        <h2>Retenção em 2 semanas</h2>
+        <p class="internal-subtitle">Considera quem criou conta há 14 dias ou mais. "Ativo" = registrou horário ou gerou relatório (entrar no sistema não conta).</p>
+      </div>
+    </div>
+    <div class="metric-grid">
+      <div class="metric-card"><div class="label">Criaram conta (coorte)</div><div class="value">{{ funnel.retention.cohort }}</div></div>
+      <div class="metric-card"><div class="label">Ativos na semana 1</div><div class="value">{{ funnel.retention.active_week1 }}</div></div>
+      <div class="metric-card"><div class="label">Voltaram na semana 2</div><div class="value">{{ funnel.retention.returned_week2 }}</div></div>
+      <div class="metric-card">
+        <div class="label">Retenção</div>
+        <div class="value">{% if funnel.retention.percent is not None %}{{ funnel.retention.percent }}%{% else %}—{% endif %}</div>
+        <div class="hint">Meta: 3 pessoas reais por 2 semanas seguidas</div>
+      </div>
+    </div>
+  </section>
+{% endblock %}
