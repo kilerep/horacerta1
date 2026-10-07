@@ -1,9 +1,10 @@
 from django.urls import path
 
-from . import views
+from . import event_proposal, service_calendar, service_repeat, views
 
 urlpatterns = [
     path("me/servicos/", views.service_job_list, name="service_job_list"),
+    path("me/servicos/propostas-evento/", event_proposal.service_event_proposal_list, name="service_event_proposal_list"),
     path("me/servicos/pedidos/", views.service_request_list, name="service_request_list"),
     path("me/servicos/pedidos/novo/", views.service_request_create, name="service_request_create"),
     path("me/servicos/pedidos/<uuid:request_id>/", views.service_request_detail, name="service_request_detail"),
@@ -21,6 +22,10 @@ urlpatterns = [
     path("me/servicos/catalogo/<uuid:item_id>/desativar/", views.service_item_catalog_deactivate, name="service_item_catalog_deactivate"),
     path("me/servicos/novo/", views.service_job_create, name="service_job_create"),
     path("me/servicos/<uuid:job_id>/", views.service_job_detail, name="service_job_detail"),
+    path("me/servicos/<uuid:job_id>/proxima-visita/", service_repeat.service_job_repeat, name="service_job_repeat"),
+    path("me/servicos/<uuid:job_id>/calendario.ics", service_calendar.service_job_calendar_ics, name="service_job_calendar_ics"),
+    path("me/servicos/<uuid:job_id>/proposta-evento/", event_proposal.service_event_proposal_detail, name="service_event_proposal_detail"),
+    path("me/servicos/<uuid:job_id>/proposta-evento/whatsapp/", event_proposal.service_event_proposal_whatsapp, name="service_event_proposal_whatsapp"),
     path("me/servicos/<uuid:job_id>/editar/", views.service_job_update, name="service_job_update"),
     path("me/servicos/<uuid:job_id>/salvar-cliente/", views.service_job_save_manual_client, name="service_job_save_manual_client"),
     path("me/servicos/<uuid:job_id>/salvar-endereco-cliente/", views.service_job_save_address_to_client, name="service_job_save_address_to_client"),
@@ -36,6 +41,7 @@ urlpatterns = [
     path("me/servicos/<uuid:job_id>/relatorio/pdf/", views.service_job_report_pdf, name="service_job_report_pdf"),
     path("me/servicos/<uuid:job_id>/relatorio/whatsapp/", views.service_job_report_whatsapp, name="service_job_report_whatsapp"),
     path("me/servicos/<uuid:job_id>/relatorio/ver/", views.service_job_public_report_redirect, name="service_job_public_report_redirect"),
+    path("servicos/proposta-evento/<uuid:token>/", event_proposal.public_service_event_proposal, name="public_service_event_proposal"),
     path("servicos/previa/<uuid:token>/", views.public_service_job_preview, name="public_service_job_preview"),
     path("servicos/relatorio/<uuid:token>/", views.public_service_job_report, name="public_service_job_report"),
     path("servicos/relatorio/<uuid:token>/pdf/", views.public_service_job_report_pdf, name="public_service_job_report_pdf"),

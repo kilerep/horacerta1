@@ -190,65 +190,95 @@
 <body>
     <div class="container">
         <div class="icon">📡</div>
-        
+
         <h1>Sem Conexão</h1>
-        <p class="subtitle">Você está offline no momento. Verifique sua conexão com a internet.</p>
-        
-        <div class="status">
-            <strong>Status:</strong> Sem conexão com a internet
+        <p class="subtitle">Não conseguimos falar com o HoraCerta agora. O sistema precisa de internet para carregar seus dados e registrar horários.</p>
+
+        <div class="status" id="offline-status" role="status" aria-live="polite">
+            <strong>Status:</strong> <span id="status-text">Sem conexão com o servidor</span>
         </div>
-        
-        <button class="button" onclick="tryAgain()">
+
+        <button class="button" id="retry-button" type="button">
             🔄 Tentar Novamente
         </button>
-        
-        <button class="button button-secondary" onclick="goHome()">
+
+        <button class="button button-secondary" id="home-button" type="button">
             🏠 Ir para Início
         </button>
-        
+
         <div class="tips">
-            <h3>💡 O que você pode fazer:</h3>
+            <h3>💡 Enquanto isso:</h3>
             <ul>
-                <li>Verifique o WiFi ou dados móveis</li>
-                <li>Reinicie seu roteador</li>
-                <li>Tente em outro local</li>
-                <li>Volte quando tiver conexão</li>
+                <li>Nada é salvo enquanto você estiver sem conexão — registros só valem depois de confirmados pelo servidor</li>
+                <li>Verifique o Wi-Fi ou os dados móveis</li>
+                <li>Se voltar o sinal, esta tela tenta reconectar sozinha</li>
             </ul>
         </div>
-        
+
         <div class="connection-status">
             <span class="dot"></span>
-            Monitorando conexão...
+            Verificando a conexão com o servidor...
         </div>
     </div>
-    
+
     <script>
-        function tryAgain() {
-            location.reload();
-        }
-        
-        function goHome() {
-            window.location.href = "/";
-        }
-        
-        // Monitorar conexão
-        window.addEventListener("online", () => {
-            console.log("✅ Conexão restaurada!");
-            // Redirecionar para página anterior ou home
-            setTimeout(() => {
+        (function () {
+            // navigator.onLine só indica se o aparelho tem uma rede ativa (ex.: Wi-Fi
+            // conectado), não se o HoraCerta responde. Wi-Fi sem internet ou servidor
+            // fora do ar também dão onLine === true; redirecionar por isso causava um
+            // loop offline -> "/" -> offline. Só voltamos ao app depois de uma sonda
+            // real ao servidor (/ping/) ter sucesso.
+            var PING_URL = "/ping/";
+            var statusText = document.getElementById("status-text");
+            var checking = false;
+
+            // Quando o service worker serve esta página no lugar de outra rota, a
+            // barra de endereço continua na rota original: recarregar volta para ela.
+            var isDirectVisit = window.location.pathname === "/offline/";
+
+            function serverReachable() {
+                return fetch(PING_URL, { cache: "no-store" })
+                    .then(function (response) { return response.status === 204 || response.ok; })
+                    .catch(function () { return false; });
+            }
+
+            function goBack() {
+                if (isDirectVisit) {
+                    window.location.replace("/");
+                } else {
+                    window.location.reload();
+                }
+            }
+
+            function check(manual) {
+                if (checking) return;
+                checking = true;
+                if (manual) statusText.textContent = "Verificando...";
+                serverReachable().then(function (ok) {
+                    checking = false;
+                    if (ok) {
+                        statusText.textContent = "Conexão restabelecida. Voltando...";
+                        goBack();
+                    } else {
+                        statusText.textContent = manual
+                            ? "Ainda sem conexão com o servidor. Tente de novo em instantes."
+                            : "Sem conexão com o servidor";
+                    }
+                });
+            }
+
+            document.getElementById("retry-button").addEventListener("click", function () { check(true); });
+            document.getElementById("home-button").addEventListener("click", function () {
                 window.location.href = "/";
-            }, 1000);
-        });
-        
-        window.addEventListener("offline", () => {
-            console.log("❌ Conexão perdida");
-        });
-        
-        // Verificar conexão inicial
-        if (navigator.onLine) {
-            console.log("Você está online, redirecionando...");
-            window.location.href = "/";
-        }
+            });
+            window.addEventListener("online", function () { check(false); });
+
+            // Tentativa automática leve enquanto a página está visível.
+            setInterval(function () {
+                if (!document.hidden) check(false);
+            }, 8000);
+            check(false);
+        })();
     </script>
 </body>
 </html>

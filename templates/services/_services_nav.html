@@ -1,0 +1,22 @@
+<nav class="services-nav" id="services-nav" aria-label="Seções de serviços">
+  <style>
+    .services-nav{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start}
+    .services-nav .sn-item{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;border:1px solid var(--color-border);border-radius:999px;background:var(--surface-soft);color:var(--color-text);font-weight:800;font-size:15px;text-decoration:none;cursor:pointer;list-style:none}
+    .services-nav .sn-item::-webkit-details-marker{display:none}
+    .services-nav .sn-item.is-active,.services-nav .sn-more.is-active>summary{border-color:var(--color-primary);background:var(--color-primary-soft);color:var(--color-primary)}
+    .services-nav .sn-badge{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:var(--color-primary);color:#fff;font-size:13px;font-weight:900}
+    .services-nav .sn-more[open]{flex:1 1 100%}
+    .services-nav .sn-more-list{display:grid;margin-top:8px;padding:6px;border:1px solid var(--color-border);border-radius:12px;background:var(--surface-soft)}
+    .services-nav .sn-more-list a{display:flex;align-items:center;min-height:44px;padding:0 12px;border-radius:8px;color:var(--color-text);font-weight:700;text-decoration:none}
+    .services-nav .sn-more-list a:hover,.services-nav .sn-more-list a.is-current{background:var(--color-primary-soft)}
+  </style>
+  <a class="sn-item {% if active == 'requests' %}is-active{% endif %}" href="{% url 'service_request_list' %}"{% if active == 'requests' %} aria-current="page"{% endif %}>Pedidos{% if open_requests %}<span class="sn-badge" aria-label="{{ open_requests }} pedido{{ open_requests|pluralize }} para atender">{{ open_requests }}</span>{% endif %}</a>
+  <a class="sn-item {% if active == 'jobs' %}is-active{% endif %}" href="{% url 'service_job_list' %}"{% if active == 'jobs' %} aria-current="page"{% endif %}>Serviços</a>
+  <details class="sn-more{% if active == 'more' %} is-active{% endif %}">
+    <summary class="sn-item">Mais</summary>
+    <div class="sn-more-list">
+      <a href="{% url 'service_item_catalog_list' %}">Catálogo de itens</a>
+      <a href="{% url 'service_event_proposal_list' %}">Propostas de evento</a>
+    </div>
+  </details>
+</nav>

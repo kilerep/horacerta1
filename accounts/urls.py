@@ -5,6 +5,8 @@ from . import views
 
 urlpatterns = [
     path("signup/", views.signup, name="signup"),
+    path("cadastro/", views.signup_mei, name="signup_mei"),
+    path("conta/email/", views.change_email, name="change_email"),
     path("login/", views.login_view, name="login"),
     path("logout/", views.logout_view, name="logout"),
     path(
@@ -40,6 +42,9 @@ urlpatterns = [
     ),
 
     path("interno/", views.internal_dashboard, name="internal_dashboard"),
+    path("interno/funil/", views.internal_funnel, name="internal_funnel"),
+    path("interno/email/", views.internal_email, name="internal_email"),
+    path("interno/saude/", views.internal_health, name="internal_health"),
     path("interno/empresas/", views.internal_companies, name="internal_companies"),
     path("interno/empresas/<uuid:company_id>/", views.internal_company_detail, name="internal_company_detail"),
     path("interno/funcionarios/", views.internal_employees, name="internal_employees"),
@@ -103,6 +108,7 @@ urlpatterns = [
     path("empresa/configuracoes/", views.company_settings, name="company_settings"),
 
     path("me/painel/", views.mei_panel, name="mei_panel"),
+    path("me/tour/dispensar/", views.mei_dismiss_tour, name="mei_dismiss_tour"),
     path("me/profile/", views.mei_profile, name="mei_profile"),
     path("me/historico/", views.mei_history, name="mei_history"),
     path("me/editar-horarios-hoje/", views.mei_edit_today_punches, name="mei_edit_today_punches"),
@@ -128,6 +134,7 @@ urlpatterns = [
         name="mei_service_report_request_detail",
     ),
     path("conferencia/relatorio/<uuid:token>/", views.public_service_report_conference, name="public_service_report_conference"),
+    path("conferencia/relatorio/<uuid:token>/responder/", views.public_service_report_respond, name="public_service_report_respond"),
     path("conferencia/relatorio/<uuid:token>/pdf/", views.public_service_report_pdf, name="public_service_report_pdf"),
     path("conferencia/relatorio/<uuid:token>/excel/", views.public_service_report_xlsx, name="public_service_report_xlsx"),
 

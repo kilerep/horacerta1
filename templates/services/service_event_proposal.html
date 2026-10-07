@@ -1,0 +1,84 @@
+{% extends "accounts/base.html" %}
+{% block title %}Proposta de evento{% endblock %}
+{% block page_title %}Proposta de evento{% endblock %}
+
+{% block content %}
+<style>
+  .event-proposal-page{display:grid;gap:14px;max-width:1020px}.proposal-hero,.proposal-card{border:1px solid var(--border);border-radius:var(--radius);background:radial-gradient(circle at 12% 0,var(--color-primary-soft),transparent 45%),linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02));box-shadow:var(--shadow)}.proposal-hero{padding:16px;display:grid;gap:10px}.proposal-hero h1{margin:0}.proposal-hero p{margin:0;color:var(--muted);line-height:1.5}.proposal-actions{display:flex;gap:8px;flex-wrap:wrap}.proposal-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.proposal-card{padding:14px}.proposal-card h2{margin:0 0 10px;font-size:18px}.proposal-data{display:grid;gap:8px}.proposal-data div{display:grid;grid-template-columns:minmax(130px,.4fr) 1fr;gap:10px;border-bottom:1px solid var(--line-soft);padding-bottom:8px}.proposal-data span{color:var(--muted);font-size:13px}.proposal-data strong{overflow-wrap:anywhere}.proposal-total{border:1px solid var(--border-brand);border-radius:12px;padding:14px;background:var(--surface-brand-soft)}.proposal-total span{display:block;color:var(--muted);font-size:12px}.proposal-total strong{display:block;margin-top:4px;font-size:28px}.proposal-items{display:grid;gap:8px}.proposal-item{display:flex;justify-content:space-between;gap:12px;border:1px solid var(--line-soft);border-radius:10px;padding:11px;background:var(--surface-soft)}.proposal-item p{margin:4px 0 0;color:var(--muted);font-size:13px}.proposal-item span{font-weight:900;white-space:nowrap}.proposal-warning{border:1px solid rgba(255,176,32,.42);border-radius:10px;padding:10px;background:rgba(255,176,32,.12);color:#ffe7ad}.proposal-ok{border:1px solid rgba(45,211,145,.42);border-radius:10px;padding:10px;background:rgba(45,211,145,.1);color:#dcffe9}@media(max-width:720px){.proposal-grid,.proposal-data div,.proposal-item{grid-template-columns:1fr;display:grid}.proposal-actions .btn{width:100%;justify-content:center}.proposal-item span{white-space:normal}}
+</style>
+
+<div class="event-proposal-page">
+  <section class="proposal-hero">
+    <h1>Revisar proposta de evento</h1>
+    <p>Confira o pacote antes de enviar. O cliente verá um valor fechado; os equipamentos aparecem apenas como composição técnica inclusa.</p>
+    <div class="proposal-actions">
+      <a class="btn primary" href="{% url 'service_event_proposal_whatsapp' job.id %}" target="_blank" rel="noopener">Enviar no WhatsApp</a>
+      <a class="btn" href="{{ public_url }}" target="_blank" rel="noopener">Abrir versão do cliente</a>
+      <a class="btn" href="{% url 'service_job_detail' job.id %}">Voltar ao serviço</a>
+    </div>
+  </section>
+
+  <section class="proposal-card">
+    <h2>Conferência antes do envio</h2>
+    {% if proposal_warnings %}
+      <div style="display:grid;gap:8px">
+        {% for warning in proposal_warnings %}<div class="proposal-warning">{{ warning }}</div>{% endfor %}
+      </div>
+    {% else %}
+      <div class="proposal-ok">Proposta pronta para envio: cliente, data, horário, local, composição técnica e condições principais foram preenchidos.</div>
+    {% endif %}
+  </section>
+
+  <section class="proposal-grid">
+    <article class="proposal-card">
+      <h2>Prestador</h2>
+      <div class="proposal-data">
+        <div><span>Responsável</span><strong>{{ professional_name }}</strong></div>
+        <div><span>Contato</span><strong>{{ professional_contact|default:"-" }}</strong></div>
+      </div>
+    </article>
+    <article class="proposal-card">
+      <h2>Cliente e evento</h2>
+      <div class="proposal-data">
+        <div><span>Cliente</span><strong>{{ job.client_display_name }}</strong></div>
+        <div><span>Evento</span><strong>{{ job.title }}</strong></div>
+        <div><span>Data</span><strong>{{ event_date }}</strong></div>
+        <div><span>Horário</span><strong>{{ planned_time }}</strong></div>
+        <div><span>Local</span><strong>{{ service_address }}</strong></div>
+      </div>
+    </article>
+  </section>
+
+  <section class="proposal-card">
+    <h2>Escopo do atendimento</h2>
+    <p style="color:var(--muted);line-height:1.55">{{ job.description|default:"Descrição do atendimento a combinar." }}</p>
+  </section>
+
+  <section class="proposal-card">
+    <h2>Composição técnica inclusa</h2>
+    <div class="proposal-items">
+      {% for item in included_items %}
+        <article class="proposal-item">
+          <div>
+            <strong>{{ item.name }}</strong>
+            {% if item.description %}<p>{{ item.description }}</p>{% endif %}
+          </div>
+          <span>{{ item.quantity }} {{ item.get_unit_display }}</span>
+        </article>
+      {% empty %}
+        <p style="color:var(--muted)">Nenhum equipamento ou item técnico foi listado ainda.</p>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="proposal-total">
+    <span>Valor fechado do pacote</span>
+    <strong>{{ package_value_brl }}</strong>
+  </section>
+
+  <section class="proposal-card">
+    <h2>Observações e condições</h2>
+    <p style="color:var(--muted);line-height:1.55">{{ job.notes|default:"Condições de pagamento, sinal e demais combinados devem ser confirmados antes do evento." }}</p>
+  </section>
+</div>
+{% endblock %}

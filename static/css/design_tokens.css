@@ -261,6 +261,95 @@
   --shadow-strong: 0 18px 36px var(--shadow-color);
 }
 
+/* Tema claro pensado para uso ao ar livre / sol forte: MEI batendo ponto na
+   rua enxerga uma tela clara com bem mais facilidade do que uma tela escura,
+   que reflete luz e ofusca. Mantém o mesmo azul de marca do Grafite Premium,
+   só que escurecido o suficiente pra manter contraste com texto branco. */
+[data-theme="claro-operacional"] {
+  color-scheme: light;
+
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-secondary: #0ea5e9;
+  --color-bg: #f1f5f9;
+  --color-bg-soft: #e2e8f0;
+  --bg-1: #f8fafc;
+  --bg-2: #f1f5f9;
+  --bg-3: #e2e8f0;
+  --color-surface: #ffffff;
+  --color-surface-2: #f8fafc;
+  --color-card: #ffffff;
+  --color-card-strong: #f8fafc;
+  --color-text-strong: #0f172a;
+  --color-text: #1e293b;
+  --color-text-muted: #64748b;
+  --color-clock-main: #0f172a;
+  --color-border: rgba(15, 23, 42, 0.14);
+  --color-success: #16a34a;
+  --color-warning: #b45309;
+  --color-danger: #dc2626;
+  --color-primary-strong: #1d4ed8;
+  --color-primary-soft: rgba(37, 99, 235, 0.1);
+  --color-accent: #0ea5e9;
+  --shadow-color: rgba(15, 23, 42, 0.14);
+  --gradient-page: var(--color-bg);
+  --gradient-card: linear-gradient(180deg, rgba(255,255,255,.95), rgba(248,250,252,.95));
+  --gradient-hero: radial-gradient(900px 420px at 6% -20%, var(--color-primary-soft), transparent 62%), linear-gradient(180deg, #ffffff, var(--color-bg-soft));
+  --gradient-panel: var(--gradient-card);
+  --gradient-button: linear-gradient(180deg, var(--color-primary-strong), #1e40af);
+
+  --surface-raised: #ffffff;
+  --surface-subtle: #f8fafc;
+  --surface-soft: #f1f5f9;
+  --surface-brand-soft: rgba(37, 99, 235, 0.1);
+  --surface-brand-strong: linear-gradient(180deg, #2563eb, #1d4ed8);
+  --text-inverse: #ffffff;
+  --border-strong: rgba(15, 23, 42, 0.28);
+  --color-border-strong: var(--border-strong);
+  --border-brand: rgba(37, 99, 235, 0.45);
+  --icon-bg: rgba(37, 99, 235, 0.1);
+  --icon-border: rgba(37, 99, 235, 0.35);
+  --icon-fg: #1d4ed8;
+  --menu-hover-bg: #f1f5f9;
+  --menu-active-bg: linear-gradient(90deg, rgba(37, 99, 235, 0.14), rgba(37, 99, 235, 0.05));
+  --menu-active-border: rgba(37, 99, 235, 0.4);
+  --menu-active-text: #1d4ed8;
+  --btn-bg: #ffffff;
+  --btn-border: rgba(15, 23, 42, 0.16);
+  --btn-text: #0f172a;
+  --btn-hover-bg: #f1f5f9;
+  --btn-hover-border: rgba(15, 23, 42, 0.24);
+  --btn-primary-shadow: 0 10px 20px rgba(37, 99, 235, 0.22);
+  --field-bg: #ffffff;
+  --field-border: rgba(15, 23, 42, 0.18);
+  --field-placeholder: #94a3b8;
+  --select-arrow: #475569;
+  --file-btn-bg: rgba(37, 99, 235, 0.08);
+  --file-btn-border: rgba(37, 99, 235, 0.3);
+  --file-btn-text: #1d4ed8;
+  --table-row-hover: #f1f5f9;
+  --badge-bg: #f1f5f9;
+  --badge-border: rgba(15, 23, 42, 0.16);
+  --badge-text: #475569;
+  --badge-solid-bg: #2563eb;
+  --badge-solid-text: #ffffff;
+  --success-bg: rgba(22, 163, 74, 0.1);
+  --success-border: rgba(22, 163, 74, 0.35);
+  --success-text: #15803d;
+  --warning-bg: rgba(180, 83, 9, 0.1);
+  --warning-border: rgba(180, 83, 9, 0.35);
+  --warning-text: #92400e;
+  --danger-bg: rgba(220, 38, 38, 0.1);
+  --danger-border: rgba(220, 38, 38, 0.35);
+  --danger-text: #b91c1c;
+  --overlay-bg: rgba(15, 23, 42, 0.45);
+  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.1);
+  --shadow-soft: 0 8px 20px rgba(15, 23, 42, 0.1);
+  --shadow-strong: 0 18px 36px var(--shadow-color);
+  --shadow-sm: var(--shadow-soft);
+  --shadow-md: var(--shadow-strong);
+}
+
 [data-theme="rubro-professional"] {
   color-scheme: dark;
 

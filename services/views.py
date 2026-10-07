@@ -521,6 +521,7 @@ def service_job_list(request):
             "estimated_total_brl": _format_brl(estimated_total),
             "requests_open": (request_counts["new"] or 0) + (request_counts["waiting"] or 0) + (request_counts["in_review"] or 0),
         },
+        "show_service_list_tour": not request.user.has_dismissed_tour("service_job_list"),
     }
     return render(request, "services/service_job_list.html", context)
 
@@ -1322,7 +1323,7 @@ def service_job_status_action(request, job_id):
         if action == "send_preview" and job.status in (ServiceJob.Status.DRAFT, ServiceJob.Status.PLANNED):
             job.status = ServiceJob.Status.SENT
             job.save(update_fields=["status", "finished_at", "updated_at"])
-            messages.success(request, "Prévia marcada como enviada ao cliente.")
+            messages.success(request, "Orçamento marcado como enviado ao cliente.")
         elif action == "schedule" and job.status in (ServiceJob.Status.DRAFT, ServiceJob.Status.PLANNED, ServiceJob.Status.SENT):
             job.status = ServiceJob.Status.PLANNED if has_minimum_service_data(job) else ServiceJob.Status.DRAFT
             job.save(update_fields=["status", "finished_at", "updated_at"])
@@ -1378,11 +1379,11 @@ def service_job_preview_generate(request, job_id):
     if not job.preview_generated_at:
         job.preview_generated_at = now
         update_fields.append("preview_generated_at")
-        messages.success(request, "Prévia gerada. O link público já pode ser enviado ao cliente.")
+        messages.success(request, "Orçamento gerado. O link já pode ser enviado ao cliente.")
     else:
         job.preview_updated_at = now
         update_fields.append("preview_updated_at")
-        messages.success(request, "Prévia atualizada.")
+        messages.success(request, "Orçamento atualizado.")
     if job.status == ServiceJob.Status.PLANNED:
         job.status = ServiceJob.Status.SENT
         update_fields.extend(["status", "finished_at"])
@@ -1465,7 +1466,7 @@ def service_job_preview_whatsapp(request, job_id):
     planned_time = f" às {job.planned_start_time:%H:%M}" if job.planned_start_time else ""
     message = "\n".join(
         [
-            "Olá, segue a prévia do serviço combinado:",
+            "Olá, segue o orçamento do serviço combinado:",
             "",
             f"Serviço: {job.title}",
             f"Data prevista: {planned_date}{planned_time}",
@@ -1474,7 +1475,7 @@ def service_job_preview_whatsapp(request, job_id):
             f"Mão de obra estimada: {report['summary']['preview_labor_total_brl']}",
             f"Total estimado: {report['summary']['preview_estimated_total_brl']}",
             "",
-            "Acesse a prévia:",
+            "Acesse o orçamento:",
             public_url,
             "",
             "Observação: os valores podem ser ajustados conforme compra real dos materiais e execução do serviço.",

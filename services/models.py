@@ -152,10 +152,10 @@ class ServiceRequest(models.Model):
     @property
     def whatsapp_message(self):
         return (
-            "Ola, organizei seu pedido no HoraCerta.\n\n"
+            "Olá, organizei seu pedido no HoraCerta.\n\n"
             f"Pedido: {self.title}\n"
-            "Proximo passo: confirmar os detalhes para montar a previa do servico.\n\n"
-            "Assim que eu tiver as informacoes, envio a previa para voce."
+            "Próximo passo: confirmar os detalhes para montar o orçamento do serviço.\n\n"
+            "Assim que eu tiver as informações, envio o orçamento para você."
         )
 
     @property
@@ -242,7 +242,7 @@ class ServiceJob(models.Model):
     class Status(models.TextChoices):
         DRAFT = "DRAFT", "Rascunho"
         PLANNED = "PLANNED", "Planejado"
-        SENT = "SENT", "Previa enviada"
+        SENT = "SENT", "Orçamento enviado"
         SCHEDULED = "SCHEDULED", "Planejado"
         IN_PROGRESS = "IN_PROGRESS", "Em execucao"
         FINISHED = "FINISHED", "Finalizado"
@@ -439,14 +439,14 @@ class ServiceJob(models.Model):
     @property
     def preview_status_label(self):
         if self.preview_first_viewed_at:
-            return "Visualizada"
+            return "Visualizado"
         if self.preview_sent_at:
-            return "Enviada"
+            return "Enviado"
         if self.preview_updated_at and self.preview_generated_at and self.preview_updated_at > self.preview_generated_at:
-            return "Atualizada"
+            return "Atualizado"
         if self.preview_generated_at:
-            return "Gerada"
-        return "Não gerada"
+            return "Gerado"
+        return "Não gerado"
 
     @property
     def has_open_work_log(self):

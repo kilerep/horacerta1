@@ -50,6 +50,7 @@
         <div class="detail-actions">
           <a class="btn" href="{{ reports_url }}">Voltar</a>
           <a class="btn" href="{{ pdf_url }}">Baixar PDF</a>
+          {% if report.status != "CANCELED" %}
           <form method="post" class="inline-field">
             {% csrf_token %}
             <input type="hidden" name="action" value="generate_conference_link">
@@ -57,6 +58,7 @@
             <input id="conference_expires_at" type="datetime-local" name="conference_expires_at">
             <button class="btn primary" type="submit">Gerar link de conferencia</button>
           </form>
+          {% endif %}
           {% if report.conference_token and not report.conference_revoked_at %}
             <form method="post">
               {% csrf_token %}
@@ -67,6 +69,12 @@
         </div>
       {% endif %}
     </div>
+    {% if report.status == "CANCELED" %}
+      <div class="link-box" id="report-canceled-box">
+        <strong>Relatório cancelado{% if report.canceled_at %} em {{ report.canceled_at|date:"d/m/Y H:i" }}{% endif %}</strong>
+        <div class="detail-sub">Os dias deste período foram liberados para edição e o link do cliente foi desativado.{% if report.cancel_reason %} Motivo: {{ report.cancel_reason }}{% endif %}</div>
+      </div>
+    {% endif %}
     {% if conference_url %}
       <div class="share-panel" data-share-panel>
         <strong>Compartilhar relatorio</strong>
@@ -78,7 +86,8 @@
         </div>
         <div class="share-status" data-copy-status></div>
         <div class="detail-sub">
-          Status: {{ report.get_conference_final_status_display }}
+          Conferencia do cliente: <strong>{{ report.get_conference_final_status_display }}</strong>{% if report.conference_reviewed_at %} em {{ report.conference_reviewed_at|date:"d/m/Y H:i" }}{% endif %}
+          {% if report.conference_comment %}<br><strong>Mensagem do cliente:</strong> {{ report.conference_comment }}{% endif %}
           {% if report.conference_expires_at %} | Expira em {{ report.conference_expires_at|date:"d/m/Y H:i" }}{% endif %}
           {% if report.conference_revoked_at %} | Revogado em {{ report.conference_revoked_at|date:"d/m/Y H:i" }}{% endif %}
           {% if report.conference_first_viewed_at %} | Visto: {{ report.conference_first_viewed_at|date:"d/m/Y H:i" }}{% else %} | Nao visualizado{% endif %}
@@ -94,13 +103,30 @@
           {% if report.paid_note %} | {{ report.paid_note }}{% endif %}
         </div>
       </div>
-    {% else %}
+    {% elif report.status != "CANCELED" %}
       <div class="link-box">
         <strong>Link de conferencia indisponivel</strong>
         <div class="detail-sub">Gere um link ativo para copiar, enviar pelo WhatsApp e permitir a conferencia publica.</div>
       </div>
     {% endif %}
   </section>
+
+  {% if can_cancel and not public_view %}
+  <section class="detail-panel" id="cancel-report-panel">
+    <details>
+      <summary style="cursor:pointer;font-weight:800;min-height:36px;display:flex;align-items:center">O cliente contestou ou precisa corrigir? Cancelar este relatório</summary>
+      <p class="detail-sub" style="margin:8px 0">Cancelar libera os dias deste período para você editar os horários de novo e desativa o link do cliente. O relatório fica no seu histórico como cancelado. Depois de corrigir, gere um novo relatório.</p>
+      <form method="post" style="display:grid;gap:8px;max-width:520px">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="cancel_report">
+        <label for="cancel_reason">Motivo (opcional)</label>
+        <input id="cancel_reason" name="cancel_reason" type="text" maxlength="255" placeholder="Ex.: cliente contestou o dia 3">
+        <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" name="confirm_cancel"> Entendi e quero cancelar este relatório</label>
+        <button class="btn" type="submit">Cancelar relatório para corrigir</button>
+      </form>
+    </details>
+  </section>
+  {% endif %}
 
   <section class="detail-panel">
     <div class="detail-grid">

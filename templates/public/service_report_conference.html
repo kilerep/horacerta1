@@ -224,7 +224,19 @@
       .page{width:100%;padding:0}
       .report-shell{border:0;box-shadow:none;border-radius:0}
       .actions{display:none}
+      #resposta-cliente{display:none}
     }
+    .resp-help{margin:0 0 10px;color:#475569;line-height:1.45}
+    .resp-error{margin:0 0 10px;padding:8px 10px;border:1px solid #fca5a5;background:#fef2f2;color:#991b1b;border-radius:8px}
+    .resp-confirm{margin:0 0 12px}
+    .resp-contest{border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px}
+    .resp-contest summary{cursor:pointer;font-weight:700;min-height:32px;display:flex;align-items:center}
+    .resp-contest fieldset{border:0;padding:0;margin:10px 0}
+    .resp-contest legend{font-weight:700;margin-bottom:6px}
+    .resp-radio{display:inline-flex;align-items:center;gap:6px;margin:0 12px 6px 0}
+    .resp-label{display:block;font-weight:700;margin:8px 0 4px}
+    #resp-message{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;margin-bottom:10px;box-sizing:border-box}
+    .resp-safe{margin:10px 0 0;color:#64748b;font-size:13px}
   </style>
 </head>
 <body>
@@ -313,6 +325,42 @@
                 <div class="empty">Sem registros no periodo.</div>
               {% endfor %}
             </div>
+          </section>
+
+          <section class="section" id="resposta-cliente" aria-labelledby="resposta-title">
+            <h2 id="resposta-title">Sua resposta</h2>
+            {% if already_responded %}
+              {% if report.conference_final_status == "REVIEWED" %}
+                <div class="empty">Recebimento confirmado em {{ report.conference_reviewed_at|date:"d/m/Y H:i" }}. Isso registra que o relatório foi recebido e conferido; não é aprovação de pagamento.</div>
+              {% else %}
+                <div class="empty">Divergência registrada em {{ report.conference_reviewed_at|date:"d/m/Y H:i" }}: {{ report.conference_comment }}<br>O prestador foi avisado e vai entrar em contato.</div>
+              {% endif %}
+            {% else %}
+              <p class="resp-help">Não precisa criar conta. Confirme que recebeu e conferiu, ou informe o que está diferente.</p>
+              {% if contest_error %}<div class="resp-error" role="alert">Escolha o motivo e escreva uma mensagem curta para registrar a divergência.</div>{% endif %}
+              <form method="post" action="{{ respond_url }}" class="resp-confirm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="confirm">
+                <button class="btn primary" type="submit">Confirmar recebimento</button>
+              </form>
+              <details class="resp-contest"{% if contest_error %} open{% endif %}>
+                <summary>Algo está diferente? Contestar</summary>
+                <form method="post" action="{{ respond_url }}">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="contest">
+                  <fieldset>
+                    <legend>Qual é a divergência?</legend>
+                    {% for key, label in contest_reasons.items %}
+                      <label class="resp-radio"><input type="radio" name="reason" value="{{ key }}" required> {{ label }}</label>
+                    {% endfor %}
+                  </fieldset>
+                  <label class="resp-label" for="resp-message">Explique em poucas palavras</label>
+                  <textarea id="resp-message" name="message" rows="3" maxlength="1000" required></textarea>
+                  <button class="btn" type="submit">Enviar contestação</button>
+                </form>
+              </details>
+              <p class="resp-safe">O HoraCerta nunca pede senha, dados bancários ou pagamento para ver este relatório.</p>
+            {% endif %}
           </section>
 
           <section class="section" aria-labelledby="obs-title">
