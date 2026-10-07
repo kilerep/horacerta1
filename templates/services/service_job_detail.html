@@ -49,10 +49,16 @@
   .field.full{grid-column:1 / -1}
   .field-errors{margin-top:5px;color:var(--danger-text);font-size:12px}
   details summary{cursor:pointer}
+  .health-summary{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:36px;font-weight:800}
+  .health-summary small{color:var(--color-text-muted);font-weight:700}
+  .more-actions{margin:0;flex:1 1 100%}
+  .more-data{margin:0}
+  .more-actions .actions,.more-data .data{margin-top:8px}
   .item-status-form{display:grid;gap:10px;margin-top:8px}
   .finished-note{border:1px solid var(--warning-border);background:var(--warning-bg);color:var(--warning-text);border-radius:8px;padding:10px 12px;line-height:1.4}
   @media (max-width:760px){
-    .service-head,.grid,.grid.three,.data div,.entry-head{grid-template-columns:1fr;display:grid}
+    .service-head,.grid,.data div,.entry-head{grid-template-columns:1fr;display:grid}
+    .grid.three{grid-template-columns:repeat(2,minmax(0,1fr))}
     .top-total{min-width:0}
     .actions .btn,.actions button,.inline-form .btn,.item-status-form .btn{width:100%}
     .entry-total{text-align:left}
@@ -98,111 +104,15 @@
       {% else %}
         <a class="btn primary" href="{{ next_action.primary.url }}" {% if next_action.primary.external %}target="_blank" rel="noopener"{% endif %}>{{ next_action.primary.label }}</a>
       {% endif %}
-      {% for action in next_action.secondary %}
-        {% if action.method == "post" %}
-          <form method="post" action="{{ action.url }}">
-            {% csrf_token %}
-            <input type="hidden" name="action" value="{{ action.post_action }}">
-            <button class="btn" type="submit">{{ action.label }}</button>
-          </form>
-        {% else %}
-          <a class="btn" href="{{ action.url }}" {% if action.external %}target="_blank" rel="noopener"{% endif %}>{{ action.label }}</a>
-        {% endif %}
-      {% endfor %}
+      {% for action in next_action.secondary %}{% if forloop.counter <= 2 %}{% include "services/_action_button.html" with action=action %}{% endif %}{% endfor %}
+      {% if next_action.secondary|length > 2 %}
+        <details class="more-actions">
+          <summary class="btn">Mais ações</summary>
+          <div class="actions">{% for action in next_action.secondary %}{% if forloop.counter > 2 %}{% include "services/_action_button.html" with action=action %}{% endif %}{% endfor %}</div>
+        </details>
+      {% endif %}
       <a class="btn" href="{% url 'service_job_list' %}">Voltar</a>
     </div>
-  </section>
-
-  {% include "services/service_job_health_panel.html" %}
-
-  <section class="card section">
-    <h2>Combinado</h2>
-    <p class="sub">{{ job.description|default:"Sem descrição registrada." }}</p>
-    <div class="grid three">
-      <div class="metric"><span>Horas previstas</span><strong>{{ job.planned_duration_label }}</strong></div>
-      <div class="metric"><span>Total trabalhado</span><strong>{{ summary.total_hours }}</strong></div>
-      <div class="metric"><span>Mão de obra</span><strong>{{ summary.labor_total_brl }}</strong></div>
-    </div>
-    <div class="data">
-      <div><span>Cliente</span><strong>{{ job.client_display_name }}</strong></div>
-      <div><span>Categoria</span><strong>{{ job.category.name }}</strong></div>
-      <div><span>Título</span><strong>{{ job.title }}</strong></div>
-      <div><span>Endereço</span><strong>{{ job.full_service_address|default:"-" }}</strong></div>
-      <div><span>Ponto de referência</span><strong>{{ job.service_reference|default:"-" }}</strong></div>
-      <div><span>Data prevista</span><strong>{% if job.start_date %}{{ job.start_date|date:"d/m/Y" }}{% else %}-{% endif %}</strong></div>
-      <div><span>Hora prevista</span><strong>{% if job.planned_start_time %}{{ job.planned_start_time|time:"H:i" }}{% else %}-{% endif %}{% if job.planned_end_time %} até {{ job.planned_end_time|time:"H:i" }}{% endif %}</strong></div>
-      <div><span>Observacoes</span><strong>{{ job.notes|default:"-" }}</strong></div>
-    </div>
-    {% if not can_edit_service and maps_url %}
-      <div class="actions"><a class="btn" href="{{ maps_url }}" target="_blank" rel="noopener">Abrir no Maps</a></div>
-    {% endif %}
-    {% if can_edit_service %}
-      <div class="actions">
-        <a class="btn" href="{% url 'service_job_update' job.id %}">Editar</a>
-        {% if maps_url %}<a class="btn" href="{{ maps_url }}" target="_blank" rel="noopener">Abrir no Maps</a>{% endif %}
-        {% if job.client_id and job.full_service_address %}
-          <form method="post" action="{% url 'service_job_save_address_to_client' job.id %}" onsubmit="return confirm('Salvar este endereço no cadastro do cliente?');">
-            {% csrf_token %}
-            <button class="btn" type="submit">Salvar endereço no cliente</button>
-          </form>
-        {% endif %}
-        {% if can_save_manual_client %}
-          <form method="post" action="{% url 'service_job_save_manual_client' job.id %}">
-            {% csrf_token %}
-            <button class="btn" type="submit">Salvar cliente em Meus clientes</button>
-          </form>
-        {% endif %}
-      </div>
-    {% elif is_finished or is_report_sent %}
-      <div class="finished-note">Para editar, reabra o serviço.</div>
-    {% endif %}
-  </section>
-
-  <section class="card section">
-    <h2>Itens previstos</h2>
-    <p class="sub">Use para montar a prévia e pedir cotação.</p>
-    <p class="sub">Status: {{ preview_status_label }}</p>
-    <div class="grid three">
-      <div class="metric"><span>Status da previa</span><strong>{{ preview_status_label }}</strong></div>
-      <div class="metric"><span>Itens previstos</span><strong>{{ summary.preview_items_total_brl }}</strong></div>
-      <div class="metric"><span>Mao de obra estimada</span><strong>{{ summary.preview_labor_total_brl }}</strong></div>
-      <div class="metric"><span>Total estimado</span><strong>{{ summary.preview_estimated_total_brl }}</strong></div>
-    </div>
-    <div class="entry-list">
-      <h3 class="entry-title">Prévia</h3>
-      <p class="sub">Valores estimados e sujeitos à confirmação na compra e execução do serviço.</p>
-    </div>
-    <div class="actions">
-      {% if can_edit_entries %}
-        <form method="post" action="{{ preview_generate_url }}">
-          {% csrf_token %}
-          <button class="btn" type="submit">{% if preview_generated_at %}Atualizar prévia{% else %}Gerar prévia{% endif %}</button>
-        </form>
-        {% if preview_generated_at %}
-          <a class="btn" href="{{ preview_public_url }}" target="_blank" rel="noopener">Ver prévia</a>
-          <button class="btn" type="button" data-copy-text="{{ preview_public_full_url }}">Copiar link</button>
-          <a class="btn" href="{{ preview_whatsapp_url }}" target="_blank" rel="noopener">Enviar WhatsApp</a>
-        {% endif %}
-      {% endif %}
-    </div>
-    <div class="entry-list">
-      <h3 class="entry-title">Cotação oficial</h3>
-      <p class="sub">Mensagem para loja. Sem loja integrada, sem pagamento.</p>
-    </div>
-    <div class="actions">
-      {% if quote_items %}
-        <form method="post" action="{{ quote_generate_url }}" id="quote">
-          {% csrf_token %}
-          <button class="btn" type="submit">Pedir cotação</button>
-        </form>
-        <button class="btn" type="button" data-copy-quote>Copiar mensagem</button>
-        <a class="btn" href="{{ quote_whatsapp_url }}" target="_blank" rel="noopener">WhatsApp cotação</a>
-        <a class="btn" href="{{ quote_whatsapp_url }}" target="_blank" rel="noopener">Abrir WhatsApp</a>
-      {% else %}
-        <div class="empty-line">Adicione itens previstos para gerar uma cotação.</div>
-      {% endif %}
-    </div>
-    <textarea data-quote-message hidden>{{ quote_display_message }}</textarea>
   </section>
 
   <section class="card section" id="execution">
@@ -219,9 +129,9 @@
           <div class="entry-head">
             <div>
               <div class="entry-title">{{ log.work_date|date:"d/m/Y" }}</div>
-              <div class="entry-meta"><span>{{ log.start_time|time:"H:i" }} ate {% if log.end_time %}{{ log.end_time|time:"H:i" }}{% else %}em andamento{% endif %}</span></div>
+              <div class="entry-meta"><span>{{ log.start_time|time:"H:i" }} até {% if log.end_time %}{{ log.end_time|time:"H:i" }}{% else %}em andamento{% endif %}</span></div>
             </div>
-            <div class="entry-total">{% if log.end_time %}{{ log.duration_label }}{% else %}Periodo aberto{% endif %}</div>
+            <div class="entry-total">{% if log.end_time %}{{ log.duration_label }}{% else %}Período aberto{% endif %}</div>
           </div>
           {% if log.description %}<p class="sub">{{ log.description }}</p>{% endif %}
         </article>
@@ -301,10 +211,104 @@
     </div>
   </section>
 
+  {% include "services/service_job_variance_panel.html" %}
+
+  <section class="card section">
+    <h2>Combinado</h2>
+    <p class="sub">{{ job.description|default:"Sem descrição registrada." }}</p>
+    <div class="grid three">
+      <div class="metric"><span>Horas previstas</span><strong>{{ job.planned_duration_label }}</strong></div>
+      <div class="metric"><span>Total trabalhado</span><strong>{{ summary.total_hours }}</strong></div>
+      <div class="metric"><span>Mão de obra</span><strong>{{ summary.labor_total_brl }}</strong></div>
+    </div>
+    {% if job.full_service_address or job.service_reference or job.notes %}
+      <details class="more-data">
+        <summary class="btn">Ver endereço e observações</summary>
+        <div class="data">
+          {% if job.full_service_address %}<div><span>Endereço</span><strong>{{ job.full_service_address }}</strong></div>{% endif %}
+          {% if job.service_reference %}<div><span>Ponto de referência</span><strong>{{ job.service_reference }}</strong></div>{% endif %}
+          {% if job.notes %}<div><span>Observações</span><strong>{{ job.notes }}</strong></div>{% endif %}
+        </div>
+      </details>
+    {% endif %}
+    {% if not can_edit_service and maps_url %}
+      <div class="actions"><a class="btn" href="{{ maps_url }}" target="_blank" rel="noopener">Abrir no Maps</a></div>
+    {% endif %}
+    {% if can_edit_service %}
+      <div class="actions">
+        <a class="btn" href="{% url 'service_job_update' job.id %}">Editar</a>
+        {% if maps_url %}<a class="btn" href="{{ maps_url }}" target="_blank" rel="noopener">Abrir no Maps</a>{% endif %}
+        {% if job.client_id and job.full_service_address %}
+          <form method="post" action="{% url 'service_job_save_address_to_client' job.id %}" onsubmit="return confirm('Salvar este endereço no cadastro do cliente?');">
+            {% csrf_token %}
+            <button class="btn" type="submit">Salvar endereço no cliente</button>
+          </form>
+        {% endif %}
+        {% if can_save_manual_client %}
+          <form method="post" action="{% url 'service_job_save_manual_client' job.id %}">
+            {% csrf_token %}
+            <button class="btn" type="submit">Salvar cliente em Meus clientes</button>
+          </form>
+        {% endif %}
+      </div>
+    {% elif is_finished or is_report_sent %}
+      <div class="finished-note">Para editar, reabra o serviço.</div>
+    {% endif %}
+  </section>
+
+  <section class="card section">
+    <h2>Itens previstos</h2>
+    <p class="sub">Use para montar a prévia e pedir cotação.</p>
+    <p class="sub">Status: {{ preview_status_label }}</p>
+    <div class="grid three">
+      <div class="metric"><span>Status da prévia</span><strong>{{ preview_status_label }}</strong></div>
+      <div class="metric"><span>Itens previstos</span><strong>{{ summary.preview_items_total_brl }}</strong></div>
+      <div class="metric"><span>Mão de obra estimada</span><strong>{{ summary.preview_labor_total_brl }}</strong></div>
+      <div class="metric"><span>Total estimado</span><strong>{{ summary.preview_estimated_total_brl }}</strong></div>
+    </div>
+    <div class="entry-list">
+      <h3 class="entry-title">Prévia</h3>
+      <p class="sub">Valores estimados e sujeitos à confirmação na compra e execução do serviço.</p>
+    </div>
+    <div class="actions">
+      {% if can_edit_entries %}
+        <form method="post" action="{{ preview_generate_url }}">
+          {% csrf_token %}
+          <button class="btn" type="submit">{% if preview_generated_at %}Atualizar prévia{% else %}Gerar prévia{% endif %}</button>
+        </form>
+        {% if preview_generated_at %}
+          <a class="btn" href="{{ preview_public_url }}" target="_blank" rel="noopener">Ver prévia</a>
+          <button class="btn" type="button" data-copy-text="{{ preview_public_full_url }}">Copiar link</button>
+          <a class="btn" href="{{ preview_whatsapp_url }}" target="_blank" rel="noopener">Enviar WhatsApp</a>
+        {% endif %}
+      {% endif %}
+    </div>
+    <div class="entry-list">
+      <h3 class="entry-title">Cotação oficial</h3>
+      <p class="sub">Mensagem para loja. Sem loja integrada, sem pagamento.</p>
+    </div>
+    <div class="actions">
+      {% if quote_items %}
+        <form method="post" action="{{ quote_generate_url }}" id="quote">
+          {% csrf_token %}
+          <button class="btn" type="submit">Pedir cotação</button>
+        </form>
+        <button class="btn" type="button" data-copy-quote>Copiar mensagem</button>
+        <a class="btn" href="{{ quote_whatsapp_url }}" target="_blank" rel="noopener">WhatsApp cotação</a>
+        <a class="btn" href="{{ quote_whatsapp_url }}" target="_blank" rel="noopener">Abrir WhatsApp</a>
+      {% else %}
+        <div class="empty-line">Adicione itens previstos para gerar uma cotação.</div>
+      {% endif %}
+    </div>
+    <textarea data-quote-message hidden>{{ quote_display_message }}</textarea>
+  </section>
+
+  {% include "services/service_job_health_panel.html" %}
+
   <section class="card section" id="report">
-    <h2>Relatorio final</h2>
+    <h2>Relatório final</h2>
     {% if is_report_sent %}
-      <p class="sub">Relatorio final gerado para o cliente.</p>
+      <p class="sub">Relatório final gerado para o cliente.</p>
       <div class="actions">
         <a class="btn primary" href="{{ report_public_url }}" target="_blank" rel="noopener">Ver relatório</a>
         <a class="btn" href="{{ report_pdf_url }}">PDF</a>
@@ -317,7 +321,7 @@
           </form>
         {% endif %}
       </div>
-      {% if public_report_first_viewed_at %}<p class="sub">Visto em {{ public_report_first_viewed_at|date:"d/m/Y" }} as {{ public_report_first_viewed_at|time:"H:i" }}</p>{% endif %}
+      {% if public_report_first_viewed_at %}<p class="sub">Visto em {{ public_report_first_viewed_at|date:"d/m/Y" }} às {{ public_report_first_viewed_at|time:"H:i" }}</p>{% endif %}
     {% elif is_finished %}
       <p class="sub">Serviço finalizado. Gere o relatório para liberar os envios finais.</p>
       {% if not has_work_logs %}
