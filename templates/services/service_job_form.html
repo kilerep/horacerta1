@@ -40,6 +40,9 @@
   .catalog-options label{display:flex;align-items:center;gap:7px;margin:0}
   .last-used-hint{grid-column:1 / -2;color:var(--color-text-muted);font-size:12px;line-height:1.35}
   .os-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+  .os-more{border:1px solid var(--color-border);border-radius:12px;padding:10px 12px;margin-top:4px}
+  .os-more>summary{cursor:pointer;min-height:36px;display:flex;align-items:center;font-weight:800}
+  .os-more[open]>summary{margin-bottom:10px}
   .maps-link{display:none}
   .maps-link.is-visible{display:inline-flex}
   @media (max-width: 760px){
@@ -102,6 +105,63 @@
     </section>
 
     <section class="os-section">
+      <h2>Sobre o serviço</h2>
+      <div class="os-grid">
+        <div class="os-field">
+          <label for="{{ form.category.id_for_label }}">{{ form.category.label }}</label>
+          <select name="{{ form.category.html_name }}" id="{{ form.category.id_for_label }}" class="hc-input" data-category-select>
+            <option value="">Selecione uma categoria</option>
+            {% for category in form.fields.category.queryset %}
+              <option value="{{ category.id }}" data-description="{{ category.description }}" {% if form.category.value|stringformat:"s" == category.id|stringformat:"s" %}selected{% endif %}>{{ category.name }}</option>
+            {% endfor %}
+          </select>
+          {% if form.category.errors %}<div class="os-errors">{{ form.category.errors }}</div>{% endif %}
+        </div>
+        <div class="os-field">
+          <label for="{{ form.title.id_for_label }}">{{ form.title.label }}</label>
+          {{ form.title }}
+          {% if form.title.errors %}<div class="os-errors">{{ form.title.errors }}</div>{% endif %}
+        </div>
+        <div class="os-field full">
+          <div class="category-description" data-category-description>Escolha uma categoria para ver uma descrição rápida.</div>
+        </div>
+        <div class="os-field full">
+          <label for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
+          {{ form.description }}
+          {% if form.description.errors %}<div class="os-errors">{{ form.description.errors }}</div>{% endif %}
+        </div>
+        <div class="os-field full">
+          <label for="{{ form.notes.id_for_label }}">{{ form.notes.label }}</label>
+          {{ form.notes }}
+        </div>
+      </div>
+    </section>
+
+    <section class="os-section">
+      <h2>Como cobrar</h2>
+      <p class="os-section__hint">O valor da hora (ou o valor fechado) é usado para calcular o total do serviço.</p>
+      <div class="os-grid three">
+        <div class="os-field full">
+          <label for="{{ form.billing_mode.id_for_label }}">{{ form.billing_mode.label }}</label>
+          {{ form.billing_mode }}
+        </div>
+        <div class="os-field billing-panel" data-billing-panel="HOURLY">
+          <label for="{{ form.hourly_rate_snapshot.id_for_label }}">{{ form.hourly_rate_snapshot.label }}</label>
+          {{ form.hourly_rate_snapshot }}
+          {% if form.hourly_rate_snapshot.errors %}<div class="os-errors">{{ form.hourly_rate_snapshot.errors }}</div>{% endif %}
+        </div>
+        <div class="os-field billing-panel" data-billing-panel="FIXED">
+          <label for="{{ form.fixed_labor_value.id_for_label }}">{{ form.fixed_labor_value.label }}</label>
+          {{ form.fixed_labor_value }}
+          {% if form.fixed_labor_value.errors %}<div class="os-errors">{{ form.fixed_labor_value.errors }}</div>{% endif %}
+        </div>
+      </div>
+    </section>
+
+    <details class="os-more"{% if is_edit or form.errors %} open{% endif %}>
+      <summary class="btn">Local, data e itens previstos (opcional)</summary>
+      <p class="os-section__hint">Dá para preencher depois, dentro do serviço. Informe agora só o que já souber.</p>
+    <section class="os-section">
       <h2>Local do serviço</h2>
       <p class="os-section__hint">Informe o endereço de atendimento. A busca por CEP é apenas uma ajuda; revise os dados antes de salvar.</p>
       <div class="cep-row">
@@ -148,39 +208,6 @@
     </section>
 
     <section class="os-section">
-      <h2>Sobre o serviço</h2>
-      <div class="os-grid">
-        <div class="os-field">
-          <label for="{{ form.category.id_for_label }}">{{ form.category.label }}</label>
-          <select name="{{ form.category.html_name }}" id="{{ form.category.id_for_label }}" class="hc-input" data-category-select>
-            <option value="">Selecione uma categoria</option>
-            {% for category in form.fields.category.queryset %}
-              <option value="{{ category.id }}" data-description="{{ category.description }}" {% if form.category.value|stringformat:"s" == category.id|stringformat:"s" %}selected{% endif %}>{{ category.name }}</option>
-            {% endfor %}
-          </select>
-          {% if form.category.errors %}<div class="os-errors">{{ form.category.errors }}</div>{% endif %}
-        </div>
-        <div class="os-field">
-          <label for="{{ form.title.id_for_label }}">{{ form.title.label }}</label>
-          {{ form.title }}
-          {% if form.title.errors %}<div class="os-errors">{{ form.title.errors }}</div>{% endif %}
-        </div>
-        <div class="os-field full">
-          <div class="category-description" data-category-description>Escolha uma categoria para ver uma descrição rápida.</div>
-        </div>
-        <div class="os-field full">
-          <label for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
-          {{ form.description }}
-          {% if form.description.errors %}<div class="os-errors">{{ form.description.errors }}</div>{% endif %}
-        </div>
-        <div class="os-field full">
-          <label for="{{ form.notes.id_for_label }}">{{ form.notes.label }}</label>
-          {{ form.notes }}
-        </div>
-      </div>
-    </section>
-
-    <section class="os-section">
       <h2>Previsão de atendimento</h2>
       <p class="os-section__hint">Use a previsão para organizar o atendimento. As horas realizadas serão registradas dentro do serviço.</p>
       <div class="os-grid three">
@@ -197,27 +224,13 @@
           {{ form.planned_end_time }}
           {% if form.planned_end_time.errors %}<div class="os-errors">{{ form.planned_end_time.errors }}</div>{% endif %}
         </div>
-        <div class="os-field full">
-          <label for="{{ form.billing_mode.id_for_label }}">{{ form.billing_mode.label }}</label>
-          {{ form.billing_mode }}
-        </div>
-        <div class="os-field billing-panel" data-billing-panel="HOURLY">
-          <label for="{{ form.hourly_rate_snapshot.id_for_label }}">{{ form.hourly_rate_snapshot.label }}</label>
-          {{ form.hourly_rate_snapshot }}
-          {% if form.hourly_rate_snapshot.errors %}<div class="os-errors">{{ form.hourly_rate_snapshot.errors }}</div>{% endif %}
-        </div>
-        <div class="os-field billing-panel" data-billing-panel="FIXED">
-          <label for="{{ form.fixed_labor_value.id_for_label }}">{{ form.fixed_labor_value.label }}</label>
-          {{ form.fixed_labor_value }}
-          {% if form.fixed_labor_value.errors %}<div class="os-errors">{{ form.fixed_labor_value.errors }}</div>{% endif %}
-        </div>
       </div>
     </section>
 
     {% if not is_edit %}
       <section class="os-section">
         <h2>Itens previstos</h2>
-        <p class="os-section__hint">Adicione materiais, pecas ou despesas previstas para este servico. O status inicial sera Previsto.</p>
+        <p class="os-section__hint">Adicione materiais, peças ou despesas previstas para este serviço. O status inicial será Previsto.</p>
         <div class="planned-items" data-planned-items>
           <div class="planned-item-row" data-planned-item-row>
             <div class="catalog-suggest">
@@ -269,6 +282,8 @@
         <button class="btn" type="button" data-add-planned-item>Adicionar item previsto</button>
       </section>
     {% endif %}
+
+    </details>
 
     <div class="os-actions">
       <a class="btn" href="{% url 'service_job_list' %}">Voltar</a>

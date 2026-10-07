@@ -62,14 +62,14 @@ class ServiceJobForm(forms.ModelForm):
             "service_reference": "Ponto de referencia",
             "category": "Categoria",
             "title": "Titulo do servico",
-            "description": "O que sera feito",
+            "description": "O que será feito",
             "start_date": "Data prevista",
             "planned_start_time": "Hora inicial prevista",
             "planned_end_time": "Hora final prevista",
-            "billing_mode": "Modo de cobranca",
+            "billing_mode": "Modo de cobrança",
             "hourly_rate_snapshot": "Valor por hora",
-            "fixed_labor_value": "Valor fixo da mao de obra",
-            "notes": "Observacoes finais do prestador",
+            "fixed_labor_value": "Valor fixo da mão de obra",
+            "notes": "Observações finais do prestador",
         }
         widgets = {
             "manual_client_whatsapp": forms.TextInput(attrs={"placeholder": "Opcional"}),
@@ -89,7 +89,7 @@ class ServiceJobForm(forms.ModelForm):
                     "placeholder": "Ex.: Troca de disjuntores, revisão de tomadas e teste do quadro elétrico.",
                 }
             ),
-            "notes": forms.Textarea(attrs={"rows": 3, "placeholder": "Observacoes finais, combinados ou pendencias do atendimento."}),
+            "notes": forms.Textarea(attrs={"rows": 3, "placeholder": "Observações finais, combinados ou pendências do atendimento."}),
             "start_date": forms.DateInput(attrs={"type": "date"}),
             "planned_start_time": forms.TimeInput(attrs={"type": "time"}),
             "planned_end_time": forms.TimeInput(attrs={"type": "time"}),
@@ -116,7 +116,7 @@ class ServiceJobForm(forms.ModelForm):
         )
         self.fields["contract"].label_from_instance = self._contract_label
         self.fields["category"].queryset = ServiceCategory.objects.filter(is_active=True)
-        self.fields["manual_client_name"].help_text = "Use quando o cliente nao estiver cadastrado no HoraCerta."
+        self.fields["manual_client_name"].help_text = "Use quando o cliente não estiver cadastrado no HoraCerta."
         self.fields["start_date"].help_text = "Use a previsao para organizar o atendimento. As horas realizadas serão registradas dentro do serviço."
         for field in self.fields.values():
             field.widget.attrs.setdefault("class", "hc-input")
@@ -186,9 +186,9 @@ class ServiceJobForm(forms.ModelForm):
             self.add_error("manual_client_name", "Informe o nome do cliente avulso.")
         billing_mode = data.get("billing_mode")
         if billing_mode == ServiceJob.BillingMode.HOURLY and not data.get("hourly_rate_snapshot") and not contract:
-            self.add_error("hourly_rate_snapshot", "Informe o valor/hora ou escolha outro modo de cobranca.")
+            self.add_error("hourly_rate_snapshot", "Informe o valor/hora ou escolha outro modo de cobrança.")
         if billing_mode == ServiceJob.BillingMode.FIXED and data.get("fixed_labor_value") in (None, ""):
-            self.add_error("fixed_labor_value", "Informe o valor fixo ou escolha outro modo de cobranca.")
+            self.add_error("fixed_labor_value", "Informe o valor fixo ou escolha outro modo de cobrança.")
         return data
 
     def save(self, commit=True, status=None):
@@ -284,7 +284,7 @@ class ServiceRequestForm(forms.ModelForm):
         self.fields["contract"].label_from_instance = self._contract_label
         self.fields["category"].queryset = ServiceCategory.objects.filter(is_active=True)
         self.fields["client_name"].required = False
-        self.fields["client_name"].help_text = "Use quando o cliente ainda nao estiver cadastrado."
+        self.fields["client_name"].help_text = "Use quando o cliente ainda não estiver cadastrado."
         for field in self.fields.values():
             field.widget.attrs.setdefault("class", "hc-input")
 
