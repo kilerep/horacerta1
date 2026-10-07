@@ -55,7 +55,14 @@ def _included_items(job):
 
 
 def _professional_name(job):
-    return job.professional.get_full_name() or job.professional.email or job.professional.username
+    # Mesma regra do orcamento/relatorio publicos (services.views._service_report_context):
+    # o prestador aparece com o mesmo nome em todas as paginas que o cliente recebe.
+    return (
+        getattr(getattr(job.contract, "employee", None), "full_name", "")
+        or job.professional.get_full_name()
+        or job.professional.email
+        or job.professional.username
+    )
 
 
 def _proposal_warnings(job, items):
