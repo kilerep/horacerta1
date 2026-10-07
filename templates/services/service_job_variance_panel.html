@@ -1,9 +1,11 @@
 <section class="card section" aria-labelledby="service-variance-title">
   <h2 id="service-variance-title">Previsto x realizado</h2>
-  <p class="sub">Comparação rápida para o prestador perceber desvios de tempo e valor antes de repetir o serviço ou fechar o relatório.</p>
+  <p class="sub">Compare o que foi previsto com o que já foi feito e gasto.</p>
   <div class="variance-grid">
     <div class="variance-metric"><span>Horas previstas</span><strong>{{ job.planned_duration_label }}</strong></div>
     <div class="variance-metric"><span>Horas realizadas</span><strong>{{ summary.total_hours }}</strong></div>
+    <div class="variance-metric"><span>Mão de obra</span><strong>{{ summary.labor_total_brl }}</strong></div>
+    <div class="variance-metric"><span>Itens usados</span><strong>{{ summary.used_items_total_brl }}</strong></div>
     <div class="variance-metric"><span>Total estimado</span><strong>{{ summary.preview_estimated_total_brl }}</strong></div>
     <div class="variance-metric"><span>Total atual/final</span><strong>{{ summary.estimated_total_brl }}</strong></div>
   </div>

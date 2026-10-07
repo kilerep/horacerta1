@@ -53,6 +53,9 @@
   .health-summary small{color:var(--color-text-muted);font-weight:700}
   .more-actions{margin:0;flex:1 1 100%}
   .more-data{margin:0}
+  .back-link{display:inline-flex;align-items:center;min-height:44px;color:var(--color-primary);font-weight:800;text-decoration:none}
+  .send-box{display:grid;gap:8px;border:1px solid var(--color-border);border-radius:8px;padding:12px;background:var(--surface-soft)}
+  .send-box h3{margin:0;font-size:15px}
   .more-actions .actions,.more-data .data{margin-top:8px}
   .item-status-form{display:grid;gap:10px;margin-top:8px}
   .finished-note{border:1px solid var(--warning-border);background:var(--warning-bg);color:var(--warning-text);border-radius:8px;padding:10px 12px;line-height:1.4}
@@ -71,6 +74,7 @@
 <div class="service-detail" id="details">
   <section class="card service-head">
     <div>
+      <a class="back-link" href="{% url 'service_job_list' %}">← Voltar para Serviços</a>
       <h1>{{ job.title }}</h1>
       <div class="meta">
         <span>{{ job.client_display_name }}</span>
@@ -111,18 +115,18 @@
           <div class="actions">{% for action in next_action.secondary %}{% if forloop.counter > 2 %}{% include "services/_action_button.html" with action=action %}{% endif %}{% endfor %}</div>
         </details>
       {% endif %}
-      <a class="btn" href="{% url 'service_job_list' %}">Voltar</a>
     </div>
   </section>
 
   <section class="card section" id="execution">
     <h2>Execução do serviço</h2>
     <p class="sub">Períodos do serviço não entram no Histórico normal do HoraCerta.</p>
+    {% if has_work_logs %}
     <div class="grid three">
       <div class="metric"><span>Total trabalhado</span><strong>{{ summary.total_hours }}</strong></div>
       <div class="metric"><span>Períodos</span><strong>{{ work_logs|length }}</strong></div>
-      <div class="metric"><span>Estado</span><strong>{% if open_work_log %}Período aberto{% elif has_work_logs %}Com períodos{% else %}Não iniciado{% endif %}</strong></div>
     </div>
+    {% endif %}
     <div class="entry-list">
       {% for log in work_logs %}
         <article class="entry-card">
@@ -185,30 +189,34 @@
       </details>
     {% endif %}
 
-    <div class="entry-list">
-      <h3 class="entry-title">Pendentes</h3>
-      {% for item in pending_items %}
-        {% include "services/service_item_card.html" with item=item job=job can_edit_entries=can_edit_entries item_form=item_form %}
-      {% empty %}
-        <div class="empty-line">Nenhum item pendente.</div>
-      {% endfor %}
-    </div>
-    <div class="entry-list">
-      <h3 class="entry-title">Itens usados/cobrados</h3>
-      {% for item in used_items %}
-        {% include "services/service_item_card.html" with item=item job=job can_edit_entries=can_edit_entries item_form=item_form %}
-      {% empty %}
-        <div class="empty-line">Nenhum item usado.</div>
-      {% endfor %}
-    </div>
-    <div class="entry-list">
-      <h3 class="entry-title">Itens não usados/devolvidos</h3>
-      {% for item in not_used_items %}
-        {% include "services/service_item_card.html" with item=item job=job can_edit_entries=False item_form=item_form %}
-      {% empty %}
-        <div class="empty-line">Nenhum item não usado ou devolvido.</div>
-      {% endfor %}
-    </div>
+    {% if pending_items or used_items or not_used_items %}
+      {% if pending_items %}
+      <div class="entry-list">
+        <h3 class="entry-title">Pendentes</h3>
+        {% for item in pending_items %}
+          {% include "services/service_item_card.html" with item=item job=job can_edit_entries=can_edit_entries item_form=item_form %}
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% if used_items %}
+      <div class="entry-list">
+        <h3 class="entry-title">Itens usados/cobrados</h3>
+        {% for item in used_items %}
+          {% include "services/service_item_card.html" with item=item job=job can_edit_entries=can_edit_entries item_form=item_form %}
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% if not_used_items %}
+      <div class="entry-list">
+        <h3 class="entry-title">Itens não usados/devolvidos</h3>
+        {% for item in not_used_items %}
+          {% include "services/service_item_card.html" with item=item job=job can_edit_entries=False item_form=item_form %}
+        {% endfor %}
+      </div>
+      {% endif %}
+    {% else %}
+      <div class="empty-line">Nenhum item registrado ainda. Adicione materiais e despesas quando usar.</div>
+    {% endif %}
   </section>
 
   {% include "services/service_job_variance_panel.html" %}
@@ -216,11 +224,6 @@
   <section class="card section">
     <h2>Combinado</h2>
     <p class="sub">{{ job.description|default:"Sem descrição registrada." }}</p>
-    <div class="grid three">
-      <div class="metric"><span>Horas previstas</span><strong>{{ job.planned_duration_label }}</strong></div>
-      <div class="metric"><span>Total trabalhado</span><strong>{{ summary.total_hours }}</strong></div>
-      <div class="metric"><span>Mão de obra</span><strong>{{ summary.labor_total_brl }}</strong></div>
-    </div>
     {% if job.full_service_address or job.service_reference or job.notes %}
       <details class="more-data">
         <summary class="btn">Ver endereço e observações</summary>
@@ -238,19 +241,26 @@
       <div class="actions">
         <a class="btn" href="{% url 'service_job_update' job.id %}">Editar</a>
         {% if maps_url %}<a class="btn" href="{{ maps_url }}" target="_blank" rel="noopener">Abrir no Maps</a>{% endif %}
-        {% if job.client_id and job.full_service_address %}
-          <form method="post" action="{% url 'service_job_save_address_to_client' job.id %}" onsubmit="return confirm('Salvar este endereço no cadastro do cliente?');">
-            {% csrf_token %}
-            <button class="btn" type="submit">Salvar endereço no cliente</button>
-          </form>
-        {% endif %}
-        {% if can_save_manual_client %}
-          <form method="post" action="{% url 'service_job_save_manual_client' job.id %}">
-            {% csrf_token %}
-            <button class="btn" type="submit">Salvar cliente em Meus clientes</button>
-          </form>
-        {% endif %}
       </div>
+      {% if job.client_id and job.full_service_address or can_save_manual_client %}
+        <details class="more-actions">
+          <summary class="btn">Mais opções do cliente</summary>
+          <div class="actions">
+            {% if job.client_id and job.full_service_address %}
+              <form method="post" action="{% url 'service_job_save_address_to_client' job.id %}" onsubmit="return confirm('Salvar este endereço no cadastro do cliente?');">
+                {% csrf_token %}
+                <button class="btn" type="submit">Salvar endereço no cliente</button>
+              </form>
+            {% endif %}
+            {% if can_save_manual_client %}
+              <form method="post" action="{% url 'service_job_save_manual_client' job.id %}">
+                {% csrf_token %}
+                <button class="btn" type="submit">Salvar cliente em Meus clientes</button>
+              </form>
+            {% endif %}
+          </div>
+        </details>
+      {% endif %}
     {% elif is_finished or is_report_sent %}
       <div class="finished-note">Para editar, reabra o serviço.</div>
     {% endif %}
@@ -261,44 +271,42 @@
     <p class="sub">Use para montar a prévia e pedir cotação.</p>
     <p class="sub">Status: {{ preview_status_label }}</p>
     <div class="grid three">
-      <div class="metric"><span>Status da prévia</span><strong>{{ preview_status_label }}</strong></div>
       <div class="metric"><span>Itens previstos</span><strong>{{ summary.preview_items_total_brl }}</strong></div>
       <div class="metric"><span>Mão de obra estimada</span><strong>{{ summary.preview_labor_total_brl }}</strong></div>
       <div class="metric"><span>Total estimado</span><strong>{{ summary.preview_estimated_total_brl }}</strong></div>
     </div>
-    <div class="entry-list">
-      <h3 class="entry-title">Prévia</h3>
+    <div class="send-box" id="send-client">
+      <h3>Prévia (para o cliente)</h3>
       <p class="sub">Valores estimados e sujeitos à confirmação na compra e execução do serviço.</p>
-    </div>
-    <div class="actions">
-      {% if can_edit_entries %}
-        <form method="post" action="{{ preview_generate_url }}">
-          {% csrf_token %}
-          <button class="btn" type="submit">{% if preview_generated_at %}Atualizar prévia{% else %}Gerar prévia{% endif %}</button>
-        </form>
-        {% if preview_generated_at %}
-          <a class="btn" href="{{ preview_public_url }}" target="_blank" rel="noopener">Ver prévia</a>
-          <button class="btn" type="button" data-copy-text="{{ preview_public_full_url }}">Copiar link</button>
-          <a class="btn" href="{{ preview_whatsapp_url }}" target="_blank" rel="noopener">Enviar WhatsApp</a>
+      <div class="actions">
+        {% if can_edit_entries %}
+          <form method="post" action="{{ preview_generate_url }}">
+            {% csrf_token %}
+            <button class="btn" type="submit">{% if preview_generated_at %}Atualizar prévia{% else %}Gerar prévia{% endif %}</button>
+          </form>
+          {% if preview_generated_at %}
+            <a class="btn" href="{{ preview_public_url }}" target="_blank" rel="noopener">Ver prévia</a>
+            <button class="btn" type="button" data-copy-text="{{ preview_public_full_url }}">Copiar link</button>
+            <a class="btn" href="{{ preview_whatsapp_url }}" target="_blank" rel="noopener">Enviar WhatsApp</a>
+          {% endif %}
         {% endif %}
-      {% endif %}
+      </div>
     </div>
-    <div class="entry-list">
-      <h3 class="entry-title">Cotação oficial</h3>
+    <div class="send-box" id="send-store">
+      <h3>Cotação oficial (para a loja)</h3>
       <p class="sub">Mensagem para loja. Sem loja integrada, sem pagamento.</p>
-    </div>
-    <div class="actions">
-      {% if quote_items %}
-        <form method="post" action="{{ quote_generate_url }}" id="quote">
-          {% csrf_token %}
-          <button class="btn" type="submit">Pedir cotação</button>
-        </form>
-        <button class="btn" type="button" data-copy-quote>Copiar mensagem</button>
-        <a class="btn" href="{{ quote_whatsapp_url }}" target="_blank" rel="noopener">WhatsApp cotação</a>
-        <a class="btn" href="{{ quote_whatsapp_url }}" target="_blank" rel="noopener">Abrir WhatsApp</a>
-      {% else %}
-        <div class="empty-line">Adicione itens previstos para gerar uma cotação.</div>
-      {% endif %}
+      <div class="actions">
+        {% if quote_items %}
+          <form method="post" action="{{ quote_generate_url }}" id="quote">
+            {% csrf_token %}
+            <button class="btn" type="submit">Pedir cotação</button>
+          </form>
+          <button class="btn" type="button" data-copy-quote>Copiar mensagem</button>
+          <a class="btn" href="{{ quote_whatsapp_url }}" target="_blank" rel="noopener">Abrir WhatsApp</a>
+        {% else %}
+          <div class="empty-line">Adicione itens previstos para gerar uma cotação.</div>
+        {% endif %}
+      </div>
     </div>
     <textarea data-quote-message hidden>{{ quote_display_message }}</textarea>
   </section>
