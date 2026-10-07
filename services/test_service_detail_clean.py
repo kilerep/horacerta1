@@ -97,7 +97,7 @@ class ServiceDetailCleanTests(TestCase):
 
         self.assertEqual(html.count("<span>Horas previstas</span>"), 1)
         self.assertEqual(html.count("<span>Total trabalhado</span>"), 1)
-        self.assertEqual(html.count("<span>Status da prévia</span>"), 0)
+        self.assertEqual(html.count("<span>Status do orçamento</span>"), 0)
         self.assertIn("<span>Mão de obra</span>", html)
         self.assertIn("<span>Itens usados</span>", html)
 
@@ -112,9 +112,9 @@ class ServiceDetailCleanTests(TestCase):
         client_box = html.index('id="send-client"')
         store_box = html.index('id="send-store"')
         self.assertLess(client_box, store_box)
-        self.assertIn("Prévia (para o cliente)", html)
+        self.assertIn("Orçamento (para o cliente)", html)
         self.assertIn("Cotação oficial (para a loja)", html)
-        self.assertLess(html.index("Prévia (para o cliente)"), html.index("Cotação oficial (para a loja)"))
+        self.assertLess(html.index("Orçamento (para o cliente)"), html.index("Cotação oficial (para a loja)"))
 
     def test_secondary_client_actions_are_folded(self):
         job = self._job(manual_client_name="Fulano", client=None, contract=None)

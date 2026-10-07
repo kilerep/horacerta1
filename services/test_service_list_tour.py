@@ -55,5 +55,11 @@ class ServiceListTourTests(TestCase):
 
         response = self.client.get(reverse("service_job_list"))
 
+        # As duas acoes frequentes ficam em destaque; catalogo e propostas (configuracao)
+        # moram em "Mais" na navegacao da aba, e nao competem como cartoes de atalho.
         self.assertContains(response, 'class="quick-card primary"', count=2)
-        self.assertContains(response, 'class="quick-card muted"', count=2)
+        self.assertNotContains(response, 'class="quick-card muted"')
+        html = response.content.decode()
+        nav = html[html.index('id="services-nav"'): html.index("</nav>", html.index('id="services-nav"'))]
+        self.assertIn("Catálogo de itens", nav)
+        self.assertIn("Propostas de evento", nav)

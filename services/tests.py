@@ -1058,7 +1058,7 @@ class ServiceJobAreaTests(TestCase):
         self.assertContains(detail_response, "Pedir cotação inicial")
         self.assertContains(detail_response, "4 x Disjuntor 20A")
         self.assertContains(detail_response, "Responder cliente")
-        self.assertContains(detail_response, "Proximo passo: confirmar os detalhes")
+        self.assertContains(detail_response, "Próximo passo: confirmar os detalhes")
         self.assertNotContains(detail_response, "R$ 140")
 
         quote_response = self.client.get(reverse("service_request_quote_whatsapp", args=[service_request.id]))
@@ -1291,7 +1291,7 @@ class ServiceJobAreaTests(TestCase):
         job.refresh_from_db()
         self.assertEqual(generate_response.status_code, 200)
         self.assertIsNotNone(job.preview_generated_at)
-        self.assertContains(generate_response, "Status: Gerada")
+        self.assertContains(generate_response, "Status: Gerado")
         self.assertContains(generate_response, "R$ 86,00")
         self.assertContains(generate_response, "R$ 300,00")
         self.assertContains(generate_response, "R$ 386,00")

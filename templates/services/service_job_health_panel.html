@@ -38,8 +38,8 @@
       <span>{% if pending_items or used_items or not_used_items %}Há itens/despesas registrados para este serviço.{% else %}Adicione materiais, peças, equipamentos ou despesas quando fizer sentido.{% endif %}</span>
     </div>
     <div class="health-item {% if preview_generated_at or job.billing_mode == 'FIXED' %}ok{% else %}warn{% endif %}">
-      <strong class="health-mark">Prévia / valor</strong>
-      <span>{% if preview_generated_at %}Prévia já gerada para compartilhar com o cliente.{% elif job.billing_mode == 'FIXED' %}Serviço com valor fixo definido; revise antes de enviar proposta ou relatório.{% else %}Gere uma prévia quando precisar alinhar valores antes da execução.{% endif %}</span>
+      <strong class="health-mark">Orçamento / valor</strong>
+      <span>{% if preview_generated_at %}Orçamento já gerado para compartilhar com o cliente.{% elif job.billing_mode == 'FIXED' %}Serviço com valor fixo definido; revise antes de enviar proposta ou relatório.{% else %}Gere um orçamento quando precisar alinhar valores antes da execução.{% endif %}</span>
     </div>
     <div class="health-item {% if has_work_logs %}ok{% else %}warn{% endif %}">
       <strong class="health-mark">Execução</strong>

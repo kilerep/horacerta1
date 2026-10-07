@@ -14,7 +14,7 @@
   .link-button{margin-top:2px;padding:0;border:0;background:none;color:var(--color-primary);font:inherit;font-weight:800;cursor:pointer;text-decoration:underline;text-align:left;width:max-content}
   .services-block{display:grid;gap:10px}
   .services-title{margin:0;font-size:16px;line-height:1.2;font-weight:900}
-  .quick-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+  .quick-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
   .quick-card{display:grid;gap:5px;min-height:82px;padding:13px;border:1px solid var(--color-border);border-radius:8px;background:var(--gradient-card);box-shadow:var(--shadow-soft);text-decoration:none;color:var(--color-text)}
   .quick-card strong{font-size:15px;line-height:1.2}
   .quick-card span{font-size:12px;line-height:1.35;color:var(--color-text-muted)}
@@ -60,6 +60,7 @@
 
 {% block content %}
 <div class="services-page">
+  {% services_nav "jobs" %}
   <header class="services-head">
     <h1>Serviços</h1>
     <p>Trabalhos avulsos com períodos, itens e relatório sem alterar seu histórico normal.</p>
@@ -70,7 +71,7 @@
   {% if not has_active_filters %}
   <section class="services-block" id="services-quick-actions">
     <h2 class="services-title">Ações rápidas</h2>
-    <p class="flow-hint">O fluxo normal é: <strong>pedido</strong> chega do cliente → você aceita e ele vira um <strong>serviço</strong> → executa, registra itens e horas → gera o relatório final.</p>
+    <p class="flow-hint">O fluxo normal é: o <strong>pedido</strong> chega do cliente → você envia o <strong>orçamento</strong> → aceito, vira <strong>serviço</strong> → você executa e registra horas e itens → envia o <strong>relatório</strong> final.</p>
     <div class="quick-grid">
       <a class="quick-card primary" href="{% url 'service_request_create' %}">
         <strong>Novo pedido</strong>
@@ -79,14 +80,6 @@
       <a class="quick-card primary" href="{% url 'service_job_create' %}">
         <strong>Novo serviço</strong>
         <span>Criar um trabalho já combinado com o cliente.</span>
-      </a>
-      <a class="quick-card muted" href="{% url 'service_item_catalog_list' %}">
-        <strong>Catálogo de itens</strong>
-        <span>Materiais, peças e despesas frequentes.</span>
-      </a>
-      <a class="quick-card muted" href="{% url 'service_event_proposal_list' %}">
-        <strong>Propostas de evento</strong>
-        <span>Revisar pacotes de valor fixo antes do envio.</span>
       </a>
     </div>
   </section>
@@ -165,6 +158,11 @@
       dismissUrl: "{% url 'mei_dismiss_tour' %}",
       csrfToken: "{{ csrf_token }}",
       steps: [
+        {
+          selector: "#services-nav",
+          title: "Pedidos, Serviços e Mais",
+          text: "Pedidos é onde chegam as solicitações dos clientes. Serviços é o trabalho em andamento. Em Mais ficam o catálogo de itens e as propostas de evento.",
+        },
         {
           selector: "#services-quick-actions",
           title: "Pedido e serviço não são a mesma coisa",
