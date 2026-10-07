@@ -29,13 +29,13 @@
 
 {% block content %}
 <div class="catalog-page">
+  {% services_nav "more" %}
   <section class="card catalog-head">
     <div>
       <h1>Catálogo de itens</h1>
       <p>Guarde materiais, peças e despesas que você usa com frequência. Os valores são estimativas pessoais e devem ser confirmados antes de enviar ao cliente.</p>
     </div>
     <div class="catalog-actions">
-      <a class="btn" href="{% url 'service_job_list' %}">Serviços</a>
       <form method="post" action="{% url 'service_item_catalog_seed_suggestions' %}">
         {% csrf_token %}
         <button class="btn" type="submit">Adicionar sugestões</button>

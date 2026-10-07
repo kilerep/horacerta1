@@ -268,7 +268,7 @@
 
   <section class="card section">
     <h2>Itens previstos</h2>
-    <p class="sub">Use para montar a prévia e pedir cotação.</p>
+    <p class="sub">Use para montar o orçamento e pedir cotação na loja.</p>
     <p class="sub">Status: {{ preview_status_label }}</p>
     <div class="grid three">
       <div class="metric"><span>Itens previstos</span><strong>{{ summary.preview_items_total_brl }}</strong></div>
@@ -276,16 +276,16 @@
       <div class="metric"><span>Total estimado</span><strong>{{ summary.preview_estimated_total_brl }}</strong></div>
     </div>
     <div class="send-box" id="send-client">
-      <h3>Prévia (para o cliente)</h3>
+      <h3>Orçamento (para o cliente)</h3>
       <p class="sub">Valores estimados e sujeitos à confirmação na compra e execução do serviço.</p>
       <div class="actions">
         {% if can_edit_entries %}
           <form method="post" action="{{ preview_generate_url }}">
             {% csrf_token %}
-            <button class="btn" type="submit">{% if preview_generated_at %}Atualizar prévia{% else %}Gerar prévia{% endif %}</button>
+            <button class="btn" type="submit">{% if preview_generated_at %}Atualizar orçamento{% else %}Gerar orçamento{% endif %}</button>
           </form>
           {% if preview_generated_at %}
-            <a class="btn" href="{{ preview_public_url }}" target="_blank" rel="noopener">Ver prévia</a>
+            <a class="btn" href="{{ preview_public_url }}" target="_blank" rel="noopener">Ver orçamento</a>
             <button class="btn" type="button" data-copy-text="{{ preview_public_full_url }}">Copiar link</button>
             <a class="btn" href="{{ preview_whatsapp_url }}" target="_blank" rel="noopener">Enviar WhatsApp</a>
           {% endif %}

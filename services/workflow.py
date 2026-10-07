@@ -39,7 +39,7 @@ def status_label(service):
     labels = {
         ServiceJob.Status.DRAFT: "Rascunho",
         ServiceJob.Status.PLANNED: "Planejado",
-        ServiceJob.Status.SENT: "Prévia enviada",
+        ServiceJob.Status.SENT: "Orçamento enviado",
         ServiceJob.Status.SCHEDULED: "Planejado",
         ServiceJob.Status.IN_PROGRESS: "Em execução",
         ServiceJob.Status.FINISHED: "Finalizado",
@@ -96,7 +96,7 @@ def get_next_service_action(service, *, open_work_log=None):
         primary = ServiceAction("start", "Iniciar trabalho", "post", "service_clock_action", "start")
         secondary = [
             ServiceAction("manual_period", "Adicionar período manual", "get", anchor="#manual-period"),
-            ServiceAction("send_preview", "Enviar prévia", "get", "service_job_preview_whatsapp", external=True),
+            ServiceAction("send_preview", "Enviar orçamento", "get", "service_job_preview_whatsapp", external=True),
             ServiceAction("add_item", "Adicionar item", "get", anchor="#items"),
             ServiceAction("quote", "Pedir cotação", "get", anchor="#quote"),
         ]
@@ -104,7 +104,7 @@ def get_next_service_action(service, *, open_work_log=None):
         primary = ServiceAction("start", "Iniciar trabalho", "post", "service_clock_action", "start")
         secondary = [
             ServiceAction("manual_period", "Adicionar período manual", "get", anchor="#manual-period"),
-            ServiceAction("update_preview", "Atualizar prévia", "post", "service_job_preview_generate"),
+            ServiceAction("update_preview", "Atualizar orçamento", "post", "service_job_preview_generate"),
             ServiceAction("quote", "Pedir cotação", "get", anchor="#quote"),
         ]
     elif status == ServiceJob.Status.IN_PROGRESS:

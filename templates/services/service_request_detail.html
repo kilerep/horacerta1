@@ -121,7 +121,7 @@
 
       <article class="card request-block">
         <h2>Cotação inicial</h2>
-        <p class="request-sub">Mensagem para loja ou organização do prestador. Não envia prévia completa ao cliente.</p>
+        <p class="request-sub">Mensagem para loja ou organização do prestador. Não envia o orçamento completo ao cliente.</p>
         <textarea class="hc-input message-box" readonly data-quote-message>{{ initial_quote_message }}</textarea>
         <div class="request-actions">
           <button class="btn" type="button" data-copy-quote>Copiar mensagem</button>
@@ -132,7 +132,7 @@
 
       <article class="card request-block">
         <h2>Responder cliente</h2>
-        <p class="request-sub">Mensagem simples. Valores e prévia completa ficam para a ficha de Serviço.</p>
+        <p class="request-sub">Mensagem simples. Valores e orçamento completo ficam para a ficha de Serviço.</p>
         <textarea class="hc-input message-box" readonly data-whatsapp-message>{{ whatsapp_message }}</textarea>
         <div class="request-actions">
           {% if service_request.client_whatsapp %}

@@ -1,4 +1,5 @@
 {% extends "accounts/base.html" %}
+{% load service_format %}
 
 {% block title %}Pedidos de serviço{% endblock %}
 {% block page_title %}Pedidos de serviço{% endblock %}
@@ -41,6 +42,7 @@
 
 {% block content %}
 <div class="requests-page">
+  {% services_nav "requests" %}
   <section class="card requests-head">
     <div>
       <h1>Pedidos de serviço</h1>
@@ -48,7 +50,6 @@
       <p>Quando combinar os detalhes, transforme o pedido em serviço.</p>
     </div>
     <div class="request-actions">
-      <a class="btn" href="{% url 'service_job_list' %}">Serviços</a>
       <a class="btn primary" href="{% url 'service_request_create' %}">Novo pedido</a>
     </div>
   </section>
