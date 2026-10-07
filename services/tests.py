@@ -1299,7 +1299,7 @@ class ServiceJobAreaTests(TestCase):
         self.client.logout()
         preview_response = self.client.get(reverse("public_service_job_preview", args=[job.public_token]))
         self.assertEqual(preview_response.status_code, 200)
-        self.assertContains(preview_response, "Prévia do serviço")
+        self.assertContains(preview_response, "Orçamento")
         self.assertContains(preview_response, "John")
         self.assertContains(preview_response, "Rua X, 120, Centro, Blumenau, SC")
         self.assertContains(preview_response, "Disjuntor 20A")
