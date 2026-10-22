@@ -17,13 +17,15 @@
   .catalog-row{display:grid;grid-template-columns:1.2fr .55fr .7fr .7fr .7fr .7fr .6fr auto;gap:10px;align-items:center;border:1px solid var(--color-border);border-radius:8px;background:var(--surface-card);padding:12px}
   .catalog-title{font-weight:900;overflow-wrap:anywhere}
   .catalog-meta{font-size:12px;color:var(--color-text-muted);display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
-  .catalog-cell span{display:block;font-size:11px;color:var(--color-text-muted);font-weight:800}
+  .catalog-cell span{display:block;font-size:12px;color:var(--color-text-muted);font-weight:800}
   .catalog-cell strong{display:block;margin-top:3px}
   .row-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
   @media (max-width:900px){
     .catalog-head,.catalog-row{grid-template-columns:1fr;display:grid}
     .catalog-actions .btn,.row-actions .btn,.row-actions button{width:100%}
   }
+  .checkbox-line{display:flex;align-items:center;gap:10px;min-height:44px}
+  .checkbox-line input{width:22px;height:22px;margin:0}
 </style>
 {% endblock %}
 

@@ -20,7 +20,7 @@
   .os-field .help{margin-top:5px;color:var(--color-text-muted);font-size:12px;line-height:1.35}
   .os-errors{display:grid;gap:6px;margin-top:6px;color:var(--danger-text);font-size:12px}
   .client-mode{display:flex;gap:10px;flex-wrap:wrap}
-  .client-mode label{display:flex;align-items:center;gap:8px;border:1px solid var(--color-border);border-radius:12px;padding:10px 12px;background:var(--surface-soft);font-weight:800}
+  .client-mode label{display:flex;align-items:center;gap:8px;min-height:44px;border:1px solid var(--color-border);border-radius:12px;padding:10px 12px;background:var(--surface-soft);font-weight:800}
   .cep-row{display:flex;gap:10px;align-items:end}
   .cep-row .os-field{flex:1;min-width:0}
   .category-description{border:1px solid var(--color-border);border-radius:12px;background:var(--surface-soft);padding:10px 12px;color:var(--color-text-muted);font-size:13px;line-height:1.4}
@@ -28,7 +28,7 @@
   .billing-panel.is-visible{display:block}
   .planned-items{display:grid;gap:10px}
   .planned-item-row{display:grid;grid-template-columns:1.1fr 1.1fr .7fr .55fr .65fr .75fr 1fr auto;gap:8px;align-items:end;border:1px solid var(--color-border);border-radius:8px;background:var(--surface-soft);padding:10px}
-  .planned-item-row label{display:block;margin-bottom:5px;color:var(--color-text-muted);font-size:11px;font-weight:800}
+  .planned-item-row label{display:block;margin-bottom:5px;color:var(--color-text-muted);font-size:12px;font-weight:800}
   .catalog-suggest{position:relative}
   .catalog-results{display:none;position:absolute;z-index:20;top:100%;left:0;right:0;border:1px solid var(--color-border);border-radius:8px;background:var(--surface-card);box-shadow:var(--shadow-soft);max-height:220px;overflow:auto}
   .catalog-results.is-visible{display:grid}
@@ -37,11 +37,12 @@
   .catalog-result strong{display:block}
   .catalog-result span{display:block;color:var(--color-text-muted);font-size:12px;margin-top:2px}
   .catalog-options{grid-column:1 / -2;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
-  .catalog-options label{display:flex;align-items:center;gap:7px;margin:0}
+  .catalog-options label{display:flex;align-items:center;gap:10px;margin:0;min-height:44px}
+  .catalog-options input[type=checkbox]{width:22px;height:22px;margin:0}
   .last-used-hint{grid-column:1 / -2;color:var(--color-text-muted);font-size:12px;line-height:1.35}
   .os-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
   .os-more{border:1px solid var(--color-border);border-radius:12px;padding:10px 12px;margin-top:4px}
-  .os-more>summary{cursor:pointer;min-height:36px;display:flex;align-items:center;font-weight:800}
+  .os-more>summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-weight:800}
   .os-more[open]>summary{margin-bottom:10px}
   .maps-link{display:none}
   .maps-link.is-visible{display:inline-flex}
@@ -235,17 +236,17 @@
           <div class="planned-item-row" data-planned-item-row>
             <div class="catalog-suggest">
               <label>Buscar item do catálogo</label>
-              <input class="hc-input" type="search" data-catalog-search placeholder="Código ou nome">
+              <input class="hc-input" type="search" data-catalog-search placeholder="Código ou nome" aria-label="Buscar item do catálogo">
               <input type="hidden" name="planned_item_catalog_id" data-catalog-id>
               <div class="catalog-results" data-catalog-results></div>
             </div>
             <div>
               <label>Nome do item</label>
-              <input class="hc-input" type="text" name="planned_item_name" placeholder="Ex.: Disjuntor 20A">
+              <input class="hc-input" type="text" name="planned_item_name" placeholder="Ex.: Disjuntor 20A" aria-label="Nome do item">
             </div>
             <div>
               <label>Tipo</label>
-              <select class="hc-input" name="planned_item_type">
+              <select class="hc-input" name="planned_item_type" aria-label="Tipo do item">
                 {% for value,label in item_type_choices %}
                   <option value="{{ value }}">{{ label }}</option>
                 {% endfor %}
@@ -253,7 +254,7 @@
             </div>
             <div>
               <label>Unidade</label>
-              <select class="hc-input" name="planned_item_unit">
+              <select class="hc-input" name="planned_item_unit" aria-label="Unidade do item">
                 {% for value,label in item_unit_choices %}
                   <option value="{{ value }}">{{ label }}</option>
                 {% endfor %}
@@ -261,15 +262,15 @@
             </div>
             <div>
               <label>Quantidade</label>
-              <input class="hc-input" type="number" name="planned_item_quantity" min="0" step="0.01" value="1">
+              <input class="hc-input" type="number" name="planned_item_quantity" min="0" step="0.01" value="1" aria-label="Quantidade">
             </div>
             <div>
               <label>Valor/un.</label>
-              <input class="hc-input" type="number" name="planned_item_unit_value" min="0" step="0.01" placeholder="0,00">
+              <input class="hc-input" type="number" name="planned_item_unit_value" min="0" step="0.01" placeholder="0,00" aria-label="Valor por unidade">
             </div>
             <div>
-              <label>Observacao</label>
-              <input class="hc-input" type="text" name="planned_item_description" placeholder="Opcional">
+              <label>Observação</label>
+              <input class="hc-input" type="text" name="planned_item_description" placeholder="Opcional" aria-label="Observação do item">
             </div>
             <button class="btn" type="button" data-remove-planned-item>Remover</button>
             <div class="catalog-options">

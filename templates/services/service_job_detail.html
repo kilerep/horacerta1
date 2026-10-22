@@ -47,9 +47,14 @@
   .inline-form{display:grid;gap:10px;margin-top:10px}
   .field label{display:block;margin-bottom:5px;color:var(--color-text-muted);font-size:12px;font-weight:800}
   .field.full{grid-column:1 / -1}
+  .field input[type=checkbox]{width:22px;height:22px;margin:0}
+  .field:has(>input[type=checkbox]){display:flex;flex-direction:row-reverse;justify-content:flex-end;align-items:center;gap:10px;min-height:44px}
+  .field:has(>input[type=checkbox]) label{margin:0;flex:1;display:flex;align-items:center;min-height:44px}
+  .item-edit{margin-top:4px}
+  .item-edit .item-status-form{margin-top:8px}
   .field-errors{margin-top:5px;color:var(--danger-text);font-size:12px}
   details summary{cursor:pointer}
-  .health-summary{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:36px;font-weight:800}
+  .health-summary{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:44px;font-weight:800}
   .health-summary small{color:var(--color-text-muted);font-weight:700}
   .more-actions{margin:0;flex:1 1 100%}
   .more-data{margin:0}
