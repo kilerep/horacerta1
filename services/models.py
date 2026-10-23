@@ -20,8 +20,8 @@ class ServiceCategory(models.Model):
 
     class Meta:
         ordering = ["sort_order", "name"]
-        verbose_name = "Categoria de servico"
-        verbose_name_plural = "Categorias de servico"
+        verbose_name = "Categoria de serviço"
+        verbose_name_plural = "Categorias de serviço"
 
     def __str__(self):
         return self.name
@@ -34,16 +34,16 @@ class ServiceItemUnit(models.TextChoices):
     PACKAGE = "PACKAGE", "pacote"
     LITER = "LITER", "litro"
     HOUR = "HOUR", "hora"
-    SERVICE = "SERVICE", "servico"
+    SERVICE = "SERVICE", "serviço"
     OTHER = "OTHER", "outro"
 
 
 class ServiceRequest(models.Model):
     class Status(models.TextChoices):
         NEW = "NEW", "Novo"
-        WAITING_INFO = "WAITING_INFO", "Aguardando informacoes"
+        WAITING_INFO = "WAITING_INFO", "Aguardando informações"
         IN_REVIEW = "IN_REVIEW", "Em analise"
-        CONVERTED = "CONVERTED", "Transformado em servico"
+        CONVERTED = "CONVERTED", "Transformado em serviço"
         REJECTED = "REJECTED", "Recusado"
         ARCHIVED = "ARCHIVED", "Arquivado"
 
@@ -52,7 +52,7 @@ class ServiceRequest(models.Model):
         PHONE = "PHONE", "Ligacao"
         REFERRAL = "REFERRAL", "Indicacao"
         OLD_CLIENT = "OLD_CLIENT", "Cliente antigo"
-        PUBLIC_LINK = "PUBLIC_LINK", "Link publico"
+        PUBLIC_LINK = "PUBLIC_LINK", "Link público"
         OTHER = "OTHER", "Outro"
 
     class Urgency(models.TextChoices):
@@ -121,8 +121,8 @@ class ServiceRequest(models.Model):
             models.Index(fields=["professional", "category", "-created_at"]),
             models.Index(fields=["professional", "source", "-created_at"]),
         ]
-        verbose_name = "Pedido de servico"
-        verbose_name_plural = "Pedidos de servico"
+        verbose_name = "Pedido de serviço"
+        verbose_name_plural = "Pedidos de serviço"
 
     def __str__(self):
         return self.title
@@ -161,7 +161,7 @@ class ServiceRequest(models.Model):
     @property
     def initial_quote_message(self):
         lines = [
-            "Ola, preciso de uma cotacao dos itens abaixo:",
+            "Olá, preciso de uma cotação dos itens abaixo:",
             "",
             f"Pedido: {self.title}",
             "",
@@ -172,7 +172,7 @@ class ServiceRequest(models.Model):
         if items:
             lines.extend(f"* {item.quantity_label} x {item.name}" for item in items)
         else:
-            lines.append("* Informe os itens para cotacao.")
+            lines.append("* Informe os itens para cotação.")
         lines.extend(
             [
                 "",
@@ -203,7 +203,7 @@ class ServiceRequestItem(models.Model):
         indexes = [
             models.Index(fields=["service_request", "created_at"]),
         ]
-        verbose_name = "Item rapido do pedido"
+        verbose_name = "Item rápido do pedido"
         verbose_name_plural = "Itens rapidos do pedido"
 
     def __str__(self):
@@ -227,7 +227,7 @@ class ServiceRequestItem(models.Model):
         if self.quantity is not None and self.quantity <= 0:
             errors["quantity"] = "Quantidade precisa ser maior que zero."
         if self.estimated_unit_value is not None and self.estimated_unit_value < 0:
-            errors["estimated_unit_value"] = "Valor estimado nao pode ser negativo."
+            errors["estimated_unit_value"] = "Valor estimado não pode ser negativo."
         if errors:
             raise ValidationError(errors)
 
@@ -244,9 +244,9 @@ class ServiceJob(models.Model):
         PLANNED = "PLANNED", "Planejado"
         SENT = "SENT", "Orçamento enviado"
         SCHEDULED = "SCHEDULED", "Planejado"
-        IN_PROGRESS = "IN_PROGRESS", "Em execucao"
+        IN_PROGRESS = "IN_PROGRESS", "Em execução"
         FINISHED = "FINISHED", "Finalizado"
-        REPORT_SENT = "REPORT_SENT", "Relatorio enviado"
+        REPORT_SENT = "REPORT_SENT", "Relatório enviado"
         ARCHIVED = "ARCHIVED", "Arquivado"
 
     class BillingMode(models.TextChoices):
@@ -322,8 +322,8 @@ class ServiceJob(models.Model):
             models.Index(fields=["professional", "category", "-created_at"]),
             models.Index(fields=["professional", "client", "-created_at"]),
         ]
-        verbose_name = "Servico"
-        verbose_name_plural = "Servicos"
+        verbose_name = "Serviço"
+        verbose_name_plural = "Serviços"
 
     def __str__(self):
         return self.title
@@ -332,7 +332,7 @@ class ServiceJob(models.Model):
     def client_display_name(self):
         if self.client_id and self.client:
             return self.client.name
-        return self.manual_client_name or "Cliente nao informado"
+        return self.manual_client_name or "Cliente não informado"
 
     @property
     def client_whatsapp(self):
@@ -468,7 +468,7 @@ class ServiceJob(models.Model):
             if not contract_matches:
                 errors["client"] = "Selecione um cliente da sua conta."
         if self.end_date and self.start_date and self.end_date < self.start_date:
-            errors["end_date"] = "A data final nao pode ser anterior a data inicial."
+            errors["end_date"] = "A data final não pode ser anterior a data inicial."
         if self.planned_start_time and self.planned_end_time and self.planned_end_time <= self.planned_start_time:
             errors["planned_end_time"] = "Hora final prevista precisa ser maior que a inicial."
         if errors:
@@ -514,8 +514,8 @@ class ServiceWorkLog(models.Model):
         indexes = [
             models.Index(fields=["service_job", "-work_date", "-start_time"]),
         ]
-        verbose_name = "Horario do servico"
-        verbose_name_plural = "Horarios do servico"
+        verbose_name = "Horário do serviço"
+        verbose_name_plural = "Horários do serviço"
 
     def __str__(self):
         return f"{self.service_job_id} {self.work_date} {self.start_time}-{self.end_time or 'aberto'}"
@@ -528,7 +528,7 @@ class ServiceWorkLog(models.Model):
     def clean(self):
         errors = {}
         if self.start_time and self.end_time and self.end_time <= self.start_time:
-            errors["end_time"] = "Horario final precisa ser maior que o inicial."
+            errors["end_time"] = "Horário final precisa ser maior que o inicial."
         if errors:
             raise ValidationError(errors)
 
@@ -547,7 +547,7 @@ class ServiceItemExpense(models.Model):
     class ItemType(models.TextChoices):
         MATERIAL = "MATERIAL", "Material"
         EXPENSE = "EXPENSE", "Despesa"
-        PART = "PART", "Peca"
+        PART = "PART", "Peça"
         TOLL = "TOLL", "Pedagio"
         FUEL = "FUEL", "Combustivel"
         PARKING = "PARKING", "Estacionamento"
@@ -560,7 +560,7 @@ class ServiceItemExpense(models.Model):
         PURCHASED = "PURCHASED", "Comprado"
         USED = "USED", "Usado"
         PARTIALLY_USED = "PARTIALLY_USED", "Parcialmente usado"
-        NOT_USED = "NOT_USED", "Nao usado"
+        NOT_USED = "NOT_USED", "Não usado"
         RETURNED = "RETURNED", "Devolvido"
 
     CHARGEABLE_USAGE_STATUSES = (UsageStatus.USED, UsageStatus.PARTIALLY_USED)
@@ -598,8 +598,8 @@ class ServiceItemExpense(models.Model):
             models.Index(fields=["service_job", "type", "-created_at"]),
             models.Index(fields=["catalog_item", "-created_at"], name="services_se_catalog_808f76_idx"),
         ]
-        verbose_name = "Item/despesa do servico"
-        verbose_name_plural = "Itens/despesas do servico"
+        verbose_name = "Item/despesa do serviço"
+        verbose_name_plural = "Itens/despesas do serviço"
 
     def __str__(self):
         return f"{self.name} ({self.get_usage_status_display()})"
@@ -612,16 +612,16 @@ class ServiceItemExpense(models.Model):
     def short_usage_status(self):
         labels = {
             self.UsageStatus.PARTIALLY_USED: "Parcial",
-            self.UsageStatus.NOT_USED: "Nao usado",
+            self.UsageStatus.NOT_USED: "Não usado",
         }
         return labels.get(self.usage_status, self.get_usage_status_display())
 
     def clean(self):
         errors = {}
         if self.quantity is not None and self.quantity < 0:
-            errors["quantity"] = "Quantidade nao pode ser negativa."
+            errors["quantity"] = "Quantidade não pode ser negativa."
         if self.unit_value is not None and self.unit_value < 0:
-            errors["unit_value"] = "Valor unitario nao pode ser negativo."
+            errors["unit_value"] = "Valor unitário não pode ser negativo."
         if errors:
             raise ValidationError(errors)
 
@@ -716,11 +716,11 @@ class ServiceItemCatalog(models.Model):
     def clean(self):
         errors = {}
         if self.default_quantity is not None and self.default_quantity < 0:
-            errors["default_quantity"] = "Quantidade padrao nao pode ser negativa."
+            errors["default_quantity"] = "Quantidade padrão não pode ser negativa."
         if self.estimated_unit_value is not None and self.estimated_unit_value < 0:
-            errors["estimated_unit_value"] = "Valor estimado nao pode ser negativo."
+            errors["estimated_unit_value"] = "Valor estimado não pode ser negativo."
         if self.last_used_value is not None and self.last_used_value < 0:
-            errors["last_used_value"] = "Ultimo valor usado nao pode ser negativo."
+            errors["last_used_value"] = "Último valor usado não pode ser negativo."
         if errors:
             raise ValidationError(errors)
 

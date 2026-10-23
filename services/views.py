@@ -37,7 +37,7 @@ from .workflow import get_next_service_action, has_minimum_service_data, planned
 
 def _redirect_if_not_mei(request):
     if request.user.role != User.Role.FUNCIONARIO:
-        messages.error(request, "A area de servicos e exclusiva do prestador.")
+        messages.error(request, "A área de serviços é exclusiva do prestador.")
         return redirect("dashboard")
     return None
 
@@ -456,6 +456,7 @@ def service_job_list(request):
                 .order_by("planned_start_time", "-created_at")[:6]
             )
         )
+        today_ids = [job.id for job in today_jobs]
         pending_jobs = _attach_service_card_state(
             list(
                 main_jobs.filter(
@@ -464,16 +465,19 @@ def service_job_list(request):
                     | Q(status=ServiceJob.Status.IN_PROGRESS)
                     | Q(status=ServiceJob.Status.FINISHED)
                 )
+                .exclude(id__in=today_ids)
                 .prefetch_related("work_logs", "item_expenses")
                 .order_by("start_date", "-created_at")[:8]
             )
         )
+        # Cada servico aparece uma vez so: o que ja esta em Hoje/Pendencias sai da lista de baixo.
+        jobs = jobs.exclude(id__in=today_ids + [job.id for job in pending_jobs])
     jobs = _attach_service_card_state(list(jobs.prefetch_related("work_logs", "item_expenses")))
     quick_status_choices = [
         ("", "Todos", reverse("service_job_list")),
         (ServiceJob.Status.DRAFT, "Rascunhos", f"{reverse('service_job_list')}?status={ServiceJob.Status.DRAFT}"),
         (ServiceJob.Status.PLANNED, "Planejados", f"{reverse('service_job_list')}?status={ServiceJob.Status.PLANNED}"),
-        (ServiceJob.Status.IN_PROGRESS, "Em execucao", f"{reverse('service_job_list')}?status={ServiceJob.Status.IN_PROGRESS}"),
+        (ServiceJob.Status.IN_PROGRESS, "Em execução", f"{reverse('service_job_list')}?status={ServiceJob.Status.IN_PROGRESS}"),
         (ServiceJob.Status.FINISHED, "Finalizados", f"{reverse('service_job_list')}?status={ServiceJob.Status.FINISHED}"),
         (ServiceJob.Status.ARCHIVED, "Arquivados", f"{reverse('service_job_list')}?status={ServiceJob.Status.ARCHIVED}"),
     ]
@@ -586,7 +590,7 @@ def _convert_service_request_to_job(service_request):
         return service_request.converted_service
 
     notes = (
-        "Criado a partir de pedido de servico.\n"
+        "Criado a partir de pedido de serviço.\n"
         f"Origem: {service_request.get_source_display()}.\n"
         f"Urgencia: {service_request.get_urgency_display()}."
     )
@@ -675,9 +679,9 @@ def service_request_create(request):
                     item_form.save()
                 if submit_action == "convert":
                     job = _convert_service_request_to_job(service_request)
-                    messages.success(request, "Pedido salvo e transformado em rascunho de servico.")
+                    messages.success(request, "Pedido salvo e transformado em rascunho de serviço.")
                     return redirect("service_job_detail", job_id=job.id)
-            messages.success(request, "Pedido de servico salvo.")
+            messages.success(request, "Pedido de serviço salvo.")
             return redirect("service_request_detail", request_id=service_request.id)
     else:
         form = ServiceRequestForm(user=request.user)
@@ -690,7 +694,7 @@ def service_request_create(request):
             "form": form,
             "item_form": item_form,
             "form_title": "Novo pedido",
-            "form_subtitle": "Registre solicitacoes recebidas antes de organizar o servico.",
+            "form_subtitle": "Registre solicitações recebidas antes de organizar o serviço.",
         },
     )
 
@@ -730,16 +734,16 @@ def service_request_item_create(request, request_id):
         return denied
     service_request = get_object_or_404(_service_requests_for_user(request.user), id=request_id)
     if service_request.status in (ServiceRequest.Status.CONVERTED, ServiceRequest.Status.ARCHIVED):
-        messages.error(request, "Nao e possivel adicionar itens a este pedido.")
+        messages.error(request, "Não é possível adicionar itens a este pedido.")
         return redirect("service_request_detail", request_id=service_request.id)
     if request.method != "POST":
         return redirect("service_request_detail", request_id=service_request.id)
     form = ServiceRequestItemForm(request.POST, service_request=service_request)
     if form.is_valid() and form.has_item_data():
         form.save()
-        messages.success(request, "Item rapido adicionado ao pedido.")
+        messages.success(request, "Item rápido adicionado ao pedido.")
     else:
-        messages.error(request, "Informe ao menos o nome do item rapido.")
+        messages.error(request, "Informe ao menos o nome do item rápido.")
     return redirect("service_request_detail", request_id=service_request.id)
 
 
@@ -762,11 +766,11 @@ def service_request_convert(request, request_id):
 
     service_request = get_object_or_404(_service_requests_for_user(request.user), id=request_id)
     if service_request.status in (ServiceRequest.Status.REJECTED, ServiceRequest.Status.ARCHIVED):
-        messages.error(request, "Reabra o pedido antes de transformar em servico.")
+        messages.error(request, "Reabra o pedido antes de transformar em serviço.")
         return redirect("service_request_detail", request_id=service_request.id)
     with transaction.atomic():
         job = _convert_service_request_to_job(service_request)
-    messages.success(request, "Pedido transformado em rascunho de servico.")
+    messages.success(request, "Pedido transformado em rascunho de serviço.")
     return redirect("service_job_detail", job_id=job.id)
 
 
@@ -789,10 +793,10 @@ def service_request_status_action(request, request_id):
     }
     status = transitions.get(action)
     if not status:
-        messages.error(request, "Acao invalida para este pedido.")
+        messages.error(request, "Ação inválida para este pedido.")
         return redirect("service_request_detail", request_id=service_request.id)
     if service_request.status == ServiceRequest.Status.CONVERTED and action != "archive":
-        messages.error(request, "Pedido ja transformado em servico.")
+        messages.error(request, "Pedido já transformado em serviço.")
         return redirect("service_request_detail", request_id=service_request.id)
     service_request.status = status
     service_request.save(update_fields=["status", "updated_at"])
@@ -1007,7 +1011,7 @@ def service_job_create(request):
                 if job.status != status:
                     job.status = status
                     job.save(update_fields=["status", "finished_at", "updated_at"])
-            messages.success(request, "Servico salvo com sucesso.")
+            messages.success(request, "Serviço salvo com sucesso.")
             return redirect("service_job_detail", job_id=job.id)
     else:
         form = ServiceJobForm(user=request.user)
@@ -1035,7 +1039,7 @@ def service_job_update(request, job_id):
 
     job = get_object_or_404(_service_jobs_for_user(request.user), id=job_id)
     if job.status in (ServiceJob.Status.FINISHED, ServiceJob.Status.REPORT_SENT, ServiceJob.Status.ARCHIVED):
-        messages.error(request, "Para editar, reabra o servico.")
+        messages.error(request, "Para editar, reabra o serviço.")
         return redirect("service_job_detail", job_id=job.id)
     if request.method == "POST":
         form = ServiceJobForm(request.POST, user=request.user, instance=job)
@@ -1046,7 +1050,7 @@ def service_job_update(request, job_id):
                 job.status = status
                 job.save(update_fields=["status", "finished_at", "updated_at"])
             _mark_preview_updated(job)
-            messages.success(request, "Dados do servico atualizados.")
+            messages.success(request, "Dados do serviço atualizados.")
             return redirect("service_job_detail", job_id=job.id)
     else:
         form = ServiceJobForm(user=request.user, instance=job)
@@ -1087,7 +1091,7 @@ def service_job_save_manual_client(request, job_id):
     if request.method != "POST":
         return redirect("service_job_detail", job_id=job.id)
     if job.client_id or job.contract_id:
-        messages.error(request, "Este servico ja esta vinculado a um cliente cadastrado.")
+        messages.error(request, "Este serviço já está vinculado a um cliente cadastrado.")
         return redirect("service_job_detail", job_id=job.id)
     if not job.manual_client_name:
         messages.error(request, "Informe o nome do cliente antes de salvar em Meus clientes.")
@@ -1098,12 +1102,12 @@ def service_job_save_manual_client(request, job_id):
             name=job.manual_client_name,
             whatsapp=job.manual_client_whatsapp,
             email=job.manual_client_email,
-            notes="Criado a partir de servico avulso.",
+            notes="Criado a partir de serviço avulso.",
         )
         job.contract = contract
         job.client = contract.company
         job.save(update_fields=["contract", "client", "updated_at"])
-    messages.success(request, "Cliente salvo em Meus clientes e vinculado ao servico.")
+    messages.success(request, "Cliente salvo em Meus clientes e vinculado ao serviço.")
     return redirect("service_job_detail", job_id=job.id)
 
 
@@ -1116,15 +1120,15 @@ def service_job_save_address_to_client(request, job_id):
     if request.method != "POST":
         return redirect("service_job_detail", job_id=job.id)
     if not job.client_id:
-        messages.error(request, "Salve ou selecione um cliente antes de gravar o endereco.")
+        messages.error(request, "Salve ou selecione um cliente antes de gravar o endereço.")
         return redirect("service_job_detail", job_id=job.id)
     address = job.full_service_address
     if not address:
-        messages.error(request, "Informe o endereco do servico antes de salvar no cliente.")
+        messages.error(request, "Informe o endereço do serviço antes de salvar no cliente.")
         return redirect("service_job_detail", job_id=job.id)
     job.client.address = address
     job.client.save(update_fields=["address"])
-    messages.success(request, "Endereco salvo no cliente.")
+    messages.success(request, "Endereço salvo no cliente.")
     return redirect("service_job_detail", job_id=job.id)
 
 
@@ -1140,7 +1144,7 @@ def service_work_log_create(request, job_id):
         ServiceJob.Status.SENT,
         ServiceJob.Status.IN_PROGRESS,
     ):
-        messages.error(request, "Reabra o servico antes de alterar horarios.")
+        messages.error(request, "Reabra o serviço antes de alterar horários.")
         return redirect("service_job_detail", job_id=job.id)
 
     form = ServiceWorkLogForm(request.POST or None, service_job=job)
@@ -1150,7 +1154,7 @@ def service_work_log_create(request, job_id):
             if job.status != ServiceJob.Status.IN_PROGRESS:
                 job.status = ServiceJob.Status.IN_PROGRESS
                 job.save(update_fields=["status", "finished_at", "updated_at"])
-        messages.success(request, "Horario do servico adicionado.")
+        messages.success(request, "Horário do serviço adicionado.")
         return redirect("service_job_detail", job_id=job.id)
 
     job = get_object_or_404(
@@ -1172,7 +1176,7 @@ def service_item_expense_create(request, job_id):
         ServiceJob.Status.SENT,
         ServiceJob.Status.IN_PROGRESS,
     ):
-        messages.error(request, "Reabra o servico antes de alterar itens e despesas.")
+        messages.error(request, "Reabra o serviço antes de alterar itens e despesas.")
         return redirect("service_job_detail", job_id=job.id)
 
     form = ServiceItemExpenseForm(request.POST or None, service_job=job)
@@ -1198,7 +1202,7 @@ def service_item_expense_update(request, job_id, item_id):
     job = get_object_or_404(_service_jobs_for_user(request.user), id=job_id)
     item = get_object_or_404(job.item_expenses, id=item_id)
     if job.status in (ServiceJob.Status.FINISHED, ServiceJob.Status.REPORT_SENT, ServiceJob.Status.ARCHIVED):
-        messages.error(request, "Reabra o servico antes de alterar itens.")
+        messages.error(request, "Reabra o serviço antes de alterar itens.")
         return redirect("service_job_detail", job_id=job.id)
     if request.method == "POST":
         form = ServiceItemExpenseForm(request.POST, service_job=job, instance=item)
@@ -1222,11 +1226,11 @@ def service_job_quote_generate(request, job_id):
         return redirect("service_job_detail", job_id=job.id)
     quote_items = _quote_items_for_job(job)
     if not quote_items:
-        messages.error(request, "Adicione itens previstos para gerar uma cotacao.")
+        messages.error(request, "Adicione itens previstos para gerar uma cotação.")
         return redirect("service_job_detail", job_id=job.id)
 
     _record_service_quote_message(job, quote_items)
-    messages.success(request, "Cotacao gerada. Copie a mensagem ou abra o WhatsApp para enviar manualmente.")
+    messages.success(request, "Cotação gerada. Copie a mensagem ou abra o WhatsApp para enviar manualmente.")
     return redirect("service_job_detail", job_id=job.id)
 
 
@@ -1239,7 +1243,7 @@ def service_job_quote_whatsapp(request, job_id):
     job = get_object_or_404(_service_jobs_for_user(request.user).prefetch_related("item_expenses"), id=job_id)
     quote_items = _quote_items_for_job(job)
     if not quote_items:
-        messages.error(request, "Adicione itens previstos para gerar uma mensagem de cotacao.")
+        messages.error(request, "Adicione itens previstos para gerar uma mensagem de cotação.")
         return redirect("service_job_detail", job_id=job.id)
 
     message = _record_service_quote_message(job, quote_items)
@@ -1256,7 +1260,7 @@ def service_clock_action(request, job_id):
     if request.method != "POST":
         return redirect("service_job_detail", job_id=job.id)
     if job.status in (ServiceJob.Status.FINISHED, ServiceJob.Status.REPORT_SENT, ServiceJob.Status.ARCHIVED):
-        messages.error(request, "Reabra o servico antes de registrar execucao.")
+        messages.error(request, "Reabra o serviço antes de registrar execução.")
         return redirect("service_job_detail", job_id=job.id)
 
     action = (request.POST.get("action") or "").strip()
@@ -1265,7 +1269,7 @@ def service_clock_action(request, job_id):
         open_log = job.work_logs.filter(end_time__isnull=True).order_by("-created_at").first()
         if action == "start":
             if open_log:
-                messages.error(request, "Ja existe um periodo de trabalho aberto neste servico.")
+                messages.error(request, "Já existe um período de trabalho aberto neste serviço.")
             else:
                 ServiceWorkLog.objects.create(
                     service_job=job,
@@ -1279,11 +1283,11 @@ def service_clock_action(request, job_id):
                 messages.success(request, "Trabalho iniciado.")
         elif action == "stop":
             if not open_log:
-                messages.error(request, "Nenhum periodo aberto para encerrar.")
+                messages.error(request, "Nenhum período aberto para encerrar.")
             else:
                 open_log.end_time = now.time().replace(second=0, microsecond=0)
                 open_log.save()
-                messages.success(request, "Periodo de trabalho encerrado.")
+                messages.success(request, "Período de trabalho encerrado.")
     return redirect("service_job_detail", job_id=job.id)
 
 
@@ -1302,22 +1306,22 @@ def service_job_status_action(request, job_id):
         messages.error(request, "Complete os dados minimos antes de iniciar o trabalho.")
         return redirect("service_job_detail", job_id=job.id)
     if action == "finish" and job.status != ServiceJob.Status.IN_PROGRESS:
-        messages.error(request, "Inicie o trabalho antes de finalizar o servico.")
+        messages.error(request, "Inicie o trabalho antes de finalizar o serviço.")
         return redirect("service_job_detail", job_id=job.id)
     if action == "generate_report" and job.status == ServiceJob.Status.FINISHED:
         job.status = ServiceJob.Status.REPORT_SENT
         job.save(update_fields=["status", "finished_at", "updated_at"])
-        messages.success(request, "Relatorio final gerado. PDF e WhatsApp final estao liberados.")
+        messages.success(request, "Relatório final gerado. PDF e WhatsApp final estão liberados.")
         return redirect("service_job_detail", job_id=job.id)
     if action == "restore" and job.status == ServiceJob.Status.ARCHIVED:
         job.status = ServiceJob.Status.PLANNED if has_minimum_service_data(job) else ServiceJob.Status.DRAFT
         job.save(update_fields=["status", "finished_at", "updated_at"])
-        messages.success(request, "Servico restaurado.")
+        messages.success(request, "Serviço restaurado.")
         return redirect("service_job_detail", job_id=job.id)
     if action == "reopen" and job.status == ServiceJob.Status.REPORT_SENT:
         job.status = ServiceJob.Status.IN_PROGRESS
         job.save(update_fields=["status", "finished_at", "updated_at"])
-        messages.success(request, "Servico reaberto para ajustes.")
+        messages.success(request, "Serviço reaberto para ajustes.")
         return redirect("service_job_detail", job_id=job.id)
     with transaction.atomic():
         if action == "send_preview" and job.status in (ServiceJob.Status.DRAFT, ServiceJob.Status.PLANNED):
@@ -1338,14 +1342,14 @@ def service_job_status_action(request, job_id):
             messages.success(request, "Serviço iniciado.")
         elif action == "finish" and job.status == ServiceJob.Status.IN_PROGRESS:
             if job.work_logs.filter(end_time__isnull=True).exists():
-                messages.error(request, "Encerre o periodo aberto antes de finalizar o servico.")
+                messages.error(request, "Encerre o período aberto antes de finalizar o serviço.")
                 return redirect("service_job_detail", job_id=job.id)
             has_work_logs = job.work_logs.exists()
             has_chargeable_items = job.item_expenses.filter(
                 usage_status__in=ServiceItemExpense.CHARGEABLE_USAGE_STATUSES
             ).exists()
             if not (job.status == ServiceJob.Status.IN_PROGRESS or has_work_logs or has_chargeable_items):
-                messages.error(request, "Registre periodos trabalhados ou confirme itens usados antes de finalizar o servico.")
+                messages.error(request, "Registre períodos trabalhados ou confirme itens usados antes de finalizar o serviço.")
                 return redirect("service_job_detail", job_id=job.id)
             job.status = ServiceJob.Status.FINISHED
             job.save(update_fields=["status", "finished_at", "updated_at"])
@@ -1359,7 +1363,7 @@ def service_job_status_action(request, job_id):
             job.save(update_fields=["status", "finished_at", "updated_at"])
             messages.success(request, "Serviço arquivado.")
         else:
-            messages.error(request, "Acao invalida para este servico.")
+            messages.error(request, "Ação inválida para este serviço.")
 
     return redirect("service_job_detail", job_id=job.id)
 
@@ -1402,7 +1406,7 @@ def service_job_report_pdf(request, job_id):
         id=job_id,
     )
     if job.status != ServiceJob.Status.REPORT_SENT:
-        messages.error(request, "Gere o relatorio final antes de baixar o PDF do servico.")
+        messages.error(request, "Gere o relatório final antes de baixar o PDF do serviço.")
         return redirect("service_job_detail", job_id=job.id)
     return _service_job_pdf_response(job)
 
@@ -1418,7 +1422,7 @@ def service_job_report_whatsapp(request, job_id):
         id=job_id,
     )
     if job.status != ServiceJob.Status.REPORT_SENT:
-        messages.error(request, "Gere o relatorio final antes de enviar pelo WhatsApp.")
+        messages.error(request, "Gere o relatório final antes de enviar pelo WhatsApp.")
         return redirect("service_job_detail", job_id=job.id)
     public_url = request.build_absolute_uri(reverse("public_service_job_report", args=[job.public_token]))
     report = _service_report_context(job, request=request)
@@ -1448,7 +1452,7 @@ def service_job_public_report_redirect(request, job_id):
 
     job = get_object_or_404(_service_jobs_for_user(request.user), id=job_id)
     if job.status != ServiceJob.Status.REPORT_SENT:
-        messages.error(request, "Gere o relatorio final antes de abrir o link publico.")
+        messages.error(request, "Gere o relatório final antes de abrir o link público.")
         return redirect("service_job_detail", job_id=job.id)
     return redirect("public_service_job_report", token=job.public_token)
 
@@ -1594,7 +1598,7 @@ def _service_job_pdf_response(job):
         ["Cliente", report["client_name"]],
         ["WhatsApp", report["client_whatsapp"] or "-"],
         ["Categoria", job.category.name],
-        ["Endereco/local", report["service_address"] or "-"],
+        ["Endereço/local", report["service_address"] or "-"],
         ["Data prevista", report["period_label"]],
         ["Serviço", job.title],
     ]

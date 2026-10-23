@@ -66,7 +66,7 @@ class ServiceJobHealthPanelTests(TestCase):
         self.assertContains(response, "3. Em execução")
         self.assertContains(response, "4. Finalizado")
         self.assertContains(response, "5. Relatório enviado")
-        self.assertContains(response, "Serve para qualquer tipo de prestação")
+        self.assertContains(response, "Vale para qualquer tipo de serviço")
         self.assertContains(response, "Adicione endereço, cidade ou referência")
         self.assertContains(response, "Registre períodos para comprovar execução")
         self.assertContains(response, "Previsto x realizado")
