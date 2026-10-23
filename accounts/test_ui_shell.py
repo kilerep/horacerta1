@@ -84,7 +84,7 @@ class MeuResumoTests(TestCase):
         self.assertEqual(len(re.findall(r'class="rs-number[ "]', numbers)), 4)
         for label in ("Horas hoje", "Na semana", "No mês", "Valor estimado no mês"):
             self.assertIn(label, numbers)
-        self.assertIn(f'href="{reverse("service_job_create")}"', html)
+        self.assertIn(f'href="{reverse("service_job_quick")}"', html)
         self.assertIn("Serviço rápido", html)
 
     def test_no_duplicate_stat_wall_or_eyebrow(self):

@@ -1,0 +1,76 @@
+{% extends "accounts/base.html" %}
+{% load hc_icons %}
+
+{% block title %}Serviço rápido{% endblock %}
+{% block page_title %}Serviço rápido{% endblock %}
+
+{% block extra_head %}
+<style>
+  .qs-page{display:grid;gap:16px;max-width:640px}
+  .qs-head h1{margin:0;font-size:clamp(24px,3.4vw,30px);line-height:1.1;letter-spacing:-.01em}
+  .qs-head p{margin:6px 0 0;color:var(--color-text-muted);line-height:1.45;max-width:60ch}
+  .qs-form{display:grid;gap:14px;padding:18px;border:1px solid var(--color-border);border-radius:var(--radius-lg,16px);background:var(--color-card)}
+  .qs-field label{display:block;margin-bottom:6px;font-size:14px;font-weight:700;color:var(--color-text-strong)}
+  .qs-field input{width:100%;font-size:16px}
+  .qs-field .errorlist{margin:6px 0 0;padding:0;list-style:none;color:var(--danger-text);font-size:13px}
+  .qs-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .qs-errors{padding:10px 12px;border:1px solid var(--danger-border);border-radius:10px;background:var(--danger-bg);color:var(--danger-text)}
+  .qs-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+  .qs-actions .btn.primary{gap:8px;min-width:200px;justify-content:center}
+  .qs-next{margin:0;padding:12px 14px;border:1px dashed var(--color-border);border-radius:12px;color:var(--color-text-muted);font-size:14px;line-height:1.5}
+  .qs-next strong{color:var(--color-text-strong)}
+  @media (max-width:640px){
+    .qs-row{grid-template-columns:1fr}
+    .qs-form{padding:14px}
+    .qs-actions{flex-direction:column-reverse;align-items:stretch}
+    .qs-actions .btn{width:100%;justify-content:center}
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="qs-page">
+  <header class="qs-head">
+    <h1>Serviço rápido</h1>
+    <p>Para um atendimento avulso: preencha o básico e pronto. Itens, horas, orçamento e relatório você faz na tela do serviço.</p>
+  </header>
+
+  <form class="qs-form" method="post" novalidate data-submit-once="true">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="qs-errors">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="qs-field">
+      <label for="{{ form.client_name.id_for_label }}">{{ form.client_name.label }}</label>
+      {{ form.client_name }}
+      {{ form.client_name.errors }}
+    </div>
+    <div class="qs-field">
+      <label for="{{ form.title.id_for_label }}">{{ form.title.label }}</label>
+      {{ form.title }}
+      {{ form.title.errors }}
+    </div>
+    <div class="qs-row">
+      <div class="qs-field">
+        <label for="{{ form.price.id_for_label }}">{{ form.price.label }}</label>
+        {{ form.price }}
+        {{ form.price.errors }}
+      </div>
+      <div class="qs-field">
+        <label for="{{ form.start_date.id_for_label }}">{{ form.start_date.label }}</label>
+        {{ form.start_date }}
+        {{ form.start_date.errors }}
+      </div>
+    </div>
+    <div class="qs-field">
+      <label for="{{ form.client_whatsapp.id_for_label }}">{{ form.client_whatsapp.label }}</label>
+      {{ form.client_whatsapp }}
+      {{ form.client_whatsapp.errors }}
+    </div>
+    <div class="qs-actions">
+      <a class="btn" href="{% url 'service_job_create' %}">Preencher tudo (formulário completo)</a>
+      <button class="btn primary" type="submit" data-loading-text="Criando...">{% icon "bolt" %}Criar serviço</button>
+    </div>
+  </form>
+
+  <p class="qs-next"><strong>Depois de criar:</strong> adicione materiais, mande o orçamento pelo WhatsApp, marque início e fim do trabalho e envie o relatório final para o cliente.</p>
+</div>
+{% endblock %}
