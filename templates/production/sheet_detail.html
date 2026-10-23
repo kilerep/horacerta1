@@ -1,4 +1,5 @@
 {% extends "accounts/base.html" %}
+{% load static %}
 
 {% block title %}{{ sheet.equipment }} - Relatório de produção{% endblock %}
 {% block page_title %}Relatórios de produção{% endblock %}
@@ -15,9 +16,11 @@
         <span class="prod-chip{% if sheet.is_open %} open{% endif %}">{{ sheet.get_status_display }}</span>
         {% if sheet.company_name %}<span>{{ sheet.company_name }}</span>{% endif %}
         {% if sheet.operator_name %}<span>Operador: {{ sheet.operator_name }}</span>{% endif %}
+        {% if sheet.supervisor_name %}<span>Encarregado: {{ sheet.supervisor_name }}</span>{% endif %}
       </div>
       {% if sheet.notes %}<p>{{ sheet.notes }}</p>{% endif %}
     </div>
+    <a class="btn no-print" href="{% url 'production_sheet_edit' sheet.id %}">Editar</a>
   </header>
 
   <section class="prod-totals" aria-label="Totais de horas">
@@ -30,7 +33,11 @@
   {% if sheet.is_open %}
     <form class="card prod-form" method="post" novalidate data-submit-once="true" id="new-entry">
       {% csrf_token %}
-      <h2 style="margin:0;font-size:18px">Anotar item</h2>
+      <div class="prod-form-head">
+        <h2 style="margin:0;font-size:18px">Anotar item</h2>
+        <button class="btn prod-voice" type="button" data-voice-entry data-label="🎤 Falar o item" hidden>🎤 Falar o item</button>
+      </div>
+      <p class="prod-voice-status" data-voice-status role="status" aria-live="polite" hidden></p>
       {% include "production/_entry_fields.html" %}
       <div class="prod-actions"><button class="btn primary" type="submit" data-loading-text="Salvando...">Salvar item</button></div>
     </form>
@@ -57,6 +64,7 @@
   </section>
 
   <section class="prod-actions no-print" aria-label="Ações do relatório">
+    <a class="btn primary" href="{% url 'production_sheet_whatsapp' sheet.id %}" target="_blank" rel="noopener">Enviar pelo WhatsApp{% if sheet.supervisor_name %} para {{ sheet.supervisor_name }}{% endif %}</a>
     <a class="btn" href="{% url 'production_sheet_csv' sheet.id %}">Exportar planilha (CSV)</a>
     <button class="btn" type="button" onclick="window.print()">Imprimir</button>
     <form method="post" action="{% url 'production_sheet_status' sheet.id %}">
@@ -71,4 +79,5 @@
     </form>
   </section>
 </div>
+{% if sheet.is_open %}<script src="{% static 'js/production_voice.js' %}"></script>{% endif %}
 {% endblock %}
