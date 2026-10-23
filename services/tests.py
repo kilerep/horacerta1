@@ -295,7 +295,7 @@ class ServiceJobAreaTests(TestCase):
         self.assertContains(response, "Pedidos de serviço")
         self.assertContains(response, "Nenhum serviço encontrado.")
         self.assertContains(response, "Catálogo de itens")
-        self.assertContains(response, "sem alterar seu histórico normal")
+        self.assertContains(response, "Não mexe no seu ponto do dia a dia")
 
     def test_new_service_page_has_legible_client_select_and_guidance(self):
         response = self.client.get(reverse("service_job_create"))
@@ -535,7 +535,7 @@ class ServiceJobAreaTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertFalse(ServiceWorkLog.objects.filter(service_job=job).exists())
-        self.assertContains(response, "Horario final precisa ser maior que o inicial")
+        self.assertContains(response, "Horário final precisa ser maior que o inicial")
 
     def test_add_items_and_calculate_chargeable_and_non_chargeable_totals(self):
         job = ServiceJob.objects.create(
@@ -768,8 +768,8 @@ class ServiceJobAreaTests(TestCase):
         )
         self.assertFalse(ServiceWorkLog.objects.filter(service_job=job).exists())
         self.assertFalse(ServiceItemExpense.objects.filter(service_job=job).exists())
-        self.assertContains(blocked_log_response, "Reabra o servico")
-        self.assertContains(blocked_item_response, "Reabra o servico")
+        self.assertContains(blocked_log_response, "Reabra o serviço")
+        self.assertContains(blocked_item_response, "Reabra o serviço")
 
         reopen_response = self.client.post(
             reverse("service_job_status_action", args=[job.id]),
@@ -1358,13 +1358,13 @@ class ServiceJobAreaTests(TestCase):
         self.assertContains(detail_response, "Copiar mensagem")
         self.assertContains(detail_response, "Abrir WhatsApp")
         self.assertContains(detail_response, "Cotação oficial")
-        self.assertContains(detail_response, "Mensagem para loja. Sem loja integrada, sem pagamento.")
+        self.assertContains(detail_response, "Mensagem para loja: pronta para pedir preço pelo WhatsApp.")
         self.assertContains(detail_response, "* 2 x Disjuntor 20A")
 
         generate_response = self.client.post(reverse("service_job_quote_generate", args=[job.id]), follow=True)
         job.refresh_from_db()
         self.assertEqual(generate_response.status_code, 200)
-        self.assertContains(generate_response, "Cotacao gerada")
+        self.assertContains(generate_response, "Cotação gerada")
         self.assertIsNotNone(job.quote_message_generated_at)
         self.assertEqual(job.quote_item_count, 1)
         self.assertIn("Troca de disjuntores", job.quote_last_message)

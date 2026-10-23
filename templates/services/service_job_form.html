@@ -21,6 +21,8 @@
   .os-errors{display:grid;gap:6px;margin-top:6px;color:var(--danger-text);font-size:12px}
   .client-mode{display:flex;gap:10px;flex-wrap:wrap}
   .client-mode label{display:flex;align-items:center;gap:8px;min-height:44px;border:1px solid var(--color-border);border-radius:12px;padding:10px 12px;background:var(--surface-soft);font-weight:800}
+  .cep-notice{margin:8px 0 0;padding:10px 12px;border:1px solid var(--warning-border);border-radius:8px;background:var(--warning-bg);color:var(--warning-text);font-size:14px;line-height:1.4}
+  .cep-notice.is-ok{border-color:var(--success-border);background:var(--success-bg);color:var(--success-text)}
   .cep-row{display:flex;gap:10px;align-items:end}
   .cep-row .os-field{flex:1;min-width:0}
   .category-description{border:1px solid var(--color-border);border-radius:12px;background:var(--surface-soft);padding:10px 12px;color:var(--color-text-muted);font-size:13px;line-height:1.4}
@@ -175,6 +177,7 @@
         <button class="btn" type="button" data-client-address>Usar endereço do cliente</button>
         <a class="btn maps-link" href="#" target="_blank" rel="noopener" data-maps-link>Abrir no Maps</a>
       </div>
+      <p class="cep-notice" data-cep-notice role="status" aria-live="polite" hidden></p>
       <div class="os-grid">
         <div class="os-field full">
           <label for="{{ form.service_street.id_for_label }}">{{ form.service_street.label }}</label>
@@ -231,7 +234,7 @@
     {% if not is_edit %}
       <section class="os-section">
         <h2>Itens previstos</h2>
-        <p class="os-section__hint">Adicione materiais, peças ou despesas previstas para este serviço. O status inicial será Previsto.</p>
+        <p class="os-section__hint">Adicione materiais, peças ou despesas que você imagina usar. Eles entram como Previstos; depois você marca o que foi usado.</p>
         <div class="planned-items" data-planned-items>
           <div class="planned-item-row" data-planned-item-row>
             <div class="catalog-suggest">
@@ -353,19 +356,27 @@
       var field = form.querySelector('[name="' + name + '"]');
       if(field && value) field.value = value;
     }
+    var cepNotice = form.querySelector("[data-cep-notice]");
+    function showNotice(text, kind){
+      if(!cepNotice) return;
+      cepNotice.textContent = text || "";
+      cepNotice.hidden = !text;
+      cepNotice.classList.toggle("is-ok", kind === "ok");
+    }
     if(cepButton && zipInput){
       cepButton.addEventListener("click", function(){
         var digits = (zipInput.value || "").replace(/\D/g, "");
         if(digits.length !== 8){
-          alert("Informe um CEP com 8 dígitos.");
+          showNotice("Digite o CEP com 8 números para buscar.");
           return;
         }
+        showNotice("");
         cepButton.disabled = true;
         fetch("https://viacep.com.br/ws/" + digits + "/json/")
           .then(function(response){ return response.json(); })
           .then(function(data){
             if(data.erro){
-              alert("CEP não encontrado. Preencha o endereço manualmente.");
+              showNotice("Não achamos esse CEP. Preencha o endereço abaixo.");
               return;
             }
             setField("service_street", data.logradouro);
@@ -373,8 +384,9 @@
             setField("service_city", data.localidade);
             setField("service_state", data.uf);
             updateMapsLink();
+            showNotice("Endereço preenchido. Confira o número e o complemento.", "ok");
           })
-          .catch(function(){ alert("Não foi possível buscar o CEP agora. Preencha manualmente."); })
+          .catch(function(){ showNotice("Não deu para buscar o CEP agora. Preencha o endereço abaixo."); })
           .finally(function(){ cepButton.disabled = false; });
       });
     }
@@ -386,7 +398,7 @@
         var contractId = contractSelect ? contractSelect.value : "";
         var address = clientAddressMap[contractId] || "";
         if(!address){
-          alert("Este cliente não possui endereço cadastrado.");
+          showNotice("Este cliente não tem endereço cadastrado. Preencha abaixo.");
           return;
         }
         var addressFields = ["service_street","service_number","service_complement","service_district","service_city","service_state"];

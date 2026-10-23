@@ -31,7 +31,10 @@ class ServiceListTourTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "service_job_list")
-        self.assertContains(response, "if (true) {")
+        # Convite no topo em vez de abrir o tour sozinho por cima do conteudo.
+        self.assertContains(response, 'id="service-tour-invite"')
+        self.assertContains(response, "Agora não")
+        self.assertNotContains(response, "if (true) {")
         self.assertContains(response, "Um pedido aceito vira um serviço")
 
     def test_dismissing_the_services_tour_stops_auto_start_without_affecting_mei_panel_tour(self):
@@ -45,7 +48,8 @@ class ServiceListTourTests(TestCase):
         self.assertFalse(self.mei_user.has_dismissed_tour("mei_panel"))
 
         services_response = self.client.get(reverse("service_job_list"))
-        self.assertContains(services_response, "if (false) {")
+        self.assertNotContains(services_response, 'id="service-tour-invite"')
+        self.assertContains(services_response, "Ver tour desta tela")
 
         panel_response = self.client.get(reverse("mei_panel"))
         self.assertContains(panel_response, "if (true) {")

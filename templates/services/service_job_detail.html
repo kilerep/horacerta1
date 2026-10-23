@@ -125,7 +125,7 @@
 
   <section class="card section" id="execution">
     <h2>Execução do serviço</h2>
-    <p class="sub">Períodos do serviço não entram no Histórico normal do HoraCerta.</p>
+    <p class="sub">As horas deste serviço ficam só aqui, separadas do seu ponto do dia a dia.</p>
     {% if has_work_logs %}
     <div class="grid three">
       <div class="metric"><span>Total trabalhado</span><strong>{{ summary.total_hours }}</strong></div>
@@ -299,7 +299,7 @@
     </div>
     <div class="send-box" id="send-store">
       <h3>Cotação oficial (para a loja)</h3>
-      <p class="sub">Mensagem para loja. Sem loja integrada, sem pagamento.</p>
+      <p class="sub">Mensagem para loja: pronta para pedir preço pelo WhatsApp.</p>
       <div class="actions">
         {% if quote_items %}
           <form method="post" action="{{ quote_generate_url }}" id="quote">

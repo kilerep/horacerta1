@@ -4,7 +4,7 @@
   </style>
   <details class="health-details">
     <summary class="health-summary"><h2 id="service-health-title" style="display:inline;margin:0">Checklist do serviço</h2> <small data-health-count></small></summary>
-  <p class="sub">Conferência rápida para evitar serviço sem cliente, local, itens, execução ou relatório. Serve para qualquer tipo de prestação, não só evento.</p>
+  <p class="sub">Confira se não falta nada: cliente, local, itens, horas e relatório. Vale para qualquer tipo de serviço.</p>
   <div class="service-timeline" aria-label="Linha do tempo do serviço">
     <div class="timeline-step {% if job.status == 'DRAFT' %}current{% else %}done{% endif %}">1. Rascunho</div>
     <div class="timeline-step {% if job.status == 'PLANNED' or job.status == 'SCHEDULED' or job.status == 'SENT' %}current{% elif job.status == 'IN_PROGRESS' or job.status == 'FINISHED' or job.status == 'REPORT_SENT' or job.status == 'ARCHIVED' %}done{% endif %}">2. Planejado</div>

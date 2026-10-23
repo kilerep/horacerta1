@@ -54,14 +54,14 @@ class ServiceJobForm(forms.ModelForm):
             "manual_client_email": "E-mail",
             "service_zip_code": "CEP",
             "service_street": "Rua",
-            "service_number": "Numero",
+            "service_number": "Número",
             "service_complement": "Complemento",
             "service_district": "Bairro",
             "service_city": "Cidade",
             "service_state": "UF",
-            "service_reference": "Ponto de referencia",
+            "service_reference": "Ponto de referência",
             "category": "Categoria",
-            "title": "Titulo do servico",
+            "title": "Título do serviço",
             "description": "O que será feito",
             "start_date": "Data prevista",
             "planned_start_time": "Hora inicial prevista",
@@ -76,13 +76,13 @@ class ServiceJobForm(forms.ModelForm):
             "manual_client_email": forms.EmailInput(attrs={"placeholder": "Opcional"}),
             "service_zip_code": forms.TextInput(attrs={"placeholder": "00000-000", "inputmode": "numeric"}),
             "service_street": forms.TextInput(attrs={"placeholder": "Rua, avenida ou estrada"}),
-            "service_number": forms.TextInput(attrs={"placeholder": "Numero"}),
+            "service_number": forms.TextInput(attrs={"placeholder": "Número"}),
             "service_complement": forms.TextInput(attrs={"placeholder": "Casa, bloco, sala..."}),
             "service_district": forms.TextInput(attrs={"placeholder": "Bairro"}),
             "service_city": forms.TextInput(attrs={"placeholder": "Cidade"}),
             "service_state": forms.TextInput(attrs={"placeholder": "UF", "maxlength": "2"}),
-            "service_reference": forms.TextInput(attrs={"placeholder": "Ponto de referencia, opcional"}),
-            "title": forms.TextInput(attrs={"placeholder": "Ex.: Revisao eletrica residencial"}),
+            "service_reference": forms.TextInput(attrs={"placeholder": "Ponto de referência, opcional"}),
+            "title": forms.TextInput(attrs={"placeholder": "Ex.: Revisão elétrica residencial"}),
             "description": forms.Textarea(
                 attrs={
                     "rows": 4,
@@ -117,7 +117,7 @@ class ServiceJobForm(forms.ModelForm):
         self.fields["contract"].label_from_instance = self._contract_label
         self.fields["category"].queryset = ServiceCategory.objects.filter(is_active=True)
         self.fields["manual_client_name"].help_text = "Use quando o cliente não estiver cadastrado no HoraCerta."
-        self.fields["start_date"].help_text = "Use a previsao para organizar o atendimento. As horas realizadas serão registradas dentro do serviço."
+        self.fields["start_date"].help_text = "Use a previsão para organizar o atendimento. As horas realizadas serão registradas dentro do serviço."
         for field in self.fields.values():
             field.widget.attrs.setdefault("class", "hc-input")
 
@@ -259,15 +259,15 @@ class ServiceRequestForm(forms.ModelForm):
             "client_whatsapp": "WhatsApp",
             "client_email": "E-mail",
             "category": "Categoria",
-            "title": "Titulo curto",
-            "description": "Descricao do que o cliente pediu",
+            "title": "Título curto",
+            "description": "Descrição do que o cliente pediu",
             "urgency": "Urgencia",
             "source": "Origem",
         }
         widgets = {
             "client_whatsapp": forms.TextInput(attrs={"placeholder": "Ex.: 11999999999"}),
             "client_email": forms.EmailInput(attrs={"placeholder": "Opcional"}),
-            "title": forms.TextInput(attrs={"placeholder": "Ex.: Revisao eletrica residencial"}),
+            "title": forms.TextInput(attrs={"placeholder": "Ex.: Revisão elétrica residencial"}),
             "description": forms.Textarea(attrs={"rows": 4, "placeholder": "Descreva o que o cliente pediu."}),
         }
 
@@ -375,7 +375,7 @@ class ServiceRequestForm(forms.ModelForm):
             hourly_rate=0,
             start_date=timezone.localdate(),
             is_active=True,
-            notes="Criado a partir de pedido de servico.",
+            notes="Criado a partir de pedido de serviço.",
         )
 
 
@@ -386,7 +386,7 @@ class ServiceRequestItemForm(forms.ModelForm):
         labels = {
             "name": "Nome do item",
             "quantity": "Quantidade",
-            "note": "Observacao",
+            "note": "Observação",
             "estimated_unit_value": "Valor estimado",
         }
         widgets = {
@@ -470,7 +470,7 @@ class ServiceWorkLogForm(forms.ModelForm):
         fields = ["work_date", "start_time", "end_time", "description"]
         labels = {
             "work_date": "Data",
-            "start_time": "Inicio",
+            "start_time": "Início",
             "end_time": "Fim",
             "description": "Atividade realizada",
         }
@@ -511,7 +511,7 @@ class ServiceItemExpenseForm(forms.ModelForm):
     )
     update_catalog_price = forms.BooleanField(
         required=False,
-        label="Atualizar preco estimado com este valor",
+        label="Atualizar preço estimado com este valor",
     )
 
     class Meta:
@@ -532,18 +532,18 @@ class ServiceItemExpenseForm(forms.ModelForm):
         labels = {
             "type": "Tipo",
             "name": "Nome",
-            "description": "Observacao",
+            "description": "Observação",
             "unit": "Unidade",
             "quantity": "Quantidade",
-            "unit_value": "Valor unitario",
+            "unit_value": "Valor unitário",
             "usage_status": "Status de uso",
-            "receipt_note": "Observacao",
+            "receipt_note": "Observação",
         }
         widgets = {
             "description": forms.Textarea(attrs={"rows": 2}),
             "quantity": forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
             "unit_value": forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
-            "receipt_note": forms.TextInput(attrs={"placeholder": "Ex.: cupom, NF ou observacao"}),
+            "receipt_note": forms.TextInput(attrs={"placeholder": "Ex.: cupom, NF ou observação"}),
         }
 
     def __init__(self, *args, service_job=None, **kwargs):
@@ -646,7 +646,7 @@ class PlannedServiceItemForm(ServiceItemExpenseForm):
         labels = {
             "type": "Tipo",
             "name": "Nome do item",
-            "description": "Observacao",
+            "description": "Observação",
             "unit": "Unidade",
             "quantity": "Quantidade",
             "unit_value": "Valor estimado/unidade",
@@ -677,14 +677,14 @@ class ServiceItemCatalogForm(forms.ModelForm):
             "is_active",
         ]
         labels = {
-            "internal_code": "Codigo interno",
+            "internal_code": "Código interno",
             "category": "Categoria",
             "item_type": "Tipo",
             "name": "Nome",
-            "description": "Descricao",
+            "description": "Descrição",
             "unit": "Unidade",
             "estimated_unit_value": "Valor estimado/unidade",
-            "default_quantity": "Quantidade padrao",
+            "default_quantity": "Quantidade padrão",
             "favorite": "Favorito",
             "is_active": "Ativo",
         }
