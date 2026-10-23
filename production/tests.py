@@ -261,7 +261,7 @@ class ProductionPhaseTwoTests(TestCase):
 
         self.assertIn("data-voice-entry", html)
         self.assertIn("js/production_voice.js", html)
-        self.assertIn("Enviar pelo WhatsApp para Carlos", html)
+        self.assertIn("Enviar PDF pelo WhatsApp para Carlos", html)
         self.assertIn(reverse("production_sheet_edit", args=[sheet.id]), html)
 
     def test_other_user_cannot_send_or_edit(self):

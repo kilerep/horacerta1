@@ -5,9 +5,11 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
+from .exports import build_pdf, build_xlsx, safe_filename
 from .forms import ProductionEntryForm, ProductionSheetForm
 from .models import ProductionEntry, ProductionSheet, format_minutes
 
@@ -95,7 +97,49 @@ def sheet_edit(request, sheet_id):
     })
 
 
-def _whatsapp_message(sheet):
+def _file_response(content, content_type, filename, inline=False):
+    response = HttpResponse(content, content_type=content_type)
+    disposition = "inline" if inline else "attachment"
+    response["Content-Disposition"] = f'{disposition}; filename="{filename}"'
+    response["Cache-Control"] = "private, no-store"
+    return response
+
+
+XLSX_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+
+@login_required
+def sheet_xlsx(request, sheet_id):
+    sheet = _sheet_for(request, sheet_id)
+    return _file_response(build_xlsx(sheet), XLSX_TYPE, safe_filename(sheet, "xlsx"))
+
+
+@login_required
+def sheet_pdf(request, sheet_id):
+    sheet = _sheet_for(request, sheet_id)
+    return _file_response(build_pdf(sheet), "application/pdf", safe_filename(sheet, "pdf"),
+                          inline=request.GET.get("ver") == "1")
+
+
+def public_sheet_pdf(request, token):
+    """Link enviado pelo WhatsApp: abre o PDF sem login, so com o codigo secreto."""
+    sheet = get_object_or_404(ProductionSheet, share_token=token)
+    return _file_response(build_pdf(sheet), "application/pdf", safe_filename(sheet, "pdf"), inline=True)
+
+
+def public_sheet_xlsx(request, token):
+    sheet = get_object_or_404(ProductionSheet, share_token=token)
+    return _file_response(build_xlsx(sheet), XLSX_TYPE, safe_filename(sheet, "xlsx"))
+
+
+def _share_links(request, sheet):
+    return {
+        "pdf": request.build_absolute_uri(reverse("production_public_pdf", args=[sheet.share_token])),
+        "xlsx": request.build_absolute_uri(reverse("production_public_xlsx", args=[sheet.share_token])),
+    }
+
+
+def _whatsapp_message(sheet, links=None):
     totals = _totals_display(sheet)
     start, end = sheet.date_range()
     lines = [f"*Relatório de produção - {sheet.equipment}*"]
@@ -122,13 +166,17 @@ def _whatsapp_message(sheet):
     lines.append(f"*Total: {totals['total']}* (Guincho {totals['guincho']} | Implemento {totals['implemento']})")
     if totals["pending"]:
         lines.append(f"{totals['pending']} item(ns) sem horário de fim, fora do total.")
+    if links:
+        lines.append("")
+        lines.append(f"PDF: {links['pdf']}")
+        lines.append(f"Excel: {links['xlsx']}")
     return "\n".join(lines)
 
 
 @login_required
 def sheet_whatsapp(request, sheet_id):
     sheet = _sheet_for(request, sheet_id)
-    text = quote(_whatsapp_message(sheet), safe="")
+    text = quote(_whatsapp_message(sheet, _share_links(request, sheet)), safe="")
     digits = sheet.supervisor_whatsapp
     if digits:
         number = digits if len(digits) > 11 else f"55{digits}"
@@ -176,6 +224,7 @@ def sheet_detail(request, sheet_id):
         "form": form,
         "totals": _totals_display(sheet),
         "code_suggestions": _code_suggestions(request.user),
+        "pdf_filename": safe_filename(sheet, "pdf"),
     })
 
 

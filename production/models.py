@@ -34,6 +34,8 @@ class ProductionSheet(models.Model):
     supervisor_name = models.CharField("Encarregado", max_length=80, blank=True, default="")
     supervisor_whatsapp = models.CharField("WhatsApp do encarregado", max_length=20, blank=True, default="")
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.OPEN)
+    # Codigo secreto do link do PDF/Excel enviado pelo WhatsApp (quem nao tem o link nao abre).
+    share_token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     closed_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
