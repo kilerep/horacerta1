@@ -38,6 +38,7 @@ urlpatterns = [
     path("api/push/subscribe/", pwa.register_push_subscription, name="register_push"),
     path("api/pwa/status/", pwa.status, name="pwa_status"),
     path("", include("timeclock.urls")),
+    path("", include("production.urls")),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -87,6 +87,7 @@ INSTALLED_APPS = [
     "companies",
     "services",
     "timeclock",
+    "production",
     "axes",
 ]
 

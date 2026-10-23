@@ -1,0 +1,74 @@
+{% extends "accounts/base.html" %}
+
+{% block title %}{{ sheet.equipment }} - Relatório de produção{% endblock %}
+{% block page_title %}Relatórios de produção{% endblock %}
+
+{% block extra_head %}{% include "production/_styles.html" %}{% endblock %}
+
+{% block content %}
+<div class="prod-page">
+  <header class="card prod-head">
+    <div>
+      <a class="no-print" href="{% url 'production_sheet_list' %}" style="display:inline-flex;align-items:center;min-height:44px;font-weight:800;text-decoration:none">← Relatórios</a>
+      <h1>{{ sheet.equipment }}</h1>
+      <div class="prod-meta" style="margin-top:6px">
+        <span class="prod-chip{% if sheet.is_open %} open{% endif %}">{{ sheet.get_status_display }}</span>
+        {% if sheet.company_name %}<span>{{ sheet.company_name }}</span>{% endif %}
+        {% if sheet.operator_name %}<span>Operador: {{ sheet.operator_name }}</span>{% endif %}
+      </div>
+      {% if sheet.notes %}<p>{{ sheet.notes }}</p>{% endif %}
+    </div>
+  </header>
+
+  <section class="prod-totals" aria-label="Totais de horas">
+    <div class="prod-total"><span>Total</span><strong>{{ totals.total }}</strong></div>
+    <div class="prod-total"><span>Guincho</span><strong>{{ totals.guincho }}</strong></div>
+    <div class="prod-total"><span>Implemento</span><strong>{{ totals.implemento }}</strong></div>
+  </section>
+  {% if totals.pending %}<p class="prod-meta" style="margin:-6px 0 0">{{ totals.pending }} item{{ totals.pending|pluralize:"ns" }} sem horário de fim ainda (fora do total).</p>{% endif %}
+
+  {% if sheet.is_open %}
+    <form class="card prod-form" method="post" novalidate data-submit-once="true" id="new-entry">
+      {% csrf_token %}
+      <h2 style="margin:0;font-size:18px">Anotar item</h2>
+      {% include "production/_entry_fields.html" %}
+      <div class="prod-actions"><button class="btn primary" type="submit" data-loading-text="Salvando...">Salvar item</button></div>
+    </form>
+  {% endif %}
+
+  <section class="prod-entries" aria-label="Itens do relatório">
+    <h2 style="margin:0;font-size:18px">Itens ({{ entries|length }})</h2>
+    {% for entry in entries %}
+      <a class="prod-entry{% if entry.is_running %} running{% endif %}" href="{% url 'production_entry_edit' sheet.id entry.id %}">
+        <div>
+          <strong>{{ entry.item_code|default:"Sem código" }}</strong>
+          <div class="prod-meta">
+            <span>{{ entry.work_date|date:"d/m" }}</span>
+            {% if entry.destination %}<span class="prod-chip {{ entry.destination|lower }}">{{ entry.get_destination_display }}</span>{% endif %}
+            {% if entry.start_time %}<span>{{ entry.start_time|time:"H:i" }}{% if entry.end_time %} às {{ entry.end_time|time:"H:i" }}{% endif %}</span>{% endif %}
+            {% if entry.note %}<span>{{ entry.note }}</span>{% endif %}
+          </div>
+        </div>
+        <span class="dur">{% if entry.is_running %}Anotar fim{% else %}{{ entry.duration_label|default:"—" }}{% endif %}</span>
+      </a>
+    {% empty %}
+      <div class="prod-empty">Nenhum item ainda. Anote o primeiro no formulário acima.</div>
+    {% endfor %}
+  </section>
+
+  <section class="prod-actions no-print" aria-label="Ações do relatório">
+    <a class="btn" href="{% url 'production_sheet_csv' sheet.id %}">Exportar planilha (CSV)</a>
+    <button class="btn" type="button" onclick="window.print()">Imprimir</button>
+    <form method="post" action="{% url 'production_sheet_status' sheet.id %}">
+      {% csrf_token %}
+      {% if sheet.is_open %}
+        <input type="hidden" name="action" value="close">
+        <button class="btn" type="submit" onclick="return confirm('Fechar este relatório? Você pode reabrir depois.');">Fechar relatório</button>
+      {% else %}
+        <input type="hidden" name="action" value="reopen">
+        <button class="btn" type="submit">Reabrir relatório</button>
+      {% endif %}
+    </form>
+  </section>
+</div>
+{% endblock %}

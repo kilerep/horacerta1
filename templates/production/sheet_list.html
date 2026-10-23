@@ -1,0 +1,53 @@
+{% extends "accounts/base.html" %}
+
+{% block title %}Relatórios de produção{% endblock %}
+{% block page_title %}Relatórios de produção{% endblock %}
+
+{% block extra_head %}{% include "production/_styles.html" %}{% endblock %}
+
+{% block content %}
+<div class="prod-page">
+  <header class="prod-head">
+    <div>
+      <h1>Relatórios de produção</h1>
+      <p>Uma folha por máquina: anote cada item com a data e os horários. As horas são somadas sozinhas.</p>
+    </div>
+    <a class="btn primary" href="{% url 'production_sheet_create' %}">Novo relatório</a>
+  </header>
+
+  <section class="prod-list" aria-label="Relatórios abertos">
+    {% for row in open_rows %}
+      <a class="prod-card" href="{% url 'production_sheet_detail' row.sheet.id %}">
+        <div class="prod-meta"><span class="prod-chip open">Aberto</span>{% if row.sheet.company_name %}<span>{{ row.sheet.company_name }}</span>{% endif %}</div>
+        <strong>{{ row.sheet.equipment }}</strong>
+        <div class="prod-meta">
+          <span>{{ row.count }} item{{ row.count|pluralize:"ns" }}</span>
+          {% if row.start %}<span>{{ row.start|date:"d/m" }}{% if row.end != row.start %} a {{ row.end|date:"d/m" }}{% endif %}</span>{% endif %}
+          <span>Total {{ row.totals.total }}</span>
+        </div>
+      </a>
+    {% empty %}
+      <div class="prod-empty">Nenhum relatório aberto. Toque em <strong>Novo relatório</strong>, informe a máquina e anote o primeiro item.</div>
+    {% endfor %}
+  </section>
+
+  {% if closed_rows %}
+    <details>
+      <summary class="btn">Relatórios fechados ({{ closed_rows|length }})</summary>
+      <div class="prod-list" style="margin-top:10px">
+        {% for row in closed_rows %}
+          <a class="prod-card" href="{% url 'production_sheet_detail' row.sheet.id %}">
+            <strong>{{ row.sheet.equipment }}</strong>
+            <div class="prod-meta">
+              <span>{{ row.count }} item{{ row.count|pluralize:"ns" }}</span>
+              {% if row.start %}<span>{{ row.start|date:"d/m" }}{% if row.end != row.start %} a {{ row.end|date:"d/m" }}{% endif %}</span>{% endif %}
+              <span>Total {{ row.totals.total }}</span>
+              {% if row.sheet.closed_at %}<span>Fechado em {{ row.sheet.closed_at|date:"d/m/Y" }}</span>{% endif %}
+            </div>
+          </a>
+        {% endfor %}
+      </div>
+    </details>
+  {% endif %}
+</div>
+{% endblock %}
