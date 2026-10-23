@@ -123,6 +123,10 @@
                   <div class="icon">S</div>
                   <div><strong>Serviços</strong><div class="muted item-sub">pedidos, itens e trabalhos avulsos</div></div>
                 </a>
+                <a class="item {% if current|slice:':11' == 'production_' %}is-active{% endif %}" href="{% url 'production_sheet_list' %}">
+                  <div class="icon">F</div>
+                  <div><strong>Relatórios de produção</strong><div class="muted item-sub">máquina, itens e horários</div></div>
+                </a>
                 <a class="item {% if current == 'mei_history' %}is-active{% endif %}" href="{% url 'mei_history' %}">
                   <div class="icon">H</div>
                   <div><strong>Histórico</strong><div class="muted item-sub">por período</div></div>
