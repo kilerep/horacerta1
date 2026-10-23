@@ -135,7 +135,7 @@
 <div class="rel-wrap">
   {% if request.GET.event == "policy_saved" %}
     <section class="hc-global-feedback" role="status" aria-live="polite">
-      Politica de registro atualizada com sucesso.
+      Política de registro atualizada com sucesso.
     </section>
   {% elif request.GET.event == "location_created" %}
     <section class="hc-global-feedback" role="status" aria-live="polite">
@@ -156,14 +156,14 @@
   {% endif %}
 
   <section class="rel-panel">
-    <h2 class="rel-title">Politica de validacao de horarios</h2>
+    <h2 class="rel-title">Política de validação de horários</h2>
     <p class="rel-sub">
-      Escolha uma politica simples para sua operacao. O HoraCerta aplica a regra no momento do registro, sem burocracia para o profissional.
+      Escolha uma política simples para sua operação. O HoraCerta aplica a regra no momento do registro, sem burocracia para o profissional.
     </p>
     <div class="rel-mode-help">
       <article class="rel-mode-item">
         <strong>Livre</strong>
-        Fluxo rapido, sem exigencias de localizacao ou QR.
+        Fluxo rápido, sem exigencias de localizacao ou QR.
       </article>
       <article class="rel-mode-item">
         <strong>Com localizacao</strong>
@@ -171,7 +171,7 @@
       </article>
       <article class="rel-mode-item">
         <strong>Presencial com QR</strong>
-        Exige localizacao e adiciona confirmacao QR presencial.
+        Exige localizacao e adiciona confirmação QR presencial.
       </article>
     </div>
     <div id="relModeBanner" class="rel-mode-banner"></div>
@@ -215,7 +215,7 @@
         <div class="rel-error" style="margin-top:10px;">{{ policy_form.non_field_errors }}</div>
       {% endif %}
       <div class="rel-actions">
-        <button class="btn primary" type="submit" data-loading-text="Salvando politica...">Salvar politica</button>
+        <button class="btn primary" type="submit" data-loading-text="Salvando política...">Salvar política</button>
       </div>
     </form>
   </section>
@@ -224,8 +224,8 @@
     <article class="rel-card">
       <div class="k">Modo atual</div>
       <div class="v">{{ policy.get_validation_mode_display }}</div>
-      <div class="k" style="margin-top:6px;">Localizacao: {% if policy.require_location %}Validada no registro{% else %}Nao validada{% endif %}</div>
-      <div class="k" style="margin-top:6px;">QR presencial: {% if policy.require_qr %}Ativo{% else %}Nao ativo{% endif %}</div>
+      <div class="k" style="margin-top:6px;">Localizacao: {% if policy.require_location %}Validada no registro{% else %}Não validada{% endif %}</div>
+      <div class="k" style="margin-top:6px;">QR presencial: {% if policy.require_qr %}Ativo{% else %}Não ativo{% endif %}</div>
     </article>
     <article class="rel-card">
       <div class="k">Locais ativos</div>
@@ -240,7 +240,7 @@
   <section class="rel-panel" id="relLocationPanel">
     <h2 class="rel-title">{% if editing_location %}Editar local autorizado{% else %}Novo local autorizado{% endif %}</h2>
     <p class="rel-sub">
-      Cadastre referenciais de operacao para validações de confiabilidade. Coordenadas continuam disponiveis no modo avancado.
+      Cadastre referenciais de operação para validações de confiabilidade. Coordenadas continuam disponiveis no modo avancado.
     </p>
     <form method="post" data-submit-once="true">
       {% csrf_token %}
@@ -273,7 +273,7 @@
           <button type="button" class="btn" id="relUseCurrentLocation">Usar localizacao atual</button>
           <button type="button" class="btn" id="relDefineOnMap">Definir no mapa</button>
         </div>
-        <div id="relGeoFeedback" class="rel-muted">Permissao sera solicitada apenas neste momento.</div>
+        <div id="relGeoFeedback" class="rel-muted">Permissao será solicitada apenas neste momento.</div>
         <div id="relMapPlaceholder" class="rel-map-placeholder" hidden>
           Integracao com mapa real preparada para Sprint futura. Por enquanto, use "Usar localizacao atual" ou informe coordenadas no modo avancado.
         </div>
@@ -307,7 +307,7 @@
           {% if editing_location %}Atualizar local{% else %}Cadastrar local{% endif %}
         </button>
         {% if editing_location %}
-          <a class="btn" href="{% url 'company_attendance_reliability' %}">Cancelar edicao</a>
+          <a class="btn" href="{% url 'company_attendance_reliability' %}">Cancelar edição</a>
         {% endif %}
       </div>
     </form>
@@ -324,7 +324,7 @@
               <th>Raio (m)</th>
               <th>Status</th>
               <th>Atualizado em</th>
-              <th>Acoes</th>
+              <th>Ações</th>
             </tr>
           </thead>
           <tbody>

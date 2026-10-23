@@ -1,6 +1,6 @@
 {% extends "accounts/base.html" %}
-{% block title %}HoraCerta - Problemas de horario{% endblock %}
-{% block page_title %}Problemas de horario{% endblock %}
+{% block title %}HoraCerta - Problemas de horário{% endblock %}
+{% block page_title %}Problemas de horário{% endblock %}
 
 {% block content %}
 <style>
@@ -21,9 +21,9 @@
     <div class="cr-head">
       <div>
         <h2 class="cr-title">Problemas reportados</h2>
-        <p class="cr-sub">Leitura da empresa. Correcoes de horario sao feitas apenas pelo admin interno.</p>
+        <p class="cr-sub">Leitura da empresa. Correções de horário sao feitas apenas pelo admin interno.</p>
       </div>
-      <a class="btn" href="{% url 'company_notifications' %}">Notificacoes</a>
+      <a class="btn" href="{% url 'company_notifications' %}">Notificações</a>
     </div>
 
     <div class="cr-table-wrap">
@@ -51,7 +51,7 @@
               </tr>
             {% endwith %}
           {% empty %}
-            <tr><td colspan="6"><div class="empty-state">Nenhum problema de horario reportado.</div></td></tr>
+            <tr><td colspan="6"><div class="empty-state">Nenhum problema de horário reportado.</div></td></tr>
           {% endfor %}
         </tbody>
       </table>

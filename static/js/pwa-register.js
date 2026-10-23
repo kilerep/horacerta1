@@ -13,7 +13,7 @@
     toast.setAttribute("role", "status");
     toast.setAttribute("aria-live", "polite");
     toast.style.cssText =
-      "position:fixed;left:12px;right:12px;bottom:14px;z-index:2200;padding:10px 12px;" +
+      "position:fixed;left:12px;right:12px;bottom:calc(14px + var(--hc-bottom-nav, 0px));z-index:2200;padding:10px 12px;" +
       "border-radius:12px;border:1px solid var(--border-brand);background:rgba(16,24,46,.94);" +
       "color:rgba(255,255,255,.94);font-size:13px;line-height:1.35;" +
       "box-shadow:0 12px 28px rgba(3,7,20,.4);display:none";

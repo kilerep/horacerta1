@@ -1,6 +1,6 @@
 {% extends "accounts/base.html" %}
-{% block title %}Relatorios{% endblock %}
-{% block page_title %}Relatorios{% endblock %}
+{% block title %}Relatórios{% endblock %}
+{% block page_title %}Relatórios{% endblock %}
 
 {% block content %}
   <style>
@@ -137,7 +137,7 @@
   <div class="wrap-grid">
     {% if request.GET.event == "request_sent" %}
       <section class="hc-global-feedback" role="status" aria-live="polite">
-        Solicitacao enviada com sucesso. O MEI ja pode responder pelo painel dele.
+        Solicitação enviada com sucesso. O MEI já pode responder pelo painel dele.
       </section>
     {% endif %}
 
@@ -145,7 +145,7 @@
       <header class="panel-head">
         <div>
           <h2 class="panel-title">Filtros e exportacoes</h2>
-          <p class="panel-subtitle">Modulo de relatorios, separado do fluxo de ponto. Use os filtros para analise gerencial.</p>
+          <p class="panel-subtitle">Modulo de relatórios, separado do fluxo de ponto. Use os filtros para analise gerencial.</p>
         </div>
       </header>
       <form method="get" class="row" style="margin-top:10px;" data-submit-once="true">
@@ -169,7 +169,7 @@
           <input type="date" name="date_to" value="{{ date_to }}">
         </div>
         <div class="filter-actions">
-          <button class="btn primary" type="submit" data-loading-text="Atualizando relatorio...">Atualizar relatorio</button>
+          <button class="btn primary" type="submit" data-loading-text="Atualizando relatório...">Atualizar relatório</button>
           <a class="btn" href="{% url 'company_reports' %}">Limpar filtros</a>
         </div>
       </form>
@@ -183,7 +183,7 @@
       <div class="stat">
         <div class="k">Horas consolidadas</div>
         <div class="v">{{ total_hours }}</div>
-        <div class="stat-hint">Soma total no periodo selecionado</div>
+        <div class="stat-hint">Soma total no período selecionado</div>
       </div>
       <div class="stat">
         <div class="k">Lancamentos registrados</div>
@@ -198,8 +198,8 @@
     </section>
 
     <section class="panel">
-      <h2 class="table-title">Relatorio diario de operacao</h2>
-      <p class="table-subtitle">Resumo de jornada por dia para leitura operacional. Justificativa de horario nao faz parte deste fluxo.</p>
+      <h2 class="table-title">Relatório diario de operação</h2>
+      <p class="table-subtitle">Resumo de jornada por dia para leitura operacional. Justificativa de horário não faz parte deste fluxo.</p>
 
       <div class="table-wrap">
         <table class="table">
@@ -208,7 +208,7 @@
               <th>Data</th>
               <th>MEI</th>
               <th>Cliente / contrato</th>
-              <th>Horarios</th>
+              <th>Horários</th>
               <th>Total do dia</th>
               <th>Status</th>
             </tr>
@@ -228,7 +228,7 @@
                 <td colspan="6">
                   <div class="reports-empty">
                     <strong>Nenhum registro diario encontrado.</strong>
-                    <p>Ajuste o periodo ou selecione outro MEI para gerar um relatorio detalhado.</p>
+                    <p>Ajuste o período ou selecione outro MEI para gerar um relatório detalhado.</p>
                     <a class="btn primary" href="{% url 'company_reports' %}">Revisar filtros</a>
                   </div>
                 </td>
@@ -245,7 +245,7 @@
             <div class="line">MEI: <strong>{{ row.mei_name }}</strong></div>
             <div class="line">Status: <strong>{{ row.status }}</strong></div>
             <div class="line">Total do dia: <strong>{{ row.total_hours_hhmm }}</strong></div>
-            <div class="line">Horarios: <strong>{{ row.punches_label }}</strong></div>
+            <div class="line">Horários: <strong>{{ row.punches_label }}</strong></div>
           </article>
         {% empty %}
           <div class="reports-empty">
@@ -255,12 +255,12 @@
           </div>
         {% endfor %}
       </div>
-      <p class="muted" style="margin-top:8px;">Mostrando no maximo 500 linhas diarias para manter performance e leitura.</p>
+      <p class="muted" style="margin-top:8px;">Mostrando no máximo 500 linhas diarias para manter performance e leitura.</p>
     </section>
 
     <section id="request-report" class="panel">
       <h2 class="table-title">Solicitar detalhamento de atividades</h2>
-      <p class="table-subtitle">Este bloco e para relatorio de trabalho realizado, sem relacao com justificativa de horario.</p>
+      <p class="table-subtitle">Este bloco e para relatório de trabalho realizado, sem relacao com justificativa de horário.</p>
       <form method="post" class="row" style="margin-top:10px;" data-submit-once="true">
         {% csrf_token %}
         <input type="hidden" name="action" value="request_activity_report">
@@ -283,21 +283,21 @@
         </div>
         <div class="field">
           <label>Mensagem (opcional)</label>
-          <textarea name="message" rows="2" placeholder="Ex: detalhar atividades executadas no periodo solicitado."></textarea>
+          <textarea name="message" rows="2" placeholder="Ex: detalhar atividades executadas no período solicitado."></textarea>
         </div>
-        <button class="btn primary" type="submit" data-loading-text="Enviando solicitacao...">Solicitar detalhamento ao MEI</button>
+        <button class="btn primary" type="submit" data-loading-text="Enviando solicitação...">Solicitar detalhamento ao MEI</button>
       </form>
     </section>
 
     <section class="panel">
       <h2 class="table-title">Retornos recebidos</h2>
-      <p class="table-subtitle">Historico das solicitacoes e respostas para rastreabilidade da operacao.</p>
+      <p class="table-subtitle">Histórico das solicitações e respostas para rastreabilidade da operação.</p>
       <table class="table">
         <thead>
           <tr>
             <th>MEI</th>
             <th>Solicitado em</th>
-            <th>Periodo</th>
+            <th>Período</th>
             <th>Status</th>
             <th>Resposta</th>
           </tr>
@@ -307,7 +307,7 @@
             <tr>
               <td>{{ r.employee.full_name|default:r.employee.user.email|default:r.employee.user.username }}</td>
               <td>{{ r.requested_at|date:"d/m/Y H:i" }}</td>
-              <td>{{ r.date_from|default:"-" }} ate {{ r.date_to|default:"-" }}</td>
+              <td>{{ r.date_from|default:"-" }} até {{ r.date_to|default:"-" }}</td>
               <td>{% if r.is_answered %}Respondido{% else %}<span class="muted">Pendente</span>{% endif %}</td>
               <td>{% if r.response_text %}{{ r.response_text }}{% else %}<span class="muted">-</span>{% endif %}</td>
             </tr>
@@ -315,7 +315,7 @@
             <tr>
               <td colspan="5">
                 <div class="reports-empty">
-                  <strong>Nenhuma solicitacao registrada.</strong>
+                  <strong>Nenhuma solicitação registrada.</strong>
                   <p>Use o bloco acima para iniciar o primeiro pedido de detalhamento ao MEI.</p>
                   <a class="btn primary" href="#request-report">Solicitar detalhamento</a>
                 </div>

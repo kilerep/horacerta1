@@ -1,6 +1,6 @@
 {% extends "accounts/base.html" %}
-{% block title %}Relatorio de servico{% endblock %}
-{% block page_title %}Relatorio de servico{% endblock %}
+{% block title %}Relatório de serviço{% endblock %}
+{% block page_title %}Relatório de serviço{% endblock %}
 
 {% block content %}
   <style>
@@ -39,10 +39,10 @@
 
   <div class="service-report-prep">
     <section class="service-report-prep__panel">
-      <h2 class="service-report-prep__title">Relatorio de servico por periodo</h2>
-      <p class="service-report-prep__sub">Em breve: relatorio de servico por periodo. Este fluxo sera separado do relatorio de horas.</p>
+      <h2 class="service-report-prep__title">Relatório de serviço por período</h2>
+      <p class="service-report-prep__sub">Em breve: relatório de serviço por período. Este fluxo será separado do relatório de horas.</p>
 
-      <div class="service-report-prep__grid" aria-label="Estrutura futura do relatorio de servico">
+      <div class="service-report-prep__grid" aria-label="Estrutura futura do relatório de serviço">
         <div class="service-report-prep__field">
           <label>Cliente</label>
           <input type="text" value="{{ contract.company.name }}" disabled>
@@ -60,12 +60,12 @@
           <input type="date" value="{{ date_to|date:'Y-m-d' }}" disabled>
         </div>
         <div class="service-report-prep__field service-report-prep__field--full">
-          <label>Titulo</label>
+          <label>Título</label>
           <input type="text" value="Relatorio de servico - {{ contract.company.name }}" disabled>
         </div>
         <div class="service-report-prep__field service-report-prep__field--full">
-          <label>Descricao dos servicos realizados</label>
-          <textarea rows="5" disabled>Durante o periodo informado, descreva aqui os servicos executados para este cliente.</textarea>
+          <label>Descrição dos serviços realizados</label>
+          <textarea rows="5" disabled>Durante o período informado, descreva aqui os serviços executados para este cliente.</textarea>
         </div>
         <div class="service-report-prep__field service-report-prep__field--full">
           <label>Observacoes opcionais</label>

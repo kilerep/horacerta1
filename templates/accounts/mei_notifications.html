@@ -1,6 +1,6 @@
 {% extends "accounts/base.html" %}
-{% block title %}HoraCerta - Notificacoes{% endblock %}
-{% block page_title %}Notificacoes{% endblock %}
+{% block title %}HoraCerta - Notificações{% endblock %}
+{% block page_title %}Notificações{% endblock %}
 
 {% block content %}
 <style>
@@ -57,8 +57,8 @@
   <section class="nt-hero">
     <div class="nt-hero__top">
       <div>
-        <h1 class="nt-title">Notificacoes</h1>
-        <p class="nt-sub">Acompanhe pendencias, relatorios e avisos importantes da sua rotina.</p>
+        <h1 class="nt-title">Notificações</h1>
+        <p class="nt-sub">Acompanhe pendencias, relatórios e avisos importantes da sua rotina.</p>
       </div>
       {% if unread_count %}
         <form method="post" action="{% url 'mei_notifications_bulk_action' %}" class="nt-actions" data-submit-once="true">
@@ -74,18 +74,18 @@
     <div class="nt-panel__head">
       <div>
         <h2>O que aparece aqui</h2>
-        <p>Alertas da rotina, pedidos e servicos que precisam de revisao.</p>
+        <p>Alertas da rotina, pedidos e serviços que precisam de revisão.</p>
       </div>
     </div>
     <div class="nt-event-grid">
-      <span class="nt-event-chip">Pedido de servico novo</span>
-      <span class="nt-event-chip">Servico agendado para hoje</span>
+      <span class="nt-event-chip">Pedido de serviço novo</span>
+      <span class="nt-event-chip">Serviço agendado para hoje</span>
       <span class="nt-event-chip">Orçamento enviado</span>
       <span class="nt-event-chip">Orçamento visualizado</span>
-      <span class="nt-event-chip">Servico em execucao</span>
-      <span class="nt-event-chip">Relatorio final pendente</span>
-      <span class="nt-event-chip">Relatorio visualizado</span>
-      <span class="nt-event-chip">Dia de horario incompleto</span>
+      <span class="nt-event-chip">Serviço em execução</span>
+      <span class="nt-event-chip">Relatório final pendente</span>
+      <span class="nt-event-chip">Relatório visualizado</span>
+      <span class="nt-event-chip">Dia de horário incompleto</span>
     </div>
   </section>
 
@@ -93,8 +93,8 @@
     <section class="nt-panel nt-panel--attention">
       <div class="nt-panel__head">
         <div>
-          <h2>Atencao hoje</h2>
-          <p>Avisos prioritarios para revisar antes de fechar ou enviar relatorios.</p>
+          <h2>Atenção hoje</h2>
+          <p>Avisos prioritarios para revisar antes de fechar ou enviar relatórios.</p>
         </div>
       </div>
       <div class="nt-list">
@@ -123,7 +123,7 @@
         {% empty %}
           <div class="nt-empty">
             <strong>Tudo certo por enquanto.</strong>
-            Quando houver pendencias, fechamentos ou visualizacoes de relatorios, elas aparecerao aqui.
+            Quando houver pendencias, fechamentos ou visualizacoes de relatórios, elas aparecerao aqui.
           </div>
         {% endfor %}
       </div>
@@ -132,8 +132,8 @@
     <section class="nt-panel">
       <div class="nt-panel__head">
         <div>
-          <h2>Historico de notificacoes</h2>
-          <p>Pendencias, relatorios, fechamentos e eventos do sistema em um so lugar.</p>
+          <h2>Histórico de notificações</h2>
+          <p>Pendencias, relatórios, fechamentos e eventos do sistema em um so lugar.</p>
         </div>
       </div>
       <div class="nt-list">
@@ -168,8 +168,8 @@
           </article>
         {% empty %}
           <div class="nt-empty">
-            <strong>Sem notificacoes ainda.</strong>
-            Quando algo importante acontecer, a central vai mostrar o aviso e a acao indicada.
+            <strong>Sem notificações ainda.</strong>
+            Quando algo importante acontecer, a central vai mostrar o aviso e a ação indicada.
           </div>
         {% endfor %}
       </div>

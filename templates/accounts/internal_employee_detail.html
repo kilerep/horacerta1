@@ -90,7 +90,7 @@
     <h3>Contratos com clientes</h3>
     <div class="table-wrap">
       <table class="internal-table">
-        <thead><tr><th>Empresa</th><th>Status</th><th>Registros</th><th>Ultimo registro</th><th>Encerramento</th><th>Acao</th></tr></thead>
+        <thead><tr><th>Empresa</th><th>Status</th><th>Registros</th><th>Último registro</th><th>Encerramento</th><th>Ação</th></tr></thead>
         <tbody>
           {% for row in relationship_rows %}
             <tr>
@@ -112,11 +112,11 @@
                     {% csrf_token %}
                     <input type="hidden" name="action" value="end_relationship">
                     <input type="hidden" name="relationship_id" value="{{ row.employee.id }}">
-                    <input name="description" required placeholder="Motivo obrigatorio">
+                    <input name="description" required placeholder="Motivo obrigatório">
                     <button class="btn danger" type="submit" onclick="return confirm('Encerrar somente este contrato com o cliente?')">Encerrar contrato</button>
                   </form>
                 {% else %}
-                  <span class="pill warn">sem acao</span>
+                  <span class="pill warn">sem ação</span>
                 {% endif %}
               </td>
             </tr>

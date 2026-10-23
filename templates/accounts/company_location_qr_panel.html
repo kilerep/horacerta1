@@ -59,7 +59,7 @@
       <div>
         <h2 class="qr-title">QR Presencial - {{ location.name }}</h2>
         <p class="qr-sub">
-          Exiba este QR em tela fixa no local para o profissional escanear quando a politica exigir confirmacao presencial.
+          Exiba este QR em tela fixa no local para o profissional escanear quando a política exigir confirmação presencial.
         </p>
       </div>
       <div style="display:flex; gap:8px; flex-wrap:wrap;">
@@ -75,7 +75,7 @@
         <strong>Informacoes do local</strong>
         <div><span class="muted">Empresa:</span> {{ company.name }}</div>
         <div><span class="muted">Local:</span> {{ location.name }}</div>
-        <div><span class="muted">Descricao:</span> {{ location.address_or_description|default:"-" }}</div>
+        <div><span class="muted">Descrição:</span> {{ location.address_or_description|default:"-" }}</div>
         <div><span class="muted">Raio permitido:</span> {{ location.allowed_radius_m }} m</div>
         <div><span class="muted">Status:</span> {% if location.is_active %}Ativo{% else %}Inativo{% endif %}</div>
         <div><span class="muted">Link de leitura (fallback):</span></div>

@@ -134,10 +134,10 @@
   <div class="contracts-wrap">
     <section class="contracts-panel">
       <h2 class="contracts-title">Contratos operacionais</h2>
-      <p class="contracts-subtitle">Tela de acompanhamento e edicao dos contratos ja criados para a base de profissionais.</p>
+      <p class="contracts-subtitle">Tela de acompanhamento e edição dos contratos já criados para a base de profissionais.</p>
       <div class="contracts-meta">
         <span class="contracts-meta-pill">Contratos listados: {{ contracts|length }}</span>
-        <span class="contracts-meta-pill">Fluxo: acompanhamento e edicao</span>
+        <span class="contracts-meta-pill">Fluxo: acompanhamento e edição</span>
       </div>
 
       {% if request.GET.status == "updated" %}
@@ -145,17 +145,17 @@
       {% endif %}
       {% if show_creation_redirect_notice %}
         <div class="contracts-warning">
-          A criacao principal permanece na tela de MEIs para manter um fluxo unico e sem retrabalho.
+          A criacao principal permanece na tela de MEIs para manter um fluxo único e sem retrabalho.
           Use <strong>MEIs</strong> para cadastrar profissionais e configurar o contrato inicial.
         </div>
       {% endif %}
       {% if show_only_edit_notice %}
         <div class="contracts-warning">
-          Esta tela e exclusiva para listagem, acompanhamento e edicao de contratos existentes.
+          Esta tela e exclusiva para listagem, acompanhamento e edição de contratos existentes.
         </div>
       {% endif %}
       {% if invalid_edit_contract %}
-        <div class="contracts-error">Nao foi possivel localizar o contrato solicitado para edicao.</div>
+        <div class="contracts-error">Não foi possível localizar o contrato solicitado para edição.</div>
       {% endif %}
       {% if inconsistent_contracts_count %}
         <div class="contracts-warning">
@@ -189,7 +189,7 @@
             <h3 style="margin:0;">Editar contrato</h3>
             <p class="contracts-edit-subtitle">Atualize condicoes operacionais do contrato com clareza e rastreabilidade.</p>
           </div>
-          <a class="btn" href="{% url 'company_contracts' %}">Fechar edicao</a>
+          <a class="btn" href="{% url 'company_contracts' %}">Fechar edição</a>
         </div>
 
         <form method="post" enctype="multipart/form-data" style="margin-top:10px;">
@@ -228,7 +228,7 @@
             <div class="contracts-field contracts-field--span2">
               <label>{{ edit_form.notes.label }}</label>
               {{ edit_form.notes }}
-              <div class="contracts-hint">Registre observacoes operacionais para historico interno.</div>
+              <div class="contracts-hint">Registre observacoes operacionais para histórico interno.</div>
               {% if edit_form.notes.errors %}<div class="contracts-error">{{ edit_form.notes.errors }}</div>{% endif %}
             </div>
           </div>
@@ -240,7 +240,7 @@
 
     <section class="contracts-panel">
       <h3 class="contracts-table-title">Lista de contratos ativos e inativos</h3>
-      <p class="contracts-table-subtitle">Consulta rapida da base operacional e acesso direto para edicao.</p>
+      <p class="contracts-table-subtitle">Consulta rápida da base operacional e acesso direto para edição.</p>
       <div class="contracts-table-wrap">
         <table class="contracts-table">
           <thead>
@@ -248,10 +248,10 @@
               <th>Profissional</th>
               <th>Status</th>
               <th>Valor/hora</th>
-              <th>Inicio da vigencia</th>
-              <th>Fim da vigencia</th>
+              <th>Início da vigência</th>
+              <th>Fim da vigência</th>
               <th>PDF</th>
-              <th>Acoes</th>
+              <th>Ações</th>
             </tr>
           </thead>
           <tbody>
@@ -312,7 +312,7 @@
                 <td colspan="7">
                   <div class="contracts-empty">
                     <strong>Nenhum contrato encontrado.</strong>
-                    <p>Cadastre um MEI na tela principal para iniciar a operacao e configurar o primeiro contrato.</p>
+                    <p>Cadastre um MEI na tela principal para iniciar a operação e configurar o primeiro contrato.</p>
                     <a class="btn primary" href="{% url 'company_meis' %}">Ir para MEIs</a>
                   </div>
                 </td>

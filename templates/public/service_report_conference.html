@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Relatorio de horas | HoraCerta</title>
+  <title>Relatório de horas | HoraCerta</title>
   <meta name="description" content="Relatorio publico de horas HoraCerta.">
   <link rel="icon" type="image/png" sizes="32x32" href="{% static 'pwa/favicon-32.png' %}">
   <style>
@@ -250,7 +250,7 @@
             <span class="brand-name">HoraCerta</span>
           </div>
           <div class="title-block">
-            <h1>Relatorio indisponivel</h1>
+            <h1>Relatório indisponivel</h1>
             <p class="subtitle">{{ unavailable_reason }}</p>
           </div>
         </section>
@@ -264,10 +264,10 @@
             <span class="issued">Emitido em {{ report.created_at|date:"d/m/Y H:i" }}</span>
           </div>
           <div class="title-block">
-            <h1>Relatorio de horas</h1>
+            <h1>Relatório de horas</h1>
             <p class="subtitle">{{ payload.professional|default:report.employee.full_name }} para {{ payload.company|default:report.company.name }}</p>
           </div>
-          <nav class="actions" aria-label="Exportacoes do relatorio">
+          <nav class="actions" aria-label="Exportacoes do relatório">
             <a class="btn primary" href="{{ pdf_url }}">Imprimir PDF</a>
             <a class="btn" href="{{ xlsx_url }}">Baixar Excel</a>
           </nav>
@@ -281,7 +281,7 @@
             <div class="summary-grid">
               <article class="metric"><span>Profissional</span><strong>{{ payload.professional|default:report.employee.full_name }}</strong></article>
               <article class="metric"><span>Cliente</span><strong>{{ payload.company|default:report.company.name }}</strong></article>
-              <article class="metric"><span>Periodo</span><strong>{% if payload.period.label %}{{ payload.period.label }}{% else %}{{ report.date_from|date:"d/m/Y" }} a {{ report.date_to|date:"d/m/Y" }}{% endif %}</strong></article>
+              <article class="metric"><span>Período</span><strong>{% if payload.period.label %}{{ payload.period.label }}{% else %}{{ report.date_from|date:"d/m/Y" }} a {{ report.date_to|date:"d/m/Y" }}{% endif %}</strong></article>
               <article class="metric"><span>Total de horas</span><strong>{{ payload.total_hours|default:"-" }}</strong></article>
               <article class="metric"><span>Valor estimado</span><strong>{{ payload.estimated_value_brl|default:"-" }}</strong></article>
             </div>
@@ -308,7 +308,7 @@
                   </div>
                   <div class="day-info">
                     <div>
-                      <span class="label">Horarios</span>
+                      <span class="label">Horários</span>
                       <div class="value">{{ day.punch_times|join:", "|default:"-" }}</div>
                     </div>
                     <div>
@@ -316,13 +316,13 @@
                       <div class="value">{{ day.total_hours|default:"-" }}</div>
                     </div>
                     <div class="full">
-                      <span class="label">Observacao</span>
+                      <span class="label">Observação</span>
                       <p class="note">{{ day.notes|join:"; "|default:"-" }}</p>
                     </div>
                   </div>
                 </article>
               {% empty %}
-                <div class="empty">Sem registros no periodo.</div>
+                <div class="empty">Sem registros no período.</div>
               {% endfor %}
             </div>
           </section>
@@ -370,7 +370,7 @@
         </div>
       {% endif %}
     </div>
-    <div class="footer-note">HoraCerta - relatorio publico por token seguro.</div>
+    <div class="footer-note">HoraCerta - relatório público por token seguro.</div>
   </main>
 </body>
 </html>

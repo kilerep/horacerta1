@@ -95,12 +95,12 @@
       <div>
         <h2 class="closure-title">{{ employee.full_name }}</h2>
         <p class="closure-sub">
-          Fechamento individual do periodo. Empresa: {{ company.name }} | Profissional: {{ employee.user.email|default:employee.user.username }}
+          Fechamento individual do período. Empresa: {{ company.name }} | Profissional: {{ employee.user.email|default:employee.user.username }}
         </p>
       </div>
       <div class="closure-actions">
         <a class="btn" href="{{ profile_url }}">Voltar ao perfil</a>
-        <a class="btn" href="{{ history_url }}">Abrir historico</a>
+        <a class="btn" href="{{ history_url }}">Abrir histórico</a>
       </div>
     </div>
 
@@ -121,15 +121,15 @@
   </section>
 
   <section class="closure-panel">
-    <h3 style="margin:0;">Resumo do periodo</h3>
-    <p class="closure-sub">Periodo: {{ period_label }}{% if current_contract %} | Valor/hora atual: {{ current_hourly_rate_brl }}{% endif %}</p>
+    <h3 style="margin:0;">Resumo do período</h3>
+    <p class="closure-sub">Período: {{ period_label }}{% if current_contract %} | Valor/hora atual: {{ current_hourly_rate_brl }}{% endif %}</p>
     <div class="summary-grid">
       <article class="summary-item">
         <div class="k">Dias com registro</div>
         <div class="v">{{ days_with_records }}</div>
       </article>
       <article class="summary-item">
-        <div class="k">Total de horarios</div>
+        <div class="k">Total de horários</div>
         <div class="v">{{ total_punches }}</div>
       </article>
       <article class="summary-item">
@@ -141,13 +141,13 @@
         <div class="v">{{ complete_days }} | {{ incomplete_days }}</div>
       </article>
       <article class="summary-item">
-        <div class="k">Valor acumulado no periodo</div>
+        <div class="k">Valor acumulado no período</div>
         <div class="v">{{ estimated_value_brl }}</div>
         <div class="h">Estimativa operacional com base no valor/hora do(s) contrato(s)</div>
       </article>
     </div>
-    <h3 style="margin:14px 0 0;">Qualidade da validacao</h3>
-    <p class="closure-sub">Indicadores de confiabilidade dos registros no mesmo periodo do fechamento.</p>
+    <h3 style="margin:14px 0 0;">Qualidade da validação</h3>
+    <p class="closure-sub">Indicadores de confiabilidade dos registros no mesmo período do fechamento.</p>
     <div class="summary-grid">
       <article class="summary-item">
         <div class="k">Validados no local</div>
@@ -166,7 +166,7 @@
         <div class="v">{{ quality_no_location }}</div>
       </article>
       <article class="summary-item">
-        <div class="k">Pendentes de revisao</div>
+        <div class="k">Pendentes de revisão</div>
         <div class="v">{{ quality_pending_review }}</div>
       </article>
     </div>
@@ -174,14 +174,14 @@
 
   <section class="closure-panel">
     <h3 style="margin:0;">Bloco operacional diario</h3>
-    <p class="closure-sub">Tabela de conferencia por dia, com horarios registrados, total e status.</p>
+    <p class="closure-sub">Tabela de conferência por dia, com horários registrados, total e status.</p>
     <div class="table-wrap">
       <table class="table">
         <thead>
           <tr>
             <th>Data</th>
-            <th>Quantidade de horarios</th>
-            <th>Horarios registrados</th>
+            <th>Quantidade de horários</th>
+            <th>Horários registrados</th>
             <th>Total do dia</th>
             <th>Status do dia</th>
           </tr>
@@ -198,7 +198,7 @@
           {% empty %}
             <tr>
               <td colspan="5">
-                <div class="empty-box">Sem dados no periodo selecionado.</div>
+                <div class="empty-box">Sem dados no período selecionado.</div>
               </td>
             </tr>
           {% endfor %}
@@ -208,7 +208,7 @@
   </section>
 
   <section class="closure-panel">
-    <h3 style="margin:0;">Relatorios no periodo</h3>
+    <h3 style="margin:0;">Relatórios no período</h3>
     <p class="closure-sub">Registros de atividade enviados pelo profissional no mesmo recorte do fechamento.</p>
     {% if service_reports %}
       <div class="table-wrap">
@@ -216,10 +216,10 @@
           <thead>
             <tr>
               <th>Data</th>
-              <th>Titulo</th>
+              <th>Título</th>
               <th>Contrato</th>
               <th>Enviado em</th>
-              <th>Acoes</th>
+              <th>Ações</th>
             </tr>
           </thead>
           <tbody>
@@ -229,7 +229,7 @@
                 <td>{{ report.title }}</td>
                 <td>
                   {% if report.contract %}
-                    Inicio {{ report.contract.start_date|date:"d/m/Y"|default:"-" }} | R$ {{ report.contract.hourly_rate }}/h
+                    Início {{ report.contract.start_date|date:"d/m/Y"|default:"-" }} | R$ {{ report.contract.hourly_rate }}/h
                   {% else %}
                     <span class="muted">Sem contrato</span>
                   {% endif %}
@@ -242,7 +242,7 @@
         </table>
       </div>
     {% else %}
-      <div class="empty-box">Nenhum relatorio encontrado para este periodo.</div>
+      <div class="empty-box">Nenhum relatório encontrado para este período.</div>
     {% endif %}
   </section>
 </div>

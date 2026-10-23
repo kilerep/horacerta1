@@ -93,7 +93,7 @@
         <span>{{ activation.hint }}</span>
       </article>
       <article class="mei-box">
-        <strong>Situacao operacional</strong>
+        <strong>Situação operacional</strong>
         <span>{{ state.hint }}</span>
       </article>
       <article class="mei-box">
@@ -101,10 +101,10 @@
         <span>{{ contracts|length }} total | {{ active_contracts }} operacional</span>
       </article>
       <article class="mei-box">
-        <strong>Ultimo contrato</strong>
+        <strong>Último contrato</strong>
         <span>
           {% if latest_contract %}
-            R$ {{ latest_contract.hourly_rate }} | inicio {{ latest_contract.start_date|date:"d/m/Y" }}
+            R$ {{ latest_contract.hourly_rate }} | início {{ latest_contract.start_date|date:"d/m/Y" }}
           {% else %}
             Nenhum contrato criado ainda.
           {% endif %}
@@ -118,7 +118,7 @@
 
     <div class="mei-actions">
       <a class="btn" href="{{ meis_url }}">Voltar para MEIs</a>
-      <a class="btn" href="{{ history_url }}">Ver historico</a>
+      <a class="btn" href="{{ history_url }}">Ver histórico</a>
       <a class="btn" href="{{ closure_url }}">Fechamento individual</a>
       {% if activation.key == "pending" %}
         <button type="button" class="btn" data-copy-text="Ative seu acesso no HoraCerta em {{ activation_link }} usando o email {{ employee.user.email|default:employee.user.username }}.">Copiar link de ativacao</button>
@@ -149,12 +149,12 @@
   </section>
 
   <section class="mei-profile-card">
-    <h3 style="margin:0 0 10px;">Historico de contratos</h3>
+    <h3 style="margin:0 0 10px;">Histórico de contratos</h3>
     <div class="mei-table-wrap">
       <table class="mei-table">
         <thead>
           <tr>
-            <th>Inicio</th>
+            <th>Início</th>
             <th>Fim</th>
             <th>Valor/h</th>
             <th>Status</th>
