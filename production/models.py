@@ -31,6 +31,8 @@ class ProductionSheet(models.Model):
     operator_name = models.CharField("Operador", max_length=120, blank=True, default="")
     equipment = models.CharField("Máquina / equipamento", max_length=80)
     notes = models.TextField("Observações", blank=True, default="")
+    supervisor_name = models.CharField("Encarregado", max_length=80, blank=True, default="")
+    supervisor_whatsapp = models.CharField("WhatsApp do encarregado", max_length=20, blank=True, default="")
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.OPEN)
     closed_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

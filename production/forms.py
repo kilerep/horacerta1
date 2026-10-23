@@ -28,11 +28,13 @@ def parse_duration(value):
 class ProductionSheetForm(forms.ModelForm):
     class Meta:
         model = ProductionSheet
-        fields = ["equipment", "company_name", "operator_name", "notes"]
+        fields = ["equipment", "company_name", "operator_name", "supervisor_name", "supervisor_whatsapp", "notes"]
         widgets = {
             "equipment": forms.TextInput(attrs={"list": "equipment-suggestions", "placeholder": "Ex.: Chenlong", "autocomplete": "off"}),
             "company_name": forms.TextInput(attrs={"placeholder": "Opcional"}),
             "operator_name": forms.TextInput(attrs={"placeholder": "Seu nome"}),
+            "supervisor_name": forms.TextInput(attrs={"placeholder": "Opcional"}),
+            "supervisor_whatsapp": forms.TextInput(attrs={"placeholder": "(11) 99999-9999", "inputmode": "tel", "autocomplete": "off"}),
             "notes": forms.Textarea(attrs={"rows": 2, "placeholder": "Opcional"}),
         }
 
@@ -41,6 +43,12 @@ class ProductionSheetForm(forms.ModelForm):
         if not value:
             raise forms.ValidationError("Informe a máquina ou equipamento.")
         return value
+
+    def clean_supervisor_whatsapp(self):
+        digits = re.sub(r"\D", "", self.cleaned_data.get("supervisor_whatsapp") or "")
+        if digits and not 10 <= len(digits) <= 13:
+            raise forms.ValidationError("Use o número com DDD, ex.: (11) 99999-9999.")
+        return digits
 
 
 class ProductionEntryForm(forms.ModelForm):

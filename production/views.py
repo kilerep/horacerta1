@@ -1,4 +1,5 @@
 import csv
+from urllib.parse import quote
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -61,12 +62,78 @@ def sheet_create(request):
             messages.success(request, "Relatório criado. Agora anote o primeiro item.")
             return redirect("production_sheet_detail", sheet_id=sheet.id)
     else:
-        form = ProductionSheetForm(initial={"operator_name": _default_operator(request.user)})
-    equipment_suggestions = (
-        ProductionSheet.objects.filter(owner=request.user).order_by("equipment")
+        initial = {"operator_name": _default_operator(request.user)}
+        last = ProductionSheet.objects.filter(owner=request.user).exclude(supervisor_whatsapp="").first()
+        if last:  # quase sempre e o mesmo encarregado: ja deixa preenchido
+            initial.update(supervisor_name=last.supervisor_name, supervisor_whatsapp=last.supervisor_whatsapp)
+        form = ProductionSheetForm(initial=initial)
+    return render(request, "production/sheet_form.html", {
+        "form": form, "equipment_suggestions": _equipment_suggestions(request.user),
+    })
+
+
+def _equipment_suggestions(user):
+    return (
+        ProductionSheet.objects.filter(owner=user).order_by("equipment")
         .values_list("equipment", flat=True).distinct()
     )
-    return render(request, "production/sheet_form.html", {"form": form, "equipment_suggestions": equipment_suggestions})
+
+
+@login_required
+def sheet_edit(request, sheet_id):
+    sheet = _sheet_for(request, sheet_id)
+    if request.method == "POST":
+        form = ProductionSheetForm(request.POST, instance=sheet)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Dados do relatório atualizados.")
+            return redirect("production_sheet_detail", sheet_id=sheet.id)
+    else:
+        form = ProductionSheetForm(instance=sheet)
+    return render(request, "production/sheet_form.html", {
+        "form": form, "sheet": sheet, "equipment_suggestions": _equipment_suggestions(request.user),
+    })
+
+
+def _whatsapp_message(sheet):
+    totals = _totals_display(sheet)
+    start, end = sheet.date_range()
+    lines = [f"*Relatório de produção - {sheet.equipment}*"]
+    if sheet.company_name:
+        lines.append(f"Empresa: {sheet.company_name}")
+    if sheet.operator_name:
+        lines.append(f"Operador: {sheet.operator_name}")
+    if start:
+        period = start.strftime("%d/%m") if start == end else f"{start:%d/%m} a {end:%d/%m}"
+        lines.append(f"Período: {period}")
+    lines.append("")
+    for e in sheet.entries.all():
+        parts = [e.work_date.strftime("%d/%m"), e.item_code or "sem código"]
+        if e.destination:
+            parts.append(e.get_destination_display())
+        if e.start_time:
+            parts.append(e.start_time.strftime("%H:%M") + (f"-{e.end_time:%H:%M}" if e.end_time else " (sem fim)"))
+        if e.duration_label:
+            parts.append(e.duration_label)
+        if e.note:
+            parts.append(e.note)
+        lines.append(" · ".join(parts))
+    lines.append("")
+    lines.append(f"*Total: {totals['total']}* (Guincho {totals['guincho']} | Implemento {totals['implemento']})")
+    if totals["pending"]:
+        lines.append(f"{totals['pending']} item(ns) sem horário de fim, fora do total.")
+    return "\n".join(lines)
+
+
+@login_required
+def sheet_whatsapp(request, sheet_id):
+    sheet = _sheet_for(request, sheet_id)
+    text = quote(_whatsapp_message(sheet), safe="")
+    digits = sheet.supervisor_whatsapp
+    if digits:
+        number = digits if len(digits) > 11 else f"55{digits}"
+        return redirect(f"https://wa.me/{number}?text={text}")
+    return redirect(f"https://wa.me/?text={text}")
 
 
 def _code_suggestions(user):

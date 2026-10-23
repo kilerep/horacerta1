@@ -1,5 +1,11 @@
+import json
+import shutil
+import subprocess
 from datetime import date, time
+from pathlib import Path
+from unittest import skipUnless
 
+from django.conf import settings
 from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 
@@ -185,6 +191,113 @@ class ProductionFlowTests(TestCase):
         self.assertLess(html.index("Chenlong"), html.index("Relatórios fechados"))
         self.assertGreater(html.index("Lippel"), html.index("Relatórios fechados"))
         self.assertTrue(open_sheet.is_open)
+
+
+@override_settings(**BASE)
+class ProductionPhaseTwoTests(TestCase):
+    """Fase 2: enviar pelo WhatsApp ao encarregado e anotar o item falando."""
+
+    def setUp(self):
+        self.user = make_user("fase2@example.com", first_name="Fagner")
+        self.client.force_login(self.user)
+
+    def _sheet(self, **extra):
+        data = {"equipment": "Chenlong", "company_name": "Empresa X", "operator_name": "Fagner"}
+        data.update(extra)
+        return ProductionSheet.objects.create(owner=self.user, **data)
+
+    def test_whatsapp_goes_to_the_supervisor_with_items_and_totals(self):
+        sheet = self._sheet(supervisor_name="Carlos", supervisor_whatsapp="11988887777")
+        ProductionEntry.objects.create(sheet=sheet, work_date=date(2026, 10, 20), item_code="0011-024",
+                                       destination="IMPLEMENTO", start_time=time(7, 0), end_time=time(11, 0))
+        ProductionEntry.objects.create(sheet=sheet, work_date=date(2026, 10, 21), destination="GUINCHO", manual_minutes=90)
+
+        response = self.client.get(reverse("production_sheet_whatsapp", args=[sheet.id]))
+        location = response["Location"]
+        from urllib.parse import unquote
+
+        text = unquote(location.split("text=", 1)[1])
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(location.startswith("https://wa.me/5511988887777?text="))
+        self.assertIn("Relatório de produção - Chenlong", text)
+        self.assertIn("20/10 · 0011-024 · Implemento · 07:00-11:00 · 4:00", text)
+        self.assertIn("Período: 20/10 a 21/10", text)
+        self.assertIn("*Total: 5:30* (Guincho 1:30 | Implemento 4:00)", text)
+
+    def test_whatsapp_without_number_lets_the_person_pick_the_contact(self):
+        sheet = self._sheet()
+
+        response = self.client.get(reverse("production_sheet_whatsapp", args=[sheet.id]))
+
+        self.assertTrue(response["Location"].startswith("https://wa.me/?text="))
+
+    def test_new_report_remembers_the_last_supervisor(self):
+        self._sheet(supervisor_name="Carlos", supervisor_whatsapp="11988887777")
+
+        html = self.client.get(reverse("production_sheet_create")).content.decode()
+
+        self.assertIn('value="Carlos"', html)
+        self.assertIn('value="11988887777"', html)
+
+    def test_edit_report_saves_supervisor_phone_as_digits(self):
+        sheet = self._sheet()
+
+        self.client.post(reverse("production_sheet_edit", args=[sheet.id]), {
+            "equipment": "Chenlong", "company_name": "Empresa X", "operator_name": "Fagner",
+            "supervisor_name": "Carlos", "supervisor_whatsapp": "(11) 98888-7777", "notes": "",
+        })
+        bad = self.client.post(reverse("production_sheet_edit", args=[sheet.id]), {
+            "equipment": "Chenlong", "supervisor_whatsapp": "123",
+        })
+        sheet.refresh_from_db()
+
+        self.assertEqual(sheet.supervisor_whatsapp, "11988887777")
+        self.assertContains(bad, "Use o número com DDD")
+
+    def test_detail_has_voice_button_whatsapp_and_edit(self):
+        sheet = self._sheet(supervisor_name="Carlos")
+
+        html = self.client.get(reverse("production_sheet_detail", args=[sheet.id])).content.decode()
+
+        self.assertIn("data-voice-entry", html)
+        self.assertIn("js/production_voice.js", html)
+        self.assertIn("Enviar pelo WhatsApp para Carlos", html)
+        self.assertIn(reverse("production_sheet_edit", args=[sheet.id]), html)
+
+    def test_other_user_cannot_send_or_edit(self):
+        sheet = self._sheet()
+        self.client.force_login(make_user("intruso@example.com"))
+
+        for name in ("production_sheet_whatsapp", "production_sheet_edit"):
+            self.assertEqual(self.client.get(reverse(name, args=[sheet.id])).status_code, 404)
+
+
+@skipUnless(shutil.which("node"), "node nao instalado")
+class VoiceParserTests(SimpleTestCase):
+    """Roda o leitor de fala (static/js/production_voice.js) no node com frases reais."""
+
+    def test_spoken_sentences_fill_the_right_fields(self):
+        script = Path(settings.BASE_DIR) / "static/js/production_voice.js"
+        cases = [
+            ["código 0011 024 implemento das 7 às 11", {"code": "0011-024", "destination": "IMPLEMENTO", "start": "07:00", "end": "11:00"}],
+            ["guincho uma hora e meia", {"destination": "GUINCHO", "duration": "1:30", "code": ""}],
+            ["código X 123 guincho comecei agora", {"code": "X 123", "start": "14:05", "end": ""}],
+            ["de sete e meia até onze e quinze implemento", {"start": "07:30", "end": "11:15"}],
+            ["item 13 guincho 2h30", {"code": "13", "duration": "2:30"}],
+            ["peça quebrou no meio", {"code": "", "note": "peça quebrou no meio"}],
+            ["código 55 implemento 2 horas obs faltou material", {"code": "55", "duration": "2:00", "note": "faltou material"}],
+        ]
+        program = (
+            "const v=require(process.argv[1]);const now=new Date(2026,9,22,14,5);"
+            "const cases=JSON.parse(process.argv[2]);"
+            "console.log(JSON.stringify(cases.map(c=>v.parse(c[0],now))));"
+        )
+        out = subprocess.run(["node", "-e", program, str(script), json.dumps(cases)],
+                             capture_output=True, text=True, encoding="utf-8", check=True).stdout
+        for (text, expected), got in zip(cases, json.loads(out)):
+            for key, value in expected.items():
+                with self.subTest(text=text, field=key):
+                    self.assertEqual(got[key], value)
 
 
 @override_settings(**BASE)
