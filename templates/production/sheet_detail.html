@@ -63,9 +63,20 @@
     {% endfor %}
   </section>
 
+  <section class="prod-share no-print" aria-label="Enviar e baixar">
+    <h2 style="margin:0;font-size:18px">Enviar e baixar</h2>
+    <a class="btn primary prod-share-main" href="{% url 'production_sheet_whatsapp' sheet.id %}" target="_blank" rel="noopener"
+       data-share-pdf="{% url 'production_sheet_pdf' sheet.id %}" data-share-name="{{ pdf_filename }}"
+       data-share-text="Relatório de produção - {{ sheet.equipment }}">Enviar PDF pelo WhatsApp{% if sheet.supervisor_name %} para {{ sheet.supervisor_name }}{% endif %}</a>
+    <p class="prod-hint" data-share-hint>No celular, escolha o WhatsApp e o contato: o PDF vai anexado. No computador, a mensagem leva o link do PDF e do Excel.</p>
+    <div class="prod-actions">
+      <a class="btn" href="{% url 'production_sheet_pdf' sheet.id %}">Baixar PDF</a>
+      <a class="btn" href="{% url 'production_sheet_xlsx' sheet.id %}">Baixar Excel</a>
+      <a class="btn" href="{% url 'production_sheet_pdf' sheet.id %}?ver=1" target="_blank" rel="noopener">Ver PDF</a>
+    </div>
+  </section>
+
   <section class="prod-actions no-print" aria-label="Ações do relatório">
-    <a class="btn primary" href="{% url 'production_sheet_whatsapp' sheet.id %}" target="_blank" rel="noopener">Enviar pelo WhatsApp{% if sheet.supervisor_name %} para {{ sheet.supervisor_name }}{% endif %}</a>
-    <a class="btn" href="{% url 'production_sheet_csv' sheet.id %}">Exportar planilha (CSV)</a>
     <button class="btn" type="button" onclick="window.print()">Imprimir</button>
     <form method="post" action="{% url 'production_sheet_status' sheet.id %}">
       {% csrf_token %}
@@ -80,4 +91,5 @@
   </section>
 </div>
 {% if sheet.is_open %}<script src="{% static 'js/production_voice.js' %}"></script>{% endif %}
+<script src="{% static 'js/production_share.js' %}"></script>
 {% endblock %}
