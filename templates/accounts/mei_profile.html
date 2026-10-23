@@ -51,7 +51,7 @@
 
   <section class="panel">
     <h2 style="margin:0;">Meu perfil</h2>
-    <p class="muted" style="margin:8px 0 0;">Mantenha seus dados atualizados para facilitar a operacao com a empresa.</p>
+    <p class="muted" style="margin:8px 0 0;">Mantenha seus dados atualizados para facilitar a operação com a empresa.</p>
     {% if contracts %}
       <form method="get" class="row" style="margin-top:10px;">
         <div class="field">
@@ -69,15 +69,15 @@
     {% if contracts|length > 1 %}
       {% if not employee.full_name %}
         <div class="profile-scope-note profile-scope-note--empty">
-          <strong>Atencao:</strong> nome, CPF, telefone, endereco e foto sao cadastrados
-          <strong>separadamente para cada cliente</strong> acima - nao existe um perfil
-          unico compartilhado entre eles. Este vinculo (<strong>{{ selected_contract.company.name }}</strong>)
-          ainda nao tem nome cadastrado; confira se e realmente o cliente que voce quer
+          <strong>Atenção:</strong> nome, CPF, telefone, endereço e foto sao cadastrados
+          <strong>separadamente para cada cliente</strong> acima - não existe um perfil
+          único compartilhado entre eles. Este vinculo (<strong>{{ selected_contract.company.name }}</strong>)
+          ainda não tem nome cadastrado; confira se e realmente o cliente que você quer
           editar antes de preencher os dados.
         </div>
       {% else %}
         <div class="profile-scope-note">
-          Voce esta editando os dados cadastrados especificamente para
+          Você esta editando os dados cadastrados especificamente para
           <strong>{{ selected_contract.company.name }}</strong>. Como esses campos valem
           por cliente, trocar a empresa acima mostra (e permite editar) um cadastro
           diferente.

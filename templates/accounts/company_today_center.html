@@ -95,30 +95,30 @@
   <div class="today-wrap">
     <section class="panel">
       <h2 class="hero-title">Central Operacional de Hoje</h2>
-      <p class="hero-sub">Visao diaria para acompanhamento rapido dos profissionais no dia {{ today|date:"d/m/Y" }}.</p>
+      <p class="hero-sub">Visão diaria para acompanhamento rápido dos profissionais no dia {{ today|date:"d/m/Y" }}.</p>
       <div class="cards">
         <article class="card">
           <div class="k">Com registros hoje</div>
           <div class="v">{{ total_professionals_with_records_today }}</div>
-          <div class="h">Profissionais com pelo menos 1 horario</div>
+          <div class="h">Profissionais com pelo menos 1 horário</div>
         </article>
         <article class="card">
-          <div class="k">Total de horarios hoje</div>
+          <div class="k">Total de horários hoje</div>
           <div class="v">{{ total_punches_today }}</div>
           <div class="h">Marcacoes consolidadas no dia</div>
         </article>
         <article class="card">
           <div class="k">Jornadas em andamento</div>
           <div class="v">{{ journeys_in_progress_count }}</div>
-          <div class="h">Dia com horarios em quantidade impar (antes das 20h)</div>
+          <div class="h">Dia com horários em quantidade ímpar (antes das 20h)</div>
         </article>
         <article class="card">
           <div class="k">Dias incompletos</div>
           <div class="v">{{ incomplete_days_count }}</div>
-          <div class="h">Quantidade impar de horarios apos 20h</div>
+          <div class="h">Quantidade ímpar de horários após 20h</div>
         </article>
         <article class="card">
-          <div class="k">Relatorios hoje</div>
+          <div class="k">Relatórios hoje</div>
           <div class="v">{{ service_reports_today_count }}</div>
           <div class="h">Envios realizados no dia atual</div>
         </article>
@@ -129,22 +129,22 @@
       <article class="panel">
         <div class="section-head">
           <div>
-            <h3>Profissionais sem horarios hoje</h3>
+            <h3>Profissionais sem horários hoje</h3>
             <p class="section-sub">Prioridade para validar ausencia de registro.</p>
           </div>
         </div>
         <div class="table-wrap">
           <table class="table">
-            <thead><tr><th>Profissional</th><th>Status</th><th>Acoes</th></tr></thead>
+            <thead><tr><th>Profissional</th><th>Status</th><th>Ações</th></tr></thead>
             <tbody>
               {% for row in no_records_rows %}
                 <tr>
                   <td>{{ row.employee.full_name }}<br><span class="muted">{{ row.employee.user.email|default:row.employee.user.username }}</span></td>
                   <td><span class="status-pill neutral">{{ row.status_label }}</span></td>
-                  <td><a class="btn" href="{{ row.profile_url }}">Perfil</a> <a class="btn" href="{{ row.history_url }}">Historico</a></td>
+                  <td><a class="btn" href="{{ row.profile_url }}">Perfil</a> <a class="btn" href="{{ row.history_url }}">Histórico</a></td>
                 </tr>
               {% empty %}
-                <tr><td colspan="3"><div class="empty"><strong>Nenhum caso sem horario.</strong><p>A base operacional possui registros para todos os profissionais ativos hoje.</p></div></td></tr>
+                <tr><td colspan="3"><div class="empty"><strong>Nenhum caso sem horário.</strong><p>A base operacional possui registros para todos os profissionais ativos hoje.</p></div></td></tr>
               {% endfor %}
             </tbody>
           </table>
@@ -160,14 +160,14 @@
         </div>
         <div class="table-wrap">
           <table class="table">
-            <thead><tr><th>Profissional</th><th>Horarios</th><th>Total parcial</th><th>Acoes</th></tr></thead>
+            <thead><tr><th>Profissional</th><th>Horários</th><th>Total parcial</th><th>Ações</th></tr></thead>
             <tbody>
               {% for row in in_progress_rows %}
                 <tr>
                   <td>{{ row.employee.full_name }}</td>
                   <td>{{ row.punches_label }}</td>
                   <td>{{ row.total_hours_hhmm }}</td>
-                  <td><a class="btn" href="{{ row.history_url }}">Historico</a></td>
+                  <td><a class="btn" href="{{ row.history_url }}">Histórico</a></td>
                 </tr>
               {% empty %}
                 <tr><td colspan="4"><div class="empty"><strong>Sem jornadas em andamento.</strong><p>Nenhum profissional com dia aberto neste momento.</p></div></td></tr>
@@ -183,12 +183,12 @@
         <div class="section-head">
           <div>
             <h3>Profissionais com dia finalizado</h3>
-            <p class="section-sub">Dias com quantidade par de horarios no momento.</p>
+            <p class="section-sub">Dias com quantidade par de horários no momento.</p>
           </div>
         </div>
         <div class="table-wrap">
           <table class="table">
-            <thead><tr><th>Profissional</th><th>Qtd</th><th>Horarios</th><th>Total do dia</th></tr></thead>
+            <thead><tr><th>Profissional</th><th>Qtd</th><th>Horários</th><th>Total do dia</th></tr></thead>
             <tbody>
               {% for row in finished_rows %}
                 <tr>
@@ -198,7 +198,7 @@
                   <td><span class="status-pill ok">{{ row.total_hours_hhmm }}</span></td>
                 </tr>
               {% empty %}
-                <tr><td colspan="4"><div class="empty"><strong>Sem dias finalizados ainda.</strong><p>Os profissionais ainda estao sem registros ou em jornada em andamento.</p></div></td></tr>
+                <tr><td colspan="4"><div class="empty"><strong>Sem dias finalizados ainda.</strong><p>Os profissionais ainda estão sem registros ou em jornada em andamento.</p></div></td></tr>
               {% endfor %}
             </tbody>
           </table>
@@ -209,22 +209,22 @@
         <div class="section-head">
           <div>
             <h3>Profissionais com dia incompleto</h3>
-            <p class="section-sub">Casos com quantidade impar de horarios apos 20h.</p>
+            <p class="section-sub">Casos com quantidade ímpar de horários após 20h.</p>
           </div>
         </div>
         <div class="table-wrap">
           <table class="table">
-            <thead><tr><th>Profissional</th><th>Status</th><th>Horarios</th><th>Acoes</th></tr></thead>
+            <thead><tr><th>Profissional</th><th>Status</th><th>Horários</th><th>Ações</th></tr></thead>
             <tbody>
               {% for row in incomplete_rows %}
                 <tr>
                   <td>{{ row.employee.full_name }}</td>
                   <td><span class="status-pill warn">{{ row.status_label }}</span></td>
                   <td>{{ row.punches_label }}</td>
-                  <td><a class="btn" href="{{ row.history_url }}">Historico</a></td>
+                  <td><a class="btn" href="{{ row.history_url }}">Histórico</a></td>
                 </tr>
               {% empty %}
-                <tr><td colspan="4"><div class="empty"><strong>Sem dias incompletos.</strong><p>Nao foram detectadas pendencias operacionais neste fechamento diario.</p></div></td></tr>
+                <tr><td colspan="4"><div class="empty"><strong>Sem dias incompletos.</strong><p>Não foram detectadas pendencias operacionais neste fechamento diario.</p></div></td></tr>
               {% endfor %}
             </tbody>
           </table>
@@ -235,14 +235,14 @@
     <section class="panel">
       <div class="section-head">
         <div>
-          <h3>Ultimos relatorios enviados hoje</h3>
-          <p class="section-sub">Acompanhamento rapido de atividade enviada pelos profissionais no dia.</p>
+          <h3>Ultimos relatórios enviados hoje</h3>
+          <p class="section-sub">Acompanhamento rápido de atividade enviada pelos profissionais no dia.</p>
         </div>
-        <a class="btn" href="{% url 'company_service_reports' %}">Abrir relatorios</a>
+        <a class="btn" href="{% url 'company_service_reports' %}">Abrir relatórios</a>
       </div>
       <div class="table-wrap">
         <table class="table">
-          <thead><tr><th>Enviado em</th><th>Profissional</th><th>Data do servico</th><th>Titulo</th><th>Acoes</th></tr></thead>
+          <thead><tr><th>Enviado em</th><th>Profissional</th><th>Data do serviço</th><th>Título</th><th>Ações</th></tr></thead>
           <tbody>
             {% for report in reports_today %}
               <tr>
@@ -253,7 +253,7 @@
                 <td><a class="btn" href="{% url 'company_service_report_detail' report.id %}">Detalhe</a></td>
               </tr>
             {% empty %}
-              <tr><td colspan="5"><div class="empty"><strong>Nenhum relatorio enviado hoje.</strong><p>Os envios do modulo de servico aparecerao aqui em tempo real.</p></div></td></tr>
+              <tr><td colspan="5"><div class="empty"><strong>Nenhum relatório enviado hoje.</strong><p>Os envios do modulo de serviço aparecerao aqui em tempo real.</p></div></td></tr>
             {% endfor %}
           </tbody>
         </table>

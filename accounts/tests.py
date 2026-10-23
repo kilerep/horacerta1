@@ -975,7 +975,7 @@ class MeiMultiCompanyContextTests(TestCase):
         response = self.client.get(reverse("mei_service_report_prepare", args=[self.contract_a.id]))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, self.company_a.name)
-        self.assertContains(response, "Em breve: relatorio de servico por periodo")
+        self.assertContains(response, "Em breve: relatório de serviço por período")
         self.assertContains(response, "Relatorio de servico -")
 
     def test_theme_selector_uses_graphite_default_and_professional_themes(self):
@@ -1209,7 +1209,7 @@ class MeiMultiCompanyContextTests(TestCase):
 
         response = self.client.get(reverse("mei_edit_today_punches"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Editar horarios de hoje")
+        self.assertContains(response, "Editar horários de hoje")
 
         response = self.client.post(
             reverse("mei_edit_today_punches"),
@@ -1520,7 +1520,7 @@ class MeiMultiCompanyContextTests(TestCase):
         self.assertNotContains(public_response, "Recebido")
         self.assertNotContains(public_response, "Primeira visualizacao")
         self.assertNotContains(public_response, "Marcar como pago")
-        self.assertContains(public_response, "Relatorio de horas")
+        self.assertContains(public_response, "Relatório de horas")
         self.assertContains(public_response, "Imprimir PDF")
         self.assertContains(public_response, "Baixar Excel")
         self.assertContains(public_response, "Dias trabalhados")
@@ -1665,7 +1665,7 @@ class MeiMultiCompanyContextTests(TestCase):
         response = self.client.get(reverse("mei_notifications"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Atencao hoje")
+        self.assertContains(response, "Atenção hoje")
         self.assertContains(response, "Dia incompleto")
         self.assertContains(response, "Voce registrou 3 horarios hoje na Empresa B")
         self.assertContains(response, "Cliente sem valor/hora")

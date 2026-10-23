@@ -1,6 +1,6 @@
 {% extends "accounts/base.html" %}
-{% block title %}Detalhe do relatorio{% endblock %}
-{% block page_title %}Detalhe do relatorio{% endblock %}
+{% block title %}Detalhe do relatório{% endblock %}
+{% block page_title %}Detalhe do relatório{% endblock %}
 
 {% block content %}
 <style>
@@ -27,10 +27,10 @@
 <div class="detail-wrap">
   <section class="detail-card">
     <h2 class="detail-title">{{ report.title }}</h2>
-    <p class="detail-sub">Relatorio de servico recebido pela empresa.</p>
+    <p class="detail-sub">Relatório de serviço recebido pela empresa.</p>
     <div class="detail-grid">
       <article class="detail-box">
-        <strong>Data do servico</strong>
+        <strong>Data do serviço</strong>
         <span>{{ report.report_date|date:"d/m/Y" }}</span>
       </article>
       <article class="detail-box">
@@ -43,7 +43,7 @@
       </article>
       <article class="detail-box">
         <strong>Contrato</strong>
-        <span>Inicio {{ report.contract.start_date|date:"d/m/Y" }} | R$ {{ report.contract.hourly_rate }}/h</span>
+        <span>Início {{ report.contract.start_date|date:"d/m/Y" }} | R$ {{ report.contract.hourly_rate }}/h</span>
       </article>
       <article class="detail-box">
         <strong>Enviado em</strong>
@@ -54,12 +54,12 @@
         <span>{{ report.updated_at|date:"d/m/Y H:i" }}</span>
       </article>
       <article class="detail-box" style="grid-column:1 / -1;">
-        <strong>Descricao do servico</strong>
+        <strong>Descrição do serviço</strong>
         <span class="detail-text">{{ report.description }}</span>
       </article>
     </div>
     <div class="detail-actions">
-      <a class="btn" href="{{ reports_url }}">Voltar para relatorios</a>
+      <a class="btn" href="{{ reports_url }}">Voltar para relatórios</a>
     </div>
   </section>
 </div>

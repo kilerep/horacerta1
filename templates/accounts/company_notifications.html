@@ -1,6 +1,6 @@
 {% extends "accounts/base.html" %}
-{% block title %}HoraCerta - Notificacoes{% endblock %}
-{% block page_title %}Notificacoes{% endblock %}
+{% block title %}HoraCerta - Notificações{% endblock %}
+{% block page_title %}Notificações{% endblock %}
 
 {% block content %}
 <style>
@@ -23,10 +23,10 @@
   <section class="nt-panel">
     <div class="nt-head">
       <div>
-        <h2 class="nt-title">Notificacoes</h2>
+        <h2 class="nt-title">Notificações</h2>
         <p class="nt-sub">Avisos da {{ company.name }} e registros de ciencia.</p>
       </div>
-      <a class="btn" href="{% url 'company_correction_requests' %}">Problemas de horario</a>
+      <a class="btn" href="{% url 'company_correction_requests' %}">Problemas de horário</a>
     </div>
 
     <div class="nt-list">
@@ -64,7 +64,7 @@
           </article>
         {% endwith %}
       {% empty %}
-        <div class="empty-state">Nenhuma notificacao recebida ate o momento.</div>
+        <div class="empty-state">Nenhuma notificação recebida até o momento.</div>
       {% endfor %}
     </div>
   </section>

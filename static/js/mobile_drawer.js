@@ -45,6 +45,10 @@
 
   toggle.addEventListener("click", toggleMenu);
   overlay.addEventListener("click", closeMenu);
+  // Botao "Mais" da barra inferior do celular abre o mesmo menu lateral.
+  document.querySelectorAll("[data-open-menu]").forEach(function (button) {
+    button.addEventListener("click", openMenu);
+  });
 
   document.addEventListener("keydown", function (event) {
     if (event.key === "Escape") {

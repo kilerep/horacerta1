@@ -31,7 +31,7 @@
     banner.setAttribute("aria-live", "polite");
     banner.hidden = true;
     banner.style.cssText =
-      "position:fixed;left:12px;right:12px;bottom:14px;z-index:2300;padding:10px 12px;" +
+      "position:fixed;left:12px;right:12px;bottom:calc(14px + var(--hc-bottom-nav, 0px));z-index:2300;padding:10px 12px;" +
       "border-radius:12px;border:1px solid #f59e0b;background:#451a03;color:#fef3c7;" +
       "font-size:13px;line-height:1.35;box-shadow:0 12px 28px rgba(3,7,20,.4)";
     banner.textContent =

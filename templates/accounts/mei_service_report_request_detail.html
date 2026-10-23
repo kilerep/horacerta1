@@ -1,6 +1,6 @@
 {% extends "accounts/base.html" %}
-{% block title %}Solicitacao de relatorio{% endblock %}
-{% block page_title %}Solicitacao de relatorio{% endblock %}
+{% block title %}Solicitação de relatório{% endblock %}
+{% block page_title %}Solicitação de relatório{% endblock %}
 
 {% block content %}
 <style>
@@ -63,13 +63,13 @@
 <div class="rq-wrap">
   {% if request.GET.event == "request_answered" %}
     <section class="hc-global-feedback" role="status" aria-live="polite">
-      Solicitacao respondida com sucesso.
+      Solicitação respondida com sucesso.
     </section>
   {% endif %}
 
   <section class="rq-panel">
-    <h2 class="rq-title">Detalhe da solicitacao</h2>
-    <p class="rq-sub">Resposta via relatorio, sem relacao com justificativa de horario ou ponto.</p>
+    <h2 class="rq-title">Detalhe da solicitação</h2>
+    <p class="rq-sub">Resposta via relatório, sem relacao com justificativa de horário ou ponto.</p>
     <div class="rq-grid">
       <article class="rq-kv">
         <div class="k">Empresa</div>
@@ -92,12 +92,12 @@
         <div class="v">{{ report_request.requested_at|date:"d/m/Y H:i" }}</div>
       </article>
       <article class="rq-kv">
-        <div class="k">Periodo solicitado</div>
+        <div class="k">Período solicitado</div>
         <div class="v">
           {% if report_request.date_from or report_request.date_to %}
-            {{ report_request.date_from|date:"d/m/Y"|default:"-" }} ate {{ report_request.date_to|date:"d/m/Y"|default:"-" }}
+            {{ report_request.date_from|date:"d/m/Y"|default:"-" }} até {{ report_request.date_to|date:"d/m/Y"|default:"-" }}
           {% else %}
-            Sem periodo definido
+            Sem período definido
           {% endif %}
         </div>
       </article>
@@ -114,14 +114,14 @@
 
   {% if can_respond %}
     <section class="rq-panel">
-      <h2 class="rq-title">Responder solicitacao</h2>
-      <p class="rq-sub">Preencha e envie um relatorio vinculado a esta solicitacao.</p>
+      <h2 class="rq-title">Responder solicitação</h2>
+      <p class="rq-sub">Preencha e envie um relatório vinculado a esta solicitação.</p>
       <form method="post" data-submit-once="true">
         {% csrf_token %}
         <input type="hidden" name="action" value="respond_request">
         <div class="rq-form-grid">
           <div class="rq-field rq-field--full">
-            <div class="rq-sub">Ao gerar este relatorio, os dias incluidos no periodo serao bloqueados para edicao.</div>
+            <div class="rq-sub">Ao gerar este relatório, os dias incluídos no período serão bloqueados para edição.</div>
           </div>
           <div class="rq-field">
             <label for="{{ report_form.contract.id_for_label }}">{{ report_form.contract.label }}</label>
@@ -158,7 +158,7 @@
           <div class="rq-error" style="margin-top:10px;">{{ report_form.non_field_errors }}</div>
         {% endif %}
         <div class="rq-actions">
-          <a class="btn" href="{{ reports_url }}">Voltar para relatorios</a>
+          <a class="btn" href="{{ reports_url }}">Voltar para relatórios</a>
           <button class="btn primary" type="submit" data-loading-text="Enviando resposta...">Enviar resposta</button>
         </div>
       </form>
@@ -167,13 +167,13 @@
     <section class="rq-panel">
       <h2 class="rq-title">Resposta registrada</h2>
       {% if report_request.response_report %}
-        <p class="rq-sub">Esta solicitacao ja foi respondida. Voce pode abrir o relatorio vinculado.</p>
+        <p class="rq-sub">Esta solicitação já foi respondida. Você pode abrir o relatório vinculado.</p>
         <div class="rq-actions" style="justify-content:flex-start;">
-          <a class="btn primary" href="{% url 'mei_service_report_detail' report_request.response_report.id %}">Abrir relatorio enviado</a>
-          <a class="btn" href="{{ reports_url }}">Voltar para relatorios</a>
+          <a class="btn primary" href="{% url 'mei_service_report_detail' report_request.response_report.id %}">Abrir relatório enviado</a>
+          <a class="btn" href="{{ reports_url }}">Voltar para relatórios</a>
         </div>
       {% else %}
-        <p class="rq-sub">Solicitacao sem relatorio vinculado. Se isso ocorrer com frequencia, acione o suporte interno.</p>
+        <p class="rq-sub">Solicitação sem relatório vinculado. Se isso ocorrer com frequencia, acione o suporte interno.</p>
       {% endif %}
     </section>
   {% endif %}

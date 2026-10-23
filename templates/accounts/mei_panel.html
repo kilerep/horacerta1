@@ -1,242 +1,230 @@
 {% extends "accounts/base.html" %}
-{% load static %}
-{% block title %}Meu Resumo{% endblock %}
-{% block page_title %}Meu Resumo{% endblock %}
+{% load static hc_icons %}
+{% block title %}Meu resumo{% endblock %}
+{% block page_title %}Meu resumo{% endblock %}
 
 {% block content %}
   <style>
-    .summary-page{display:grid;gap:14px}
-    .summary-hero,
-    .summary-panel,
-    .summary-card,
-    .client-row{
-      border:1px solid var(--border);
-      border-radius:var(--radius);
-      background:
-        radial-gradient(circle at 12% 0, var(--color-primary-soft), transparent 42%),
-        linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
-      box-shadow:var(--shadow);
-    }
-    .summary-hero{padding:16px;display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
-    .summary-eyebrow{margin:0 0 4px;color:var(--muted);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
-    .summary-title{margin:0;font-size:clamp(22px,4vw,32px);line-height:1.1}
-    .summary-subtitle{margin:6px 0 0;color:var(--muted);max-width:720px}
-    .summary-actions{display:flex;gap:8px;flex-wrap:wrap}
-    .link-button{margin-top:8px;padding:0;border:0;background:none;color:var(--color-primary-strong,#3b82f6);font:inherit;font-weight:800;cursor:pointer;text-decoration:underline}
-    .pillar-shortcuts{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
-    .pillar-shortcut{border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:12px;color:var(--text);text-decoration:none;min-width:0}
-    .pillar-shortcut span{display:block;color:var(--muted);font-size:11px;font-weight:800;line-height:1.25}
-    .pillar-shortcut strong{display:block;margin-top:5px;font-size:18px;line-height:1.15;overflow-wrap:anywhere}
-    .pillar-shortcut small{display:block;margin-top:5px;color:var(--muted);font-size:12px;line-height:1.35}
-    .summary-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
-    .summary-card{padding:13px}
-    .summary-card span{display:block;color:var(--muted);font-size:12px}
-    .summary-card strong{display:block;margin-top:5px;font-size:24px;line-height:1.1}
-    .summary-card small{display:block;margin-top:4px;color:var(--muted)}
-    .summary-panel{padding:14px}
-    .summary-panel h2{margin:0;font-size:18px}
-    .summary-panel__sub{margin:4px 0 12px;color:var(--muted);font-size:13px}
-    .client-list{display:grid;gap:10px}
-    .client-row{padding:14px;display:grid;gap:12px}
-    .client-row__head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
-    .client-name{margin:0;font-size:18px;line-height:1.2;overflow-wrap:anywhere}
-    .client-meta{margin:4px 0 0;color:var(--muted);font-size:12px}
-    .client-status{flex:0 0 auto;border-radius:999px;padding:5px 9px;font-size:12px;font-weight:900;border:1px solid rgba(255,255,255,.12)}
-    .client-status.success{color:#dcffe9;border-color:rgba(45,211,145,.42);background:rgba(45,211,145,.13)}
-    .client-status.pending{color:#ffe7ad;border-color:rgba(255,176,32,.42);background:rgba(255,176,32,.12)}
-    .client-status.warn{color:#ffd8d8;border-color:rgba(255,94,94,.38);background:rgba(255,94,94,.12)}
-    .client-status.muted{color:var(--muted);background:rgba(255,255,255,.05)}
-    .client-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
-    .client-metric{border:1px solid rgba(255,255,255,.09);border-radius:12px;padding:10px;background:rgba(255,255,255,.03)}
-    .client-metric span{display:block;color:var(--muted);font-size:11px}
-    .client-metric strong{display:block;margin-top:3px;font-size:15px}
-    .onboarding-list{margin:12px 0 0;padding:0;list-style:none;display:grid;gap:8px}
-    .onboarding-step{display:flex;align-items:center;gap:12px;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px 12px;background:rgba(255,255,255,.035)}
-    .onboarding-step__check{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:999px;background:var(--color-primary-soft);border:1px solid var(--color-primary-soft);font-weight:900;font-size:13px}
-    .onboarding-step--done{opacity:.6}
-    .onboarding-step--done .onboarding-step__check{background:rgba(45,211,145,.18);border-color:rgba(45,211,145,.42);color:#dcffe9}
+    .rs-page{display:grid;gap:16px;max-width:1080px}
+    .rs-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px 16px;flex-wrap:wrap}
+    .rs-head h1{margin:0;font-size:clamp(24px,3.4vw,30px);line-height:1.1;letter-spacing:-.01em}
+    .rs-head p{margin:4px 0 0;color:var(--color-text-muted);font-size:14px}
+    .rs-head-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .rs-head-actions .btn{gap:8px}
+    .rs-head-actions .hc-icon{width:18px;height:18px}
+    .rs-tour{margin-top:2px;padding:0;min-height:44px;border:0;background:none;color:var(--color-primary);font:inherit;font-size:14px;font-weight:700;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+
+    .rs-panel{border:1px solid var(--color-border);border-radius:var(--radius-lg,16px);background:var(--color-card);padding:16px}
+    .rs-panel h2{margin:0;font-size:17px;line-height:1.25}
+    .rs-panel-sub{margin:3px 0 0;color:var(--color-text-muted);font-size:13px;line-height:1.4}
+    .rs-panel-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+
+    .rs-numbers{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--color-border);border-radius:var(--radius-lg,16px);background:var(--color-card);overflow:hidden}
+    .rs-number{padding:14px 16px;min-width:0}
+    .rs-number + .rs-number{border-left:1px solid var(--color-border)}
+    .rs-number span{display:block;color:var(--color-text-muted);font-size:13px;font-weight:600}
+    .rs-number strong{display:block;margin-top:4px;font-size:clamp(22px,3vw,28px);line-height:1.1;font-variant-numeric:tabular-nums;color:var(--color-text-strong)}
+    .rs-number small{display:block;margin-top:3px;color:var(--color-text-muted);font-size:12px}
+    .rs-number--money strong{color:var(--color-primary)}
+
+    .rs-shortcuts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+    .rs-shortcut{display:flex;align-items:center;gap:10px;min-height:56px;padding:10px 12px;border:1px solid var(--color-border);border-radius:12px;background:var(--surface-soft);color:var(--color-text);text-decoration:none;min-width:0}
+    .rs-shortcut:hover{border-color:var(--color-primary)}
+    .rs-shortcut .hc-icon{flex:0 0 auto;width:20px;height:20px;color:var(--color-text-muted)}
+    .rs-shortcut span{flex:1 1 auto;font-size:14px;font-weight:600;line-height:1.25;min-width:0}
+    .rs-shortcut b{flex:0 0 auto;min-width:28px;padding:2px 8px;border-radius:999px;background:var(--color-bg);text-align:center;font-size:14px;font-variant-numeric:tabular-nums}
+    .rs-shortcut.has-count b{background:var(--color-primary);color:var(--text-inverse,#fff)}
+
+    .onboarding-list{margin:0;padding:0;list-style:none;display:grid;gap:8px}
+    .onboarding-step{display:flex;align-items:center;gap:12px;border:1px solid var(--color-border);border-radius:12px;padding:10px 12px;background:var(--surface-soft)}
+    .onboarding-step__check{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:999px;background:var(--color-primary-soft);font-weight:800;font-size:13px}
+    .onboarding-step--done{opacity:.62}
+    .onboarding-step--done .onboarding-step__check{background:var(--success-bg);color:var(--success-text)}
     .onboarding-step--done .onboarding-step__label{text-decoration:line-through}
     .onboarding-step__label{flex:1 1 auto;font-size:14px;line-height:1.35}
+
     .attention-list{display:grid;gap:8px}
-    .attention-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:12px;background:rgba(255,255,255,.035)}
-    .attention-item--warn{border-color:rgba(255,176,32,.36);background:rgba(255,176,32,.09)}
-    .attention-item--danger{border-color:rgba(255,94,94,.34);background:rgba(255,94,94,.1)}
-    .attention-item--neutral{border-color:rgba(255,255,255,.12);background:rgba(255,255,255,.04)}
-    .attention-item__eyebrow{display:block;color:var(--muted);font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.04em}
-    .attention-item__title{display:block;margin-top:3px;color:var(--text);font-size:15px;line-height:1.25}
-    .attention-item__text{margin:4px 0 0;color:var(--muted);font-size:13px;line-height:1.45}
-    .attention-item--warn .attention-item__text{color:#ffe7ad}
-    .attention-item--danger .attention-item__text{color:#ffd8d8}
-    .alert-list{display:grid;gap:8px}
-    .summary-alert{border:1px solid rgba(255,176,32,.36);border-radius:12px;padding:11px 12px;background:rgba(255,176,32,.1);color:#ffe7ad}
-    .summary-alert.danger{border-color:rgba(255,94,94,.34);background:rgba(255,94,94,.1);color:#ffd8d8}
-    .summary-alert.neutral{border-color:rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:var(--muted)}
-    .summary-alert strong{color:var(--text)}
-    .formula-note{margin:12px 0 0;color:var(--muted);font-size:12px;line-height:1.45}
-    .empty{border:1px dashed rgba(255,255,255,.18);border-radius:14px;padding:16px;background:rgba(255,255,255,.03)}
+    .attention-item{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;border:1px solid var(--color-border);border-radius:12px;padding:12px;background:var(--surface-soft)}
+    .attention-item__dot{width:10px;height:10px;border-radius:999px;background:var(--color-text-muted)}
+    .attention-item--warn .attention-item__dot{background:var(--color-warning)}
+    .attention-item--danger .attention-item__dot{background:var(--color-danger)}
+    .attention-item--ok .attention-item__dot{background:var(--color-success)}
+    .attention-item__eyebrow{display:block;color:var(--color-text-muted);font-size:12px;font-weight:700}
+    .attention-item__title{display:block;margin-top:2px;color:var(--color-text-strong);font-size:15px;line-height:1.3}
+    .attention-item__text{margin:3px 0 0;color:var(--color-text-muted);font-size:13px;line-height:1.45}
+
+    .client-list{display:grid}
+    .client-row{display:grid;grid-template-columns:minmax(0,1.6fr) repeat(3,minmax(0,1fr)) auto;gap:12px;align-items:center;padding:12px 4px;border-top:1px solid var(--color-border)}
+    .client-row:first-child{border-top:0;padding-top:4px}
+    .client-name{margin:0;font-size:15px;line-height:1.25;overflow-wrap:anywhere}
+    .client-meta{margin:2px 0 0;color:var(--color-text-muted);font-size:12px}
+    .client-cell span{display:block;color:var(--color-text-muted);font-size:12px}
+    .client-cell strong{display:block;margin-top:2px;font-size:15px;font-variant-numeric:tabular-nums}
+    .client-status{justify-self:end;border-radius:999px;padding:5px 10px;font-size:12px;font-weight:800;border:1px solid var(--color-border);white-space:nowrap}
+    .client-status.success{color:var(--success-text);border-color:var(--success-border);background:var(--success-bg)}
+    .client-status.pending{color:var(--warning-text);border-color:var(--warning-border);background:var(--warning-bg)}
+    .client-status.warn{color:var(--danger-text);border-color:var(--danger-border);background:var(--danger-bg)}
+    .client-status.muted{color:var(--color-text-muted)}
+    .formula-note{margin:12px 0 0;color:var(--color-text-muted);font-size:12px;line-height:1.5;max-width:75ch}
+    .empty{border:1px dashed var(--color-border);border-radius:12px;padding:16px;display:grid;gap:8px;justify-items:start}
+    .empty p{margin:0;color:var(--color-text-muted);font-size:14px}
+
     @media (max-width: 980px){
-      .pillar-shortcuts{grid-template-columns:repeat(2,minmax(0,1fr))}
-      .summary-cards{grid-template-columns:repeat(2,minmax(0,1fr))}
-      .client-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .rs-numbers{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .rs-number:nth-child(3){border-left:0}
+      .rs-number:nth-child(n+3){border-top:1px solid var(--color-border)}
+      .rs-shortcuts{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .client-row{grid-template-columns:minmax(0,1fr) auto;row-gap:8px}
+      .client-row .client-cell{grid-column:auto}
+      .client-cells{grid-column:1 / -1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+    }
+    @media (min-width: 981px){
+      .client-cells{display:contents}
     }
     @media (max-width: 640px){
-      .summary-hero,
-      .client-row__head,
-      .attention-item{display:grid;grid-template-columns:1fr}
-      .summary-actions .btn,.attention-item .btn{width:100%;justify-content:center}
-      .pillar-shortcuts,
-      .summary-cards,
-      .client-metrics{grid-template-columns:1fr}
+      .rs-head-actions{width:100%}
+      .rs-head-actions .btn{flex:1 1 0;justify-content:center;white-space:nowrap;padding-inline:10px;gap:6px}
+      .rs-panel{padding:14px}
+      .attention-item{grid-template-columns:auto minmax(0,1fr)}
+      .attention-item .btn{grid-column:1 / -1;width:100%;justify-content:center}
     }
   </style>
 
-  <div class="summary-page">
-    <section class="summary-hero">
+  <div class="rs-page">
+    <header class="rs-head">
       <div>
-        <p class="summary-eyebrow">Visão do profissional</p>
-        <h1 class="summary-title">Meu Resumo</h1>
-        <p class="summary-subtitle">Acompanhe horas, valores estimados e pendências por cliente em {{ current_period_label }}.</p>
-        <button type="button" id="mei-panel-tour-replay" class="link-button">▶ Ver tour desta tela</button>
+        <h1>Meu resumo</h1>
+        <p>{{ current_period_label|capfirst }} · horas, valores e o que precisa da sua atenção.</p>
+        <button type="button" id="mei-panel-tour-replay" class="rs-tour">Ver tour desta tela</button>
       </div>
-      <div class="summary-actions">
-        <a class="btn primary" href="{% url 'employee_dashboard' %}">Registrar horário</a>
-        <a class="btn" href="{% url 'mei_contract' %}">Meus clientes</a>
+      <div class="rs-head-actions">
+        <a class="btn primary" href="{% url 'employee_dashboard' %}">{% icon "clock" %}Registrar horário</a>
+        <a class="btn" href="{% url 'service_job_quick' %}">{% icon "bolt" %}Serviço rápido</a>
       </div>
-    </section>
+    </header>
 
     {% if show_onboarding_checklist %}
-      <section class="summary-panel onboarding-panel" aria-labelledby="onboarding-title">
-        <h2 id="onboarding-title">Primeiros passos</h2>
-        <p class="summary-panel__sub">Complete esses 4 passos para deixar o HoraCerta rodando com seus clientes de verdade. Precisa de ajuda em algum deles? Veja a <a href="{% url 'help' %}">Central de ajuda</a>.</p>
+      <section class="rs-panel onboarding-panel" aria-labelledby="onboarding-title">
+        <div class="rs-panel-head">
+          <div>
+            <h2 id="onboarding-title">Primeiros passos</h2>
+            <p class="rs-panel-sub">4 passos para usar o HoraCerta com seus clientes de verdade. Dúvidas? Veja a <a href="{% url 'help' %}">Central de ajuda</a>.</p>
+          </div>
+        </div>
         <ol class="onboarding-list">
           {% for step in onboarding_steps %}
             <li class="onboarding-step {% if step.done %}onboarding-step--done{% endif %}">
               <span class="onboarding-step__check" aria-hidden="true">{% if step.done %}✓{% else %}{{ forloop.counter }}{% endif %}</span>
               <span class="onboarding-step__label">{{ step.label }}</span>
-              {% if not step.done %}
-                <a class="btn" href="{{ step.cta_url }}">{{ step.cta_label }}</a>
-              {% endif %}
+              {% if not step.done %}<a class="btn" href="{{ step.cta_url }}">{{ step.cta_label }}</a>{% endif %}
             </li>
           {% endfor %}
         </ol>
       </section>
     {% endif %}
 
-    <section class="pillar-shortcuts" aria-label="Atalhos principais">
-      <a class="pillar-shortcut" href="{% url 'employee_dashboard' %}">
-        <span>Horários</span>
-        <strong>{{ total_hours_today }}</strong>
-        <small>Horas normais registradas hoje.</small>
-      </a>
-      <a class="pillar-shortcut" href="{% url 'service_job_list' %}">
-        <span>Serviços</span>
-        <strong>{{ service_today_count }}</strong>
-        <small>Serviços previstos para hoje.</small>
-      </a>
-      <a class="pillar-shortcut" href="{% url 'mei_reports' %}">
-        <span>Relatórios</span>
-        <strong>{{ pending_reports_count }}</strong>
-        <small>Solicitações pendentes.</small>
-      </a>
-      <a class="pillar-shortcut" href="{% url 'service_request_list' %}">
-        <span>Pedidos</span>
-        <strong>{{ new_service_requests_count }}</strong>
-        <small>Pedidos novos para analisar.</small>
-      </a>
-      <a class="pillar-shortcut" href="{% url 'mei_notifications' %}">
-        <span>Notificações</span>
-        <strong>{{ important_notifications_count }}</strong>
-        <small>Avisos importantes não lidos.</small>
-      </a>
+    <section class="rs-numbers" aria-label="Números do período">
+      <div class="rs-number"><span>Horas hoje</span><strong>{{ total_hours_today }}</strong></div>
+      <div class="rs-number"><span>Na semana</span><strong>{{ total_hours_week }}</strong><small>{{ week_period_label }}</small></div>
+      <div class="rs-number"><span>No mês</span><strong>{{ total_hours_month }}</strong></div>
+      <div class="rs-number rs-number--money"><span>Valor estimado no mês</span><strong>{{ estimated_value_month_brl }}</strong></div>
     </section>
 
-    <section class="summary-cards" aria-label="Indicadores principais">
-      <article class="summary-card"><span>Horas hoje</span><strong>{{ total_hours_today }}</strong></article>
-      <article class="summary-card"><span>Horas na semana</span><strong>{{ total_hours_week }}</strong><small>{{ week_period_label }}</small></article>
-      <article class="summary-card"><span>Horas no mês</span><strong>{{ total_hours_month }}</strong></article>
-      <article class="summary-card"><span>Valor estimado no mês</span><strong>{{ estimated_value_month_brl }}</strong></article>
-      <article class="summary-card"><span>Clientes ativos</span><strong>{{ active_clients_count }}</strong></article>
-      <article class="summary-card"><span>Dias incompletos</span><strong>{{ incomplete_days }}</strong></article>
-      <article class="summary-card"><span>Relatórios pendentes</span><strong>{{ pending_reports_count }}</strong></article>
-      <article class="summary-card"><span>Clientes vinculados</span><strong>{{ contracts_count }}</strong></article>
-    </section>
+    <nav class="rs-shortcuts" aria-label="Atalhos principais">
+      <a class="rs-shortcut {% if service_today_count %}has-count{% endif %}" href="{% url 'service_job_list' %}">{% icon "briefcase" %}<span>Serviços hoje</span><b>{{ service_today_count }}</b></a>
+      <a class="rs-shortcut {% if new_service_requests_count %}has-count{% endif %}" href="{% url 'service_request_list' %}">{% icon "list" %}<span>Pedidos novos</span><b>{{ new_service_requests_count }}</b></a>
+      <a class="rs-shortcut {% if pending_reports_count %}has-count{% endif %}" href="{% url 'mei_reports' %}">{% icon "file" %}<span>Relatórios pendentes</span><b>{{ pending_reports_count }}</b></a>
+      <a class="rs-shortcut {% if important_notifications_count %}has-count{% endif %}" href="{% url 'mei_notifications' %}">{% icon "bell" %}<span>Avisos</span><b>{{ important_notifications_count }}</b></a>
+    </nav>
 
-    <section class="summary-panel" aria-labelledby="attention-title">
-      <h2 id="attention-title">Ação de hoje</h2>
-      <p class="summary-panel__sub">Pendências com um caminho direto para resolver ou revisar.</p>
+    <section class="rs-panel" aria-labelledby="attention-title">
+      <div class="rs-panel-head">
+        <div>
+          <h2 id="attention-title">Ação de hoje</h2>
+          <p class="rs-panel-sub">O que precisa da sua atenção, com o botão para resolver.</p>
+        </div>
+      </div>
       <div class="attention-list">
-        {% if incomplete_alerts %}
-          {% for item in incomplete_alerts %}
-            <article class="attention-item attention-item--warn">
-              <div>
-                <span class="attention-item__eyebrow">Registro incompleto</span>
-                <strong class="attention-item__title">{{ item.contract.company.name }}</strong>
-                <p class="attention-item__text">{{ item.count }} dia(s) incompleto(s). Último em {{ item.latest_date|date:"d/m/Y" }}.</p>
-              </div>
-              <a class="btn" href="{% url 'mei_history' %}?contract={{ item.contract.id }}&amp;date_from={{ item.latest_date|date:"Y-m-d" }}&amp;date_to={{ item.latest_date|date:"Y-m-d" }}">Ver dia</a>
-            </article>
-          {% endfor %}
-        {% endif %}
-        {% if missing_rate_contracts %}
-          {% for contract in missing_rate_contracts %}
-            <article class="attention-item attention-item--danger">
-              <div>
-                <span class="attention-item__eyebrow">Valor por hora pendente</span>
-                <strong class="attention-item__title">{{ contract.company.name }}</strong>
-                <p class="attention-item__text">Defina o valor/hora para que o fechamento apresente uma estimativa correta.</p>
-              </div>
-              <a class="btn" href="{% url 'mei_client_edit' contract.id %}">Definir valor/hora</a>
-            </article>
-          {% endfor %}
-        {% endif %}
-        {% if pending_payment_alerts %}
-          {% for item in pending_payment_alerts %}
-            <article class="attention-item attention-item--warn">
-              <div>
-                <span class="attention-item__eyebrow">Recebimento pendente</span>
-                <strong class="attention-item__title">{{ item.company_name }}</strong>
-                <p class="attention-item__text">Relatório {{ item.viewed_label|lower }} pelo cliente, ainda sem pagamento marcado.</p>
-              </div>
-              <a class="btn" href="{% url 'mei_service_report_detail' item.report.id %}">Ver relatório</a>
-            </article>
-          {% endfor %}
-        {% endif %}
-        {% if pending_report_requests %}
-          {% for req in pending_report_requests %}
-            <article class="attention-item attention-item--warn">
-              <div>
-                <span class="attention-item__eyebrow">Relatório solicitado</span>
-                <strong class="attention-item__title">{{ req.company.name }}</strong>
-                <p class="attention-item__text">{% if req.subject %}{{ req.subject }}{% else %}Há uma solicitação de relatório pendente para revisão.{% endif %}</p>
-              </div>
-              <a class="btn" href="{% url 'mei_service_report_request_detail' req.id %}">Abrir solicitação</a>
-            </article>
-          {% endfor %}
-        {% endif %}
-        {% if unviewed_report_alerts %}
-          {% for item in unviewed_report_alerts %}
-            <article class="attention-item">
-              <div>
-                <span class="attention-item__eyebrow">Relatório não visualizado</span>
-                <strong class="attention-item__title">{{ item.company_name }}</strong>
-                <p class="attention-item__text">Enviado há {{ item.sent_days_ago }} dia(s) e o cliente ainda não abriu. Considere lembrar por WhatsApp.</p>
-              </div>
-              <a class="btn" href="{% url 'mei_service_report_whatsapp' item.report.id %}">Lembrar no WhatsApp</a>
-            </article>
-          {% endfor %}
-        {% endif %}
+        {% for item in incomplete_alerts %}
+          <article class="attention-item attention-item--warn">
+            <span class="attention-item__dot" aria-hidden="true"></span>
+            <div>
+              <span class="attention-item__eyebrow">Registro incompleto</span>
+              <strong class="attention-item__title">{{ item.contract.company.name }}</strong>
+              <p class="attention-item__text">{{ item.count }} dia(s) incompleto(s). Último em {{ item.latest_date|date:"d/m/Y" }}.</p>
+            </div>
+            <a class="btn" href="{% url 'mei_history' %}?contract={{ item.contract.id }}&amp;date_from={{ item.latest_date|date:"Y-m-d" }}&amp;date_to={{ item.latest_date|date:"Y-m-d" }}">Ver dia</a>
+          </article>
+        {% endfor %}
+        {% for contract in missing_rate_contracts %}
+          <article class="attention-item attention-item--danger">
+            <span class="attention-item__dot" aria-hidden="true"></span>
+            <div>
+              <span class="attention-item__eyebrow">Valor por hora pendente</span>
+              <strong class="attention-item__title">{{ contract.company.name }}</strong>
+              <p class="attention-item__text">Defina o valor/hora para o fechamento mostrar uma estimativa correta.</p>
+            </div>
+            <a class="btn" href="{% url 'mei_client_edit' contract.id %}">Definir valor/hora</a>
+          </article>
+        {% endfor %}
+        {% for item in pending_payment_alerts %}
+          <article class="attention-item attention-item--warn">
+            <span class="attention-item__dot" aria-hidden="true"></span>
+            <div>
+              <span class="attention-item__eyebrow">Recebimento pendente</span>
+              <strong class="attention-item__title">{{ item.company_name }}</strong>
+              <p class="attention-item__text">Relatório {{ item.viewed_label|lower }} pelo cliente, ainda sem pagamento marcado.</p>
+            </div>
+            <a class="btn" href="{% url 'mei_service_report_detail' item.report.id %}">Ver relatório</a>
+          </article>
+        {% endfor %}
+        {% for req in pending_report_requests %}
+          <article class="attention-item attention-item--warn">
+            <span class="attention-item__dot" aria-hidden="true"></span>
+            <div>
+              <span class="attention-item__eyebrow">Relatório solicitado</span>
+              <strong class="attention-item__title">{{ req.company.name }}</strong>
+              <p class="attention-item__text">{% if req.subject %}{{ req.subject }}{% else %}Há uma solicitação de relatório esperando você.{% endif %}</p>
+            </div>
+            <a class="btn" href="{% url 'mei_service_report_request_detail' req.id %}">Abrir solicitação</a>
+          </article>
+        {% endfor %}
+        {% for item in unviewed_report_alerts %}
+          <article class="attention-item">
+            <span class="attention-item__dot" aria-hidden="true"></span>
+            <div>
+              <span class="attention-item__eyebrow">Relatório não visualizado</span>
+              <strong class="attention-item__title">{{ item.company_name }}</strong>
+              <p class="attention-item__text">Enviado há {{ item.sent_days_ago }} dia(s) e o cliente ainda não abriu. Vale lembrar pelo WhatsApp.</p>
+            </div>
+            <a class="btn" href="{% url 'mei_service_report_whatsapp' item.report.id %}">Lembrar no WhatsApp</a>
+          </article>
+        {% endfor %}
+        {% for item in paused_contracts %}
+          <article class="attention-item">
+            <span class="attention-item__dot" aria-hidden="true"></span>
+            <div>
+              <span class="attention-item__eyebrow">Contrato {{ item.status.label|lower }}</span>
+              <strong class="attention-item__title">{{ item.contract.company.name }}</strong>
+              <p class="attention-item__text">Enquanto estiver assim, os horários desse cliente não entram no mês.</p>
+            </div>
+            <a class="btn" href="{% url 'mei_contract' %}">Ver cliente</a>
+          </article>
+        {% endfor %}
         {% if new_service_requests_count %}
           <article class="attention-item">
+            <span class="attention-item__dot" aria-hidden="true"></span>
             <div>
               <span class="attention-item__eyebrow">Pedidos novos</span>
               <strong class="attention-item__title">{{ new_service_requests_count }} pedido(s) aguardando análise</strong>
-              <p class="attention-item__text">Organize o que foi solicitado antes de transformar em serviço.</p>
+              <p class="attention-item__text">Veja o que foi pedido e responda com um orçamento.</p>
             </div>
             <a class="btn" href="{% url 'service_request_list' %}">Ver pedidos</a>
           </article>
         {% endif %}
         {% if important_notifications_count %}
           <article class="attention-item">
+            <span class="attention-item__dot" aria-hidden="true"></span>
             <div>
               <span class="attention-item__eyebrow">Notificações</span>
               <strong class="attention-item__title">{{ important_notifications_count }} aviso(s) não lido(s)</strong>
@@ -245,8 +233,9 @@
             <a class="btn" href="{% url 'mei_notifications' %}">Abrir avisos</a>
           </article>
         {% endif %}
-        {% if not incomplete_alerts and not missing_rate_contracts and not pending_payment_alerts and not pending_report_requests and not unviewed_report_alerts and not new_service_requests_count and not important_notifications_count %}
-          <article class="attention-item attention-item--neutral">
+        {% if not incomplete_alerts and not missing_rate_contracts and not pending_payment_alerts and not pending_report_requests and not unviewed_report_alerts and not paused_contracts and not new_service_requests_count and not important_notifications_count %}
+          <article class="attention-item attention-item--ok">
+            <span class="attention-item__dot" aria-hidden="true"></span>
             <div>
               <span class="attention-item__eyebrow">Tudo em ordem</span>
               <strong class="attention-item__title">Nenhuma pendência prioritária agora</strong>
@@ -258,85 +247,39 @@
       </div>
     </section>
 
-    <section class="summary-panel">
-      <h2>Resumo por cliente</h2>
-      <p class="summary-panel__sub">Totais calculados sobre os registros do mês atual.</p>
+    <section class="rs-panel" aria-labelledby="clients-title">
+      <div class="rs-panel-head">
+        <div>
+          <h2 id="clients-title">Por cliente</h2>
+          <p class="rs-panel-sub">Totais do mês atual.</p>
+        </div>
+        {% if client_summaries %}<a class="btn" href="{% url 'mei_contract' %}">Ver clientes</a>{% endif %}
+      </div>
       {% if client_summaries %}
         <div class="client-list">
           {% for row in client_summaries %}
             <article class="client-row">
-              <header class="client-row__head">
-                <div>
-                  <h3 class="client-name">{{ row.contract.company.name }}</h3>
-                  <p class="client-meta">Desde {{ row.contract.start_date|date:"d/m/Y" }}{% if row.contract.end_date %} até {{ row.contract.end_date|date:"d/m/Y" }}{% endif %}</p>
-                </div>
-                <span class="client-status {{ row.status.tone }}">{{ row.status.label }}</span>
-              </header>
-              <div class="client-metrics">
-                <div class="client-metric"><span>Horas no mês</span><strong>{{ row.total_hours_month }}</strong></div>
-                <div class="client-metric"><span>Valor/hora</span><strong>R$ {{ row.hourly_rate }}/h</strong></div>
-                <div class="client-metric"><span>Valor estimado</span><strong>{{ row.estimated_value_brl }}</strong></div>
-                <div class="client-metric"><span>Status do contrato</span><strong>{{ row.status.label }}</strong></div>
+              <div>
+                <h3 class="client-name">{{ row.contract.company.name }}</h3>
+                <p class="client-meta">Desde {{ row.contract.start_date|date:"d/m/Y" }}{% if row.contract.end_date %} até {{ row.contract.end_date|date:"d/m/Y" }}{% endif %}</p>
+              </div>
+              <span class="client-status {{ row.status.tone }}">{{ row.status.label }}</span>
+              <div class="client-cells">
+                <div class="client-cell"><span>Horas no mês</span><strong>{{ row.total_hours_month }}</strong></div>
+                <div class="client-cell"><span>Valor/hora</span><strong>R$ {{ row.hourly_rate }}</strong></div>
+                <div class="client-cell"><span>Estimado</span><strong>{{ row.estimated_value_brl }}</strong></div>
               </div>
             </article>
           {% endfor %}
         </div>
+        <p class="formula-note">Como calculamos: somamos o tempo entre cada entrada e sua saída, por dia e por cliente. O valor estimado é horas do mês × valor/hora do cliente. Entrada sem saída deixa o dia como incompleto até você corrigir.</p>
       {% else %}
         <div class="empty">
           <strong>Nenhum cliente cadastrado ainda.</strong>
-          <p class="summary-panel__sub">Cadastre um cliente para começar a registrar horários e acompanhar valores.</p>
+          <p>Cadastre um cliente para registrar horários e acompanhar valores. Para um serviço avulso, use “Serviço rápido”.</p>
           <a class="btn primary" href="{% url 'mei_client_create' %}">Adicionar cliente</a>
         </div>
       {% endif %}
-    </section>
-
-    <section class="summary-panel">
-      <h2>Alertas</h2>
-      <p class="summary-panel__sub">Itens que podem exigir revisão antes do fechamento.</p>
-      <div class="alert-list">
-        {% if incomplete_alerts %}
-          {% for item in incomplete_alerts %}
-            <div class="summary-alert">
-              <strong>{{ item.contract.company.name }}</strong>: {{ item.count }} dia(s) incompleto(s). Último em {{ item.latest_date|date:"d/m/Y" }}.
-            </div>
-          {% endfor %}
-        {% endif %}
-        {% if paused_contracts %}
-          {% for item in paused_contracts %}
-            <div class="summary-alert neutral">
-              <strong>{{ item.contract.company.name }}</strong>: contrato {{ item.status.label|lower }}.
-            </div>
-          {% endfor %}
-        {% endif %}
-        {% if missing_rate_contracts %}
-          {% for contract in missing_rate_contracts %}
-            <div class="summary-alert danger">
-              <strong>{{ contract.company.name }}</strong>: cliente sem valor/hora definido.
-            </div>
-          {% endfor %}
-        {% endif %}
-        {% if pending_report_requests %}
-          {% for req in pending_report_requests %}
-            <div class="summary-alert">
-              <strong>{{ req.company.name }}</strong>: relatório pendente{% if req.subject %} - {{ req.subject }}{% endif %}.
-            </div>
-          {% endfor %}
-        {% endif %}
-        {% if pending_payment_alerts %}
-          {% for item in pending_payment_alerts %}
-            <div class="summary-alert">
-              <strong>{{ item.company_name }}</strong>: relatório {{ item.viewed_label|lower }} pelo cliente, recebimento ainda pendente.
-            </div>
-          {% endfor %}
-        {% endif %}
-        {% if not incomplete_alerts and not paused_contracts and not missing_rate_contracts and not pending_report_requests and not pending_payment_alerts %}
-          <div class="summary-alert neutral">Nenhuma pendência relevante encontrada para o período.</div>
-        {% endif %}
-      </div>
-      <p class="formula-note">
-        Como calculamos: somamos o tempo entre cada entrada e sua saída, por dia e por cliente. O valor estimado do mês é
-        horas apuradas no mês × valor/hora do cliente. Se você registrou uma entrada e esqueceu a saída, o dia fica marcado como incompleto até você corrigir.
-      </p>
     </section>
   </div>
 
@@ -349,31 +292,31 @@
         csrfToken: "{{ csrf_token }}",
         steps: [
           {
-            selector: ".summary-hero",
-            title: "Bem-vindo ao Meu Resumo",
-            text: "Esta é a sua tela principal. Aqui você acompanha horas, valores estimados e pendências do período atual.",
+            selector: ".rs-head",
+            title: "Bem-vindo ao Meu resumo",
+            text: "Sua tela principal: horas, valores do mês e pendências. Daqui você registra horário ou cria um serviço rápido.",
           },
           {% if show_onboarding_checklist %}
           {
             selector: ".onboarding-panel",
             title: "Primeiros passos",
-            text: "Enquanto sua conta é nova, esses passos te guiam pelo essencial. O card some sozinho assim que você já estiver usando o sistema normalmente.",
+            text: "Enquanto sua conta é nova, esses passos guiam pelo essencial. O quadro some sozinho quando você já estiver usando o sistema.",
           },
           {% endif %}
           {
-            selector: ".pillar-shortcuts",
-            title: "Atalhos rápidos",
-            text: "Acesso direto para horários, serviços, relatórios, pedidos e notificações — sem precisar navegar pelo menu.",
+            selector: ".rs-numbers",
+            title: "Números do período",
+            text: "Horas de hoje, da semana, do mês e o valor estimado, calculados a partir dos seus registros.",
           },
           {
-            selector: ".summary-cards",
-            title: "Indicadores do período",
-            text: "Horas, valor estimado e pendências, sempre calculados a partir dos seus registros reais.",
+            selector: ".rs-shortcuts",
+            title: "Atalhos",
+            text: "Serviços de hoje, pedidos novos, relatórios e avisos. O número aparece destacado quando há algo esperando você.",
           },
           {
             selector: "#attention-title",
             title: "Ação de hoje",
-            text: "Tudo que precisa da sua atenção agora aparece aqui, com um botão direto para resolver ou revisar.",
+            text: "Tudo que precisa da sua atenção aparece aqui, com um botão direto para resolver.",
           },
         ],
       };

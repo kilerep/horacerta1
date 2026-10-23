@@ -84,12 +84,12 @@
     <div class="internal-head">
       <div>
         <h3>Profissionais ativos</h3>
-        <p class="internal-subtitle">Contratos ativos deste cliente. Encerrar contrato nao apaga login nem historico.</p>
+        <p class="internal-subtitle">Contratos ativos deste cliente. Encerrar contrato não apaga login nem histórico.</p>
       </div>
     </div>
     <div class="table-wrap">
       <table class="internal-table">
-        <thead><tr><th>Nome</th><th>E-mail</th><th>Status</th><th>Registros</th><th>Ultimo registro</th><th>Acao</th></tr></thead>
+        <thead><tr><th>Nome</th><th>E-mail</th><th>Status</th><th>Registros</th><th>Último registro</th><th>Ação</th></tr></thead>
         <tbody>
           {% for row in active_employee_rows %}
             <tr>
@@ -103,13 +103,13 @@
                   {% csrf_token %}
                   <input type="hidden" name="action" value="end_relationship">
                   <input type="hidden" name="relationship_id" value="{{ row.employee.id }}">
-                  <input name="description" required placeholder="Motivo obrigatorio">
+                  <input name="description" required placeholder="Motivo obrigatório">
                   <button class="btn danger" type="submit" onclick="return confirm('Encerrar somente este contrato com o cliente?')">Encerrar contrato</button>
                 </form>
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="6"><div class="empty-state">Nenhum funcionario ativo.</div></td></tr>
+            <tr><td colspan="6"><div class="empty-state">Nenhum funcionário ativo.</div></td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -120,7 +120,7 @@
     <div class="internal-head">
       <div>
         <h3>Contratos encerrados</h3>
-        <p class="internal-subtitle">Historico preservado em modo consulta.</p>
+        <p class="internal-subtitle">Histórico preservado em modo consulta.</p>
       </div>
     </div>
     <div class="table-wrap">

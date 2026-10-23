@@ -1,6 +1,6 @@
 {% extends "accounts/base.html" %}
-{% block title %}HoraCerta - Problema de horario{% endblock %}
-{% block page_title %}Problema de horario{% endblock %}
+{% block title %}HoraCerta - Problema de horário{% endblock %}
+{% block page_title %}Problema de horário{% endblock %}
 
 {% block content %}
 <style>
@@ -36,22 +36,22 @@
       <article class="cr-item"><div class="k">Status</div><div class="v"><span class="pill {{ status_tone }}">{{ correction_request.get_status_display }}</span></div></article>
       <article class="cr-item"><div class="k">Recebido em</div><div class="v">{{ correction_request.created_at|date:"d/m/Y H:i" }}</div></article>
       <article class="cr-item"><div class="k">Registro relacionado</div><div class="v">{% if correction_request.punch %}{{ correction_request.punch.timestamp|date:"d/m/Y H:i" }}{% else %}-{% endif %}</div></article>
-      <article class="cr-item" style="grid-column:1/-1;"><div class="k">Descricao do MEI</div><div class="v">{{ correction_request.description|linebreaksbr }}</div></article>
+      <article class="cr-item" style="grid-column:1/-1;"><div class="k">Descrição do MEI</div><div class="v">{{ correction_request.description|linebreaksbr }}</div></article>
       <article class="cr-item" style="grid-column:1/-1;"><div class="k">Resposta administrativa</div><div class="v">{{ correction_request.admin_response|default:"-"|linebreaksbr }}</div></article>
     </div>
   </section>
 
   <section class="cr-panel">
     <h3 style="margin:0;">Registros do dia</h3>
-    <p class="cr-sub">Consulta somente leitura. A empresa pode acompanhar o problema, sem editar horario.</p>
+    <p class="cr-sub">Consulta somente leitura. A empresa pode acompanhar o problema, sem editar horário.</p>
     <div class="cr-table-wrap">
       <table class="cr-table">
         <thead>
           <tr>
-            <th>Horario</th>
+            <th>Horário</th>
             <th>Status</th>
             <th>Tipo</th>
-            <th>Observacao</th>
+            <th>Observação</th>
           </tr>
         </thead>
         <tbody>

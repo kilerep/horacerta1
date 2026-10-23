@@ -132,8 +132,8 @@
   {% if not company %}
     <div class="company-dashboard">
       <section class="company-panel">
-        <h2 class="company-title">Empresa nao encontrada</h2>
-        <p class="company-subtitle">Este usuario ainda nao tem empresa vinculada.</p>
+        <h2 class="company-title">Empresa não encontrada</h2>
+        <p class="company-subtitle">Este usuário ainda não tem empresa vinculada.</p>
       </section>
     </div>
   {% else %}
@@ -190,7 +190,7 @@
           <div class="section-head">
             <div>
               <h3>Base de prestadores</h3>
-              <p class="section-subtitle">Use os filtros para revisar a base e abrir a proxima acao certa de cada profissional.</p>
+              <p class="section-subtitle">Use os filtros para revisar a base e abrir a próxima ação certa de cada profissional.</p>
             </div>
           </div>
           <form method="get" class="form-row" data-submit-once="true">
@@ -202,7 +202,7 @@
 
           <div class="table-wrap">
             <table class="table">
-              <thead><tr><th>Profissional</th><th>Estado</th><th>Status operacional</th><th>Acao</th></tr></thead>
+              <thead><tr><th>Profissional</th><th>Estado</th><th>Status operacional</th><th>Ação</th></tr></thead>
               <tbody>
                 {% for row in employees %}
                   <tr>
@@ -228,7 +228,7 @@
             <div class="section-head">
               <div>
                 <h3>Movimentacao recente</h3>
-                <p class="section-subtitle">Ultimos registros para conferencia rapida e leitura executiva.</p>
+                <p class="section-subtitle">Ultimos registros para conferência rápida e leitura executiva.</p>
               </div>
             </div>
           </div>
@@ -269,7 +269,7 @@
           <div class="sidebar-stack">
             <div class="sidebar-block">
               <h3 style="margin:0;">Pendências prioritárias</h3>
-              <p class="section-subtitle">Itens que exigem acao imediata da equipe.</p>
+              <p class="section-subtitle">Itens que exigem ação imediata da equipe.</p>
               {% if pending_professionals %}
                 <div class="pending-list">
                   {% for row in pending_professionals %}
@@ -285,14 +285,14 @@
               {% else %}
                 <div class="empty-panel" style="margin-top:10px;">
                   <strong>Nenhuma pendencia critica.</strong>
-                  <p>A operacao esta em dia neste momento.</p>
+                  <p>A operação esta em dia neste momento.</p>
                 </div>
               {% endif %}
             </div>
 
             <div class="sidebar-block">
               <h3 style="margin:0;">Atalhos da operação</h3>
-              <p class="section-subtitle">Acesso rapido para tarefas recorrentes.</p>
+              <p class="section-subtitle">Acesso rápido para tarefas recorrentes.</p>
               <div class="quick-links">
                 {% for link in quick_links %}
                   <a class="quick-link" href="{{ link.url }}">
@@ -310,7 +310,7 @@
         <div class="section-head">
               <div>
                 <h3>Resumo de contratos ativos</h3>
-                <p class="section-subtitle">Visao objetiva de valor/hora e status dos contratos da base.</p>
+                <p class="section-subtitle">Visão objetiva de valor/hora e status dos contratos da base.</p>
               </div>
         </div>
         <div class="table-wrap">

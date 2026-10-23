@@ -180,14 +180,14 @@
       <div class="incident-kpis">
         <div class="incident-kpi"><div class="k">Total de pendencias</div><div class="v">{{ summary_total_pending }}</div></div>
         <div class="incident-kpi"><div class="k">Dias incompletos</div><div class="v">{{ summary_incomplete_days }}</div></div>
-        <div class="incident-kpi"><div class="k">Solicitacoes de relatorio</div><div class="v">{{ summary_service_requests }}</div></div>
+        <div class="incident-kpi"><div class="k">Solicitações de relatório</div><div class="v">{{ summary_service_requests }}</div></div>
         <div class="incident-kpi"><div class="k">Profissionais com ocorrencia</div><div class="v">{{ summary_people_with_occurrence }}</div></div>
       </div>
     </article>
 
     <section class="incident-card">
       <h3>Lista principal de pendencias</h3>
-      <p>Periodo {{ period_start }} ate {{ period_end }}. Itens agrupados por funcionario e data.</p>
+      <p>Período {{ period_start }} até {{ period_end }}. Itens agrupados por funcionário e data.</p>
 
       <form method="get" class="incident-filters" data-submit-once="true">
         <div class="incident-field">
@@ -199,7 +199,7 @@
           {{ period_form.date_to }}
         </div>
         <div class="incident-field">
-          <label>Funcionario</label>
+          <label>Funcionário</label>
           <select name="employee">
             <option value="">Todos</option>
             {% for employee in employee_options %}
@@ -222,7 +222,7 @@
           <select name="type">
             <option value="all" {% if type_filter == 'all' %}selected{% endif %}>Todos</option>
             <option value="incomplete" {% if type_filter == 'incomplete' %}selected{% endif %}>Incompleto</option>
-            <option value="request" {% if type_filter == 'request' %}selected{% endif %}>Solicitacao pendente</option>
+            <option value="request" {% if type_filter == 'request' %}selected{% endif %}>Solicitação pendente</option>
           </select>
         </div>
         <div class="incident-field" style="grid-column: 1 / -1;">
@@ -239,12 +239,12 @@
         <table class="incident-table">
           <thead>
               <tr>
-                <th>Funcionario</th>
+                <th>Funcionário</th>
                 <th>Data</th>
                 <th>Tipo da pendencia</th>
                 <th>Status</th>
                 <th>Contexto</th>
-                <th>Acoes</th>
+                <th>Ações</th>
               </tr>
           </thead>
           <tbody>
@@ -263,11 +263,11 @@
                     {% else %}
                       <span class="incident-item__meta">Sem contexto adicional.</span>
                     {% endif %}
-                    <div class="incident-item__meta">Horarios: {{ item.punches_count }} | Horas: {{ item.total_hours_hhmm }}</div>
+                    <div class="incident-item__meta">Horários: {{ item.punches_count }} | Horas: {{ item.total_hours_hhmm }}</div>
                   </td>
                   <td style="display:flex; gap:6px; flex-wrap:wrap;">
                     <a class="btn" href="{{ item.history_url }}">Detalhes</a>
-                    <a class="btn" href="{{ item.profile_url }}">Funcionario</a>
+                    <a class="btn" href="{{ item.profile_url }}">Funcionário</a>
                   </td>
                 </tr>
               {% empty %}

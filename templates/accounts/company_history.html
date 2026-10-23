@@ -293,7 +293,7 @@
           <div class="calendar-nav">
             <a class="btn" href="?{{ calendar_prev_query }}">Mes anterior</a>
             <a class="btn" href="?{{ calendar_current_query }}">Mes atual</a>
-            <a class="btn" href="?{{ calendar_next_query }}">Proximo mes</a>
+            <a class="btn" href="?{{ calendar_next_query }}">Próximo mes</a>
           </div>
         </div>
 
@@ -349,8 +349,8 @@
           <div class="day-detail">
             <h3>Detalhe do dia {{ calendar_day_detail.date|date:"d/m/Y" }}</h3>
             <div class="day-detail-line">Status do dia: <strong>{{ calendar_day_detail.status_label }}</strong></div>
-            <div class="day-detail-line">Quantidade de horarios: <strong>{{ calendar_day_detail.punches_count }}</strong></div>
-            <div class="day-detail-line">Horarios registrados: <strong>{{ calendar_day_detail.punches_label }}</strong></div>
+            <div class="day-detail-line">Quantidade de horários: <strong>{{ calendar_day_detail.punches_count }}</strong></div>
+            <div class="day-detail-line">Horários registrados: <strong>{{ calendar_day_detail.punches_label }}</strong></div>
             <div class="day-detail-line">Total do dia: <strong>{{ calendar_day_detail.total_hours_hhmm }}</strong></div>
           </div>
         {% endif %}
@@ -363,9 +363,9 @@
       <div class="meta">
         <div>
           {% if selected_employee_obj %}
-            Profissional: <strong>{{ selected_employee_obj.full_name }}</strong> | Periodo: <strong>{{ period_label }}</strong>
+            Profissional: <strong>{{ selected_employee_obj.full_name }}</strong> | Período: <strong>{{ period_label }}</strong>
           {% else %}
-            Selecione um profissional para carregar a tabela de conferencia.
+            Selecione um profissional para carregar a tabela de conferência.
           {% endif %}
         </div>
       </div>
@@ -375,10 +375,10 @@
           <article class="summary-item">
             <div class="k">Dias com registro</div>
             <div class="v">{{ summary_days_with_records }}</div>
-            <div class="h">Dias com pelo menos 1 horario</div>
+            <div class="h">Dias com pelo menos 1 horário</div>
           </article>
           <article class="summary-item">
-            <div class="k">Total de horarios</div>
+            <div class="k">Total de horários</div>
             <div class="v">{{ summary_total_punches }}</div>
             <div class="h">Marcações no período filtrado</div>
           </article>
@@ -390,7 +390,7 @@
           <article class="summary-item">
             <div class="k">Dias incompletos</div>
             <div class="v">{{ summary_incomplete_days }}</div>
-            <div class="h">Dias com quantidade impar de horarios</div>
+            <div class="h">Dias com quantidade ímpar de horários</div>
           </article>
         </div>
 
@@ -406,8 +406,8 @@
           <thead>
             <tr>
               <th>Data</th>
-              <th>Quantidade de horarios</th>
-              <th>Horarios registrados</th>
+              <th>Quantidade de horários</th>
+              <th>Horários registrados</th>
               <th>Total do dia</th>
               <th>Status do dia</th>
             </tr>
@@ -433,8 +433,8 @@
                       <strong>Nenhum horário encontrado no período.</strong>
                       <p>Ajuste o período selecionado para carregar os dias de registro.</p>
                     {% else %}
-                      <strong>Selecione um profissional para iniciar a conferencia.</strong>
-                      <p>A tabela diaria e as exportacoes ficam disponiveis apos escolher o profissional.</p>
+                      <strong>Selecione um profissional para iniciar a conferência.</strong>
+                      <p>A tabela diaria e as exportacoes ficam disponiveis após escolher o profissional.</p>
                     {% endif %}
                   </div>
                 </td>

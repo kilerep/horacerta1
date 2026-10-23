@@ -1,6 +1,6 @@
 {% extends "accounts/base.html" %}
-{% block title %}Relatorios{% endblock %}
-{% block page_title %}Relatorios{% endblock %}
+{% block title %}Relatórios{% endblock %}
+{% block page_title %}Relatórios{% endblock %}
 
 {% block content %}
 <style>
@@ -68,18 +68,18 @@
 <div class="sr-wrap">
   {% if request.GET.event == "request_created" %}
     <section class="hc-global-feedback" role="status" aria-live="polite">
-      Solicitacao de relatorio criada com sucesso.
+      Solicitação de relatório criada com sucesso.
     </section>
   {% endif %}
   {% if request.GET.event == "request_reviewed" %}
     <section class="hc-global-feedback" role="status" aria-live="polite">
-      Solicitacao marcada como revisada.
+      Solicitação marcada como revisada.
     </section>
   {% endif %}
 
   <section class="sr-panel">
-    <h2 class="sr-title">Consulta de relatorios enviados</h2>
-    <p class="sr-sub">Modulo de relatorios separado do ponto. Use filtros para consulta operacional por periodo e profissional.</p>
+    <h2 class="sr-title">Consulta de relatórios enviados</h2>
+    <p class="sr-sub">Modulo de relatórios separado do ponto. Use filtros para consulta operacional por período e profissional.</p>
     <form method="get" class="sr-filters">
       <div class="sr-field">
         <label for="employee-filter">Profissional</label>
@@ -109,7 +109,7 @@
 
   <section class="sr-cards">
     <article class="sr-stat">
-      <div class="k">Relatorios no resultado</div>
+      <div class="k">Relatórios no resultado</div>
       <div class="v">{{ total_reports }}</div>
     </article>
     <article class="sr-stat">
@@ -117,11 +117,11 @@
       <div class="v">{{ unique_professionals }}</div>
     </article>
     <article class="sr-stat">
-      <div class="k">Solicitacoes pendentes</div>
+      <div class="k">Solicitações pendentes</div>
       <div class="v">{{ pending_requests_count }}</div>
     </article>
     <article class="sr-stat">
-      <div class="k">Ultimo envio</div>
+      <div class="k">Último envio</div>
       <div class="v" style="font-size:16px;">
         {% if latest_submission %}{{ latest_submission|date:"d/m/Y H:i" }}{% else %}-{% endif %}
       </div>
@@ -129,8 +129,8 @@
   </section>
 
   <section class="sr-panel">
-    <h2 class="sr-title">Nova solicitacao de relatorio</h2>
-    <p class="sr-sub">Solicite relatorios por profissional, com data ou periodo e instrucao curta.</p>
+    <h2 class="sr-title">Nova solicitação de relatório</h2>
+    <p class="sr-sub">Solicite relatórios por profissional, com data ou período e instrucao curta.</p>
     <form method="post" data-submit-once="true">
       {% csrf_token %}
       <input type="hidden" name="action" value="create_request">
@@ -170,25 +170,25 @@
         <div class="sr-error" style="margin-top:10px;">{{ request_form.non_field_errors }}</div>
       {% endif %}
       <div class="sr-actions" style="margin-top:10px;">
-        <button class="btn primary" type="submit" data-loading-text="Enviando solicitacao...">Criar solicitacao</button>
+        <button class="btn primary" type="submit" data-loading-text="Enviando solicitação...">Criar solicitação</button>
       </div>
     </form>
   </section>
 
   <section class="sr-panel">
-    <h2 class="sr-title">Solicitacoes de relatorio</h2>
-    <p class="sr-sub">Acompanhe o status das solicitacoes e acesse o relatorio vinculado quando o profissional responder.</p>
+    <h2 class="sr-title">Solicitações de relatório</h2>
+    <p class="sr-sub">Acompanhe o status das solicitações e acesse o relatório vinculado quando o profissional responder.</p>
     <div class="sr-table-wrap">
       <table class="sr-table">
         <thead>
           <tr>
             <th>Solicitado em</th>
             <th>Profissional</th>
-            <th>Periodo</th>
+            <th>Período</th>
             <th>Assunto</th>
             <th>Status</th>
             <th>Resposta</th>
-            <th>Acoes</th>
+            <th>Ações</th>
           </tr>
         </thead>
         <tbody>
@@ -198,9 +198,9 @@
               <td>{{ item.employee.full_name }}<br><span class="muted">{{ item.employee.user.email|default:item.employee.user.username }}</span></td>
               <td>
                 {% if item.date_from or item.date_to %}
-                  {{ item.date_from|date:"d/m/Y"|default:"-" }} ate {{ item.date_to|date:"d/m/Y"|default:"-" }}
+                  {{ item.date_from|date:"d/m/Y"|default:"-" }} até {{ item.date_to|date:"d/m/Y"|default:"-" }}
                 {% else %}
-                  <span class="sr-meta">Sem periodo definido</span>
+                  <span class="sr-meta">Sem período definido</span>
                 {% endif %}
               </td>
               <td>
@@ -220,7 +220,7 @@
               </td>
               <td>
                 {% if item.response_report %}
-                  <a class="btn" href="{% url 'company_service_report_detail' item.response_report.id %}">Abrir relatorio</a>
+                  <a class="btn" href="{% url 'company_service_report_detail' item.response_report.id %}">Abrir relatório</a>
                 {% else %}
                   <span class="sr-meta">Aguardando envio do profissional</span>
                 {% endif %}
@@ -242,8 +242,8 @@
             <tr>
               <td colspan="7">
                 <div class="sr-empty">
-                  <strong>Nenhuma solicitacao encontrada.</strong>
-                  <p class="sr-sub" style="margin:0;">Crie a primeira solicitacao para iniciar o acompanhamento operacional.</p>
+                  <strong>Nenhuma solicitação encontrada.</strong>
+                  <p class="sr-sub" style="margin:0;">Crie a primeira solicitação para iniciar o acompanhamento operacional.</p>
                 </div>
               </td>
             </tr>
@@ -254,17 +254,17 @@
   </section>
 
   <section class="sr-panel">
-    <h2 class="sr-title">Relatorios recebidos</h2>
+    <h2 class="sr-title">Relatórios recebidos</h2>
     <div class="sr-table-wrap">
       <table class="sr-table">
         <thead>
           <tr>
-            <th>Data do servico</th>
+            <th>Data do serviço</th>
             <th>Profissional</th>
             <th>Cliente/contrato</th>
-            <th>Titulo</th>
+            <th>Título</th>
             <th>Enviado em</th>
-            <th>Acoes</th>
+            <th>Ações</th>
           </tr>
         </thead>
         <tbody>
@@ -281,8 +281,8 @@
             <tr>
               <td colspan="6">
                 <div class="sr-empty">
-                  <strong>Nenhum relatorio encontrado.</strong>
-                  <p class="sr-sub" style="margin:0;">Ajuste o periodo ou aguarde novos envios dos profissionais.</p>
+                  <strong>Nenhum relatório encontrado.</strong>
+                  <p class="sr-sub" style="margin:0;">Ajuste o período ou aguarde novos envios dos profissionais.</p>
                 </div>
               </td>
             </tr>

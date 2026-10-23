@@ -1,6 +1,6 @@
 {% extends "accounts/base.html" %}
-{% block title %}Detalhe do relatorio{% endblock %}
-{% block page_title %}Detalhe do relatorio{% endblock %}
+{% block title %}Detalhe do relatório{% endblock %}
+{% block page_title %}Detalhe do relatório{% endblock %}
 
 {% block content %}
 <style>
@@ -44,7 +44,7 @@
     <div class="detail-head">
       <div>
         <h1 class="detail-title">{{ report.title }}</h1>
-        <p class="detail-sub">{{ report.company.name }} | {{ report.date_from|date:"d/m/Y" }} ate {{ report.date_to|date:"d/m/Y" }} | {{ status_label }}</p>
+        <p class="detail-sub">{{ report.company.name }} | {{ report.date_from|date:"d/m/Y" }} até {{ report.date_to|date:"d/m/Y" }} | {{ status_label }}</p>
       </div>
       {% if not public_view %}
         <div class="detail-actions">
@@ -56,7 +56,7 @@
             <input type="hidden" name="action" value="generate_conference_link">
             <label for="conference_expires_at">Expira em</label>
             <input id="conference_expires_at" type="datetime-local" name="conference_expires_at">
-            <button class="btn primary" type="submit">Gerar link de conferencia</button>
+            <button class="btn primary" type="submit">Gerar link de conferência</button>
           </form>
           {% endif %}
           {% if report.conference_token and not report.conference_revoked_at %}
@@ -77,7 +77,7 @@
     {% endif %}
     {% if conference_url %}
       <div class="share-panel" data-share-panel>
-        <strong>Compartilhar relatorio</strong>
+        <strong>Compartilhar relatório</strong>
         <div class="share-row">
           <div class="share-url" data-share-url>{{ conference_url }}</div>
           <button class="btn" type="button" data-copy-link>Link</button>
@@ -86,11 +86,11 @@
         </div>
         <div class="share-status" data-copy-status></div>
         <div class="detail-sub">
-          Conferencia do cliente: <strong>{{ report.get_conference_final_status_display }}</strong>{% if report.conference_reviewed_at %} em {{ report.conference_reviewed_at|date:"d/m/Y H:i" }}{% endif %}
+          Conferência do cliente: <strong>{{ report.get_conference_final_status_display }}</strong>{% if report.conference_reviewed_at %} em {{ report.conference_reviewed_at|date:"d/m/Y H:i" }}{% endif %}
           {% if report.conference_comment %}<br><strong>Mensagem do cliente:</strong> {{ report.conference_comment }}{% endif %}
           {% if report.conference_expires_at %} | Expira em {{ report.conference_expires_at|date:"d/m/Y H:i" }}{% endif %}
           {% if report.conference_revoked_at %} | Revogado em {{ report.conference_revoked_at|date:"d/m/Y H:i" }}{% endif %}
-          {% if report.conference_first_viewed_at %} | Visto: {{ report.conference_first_viewed_at|date:"d/m/Y H:i" }}{% else %} | Nao visualizado{% endif %}
+          {% if report.conference_first_viewed_at %} | Visto: {{ report.conference_first_viewed_at|date:"d/m/Y H:i" }}{% else %} | Não visualizado{% endif %}
           {% if report.whatsapp_sent_attempted_at %} | Envio WhatsApp iniciado em {{ report.whatsapp_sent_attempted_at|date:"d/m/Y H:i" }}{% endif %}
         </div>
         <div class="detail-sub">
@@ -105,8 +105,8 @@
       </div>
     {% elif report.status != "CANCELED" %}
       <div class="link-box">
-        <strong>Link de conferencia indisponivel</strong>
-        <div class="detail-sub">Gere um link ativo para copiar, enviar pelo WhatsApp e permitir a conferencia publica.</div>
+        <strong>Link de conferência indisponivel</strong>
+        <div class="detail-sub">Gere um link ativo para copiar, enviar pelo WhatsApp e permitir a conferência publica.</div>
       </div>
     {% endif %}
   </section>
@@ -140,13 +140,13 @@
   </section>
 
   <section class="detail-panel">
-    <h2 class="detail-title">Dias do periodo</h2>
+    <h2 class="detail-title">Dias do período</h2>
     <div class="detail-table-wrap">
       <table class="detail-table">
         <thead>
           <tr>
             <th>Dia</th>
-            <th>Horarios</th>
+            <th>Horários</th>
             <th>Total</th>
             <th>Status</th>
             <th>Observacoes</th>
@@ -162,7 +162,7 @@
               <td>{{ day.notes|join:"; "|default:"-" }}</td>
             </tr>
           {% empty %}
-            <tr><td colspan="5">Sem registros no periodo.</td></tr>
+            <tr><td colspan="5">Sem registros no período.</td></tr>
           {% endfor %}
         </tbody>
       </table>
