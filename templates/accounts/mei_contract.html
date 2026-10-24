@@ -20,7 +20,7 @@
     .clients-actions,.client-actions,.quick-closure-actions,.client-report-actions{display:flex;gap:8px;flex-wrap:wrap}
     .clients-summary,.client-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
     .clients-stat,.client-metric{border:1px solid var(--line-soft);border-radius:12px;padding:10px;background:color-mix(in oklab,var(--surface-soft) 72%,transparent);min-width:0}
-    .clients-stat span,.client-metric span{display:block;color:var(--muted);font-size:11px;font-weight:800}
+    .clients-stat span,.client-metric span{display:block;color:var(--muted);font-size:12px;font-weight:700}
     .clients-stat strong{display:block;margin-top:4px;font-size:20px;overflow-wrap:anywhere}
     .client-metric strong{display:block;margin-top:3px;font-size:15px;overflow-wrap:anywhere}
     .clients-panel{padding:14px}
@@ -68,6 +68,7 @@
     .clients-note{color:var(--muted);font-size:12px;margin:10px 0 0}
     .feedback{border:1px solid var(--border-brand);background:var(--surface-brand-soft);border-radius:12px;padding:11px;color:var(--color-text-strong)}
     .copy-status{min-height:18px;color:var(--muted);font-size:12px}
+    .client-filters[hidden],.clients-filter-result[hidden]{display:none}
     .client-filters{display:grid;grid-template-columns:minmax(0,1fr) minmax(180px,.35fr) auto;gap:8px;align-items:end;padding:12px;border:1px solid var(--line-soft);border-radius:12px;background:color-mix(in oklab,var(--surface-soft) 66%,transparent)}
     .client-filter-field{display:grid;gap:5px;min-width:0}
     .client-filter-field label{font-size:12px;font-weight:800;color:var(--muted)}
@@ -82,7 +83,9 @@
     @media (max-width:640px){
       .clients-hero__top,.client-card__head{display:grid}
       .clients-actions .btn,.client-actions .btn{width:100%;justify-content:center}
-      .clients-summary,.client-metrics,.client-detail-grid,.quick-closure-grid,.client-detail-item,.client-report-totals,.client-filters{grid-template-columns:1fr}
+      .client-detail-grid,.quick-closure-grid,.client-detail-item,.client-report-totals,.client-filters{grid-template-columns:1fr}
+      .clients-summary,.client-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+      .clients-stat strong{font-size:18px}
       .client-report-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}
       .client-report-actions form,.client-report-actions .btn,.client-report-actions form .btn{width:100%;justify-content:center}
     }
@@ -98,9 +101,8 @@
     <section class="clients-hero">
       <div class="clients-hero__top">
         <div>
-          <p class="clients-eyebrow">Carteira de clientes</p>
           <h1 class="clients-title">Meus clientes</h1>
-          <p class="clients-subtitle">Acompanhe contratos, horas registradas e valores estimados por cliente no mês atual.</p>
+          <p class="clients-subtitle">Contratos, horas e valores de cada cliente no mês atual.</p>
         </div>
         <div class="clients-actions">
           <a class="btn primary" href="{% url 'mei_client_create' %}">Adicionar cliente</a>
@@ -125,7 +127,7 @@
           </div>
         </div>
 
-        <form class="client-filters" data-client-filter-form role="search">
+        <form class="client-filters" data-client-filter-form role="search"{% if client_rows|length <= 3 %} hidden{% endif %}>
           <div class="client-filter-field">
             <label for="client-search">Buscar cliente</label>
             <input id="client-search" type="search" autocomplete="off" placeholder="Nome do cliente" data-client-search>
@@ -141,7 +143,7 @@
           </div>
           <button class="btn" type="button" data-client-filter-reset>Limpar filtros</button>
         </form>
-        <p class="clients-filter-result" data-client-filter-feedback aria-live="polite">Use a busca ou os filtros para localizar um cliente.</p>
+        <p class="clients-filter-result" data-client-filter-feedback aria-live="polite"{% if client_rows|length <= 3 %} hidden{% endif %}>Use a busca ou os filtros para localizar um cliente.</p>
         <div class="clients-empty clients-filter-empty" data-client-filter-empty hidden>
           <h2>Nenhum cliente encontrado</h2>
           <p>Altere a busca ou limpe os filtros para ver novamente todos os seus clientes.</p>

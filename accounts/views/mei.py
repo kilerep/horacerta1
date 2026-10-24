@@ -223,7 +223,7 @@ def mei_panel(request):
         "paused_contracts": paused_contracts,
         "missing_rate_contracts": missing_rate_contracts,
         "context_warning": (
-            "O vinculo selecionado anteriormente nao esta mais disponivel. Exibindo o vinculo atual."
+            "O vinculo selecionado anteriormente não esta mais disponível. Exibindo o vinculo atual."
             if (mei_context.invalid_requested_contract or mei_context.invalid_session_contract)
             else ""
         ),
@@ -412,7 +412,7 @@ def mei_edit_today_punches(request):
 
     contracts = list(mei_contracts_for_user(request.user, include_inactive_contracts=False))
     if not contracts:
-        messages.error(request, "Cadastre um cliente ativo antes de editar os horarios de hoje.")
+        messages.error(request, "Cadastre um cliente ativo antes de editar os horários de hoje.")
         return redirect("mei_panel")
 
     today = timezone.localdate()
@@ -438,7 +438,7 @@ def mei_edit_today_punches(request):
 
     if request.method == "POST":
         if is_locked:
-            messages.error(request, "Este dia esta bloqueado porque ja foi incluido em um relatorio gerado.")
+            messages.error(request, "Este dia está bloqueado porque já foi incluído em um relatório gerado.")
             return redirect("mei_edit_today_punches")
 
         posted_contract = next((item for item in contracts if str(item.id) == selected_contract_id), None)
@@ -455,20 +455,20 @@ def mei_edit_today_punches(request):
 
         today_punches_by_id = {str(punch.id): punch for punch in today_punches}
         if len(existing_ids) != len(existing_times):
-            errors.append("Nao foi possivel validar os horarios enviados.")
+            errors.append("Não foi possível validar os horários enviados.")
 
         parsed_existing = []
         for punch_id, raw_time in zip(existing_ids, existing_times):
             punch = today_punches_by_id.get(punch_id)
             if not punch:
-                errors.append("Um dos horarios enviados nao pertence ao dia atual da sua conta.")
+                errors.append("Um dos horários enviados não pertence ao dia atual da sua conta.")
                 continue
             if punch_id in remove_ids:
                 continue
             try:
                 parsed_time = datetime.strptime((raw_time or "").strip(), "%H:%M").time()
             except ValueError:
-                errors.append("Informe horarios existentes no formato HH:MM.")
+                errors.append("Informe horários existentes no formato HH:MM.")
                 continue
             parsed_existing.append((punch, parsed_time))
 
@@ -477,16 +477,16 @@ def mei_edit_today_punches(request):
             try:
                 parsed_new.append(datetime.strptime(raw_time, "%H:%M").time())
             except ValueError:
-                errors.append("Informe horarios adicionados no formato HH:MM.")
+                errors.append("Informe horários adicionados no formato HH:MM.")
 
         final_times = [item[1] for item in parsed_existing] + parsed_new
         if not final_times:
-            errors.append("Mantenha pelo menos um horario no dia atual.")
+            errors.append("Mantenha pelo menos um horário no dia atual.")
 
         sorted_times = sorted(final_times)
         for idx in range(0, len(sorted_times) - 1, 2):
             if sorted_times[idx] >= sorted_times[idx + 1]:
-                errors.append("A entrada deve ser menor que a saida em cada par de horarios.")
+                errors.append("A entrada deve ser menor que a saida em cada par de horários.")
                 break
 
         if not errors:
@@ -544,7 +544,7 @@ def mei_edit_today_punches(request):
                         note=note_value,
                     )
 
-            messages.success(request, "Horarios de hoje atualizados com sucesso.")
+            messages.success(request, "Horários de hoje atualizados com sucesso.")
             return redirect("mei_history")
 
     today_punches = list(
@@ -567,7 +567,7 @@ def mei_edit_today_punches(request):
             "total_hours": format_hhmm(total_seconds),
             "is_incomplete": is_incomplete,
             "is_locked": is_locked,
-            "lock_message": "Este dia esta bloqueado porque ja foi incluido em um relatorio gerado.",
+            "lock_message": "Este dia está bloqueado porque já foi incluído em um relatório gerado.",
             "errors": errors,
             "day_note": active_note,
         },
@@ -669,9 +669,9 @@ def mei_notifications_bulk_action(request):
         if updated:
             messages.success(request, "Notificacoes marcadas como lidas.")
         else:
-            messages.info(request, "Nao havia notificacoes novas.")
+            messages.info(request, "Não havia notificacoes novas.")
     else:
-        messages.error(request, "Acao invalida para notificacoes.")
+        messages.error(request, "Ação inválida para notificacoes.")
     return redirect("mei_notifications")
 
 
@@ -692,7 +692,7 @@ def mei_notification_action(request, notification_id):
         _mark_notification_read(notification)
         messages.success(request, "Notificacao marcada como lida.")
     else:
-        messages.error(request, "Acao invalida para esta notificacao.")
+        messages.error(request, "Ação inválida para esta notificacao.")
     return redirect("mei_notifications")
 
 
@@ -733,7 +733,7 @@ def mei_contract(request):
                 employee__user=request.user,
             )
             if report.status == ServiceReport.Status.CANCELED:
-                messages.error(request, "Relatorio cancelado nao pode ser marcado como recebido.")
+                messages.error(request, "Relatório cancelado não pode ser marcado como recebido.")
                 return redirect(f"{reverse('mei_contract')}?contract={report.contract_id}&event=receive_invalid")
             if payment_status == ServiceReport.PaymentStatus.PAID:
                 report.payment_status = ServiceReport.PaymentStatus.PAID
@@ -748,7 +748,7 @@ def mei_contract(request):
                 report.save(update_fields=["payment_status", "paid_at", "paid_note", "updated_at"])
                 event = "report_receive_pending"
             else:
-                messages.error(request, "Status de recebimento invalido.")
+                messages.error(request, "Status de recebimento inválido.")
                 event = "receive_invalid"
             return redirect(f"{reverse('mei_contract')}?contract={report.contract_id}&event={event}")
 
@@ -1172,7 +1172,7 @@ def mei_reports(request):
                 if report.status == ServiceReport.Status.DRAFT:
                     messages.error(
                         request,
-                        "Gere e compartilhe o link deste relatorio antes de marca-lo como recebido.",
+                        "Gere e compartilhe o link deste relatório antes de marca-lo como recebido.",
                     )
                     event = "receive_invalid"
                 else:
@@ -1188,7 +1188,7 @@ def mei_reports(request):
                 report.save(update_fields=["payment_status", "paid_at", "paid_note", "updated_at"])
                 event = "report_receive_pending"
             else:
-                messages.error(request, "Status de recebimento invalido.")
+                messages.error(request, "Status de recebimento inválido.")
                 event = "receive_invalid"
             redirect_url = f"{reverse('mei_reports')}?event={event}&contract={report.contract_id}"
             return redirect(redirect_url)
@@ -1293,17 +1293,17 @@ def mei_service_report_detail(request, report_id):
     if request.method == "POST":
         action = (request.POST.get("action") or "").strip()
         if report.status == ServiceReport.Status.CANCELED and action != "cancel_report":
-            messages.error(request, "Este relatorio foi cancelado. Gere um novo relatorio para enviar ao cliente.")
+            messages.error(request, "Este relatório foi cancelado. Gere um novo relatório para enviar ao cliente.")
             return redirect("mei_service_report_detail", report_id=report.id)
         if action == "cancel_report":
             if not report.can_be_canceled:
                 messages.error(
                     request,
-                    "Este relatorio ja esta cancelado ou ja foi marcado como recebido/pago e nao pode ser cancelado.",
+                    "Este relatório já esta cancelado ou já foi marcado como recebido/pago e não pode ser cancelado.",
                 )
                 return redirect("mei_service_report_detail", report_id=report.id)
             if request.POST.get("confirm_cancel") != "on":
-                messages.error(request, "Marque a confirmacao para cancelar o relatorio.")
+                messages.error(request, "Marque a confirmação para cancelar o relatório.")
                 return redirect("mei_service_report_detail", report_id=report.id)
             report.cancel(request.POST.get("cancel_reason") or "")
             report.save(
@@ -1318,8 +1318,8 @@ def mei_service_report_detail(request, report_id):
             )
             messages.success(
                 request,
-                "Relatorio cancelado. Os dias desse periodo podem ser editados de novo. "
-                "Depois de corrigir, gere um novo relatorio.",
+                "Relatório cancelado. Os dias desse período podem ser editados de novo. "
+                "Depois de corrigir, gere um novo relatório.",
             )
             reports_url = reverse("mei_reports")
             if report.contract_id:
@@ -1333,7 +1333,7 @@ def mei_service_report_detail(request, report_id):
                     expires_at = datetime.strptime(expires_at_raw, "%Y-%m-%dT%H:%M")
                     expires_at = timezone.make_aware(expires_at, timezone.get_current_timezone())
                 except ValueError:
-                    messages.error(request, "Informe uma data de expiracao valida.")
+                    messages.error(request, "Informe uma data de expiracao válida.")
                     return redirect("mei_service_report_detail", report_id=report.id)
                 if expires_at <= timezone.now():
                     messages.error(request, "A expiracao precisa ser uma data futura.")
@@ -1353,17 +1353,17 @@ def mei_service_report_detail(request, report_id):
                     "updated_at",
                 ]
             )
-            messages.success(request, "Link de conferencia gerado.")
+            messages.success(request, "Link de conferência gerado.")
             return redirect("mei_service_report_detail", report_id=report.id)
         if action == "revoke_conference_link":
             if report.conference_token and not report.conference_revoked_at:
                 report.revoke_conference_link()
                 report.save(update_fields=["conference_revoked_at", "conference_final_status", "updated_at"])
-                messages.success(request, "Link de conferencia revogado.")
+                messages.success(request, "Link de conferência revogado.")
             else:
-                messages.info(request, "Este relatorio nao possui link ativo para revogar.")
+                messages.info(request, "Este relatório não possui link ativo para revogar.")
             return redirect("mei_service_report_detail", report_id=report.id)
-        messages.error(request, "Acao invalida para este relatorio.")
+        messages.error(request, "Ação inválida para este relatório.")
         return redirect("mei_service_report_detail", report_id=report.id)
 
     selected_contract = getattr(report, "contract", None)

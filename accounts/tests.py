@@ -934,7 +934,7 @@ class MeiMultiCompanyContextTests(TestCase):
         self.assertContains(response, "data-client-reports-panel")
         self.assertContains(response, "hidden")
         self.assertContains(response, "Últimos fechamentos")
-        self.assertContains(response, "Nao visualizado")
+        self.assertContains(response, "Não visualizado")
         self.assertContains(response, "Pendente")
         self.assertContains(response, "Ver todos em Relatórios")
         self.assertNotContains(response, "Relatorio antigo 3")
@@ -1173,7 +1173,7 @@ class MeiMultiCompanyContextTests(TestCase):
         response = self.client.get(reverse("employee_dashboard"), {"contract": str(self.contract_b.id)})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context["selected_contract"].id, self.contract_b.id)
-        self.assertContains(response, "Selecionar cliente e contrato")
+        self.assertContains(response, '<label for="hcContractSelect">Cliente</label>', html=False)
         self.assertContains(response, self.company_b.name)
         self.assertNotContains(response, "Exportar CSV")
 
@@ -1286,7 +1286,7 @@ class MeiMultiCompanyContextTests(TestCase):
             },
         )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Mantenha pelo menos um horario no dia atual")
+        self.assertContains(response, "Mantenha pelo menos um horário no dia atual")
         self.assertEqual(WorkdayChangeLog.objects.count(), 1)
 
     def test_mei_today_edit_is_blocked_after_generated_report(self):
@@ -1307,7 +1307,7 @@ class MeiMultiCompanyContextTests(TestCase):
 
         response = self.client.get(reverse("mei_edit_today_punches"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Este dia esta bloqueado porque ja foi incluido em um relatorio gerado")
+        self.assertContains(response, "Este dia está bloqueado porque já foi incluído em um relatório gerado")
 
         response = self.client.post(
             reverse("mei_edit_today_punches"),
@@ -1391,7 +1391,7 @@ class MeiMultiCompanyContextTests(TestCase):
             InternalNotification.objects.filter(
                 recipient_user=self.mei_user,
                 audience=InternalNotification.Audience.MEI,
-                title="Periodo fechado",
+                title="Período fechado",
                 target_url=reverse("mei_service_report_detail", args=[report.id]),
             ).exists()
         )
@@ -1531,7 +1531,7 @@ class MeiMultiCompanyContextTests(TestCase):
             InternalNotification.objects.filter(
                 recipient_user=self.mei_user,
                 audience=InternalNotification.Audience.MEI,
-                title="Relatorio visualizado",
+                title="Relatório visualizado",
                 target_url=reverse("mei_service_report_detail", args=[report.id]),
             ).exists()
         )
@@ -1591,7 +1591,7 @@ class MeiMultiCompanyContextTests(TestCase):
             follow=True,
         )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Gere e compartilhe o link deste relatorio antes de marca-lo como recebido.")
+        self.assertContains(response, "Gere e compartilhe o link deste relatório antes de marca-lo como recebido.")
         report.refresh_from_db()
         self.assertEqual(report.payment_status, ServiceReport.PaymentStatus.PENDING)
         self.assertIsNone(report.paid_at)
@@ -1667,15 +1667,15 @@ class MeiMultiCompanyContextTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Atenção hoje")
         self.assertContains(response, "Dia incompleto")
-        self.assertContains(response, "Voce registrou 3 horarios hoje na Empresa B")
+        self.assertContains(response, "Você registrou 3 horários hoje na Empresa B")
         self.assertContains(response, "Cliente sem valor/hora")
-        self.assertContains(response, "Fechamento proximo")
+        self.assertContains(response, "Fechamento próximo")
         self.assertContains(response, "Relatorio visualizado")
         self.assertContains(response, "Recebimento pendente")
-        self.assertContains(response, "Revisar horario")
+        self.assertContains(response, "Revisar horário")
         self.assertContains(response, "Editar cliente")
-        self.assertContains(response, "Gerar relatorio")
-        self.assertContains(response, "Ver relatorio")
+        self.assertContains(response, "Gerar relatório")
+        self.assertContains(response, "Ver relatório")
         self.assertContains(response, "Marcar todas como lidas")
         self.assertNotContains(response, "Aviso de outro usuario")
 

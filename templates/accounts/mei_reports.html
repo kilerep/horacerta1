@@ -32,16 +32,25 @@
   .report-metric span{display:block;color:var(--muted);font-size:11px}
   .report-metric strong{display:block;margin-top:3px;overflow-wrap:anywhere}
   .report-card__actions{display:grid;gap:8px;padding-top:8px;border-top:1px solid var(--line-soft)}
+  .reports-filter__summary{display:grid;gap:4px;min-height:44px;cursor:pointer;list-style:none}
+  .reports-filter__summary::-webkit-details-marker{display:none}
+  .reports-filter__summary .reports-title::after{content:"  +";color:var(--color-primary)}
+  .reports-filter[open] .reports-filter__summary .reports-title::after{content:"  -"}
+  .reports-filter[open] .reports-filter__summary{margin-bottom:12px}
+  @media (max-width:899px){
+    .report-card__actions{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .report-card__actions .btn.primary{grid-column:1 / -1;order:-1}
+  }
   .report-card__actions form{display:grid}
   .report-card__actions .btn{width:100%;justify-content:center;min-height:42px}
   .report-statuses{display:flex;gap:6px;flex-wrap:wrap}
   .status-pill{display:inline-flex;width:max-content;max-width:100%;min-width:0;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:900;line-height:1.25;border:1px solid var(--line-soft);background:var(--surface-raised);color:var(--muted);white-space:normal;overflow-wrap:anywhere}
   .status-pill.success{color:var(--color-success);border-color:var(--border-brand);background:var(--surface-brand-soft)}
   .status-pill.pending{color:var(--muted)}
-  .empty{border:1px dashed rgba(255,255,255,.18);border-radius:12px;padding:14px;background:rgba(255,255,255,.03);color:var(--muted);line-height:1.45}
-  .feedback{border:1px solid rgba(45,211,145,.36);background:rgba(45,211,145,.1);border-radius:12px;padding:11px;color:#d9ffec}
-  .feedback.warn{border-color:rgba(255,176,32,.38);background:rgba(255,176,32,.12);color:#ffe7ad}
-  .error{margin-top:5px;color:#ffd8d8;font-size:12px}
+  .empty{border:1px dashed var(--color-border);border-radius:12px;padding:14px;color:var(--muted);line-height:1.45}
+  .feedback{border:1px solid var(--success-border);background:var(--success-bg);border-radius:12px;padding:11px;color:var(--success-text)}
+  .feedback.warn{border-color:var(--warning-border);background:var(--warning-bg);color:var(--warning-text)}
+  .error{margin-top:5px;color:var(--danger-text);font-size:13px}
   .copy-status{min-height:18px;color:var(--muted);font-size:12px}
   .comparison-list{display:grid;gap:12px;margin-top:12px}
   .comparison-row{display:grid;gap:6px}
@@ -84,23 +93,13 @@
   <section class="reports-panel">
     <div class="reports-head">
       <h1 class="reports-title">Relatórios</h1>
-      <p class="reports-sub">Centralize relatórios de horas agora. Relatórios de serviço ficam separados para trabalhos avulsos quando o serviço for finalizado.</p>
-    </div>
-    <div class="report-types" aria-label="Tipos de relatório">
-      <article class="report-type-card">
-        <strong>Relatórios de horas</strong>
-        <span>Use para rotina normal por cliente, fechamento de período, conferência externa e PDF de horas.</span>
-      </article>
-      <article class="report-type-card">
-        <strong>Relatórios de serviço</strong>
-        <span>Espaço reservado para trabalhos avulsos. Não mistura com o histórico normal de horários.</span>
-      </article>
+      <p class="reports-sub">Gere o relatório de horas de um cliente e mande para ele conferir. O relatório de um serviço avulso fica na tela do próprio serviço.</p>
     </div>
   </section>
 
   <section class="reports-panel">
     <div class="reports-head">
-      <h1 class="reports-title">Criar relatório</h1>
+      <h2 class="reports-title">Criar relatório</h2>
       <p class="reports-sub">Escolha o cliente, revise o período e gere um relatório para conferência externa.</p>
     </div>
     <form method="post" class="reports-form" data-submit-once="true">
@@ -143,11 +142,11 @@
     </form>
   </section>
 
-  <section class="reports-panel">
-    <div class="reports-head">
-      <h2 class="reports-title">Filtrar relatórios</h2>
-      <p class="reports-sub">Busque por título, cliente ou observação e filtre por período, visualizacao e recebimento.</p>
-    </div>
+  <details class="reports-panel reports-filter"{% if request.GET %} open{% endif %}>
+    <summary class="reports-filter__summary">
+      <span class="reports-title">Buscar e filtrar relatórios</span>
+      <span class="reports-sub">Por título, cliente, período, visualização e recebimento.</span>
+    </summary>
     <form method="get" class="reports-form">
       <div class="reports-field">
         <label for="filter-q">Busca</label>
@@ -200,7 +199,7 @@
         <a class="btn" href="{% url 'mei_reports' %}">Limpar filtros</a>
       </div>
     </form>
-  </section>
+  </details>
 
   {% if client_comparison_rows %}
     <section class="reports-panel">
@@ -229,7 +228,7 @@
     </div>
     <div class="reports-actions" style="margin-top:12px">
       <a class="btn" href="{{ csv_url }}">Exportar CSV</a>
-      <a class="btn" href="{% url 'help' %}#categoria-relatorios">Duvidas sobre relatórios?</a>
+      <a class="btn" href="{% url 'help' %}#categoria-relatorios">Dúvidas sobre relatórios?</a>
     </div>
     <div class="reports-list">
       {% for row in report_rows %}
@@ -303,7 +302,7 @@
       <div class="reports-list">
         {% for item in pending_requests %}
           <article class="report-card">
-            <h3 class="report-card__title">{{ item.subject|default:"Solicitacao de relatorio" }}</h3>
+            <h3 class="report-card__title">{{ item.subject|default:"Solicitação de relatório" }}</h3>
             <div class="report-card__meta">{{ item.company.name }} | {{ item.date_from|date:"d/m/Y"|default:"-" }} até {{ item.date_to|date:"d/m/Y"|default:"-" }}</div>
             <div class="report-card__actions">
               <a class="btn primary" href="{% url 'mei_service_report_request_detail' item.id %}">Responder</a>

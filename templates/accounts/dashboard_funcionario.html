@@ -1,7 +1,7 @@
 {% extends "accounts/base.html" %}
 {% load static tz timeclock_formats %}
-{% block title %}HoraCerta - Painel do Profissional{% endblock %}
-{% block page_title %}Painel do profissional{% endblock %}
+{% block title %}Registrar horário | HoraCerta{% endblock %}
+{% block page_title %}Registrar horário{% endblock %}
 {% block body_class %}page-me-registrar{% endblock %}
 
 {% block extra_head %}
@@ -137,15 +137,9 @@
           <a class="btn primary" id="first-report-cta" href="{% url 'mei_reports' %}?contract={{ selected_contract.id }}" style="margin:8px 0 4px;">Gerar meu primeiro relatório</a>
         {% endif %}
 
-        <section class="hc-client-current" aria-labelledby="hcClientCurrentTitle">
-          <div class="hc-client-current__head">
-            <div>
-              <h3 id="hcClientCurrentTitle" class="hc-client-current__title">Cliente atual</h3>
-              <p class="hc-client-current__active">{{ selected_contract.company.name }}</p>
-            </div>
-          </div>
+        <section class="hc-client-current" aria-label="Cliente">
           <div class="hc-client-select-wrap">
-            <label for="hcContractSelect">Selecionar cliente e contrato</label>
+            <label for="hcContractSelect">Cliente</label>
             <select id="hcContractSelect" class="hc-client-select" name="contract_selector">
               {% for c in contracts %}
                 <option
@@ -158,9 +152,9 @@
               {% endfor %}
             </select>
             <div class="hc-client-details" aria-live="polite">
-              <span>Status do contrato: <strong>Ativo</strong></span>
-              <span>Valor por hora: <strong>R$ {{ selected_contract.hourly_rate }}/h</strong></span>
-              <span>Período: <strong>desde {{ selected_contract.start_date|date:"d/m/Y" }}{% if selected_contract.end_date %} até {{ selected_contract.end_date|date:"d/m/Y" }}{% endif %}</strong></span>
+              <span><strong>R$ {{ selected_contract.hourly_rate }}/h</strong></span>
+              <span>desde {{ selected_contract.start_date|date:"d/m/Y" }}{% if selected_contract.end_date %} até {{ selected_contract.end_date|date:"d/m/Y" }}{% endif %}</span>
+              <span>contrato ativo</span>
             </div>
           </div>
         </section>
@@ -171,7 +165,7 @@
               class="hc-context-note"
               {% if not location_required_for_selected_contract %}hidden{% endif %}
             >
-              Este contrato válida localizacao no momento do registro. Não ha rastreamento continuo.
+              Este contrato confere a localização no momento do registro. Não há rastreamento contínuo.
             </div>
 
           <form id="hcPunchForm" method="post" action="{{ request.path }}" class="hc-field">
@@ -185,16 +179,14 @@
               <span class="hc-punch-btn__label">{{ punch_button_label|default:"Registrar horário" }} · {{ selected_contract.company.name }}</span>
               <span class="hc-punch-btn__spinner" aria-hidden="true"></span>
             </button>
-            <button id="hcManualOpen" class="btn hc-manual-open-btn" type="button">Registrar horário manual</button>
-            <a class="btn" href="{% url 'mei_edit_today_punches' %}">Editar horários de hoje</a>
+            <div class="hc-secondary-actions">
+              <button id="hcManualOpen" class="btn hc-manual-open-btn" type="button">Horário manual</button>
+              <a class="btn" href="{% url 'mei_edit_today_punches' %}">Editar hoje</a>
+            </div>
           </form>
         </div>
 
         <section class="hc-journey-summary" aria-label="Resumo da jornada do dia">
-          <article class="hc-journey-card">
-            <span class="hc-journey-k">Data</span>
-            <strong class="hc-journey-v">{{ today_date|date:"d/m/Y" }}</strong>
-          </article>
           <article class="hc-journey-card">
             <span class="hc-journey-k">Horários hoje</span>
             <strong class="hc-journey-v">{{ total_punches_today }}</strong>
