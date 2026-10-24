@@ -8,11 +8,10 @@
   .nt-hero,.nt-panel,.nt-card{
     border:1px solid var(--border);
     border-radius:var(--radius);
-    background:radial-gradient(circle at 12% 0,var(--color-primary-soft),transparent 42%),linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02));
-    box-shadow:var(--shadow-soft);
+    background:var(--color-card);
     min-width:0;
   }
-  .nt-hero{padding:16px;display:grid;gap:12px}
+  .nt-hero{padding:4px 0;display:grid;gap:12px;border:0;background:none}
   .nt-hero__top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
   .nt-title{margin:0;font-size:clamp(23px,5vw,32px);line-height:1.1;overflow-wrap:anywhere}
   .nt-sub{margin:6px 0 0;color:var(--muted);font-size:13px;line-height:1.45;max-width:720px;overflow-wrap:anywhere}
@@ -24,20 +23,20 @@
   .nt-panel__head h2{margin:0;font-size:18px;line-height:1.2}
   .nt-panel__head p{margin:4px 0 0;color:var(--muted);font-size:12px;line-height:1.4}
   .nt-list{display:grid;gap:10px}
-  .nt-card{padding:12px;background:var(--surface-raised);display:grid;gap:10px}
-  .nt-card.is-new,.nt-card.is-high{border-color:var(--border-brand);box-shadow:0 0 0 2px var(--color-primary-soft),var(--shadow-xs)}
+  .nt-card{padding:12px;background:var(--surface-soft);display:grid;gap:8px}
+  .nt-card.is-new,.nt-card.is-high{border-color:var(--border-brand)}
   .nt-card__top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
   .nt-card__title{margin:0;font-size:16px;line-height:1.25;overflow-wrap:anywhere}
   .nt-card__message{margin:0;color:var(--color-text-strong);font-size:14px;line-height:1.45;overflow-wrap:anywhere}
   .nt-meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center;color:var(--muted);font-size:12px;line-height:1.35}
-  .nt-badge{display:inline-flex;align-items:center;max-width:100%;min-width:0;border:1px solid var(--line-soft);border-radius:999px;padding:4px 9px;background:var(--surface-soft);color:var(--muted);font-size:11px;font-weight:900;line-height:1.2;white-space:normal;overflow-wrap:anywhere}
+  .nt-badge{display:inline-flex;align-items:center;max-width:100%;min-width:0;border:1px solid var(--line-soft);border-radius:999px;padding:4px 9px;background:var(--surface-soft);color:var(--muted);font-size:12px;font-weight:900;line-height:1.2;white-space:normal;overflow-wrap:anywhere}
   .nt-badge.new,.nt-badge.high{border-color:var(--border-brand);background:var(--surface-brand-soft);color:var(--menu-active-text)}
   .nt-badge.success{border-color:var(--success-border);background:var(--success-bg);color:var(--success-text)}
   .nt-card__actions{display:flex;gap:8px;flex-wrap:wrap;padding-top:8px;border-top:1px solid var(--line-soft)}
   .nt-card__actions form{display:flex}
   .nt-card__actions .btn{min-height:40px}
-  .nt-event-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-  .nt-event-chip{border:1px solid var(--line-soft);border-radius:999px;padding:7px 10px;background:var(--surface-soft);color:var(--muted);font-size:12px;font-weight:800;line-height:1.25;overflow-wrap:anywhere}
+  
+
   .nt-empty{border:1px dashed var(--line-soft);border-radius:14px;padding:16px;background:color-mix(in oklab,var(--surface-soft) 64%,transparent);color:var(--muted);line-height:1.45}
   .nt-empty strong{display:block;color:var(--color-text-strong);margin-bottom:4px}
   @media (min-width:1040px){
@@ -47,7 +46,7 @@
   @media (max-width:640px){
     .nt-hero,.nt-panel{padding:12px}
     .nt-hero__top{display:grid}
-    .nt-event-grid{grid-template-columns:1fr}
+    
     .nt-actions,.nt-actions form,.nt-actions .btn,.nt-card__actions,.nt-card__actions form,.nt-card__actions .btn{width:100%;justify-content:center}
     .nt-card__actions{display:grid;grid-template-columns:1fr}
   }
@@ -58,7 +57,7 @@
     <div class="nt-hero__top">
       <div>
         <h1 class="nt-title">Notificações</h1>
-        <p class="nt-sub">Acompanhe pendencias, relatórios e avisos importantes da sua rotina.</p>
+        <p class="nt-sub">Pendências, relatórios e avisos importantes da sua rotina.</p>
       </div>
       {% if unread_count %}
         <form method="post" action="{% url 'mei_notifications_bulk_action' %}" class="nt-actions" data-submit-once="true">
@@ -70,31 +69,13 @@
     </div>
   </section>
 
-  <section class="nt-panel" aria-label="Eventos monitorados">
-    <div class="nt-panel__head">
-      <div>
-        <h2>O que aparece aqui</h2>
-        <p>Alertas da rotina, pedidos e serviços que precisam de revisão.</p>
-      </div>
-    </div>
-    <div class="nt-event-grid">
-      <span class="nt-event-chip">Pedido de serviço novo</span>
-      <span class="nt-event-chip">Serviço agendado para hoje</span>
-      <span class="nt-event-chip">Orçamento enviado</span>
-      <span class="nt-event-chip">Orçamento visualizado</span>
-      <span class="nt-event-chip">Serviço em execução</span>
-      <span class="nt-event-chip">Relatório final pendente</span>
-      <span class="nt-event-chip">Relatório visualizado</span>
-      <span class="nt-event-chip">Dia de horário incompleto</span>
-    </div>
-  </section>
 
   <div class="nt-layout">
     <section class="nt-panel nt-panel--attention">
       <div class="nt-panel__head">
         <div>
           <h2>Atenção hoje</h2>
-          <p>Avisos prioritarios para revisar antes de fechar ou enviar relatórios.</p>
+          <p>O mais urgente, para resolver antes de fechar ou enviar relatórios.</p>
         </div>
       </div>
       <div class="nt-list">
@@ -109,7 +90,6 @@
                 <h3 class="nt-card__title">{{ card.title }}</h3>
               </div>
             </div>
-            <p class="nt-card__message">{{ card.message }}</p>
             <div class="nt-meta">
               {% if card.client_name %}<span>{{ card.client_name }}</span>{% endif %}
               {% if card.created_at %}<span>{{ card.created_at|date:"d/m/Y H:i" }}</span>{% else %}<span>Hoje</span>{% endif %}
@@ -123,7 +103,7 @@
         {% empty %}
           <div class="nt-empty">
             <strong>Tudo certo por enquanto.</strong>
-            Quando houver pendencias, fechamentos ou visualizacoes de relatórios, elas aparecerao aqui.
+            Quando houver pendências, fechamentos ou relatórios vistos pelo cliente, eles aparecem aqui.
           </div>
         {% endfor %}
       </div>
@@ -132,8 +112,8 @@
     <section class="nt-panel">
       <div class="nt-panel__head">
         <div>
-          <h2>Histórico de notificações</h2>
-          <p>Pendencias, relatórios, fechamentos e eventos do sistema em um so lugar.</p>
+          <h2>Todos os avisos</h2>
+          <p>Todos os avisos, com a mensagem completa.</p>
         </div>
       </div>
       <div class="nt-list">
@@ -151,7 +131,7 @@
             <p class="nt-card__message">{{ card.message }}</p>
             <div class="nt-meta">
               {% if card.client_name %}<span>{{ card.client_name }}</span>{% endif %}
-              {% if card.created_at %}<span>{{ card.created_at|date:"d/m/Y H:i" }}</span>{% else %}<span>Dinamica</span>{% endif %}
+              {% if card.created_at %}<span>{{ card.created_at|date:"d/m/Y H:i" }}</span>{% else %}<span>Agora</span>{% endif %}
             </div>
             <div class="nt-card__actions">
               {% if card.action_url %}

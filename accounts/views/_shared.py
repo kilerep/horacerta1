@@ -352,17 +352,17 @@ def _require_admin_reason(raw_reason):
 
 
 AUDIT_ACTION_CHOICES = [
-    ("time_changed", "Correcao de horario"),
+    ("time_changed", "Correcao de horário"),
     ("cancelled", "Cancelamento de registro"),
     ("restored", "Restauracao de registro"),
-    ("admin_note_added", "Observacao administrativa"),
+    ("admin_note_added", "Observação administrativa"),
     ("relationship_ended", "Encerramento de contrato"),
     ("deactivate_company", "Desativacao de empresa"),
     ("activate_company", "Reativacao de empresa"),
-    ("deactivate_user", "Desativacao de usuario"),
-    ("activate_user", "Reativacao de usuario"),
+    ("deactivate_user", "Desativacao de usuário"),
+    ("activate_user", "Reativacao de usuário"),
     ("company_acknowledged", "Ciencia marcada pela empresa"),
-    ("correction_request_status_changed", "Status de solicitacao alterado"),
+    ("correction_request_status_changed", "Status de solicitação alterado"),
 ]
 
 
@@ -969,8 +969,16 @@ def _notification_card(
     }
 
 
+def _plain_lower(text):
+    """Minusculas sem acento: "Período fechado" e "Periodo fechado" casam igual."""
+    import unicodedata
+
+    decomposed = unicodedata.normalize("NFD", (text or "").lower())
+    return "".join(ch for ch in decomposed if unicodedata.category(ch) != "Mn")
+
+
 def _notification_category_for_title(title):
-    title = (title or "").lower()
+    title = _plain_lower(title)
     if "relatorio" in title or "recebimento" in title or "periodo fechado" in title:
         return "Relatorios"
     if "fechamento" in title:
@@ -981,25 +989,34 @@ def _notification_category_for_title(title):
 
 
 def _notification_action_label(title, target_url):
-    title = (title or "").lower()
+    title = _plain_lower(title)
     if not target_url:
         return ""
     if "dia incompleto" in title:
-        return "Revisar horario"
+        return "Revisar horário"
     if "valor/hora" in title:
         return "Editar cliente"
     if "fechamento" in title:
-        return "Gerar relatorio"
+        return "Gerar relatório"
     if "relatorio" in title or "periodo fechado" in title or "recebimento" in title:
-        return "Ver relatorio"
+        return "Ver relatório"
     return "Abrir"
 
 
+LEGACY_NOTIFICATION_TITLES = {
+    # titulos gravados antes dos acentos (out/2026): contam como o mesmo aviso
+    "Período fechado": "Periodo fechado",
+    "Relatório visualizado": "Relatorio visualizado",
+    "Fechamento próximo": "Fechamento proximo",
+}
+
+
 def _persistent_notification_exists(*, user, title, target_url):
+    titles = [title] + ([LEGACY_NOTIFICATION_TITLES[title]] if title in LEGACY_NOTIFICATION_TITLES else [])
     return InternalNotification.objects.filter(
         recipient_user=user,
         audience=InternalNotification.Audience.MEI,
-        title=title,
+        title__in=titles,
         target_url=target_url or "",
     ).exists()
 
@@ -1025,9 +1042,9 @@ def _notify_service_report_created(report):
     company_name = getattr(getattr(report, "company", None), "name", "cliente")
     return _create_mei_report_notification(
         report=report,
-        title="Periodo fechado",
+        title="Período fechado",
         message=(
-            f"O relatorio da {company_name} foi gerado. "
+            f"O relatório da {company_name} foi gerado. "
             f"Os dias de {period_label} foram bloqueados para preservar o fechamento."
         ),
         target_url=reverse("mei_service_report_detail", args=[report.id]),
@@ -1042,8 +1059,8 @@ def _notify_service_report_viewed(report, viewed_at=None):
     local_viewed_at = timezone.localtime(viewed_at).strftime("%d/%m/%Y %H:%M")
     return _create_mei_report_notification(
         report=report,
-        title="Relatorio visualizado",
-        message=f"O relatorio da {company_name} foi aberto pelo cliente em {local_viewed_at}.",
+        title="Relatório visualizado",
+        message=f"O relatório da {company_name} foi aberto pelo cliente em {local_viewed_at}.",
         target_url=reverse("mei_service_report_detail", args=[report.id]),
     )
 
@@ -1051,11 +1068,11 @@ def _notify_service_report_viewed(report, viewed_at=None):
 def _notify_service_report_client_response(report, *, contested):
     company_name = getattr(getattr(report, "company", None), "name", "cliente")
     if contested:
-        title = "Cliente contestou o relatorio"
-        message = f"A {company_name} registrou uma divergencia no relatorio. Abra o relatorio para ler a mensagem."
+        title = "Cliente contestou o relatório"
+        message = f"A {company_name} registrou uma divergência no relatório. Abra o relatório para ler a mensagem."
     else:
         title = "Cliente confirmou o recebimento"
-        message = f"A {company_name} confirmou que recebeu e conferiu o relatorio."
+        message = f"A {company_name} confirmou que recebeu e conferiu o relatório."
     return _create_mei_report_notification(
         report=report,
         title=title,
@@ -1093,14 +1110,14 @@ def _build_mei_dynamic_notifications(user):
                     _notification_card(
                         title="Dia incompleto",
                         message=(
-                            f"Voce registrou {len(today_punches)} horarios hoje na {company_name}. "
-                            "Confira antes de gerar relatorio."
+                            f"Você registrou {len(today_punches)} horários hoje na {company_name}. "
+                            "Confira antes de gerar relatório."
                         ),
                         category="Pendencias",
                         priority="high",
                         created_at=timezone.now(),
                         client_name=company_name,
-                        action_label="Revisar horario",
+                        action_label="Revisar horário",
                         action_url=f"{reverse('mei_edit_today_punches')}?contract={contract.id}",
                     )
                 )
@@ -1113,13 +1130,13 @@ def _build_mei_dynamic_notifications(user):
                         _notification_card(
                             title="Dia incompleto",
                             message=(
-                                f"Voce registrou {len(day_punches)} horarios em {day:%d/%m/%Y} na {company_name}. "
-                                "Confira para evitar relatorio com erro."
+                                f"Você registrou {len(day_punches)} horários em {day:%d/%m/%Y} na {company_name}. "
+                                "Confira para evitar relatório com erro."
                             ),
                             category="Pendencias",
                             priority="high",
                             client_name=company_name,
-                            action_label="Revisar horario",
+                            action_label="Revisar horário",
                             action_url=f"{reverse('mei_history')}?contract={contract.id}&date_from={day:%Y-%m-%d}&date_to={day:%Y-%m-%d}",
                         )
                     )
@@ -1131,7 +1148,7 @@ def _build_mei_dynamic_notifications(user):
                         title="Cliente sem valor/hora",
                         message=(
                             f"O cliente {company_name} esta sem valor/hora definido. "
-                            "O valor estimado pode ficar zerado no relatorio."
+                            "O valor estimado pode ficar zerado no relatório."
                         ),
                         category="Pendencias",
                         priority="high",
@@ -1155,16 +1172,16 @@ def _build_mei_dynamic_notifications(user):
                     )
                     cards.append(
                         _notification_card(
-                            title="Fechamento proximo",
+                            title="Fechamento próximo",
                             message=(
-                                f"O fechamento da {company_name} esta no periodo de "
-                                f"{close_from:%d/%m/%Y} ate {close_to:%d/%m/%Y}. "
-                                "Voce ja pode revisar as horas e gerar o relatorio."
+                                f"O fechamento da {company_name} está no período de "
+                                f"{close_from:%d/%m/%Y} até {close_to:%d/%m/%Y}. "
+                                "Você já pode revisar as horas e gerar o relatório."
                             ),
                             category="Fechamentos",
                             priority="normal",
                             client_name=company_name,
-                            action_label="Gerar relatorio",
+                            action_label="Gerar relatório",
                             action_url=f"{reverse('mei_reports')}?{query}",
                         )
                     )
@@ -1184,14 +1201,14 @@ def _build_mei_dynamic_notifications(user):
             _notification_card(
                 title="Recebimento pendente",
                 message=(
-                    f"O relatorio da {company_name} ja foi visualizado, "
-                    "mas ainda esta como pendente no seu controle interno."
+                    f"O relatório da {company_name} já foi visualizado, "
+                    "mas ainda está como pendente no seu controle interno."
                 ),
                 category="Relatorios",
                 priority="normal",
                 created_at=report.conference_first_viewed_at,
                 client_name=company_name,
-                action_label="Ver relatorio",
+                action_label="Ver relatório",
                 action_url=reverse("mei_service_report_detail", args=[report.id]),
             )
         )
@@ -1226,7 +1243,7 @@ def _service_report_received_label(report):
 def _service_report_view_label(report):
     if report.conference_first_viewed_at:
         return f"Visto: {timezone.localtime(report.conference_first_viewed_at).strftime('%d/%m/%Y %H:%M')}"
-    return "Nao visualizado"
+    return "Não visualizado"
 
 
 def _service_report_status_label(report):
@@ -1368,7 +1385,7 @@ def _service_report_pdf_response(report):
         leftMargin=1.5 * cm,
         topMargin=1.4 * cm,
         bottomMargin=1.4 * cm,
-        title="HoraCerta - Relatorio de horas",
+        title="HoraCerta - Relatório de horas",
     )
 
     styles = getSampleStyleSheet()
@@ -1411,7 +1428,7 @@ def _service_report_pdf_response(report):
     emitted_at = timezone.localtime().strftime("%d/%m/%Y %H:%M")
 
     story = [
-        Paragraph("HoraCerta - Relatorio de horas", styles["Title"]),
+        Paragraph("HoraCerta - Relatório de horas", styles["Title"]),
         Paragraph(f"Emitido em {emitted_at}", styles["MetaRight"]),
         Spacer(1, 10),
     ]
@@ -1419,7 +1436,7 @@ def _service_report_pdf_response(report):
     summary_rows = [
         ["Profissional", professional_name],
         ["Cliente", client_name],
-        ["Periodo", period_label],
+        ["Período", period_label],
         ["Total de horas", payload.get("total_hours") or "-"],
         ["Valor estimado", payload.get("estimated_value_brl") or "-"],
     ]
@@ -1441,9 +1458,9 @@ def _service_report_pdf_response(report):
             ]
         )
     )
-    story.extend([summary_table, Spacer(1, 14), Paragraph("Dias e horarios", styles["Heading2"])])
+    story.extend([summary_table, Spacer(1, 14), Paragraph("Dias e horários", styles["Heading2"])])
 
-    day_rows = [["Dia", "Horarios", "Total", "Status", "Observacoes"]]
+    day_rows = [["Dia", "Horários", "Total", "Status", "Observacoes"]]
     for day in payload.get("days") or []:
         status_label = "Incompleto" if day.get("is_incomplete") else "OK"
         day_rows.append(
@@ -1456,7 +1473,7 @@ def _service_report_pdf_response(report):
             ]
         )
     if len(day_rows) == 1:
-        day_rows.append(["-", "Sem registros no periodo.", "-", "-", "-"])
+        day_rows.append(["-", "Sem registros no período.", "-", "-", "-"])
 
     days_table = Table(day_rows, colWidths=[2.7 * cm, 5.4 * cm, 2.1 * cm, 2.3 * cm, 4.5 * cm], repeatRows=1)
     days_table.setStyle(
@@ -1514,11 +1531,11 @@ def _service_report_xlsx_response(report):
     summary_rows = [
         ["Profissional", payload.get("professional") or report.employee.full_name],
         ["Cliente", payload.get("company") or report.company.name],
-        ["Periodo", period_label],
+        ["Período", period_label],
         ["Total de horas", payload.get("total_hours") or "-"],
         ["Valor estimado", payload.get("estimated_value_brl") or "-"],
         [],
-        ["Dia", "Horarios", "Total", "Status", "Observacoes"],
+        ["Dia", "Horários", "Total", "Status", "Observacoes"],
     ]
     day_rows = []
     for day in payload.get("days") or []:
@@ -1539,7 +1556,7 @@ def _service_report_xlsx_response(report):
             ]
         )
     if not day_rows:
-        day_rows.append(["-", "Sem registros no periodo.", "-", "-", "-"])
+        day_rows.append(["-", "Sem registros no período.", "-", "-", "-"])
 
     filename = _service_report_filename(report, "xlsx")
     return _build_xlsx_response(filename, ["Campo", "Valor"], summary_rows + day_rows)

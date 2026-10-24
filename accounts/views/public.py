@@ -178,7 +178,9 @@ def terms_view(request):
 
 
 def help_view(request):
-    return render(request, "public/help.html")
+    # Logado: a ajuda abre dentro do sistema (menu e barra inferior), sem "Entrar" no topo.
+    template = "public/help_app.html" if request.user.is_authenticated else "public/help.html"
+    return render(request, template)
 
 
 def privacy_view(request):
