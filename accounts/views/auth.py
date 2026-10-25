@@ -5,37 +5,15 @@ from ._shared import *  # noqa: F401,F403
 
 
 def signup(request):
-    if request.user.is_authenticated:
-        return _redirect_for_role(request.user)
-
-    if request.method == "POST":
-        form = UnifiedSignupForm(request.POST)
-        if form.is_valid():
-            pwd = form.cleaned_data["password1"]
-            rh_email = form.cleaned_data["rh_email"]
-            user = User.objects.create_user(
-                username=rh_email,
-                email=rh_email,
-                password=pwd,
-                role=User.Role.EMPRESA,
-            )
-            Company.objects.create(
-                name=form.cleaned_data["company_name"],
-                email=form.cleaned_data.get("company_email") or None,
-                owner=user,
-            )
-            login(request, user, backend="accounts.backends.EmailOrUsernameBackend")
-            return _redirect_for_role(user)
-    else:
-        form = UnifiedSignupForm()
-
-    return render(request, "accounts/signup.html", {"form": form})
+    # Cadastro de empresa foi removido (out/2026): o HoraCerta e so para prestadores.
+    # A rota continua existindo porque paginas antigas e links salvos apontam para ela.
+    return redirect("signup_mei")
 
 
 def signup_mei(request):
     """Autocadastro publico do prestador/MEI (fluxo principal do produto)."""
     if request.user.is_authenticated:
-        return _redirect_for_role(request.user)
+        return _redirect_for_role(request.user, request)
 
     if not getattr(settings, "MEI_SIGNUP_ENABLED", True):
         return render(request, "accounts/signup_mei_closed.html", status=403)
@@ -80,12 +58,15 @@ LOGIN_ATTEMPT_LIMIT = settings.AXES_FAILURE_LIMIT
 
 def login_view(request):
     if request.user.is_authenticated:
-        return _redirect_for_role(request.user)
+        return _redirect_for_role(request.user, request)
 
     if request.method == "POST":
         form = LoginForm(request, data=request.POST)
         if form.is_valid():
             user = form.get_user()
+            if user.role == User.Role.EMPRESA:
+                messages.error(request, COMPANY_ACCESS_CLOSED_MESSAGE)
+                return redirect("login")
             login(request, user)
             return _redirect_for_role(user)
     else:
@@ -124,7 +105,7 @@ def logout_view(request):
 
 @login_required
 def dashboard(request):
-    return _redirect_for_role(request.user)
+    return _redirect_for_role(request.user, request)
 
 
 

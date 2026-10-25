@@ -55,14 +55,6 @@ def notify_internal_staff(*, notification_type, title, message, actor_user=None,
         )
 
 
-def _company_history_url(punch):
-    day = timezone.localtime(punch.timestamp).date()
-    return (
-        f"{reverse('company_history')}?employee={punch.contract.employee_id}"
-        f"&date_from={day:%Y-%m-%d}&date_to={day:%Y-%m-%d}"
-    )
-
-
 def _mei_history_url(punch):
     day = timezone.localtime(punch.timestamp).date()
     return f"{reverse('mei_history')}?date_from={day:%Y-%m-%d}&date_to={day:%Y-%m-%d}"
@@ -75,15 +67,6 @@ def notify_correction_request_created(correction_request):
     problem_date = correction_request.problem_date.strftime("%d/%m/%Y")
     title = "Solicitacao de correcao de horario"
     message = f"{employee_name} reportou um problema em {problem_date} para {company_name}."
-    create_internal_notification(
-        recipient_company=correction_request.company,
-        actor_user=correction_request.user,
-        audience=InternalNotification.Audience.COMPANY,
-        notification_type=InternalNotification.NotificationType.CORRECTION_REQUEST_CREATED,
-        title=title,
-        message=message,
-        target_url=reverse("company_correction_request_detail", args=[correction_request.id]),
-    )
     create_internal_notification(
         recipient_user=correction_request.user,
         actor_user=correction_request.user,
@@ -117,15 +100,6 @@ def notify_correction_request_status_changed(correction_request, *, actor_user, 
         title=title,
         message=message,
         target_url=reverse("mei_notifications"),
-    )
-    create_internal_notification(
-        recipient_company=correction_request.company,
-        actor_user=actor_user,
-        audience=InternalNotification.Audience.COMPANY,
-        notification_type=InternalNotification.NotificationType.CORRECTION_REQUEST_STATUS_CHANGED,
-        title=title,
-        message=f"{correction_request.employee.full_name}: {message}",
-        target_url=reverse("company_correction_request_detail", args=[correction_request.id]),
     )
     notify_internal_staff(
         actor_user=actor_user,
@@ -171,15 +145,6 @@ def notify_punch_admin_action(punch, *, actor_user, action_type):
         title=title,
         message=message,
         target_url=_mei_history_url(punch),
-    )
-    create_internal_notification(
-        recipient_company=punch.contract.company,
-        actor_user=actor_user,
-        audience=InternalNotification.Audience.COMPANY,
-        notification_type=notification_type,
-        title=title,
-        message=f"{punch.contract.employee.full_name}: {message}",
-        target_url=_company_history_url(punch),
     )
     notify_internal_staff(
         actor_user=actor_user,

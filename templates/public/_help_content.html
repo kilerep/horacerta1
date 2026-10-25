@@ -52,7 +52,7 @@
       </ol>
       <div class="actions">
         {% if request.user.is_authenticated %}
-          <a class="btn primary" href="{% if request.user.role == 'EMPRESA' %}{% url 'dashboard_empresa' %}{% else %}{% url 'mei_panel' %}{% endif %}">Voltar ao meu resumo</a>
+          <a class="btn primary" href="{% url 'mei_panel' %}">Voltar ao meu resumo</a>
         {% else %}
           <a class="btn primary" href="{% url 'login' %}">Entrar no HoraCerta</a>
           <a class="btn" href="{% url 'signup' %}">Criar conta</a>

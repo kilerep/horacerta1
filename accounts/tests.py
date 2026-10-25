@@ -204,16 +204,6 @@ class InternalDashboardTests(TestCase):
                 response = self.client.get(url)
                 self.assertEqual(response.status_code, 403)
 
-    def test_company_sidebar_does_not_show_internal_links(self):
-        self.client.force_login(self.company_owner)
-
-        response = self.client.get(reverse("dashboard_empresa"))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, "Painel interno")
-        self.assertNotContains(response, "Notificacoes internas")
-        self.assertNotContains(response, reverse("internal_dashboard"))
-
     def test_mei_sidebar_does_not_show_internal_links(self):
         self.client.force_login(self.employee_user)
 
@@ -356,50 +346,6 @@ class InternalDashboardTests(TestCase):
             ).exists()
         )
 
-    def test_company_can_view_problem_but_not_edit_punch(self):
-        request_obj = PunchCorrectionRequest.objects.create(
-            employee=self.employee,
-            user=self.employee_user,
-            company=self.company,
-            contract=self.contract,
-            punch=Punch.objects.first(),
-            problem_date=timezone.localdate(),
-            problem_type=PunchCorrectionRequest.ProblemType.WRONG_TIME,
-            description="Horario errado.",
-        )
-        self.client.force_login(self.company_owner)
-
-        response = self.client.get(reverse("company_correction_request_detail", args=[request_obj.id]))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Horario errado.")
-        self.assertContains(response, "Consulta somente leitura")
-        self.assertNotContains(response, "Corrigir horario")
-        self.assertNotContains(response, "Cancelar registro")
-
-    def test_company_can_end_contract_from_prestadores_without_deleting_history(self):
-        punch = Punch.objects.first()
-        self.client.force_login(self.company_owner)
-
-        response = self.client.post(
-            reverse("company_meis"),
-            {
-                "action": "end_contract",
-                "contract_id": str(self.contract.id),
-            },
-        )
-
-        self.assertEqual(response.status_code, 302)
-        self.contract.refresh_from_db()
-        self.assertFalse(self.contract.is_active)
-        self.assertEqual(self.contract.end_date, timezone.localdate())
-        self.assertTrue(Punch.all_objects.filter(id=punch.id).exists())
-
-        ended_response = self.client.get(reverse("company_meis") + "?tab=encerrados")
-        self.assertEqual(ended_response.status_code, 200)
-        self.assertContains(ended_response, self.employee.full_name)
-        self.assertContains(ended_response, "Vínculo encerrado")
-
     def _ensure_essential_plan(self):
         return Plan.objects.update_or_create(
             code="essencial",
@@ -424,93 +370,6 @@ class InternalDashboardTests(TestCase):
         }
         defaults.update(overrides)
         return CompanySubscription.objects.create(**defaults)
-
-    def test_company_plan_page_shows_active_essential_plan(self):
-        self._create_subscription()
-        self.client.force_login(self.company_owner)
-
-        response = self.client.get(reverse("company_plan"))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "HoraCerta Essencial")
-        self.assertContains(response, "Ativo")
-        self.assertContains(response, "Valor mensal: R$ 79,00")
-        self.assertContains(response, "Prestadores ativos inclu")
-        self.assertContains(response, "Prestadores ativos em uso:")
-        self.assertContains(response, "1 de 10")
-        self.assertContains(response, "Prestadores com v")
-        self.assertNotContains(response, "Plano Pro")
-        self.assertNotContains(response, "Upgrade")
-
-    def test_company_plan_page_shows_trial_message(self):
-        trial_end = timezone.now() + timedelta(days=14)
-        self._create_subscription(
-            status=CompanySubscription.Status.TRIAL,
-            trial_ends_at=trial_end,
-        )
-        self.client.force_login(self.company_owner)
-
-        response = self.client.get(reverse("company_plan"))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Em teste")
-        self.assertContains(response, "Sua empresa est")
-        self.assertContains(response, "avaliando o HoraCerta Essencial")
-        self.assertContains(response, "Durante o per")
-        self.assertContains(response, timezone.localtime(trial_end).strftime("%d/%m/%Y"))
-
-    def test_company_plan_limit_counts_only_active_contracts(self):
-        self._create_subscription()
-        for index in range(2, 11):
-            user = User.objects.create_user(
-                username=f"mei-limite-{index}@example.com",
-                email=f"mei-limite-{index}@example.com",
-                password="Teste@12345",
-                role=User.Role.FUNCIONARIO,
-            )
-            employee = Employee.objects.create(
-                user=user,
-                company=self.company,
-                full_name=f"MEI Limite {index}",
-                is_active=True,
-            )
-            Contract.objects.create(
-                employee=employee,
-                company=self.company,
-                hourly_rate="100.00",
-                start_date=timezone.localdate(),
-                is_active=True,
-            )
-
-        ended_user = User.objects.create_user(
-            username="mei-encerrado-limite@example.com",
-            email="mei-encerrado-limite@example.com",
-            password="Teste@12345",
-            role=User.Role.FUNCIONARIO,
-        )
-        ended_employee = Employee.objects.create(
-            user=ended_user,
-            company=self.company,
-            full_name="MEI Encerrado Limite",
-            is_active=True,
-        )
-        Contract.objects.create(
-            employee=ended_employee,
-            company=self.company,
-            hourly_rate="100.00",
-            start_date=timezone.localdate(),
-            end_date=timezone.localdate(),
-            is_active=False,
-        )
-
-        self.client.force_login(self.company_owner)
-        response = self.client.get(reverse("company_plan"))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context["active_provider_count"], 10)
-        self.assertContains(response, "10 de 10")
-        self.assertContains(response, "atingiu o limite de 10 prestadores ativos")
-        self.assertContains(response, "encerrar v")
 
     def test_common_users_do_not_see_internal_admin_notifications(self):
         InternalNotification.objects.create(
@@ -540,9 +399,6 @@ class InternalDashboardTests(TestCase):
         self.assertContains(mei_response, "Aviso MEI")
         self.assertNotContains(mei_response, "Aviso interno")
 
-        self.client.force_login(self.company_owner)
-        company_response = self.client.get(reverse("company_notifications"))
-        self.assertNotContains(company_response, "Aviso interno empresa")
 
     def test_superuser_can_deactivate_and_activate_employee_user(self):
         self.client.force_login(self.admin_user)
@@ -1011,22 +867,6 @@ class MeiMultiCompanyContextTests(TestCase):
         history_response = self.client.get(reverse("mei_history"), {"contract": str(self.contract_a.id)})
         self.assertContains(history_response, 'data-theme="professional-neutral"')
         self.assertContains(history_response, 'data-theme-user="professional-neutral"')
-
-    def test_company_profile_saves_user_theme(self):
-        self.client.force_login(self.owner_a)
-        response = self.client.post(
-            reverse("company_profile"),
-            {
-                "action": "save_theme",
-                "visual_theme": User.VisualTheme.BRAZIL,
-            },
-            follow=True,
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Tema atualizado com sucesso.")
-        self.assertContains(response, 'data-theme="brazil-corporate"')
-        self.owner_a.refresh_from_db()
-        self.assertEqual(self.owner_a.visual_theme, User.VisualTheme.BRAZIL)
 
     def test_mei_reports_and_requests_follow_selected_contract(self):
         ServiceReport.objects.create(
@@ -1688,144 +1528,6 @@ class MeiMultiCompanyContextTests(TestCase):
                 is_read=False,
             ).exists()
         )
-
-    def test_company_cannot_access_other_company_mei_profile(self):
-        self.client.force_login(self.owner_a)
-        response = self.client.get(reverse("company_mei_profile", args=[self.employee_b.id]))
-        self.assertEqual(response.status_code, 404)
-
-
-@override_settings(
-    ALLOWED_HOSTS=["testserver", "localhost", "127.0.0.1"],
-    SECURE_SSL_REDIRECT=False,
-)
-class CompanyAttendanceReliabilityTests(TestCase):
-    def setUp(self):
-        self.owner_a = User.objects.create_user(
-            username="reliability-owner-a@example.com",
-            email="reliability-owner-a@example.com",
-            password="Teste@12345",
-            role=User.Role.EMPRESA,
-        )
-        self.owner_b = User.objects.create_user(
-            username="reliability-owner-b@example.com",
-            email="reliability-owner-b@example.com",
-            password="Teste@12345",
-            role=User.Role.EMPRESA,
-        )
-        self.company_a = Company.objects.create(
-            name="Empresa Confiavel A",
-            owner=self.owner_a,
-            email="confiavel-a@example.com",
-        )
-        self.company_b = Company.objects.create(
-            name="Empresa Confiavel B",
-            owner=self.owner_b,
-            email="confiavel-b@example.com",
-        )
-        self.location_b = CompanyAuthorizedLocation.objects.create(
-            company=self.company_b,
-            name="Filial B",
-            address_or_description="Rua B",
-            latitude="-23.550520",
-            longitude="-46.633308",
-            allowed_radius_m=120,
-            is_active=True,
-        )
-
-    def test_page_load_creates_policy_for_company(self):
-        self.client.force_login(self.owner_a)
-        response = self.client.get(reverse("company_attendance_reliability"))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertTrue(CompanyAttendancePolicy.objects.filter(company=self.company_a).exists())
-
-    def test_save_policy_free_mode_disables_location_and_qr_flags(self):
-        self.client.force_login(self.owner_a)
-        policy = CompanyAttendancePolicy.objects.create(
-            company=self.company_a,
-            validation_mode=CompanyAttendancePolicy.ValidationMode.GEOLOCATION,
-            require_location=True,
-            require_qr=True,
-            qr_requirement=CompanyAttendancePolicy.QrRequirement.FIRST_PUNCH,
-            default_allowed_radius_m=150,
-        )
-
-        response = self.client.post(
-            reverse("company_attendance_reliability"),
-            {
-                "action": "save_policy",
-                "validation_mode": CompanyAttendancePolicy.ValidationMode.FREE,
-                "require_location": "on",
-                "require_qr": "on",
-                "qr_requirement": CompanyAttendancePolicy.QrRequirement.FIRST_AND_LAST,
-                "default_allowed_radius_m": "120",
-                "default_location": "",
-            },
-        )
-
-        self.assertEqual(response.status_code, 302)
-        policy.refresh_from_db()
-        self.assertEqual(policy.validation_mode, CompanyAttendancePolicy.ValidationMode.FREE)
-        self.assertFalse(policy.require_location)
-        self.assertFalse(policy.require_qr)
-        self.assertEqual(policy.qr_requirement, CompanyAttendancePolicy.QrRequirement.NONE)
-
-    def test_create_location_attaches_to_logged_company(self):
-        self.client.force_login(self.owner_a)
-
-        response = self.client.post(
-            reverse("company_attendance_reliability"),
-            {
-                "action": "save_location",
-                "name": "Matriz A",
-                "address_or_description": "Rua A, 100",
-                "latitude": "-23.559000",
-                "longitude": "-46.660000",
-                "allowed_radius_m": "180",
-                "is_active": "on",
-            },
-        )
-
-        self.assertEqual(response.status_code, 302)
-        created = CompanyAuthorizedLocation.objects.get(name="Matriz A")
-        self.assertEqual(created.company_id, self.company_a.id)
-        self.assertTrue(created.is_active)
-
-    def test_save_location_rejects_foreign_location_id(self):
-        self.client.force_login(self.owner_a)
-        response = self.client.post(
-            reverse("company_attendance_reliability"),
-            {
-                "action": "save_location",
-                "location_id": str(self.location_b.id),
-                "name": "Tentativa indevida",
-                "address_or_description": "Nao deve salvar",
-                "latitude": "-23.550520",
-                "longitude": "-46.633308",
-                "allowed_radius_m": "120",
-                "is_active": "on",
-            },
-        )
-
-        self.assertEqual(response.status_code, 400)
-        self.assertContains(response, "Local informado nao pertence a sua empresa.", status_code=400)
-        self.assertFalse(CompanyAuthorizedLocation.objects.filter(company=self.company_a, name="Tentativa indevida").exists())
-        self.location_b.refresh_from_db()
-        self.assertEqual(self.location_b.name, "Filial B")
-
-    def test_toggle_location_rejects_foreign_location_id(self):
-        self.client.force_login(self.owner_a)
-        response = self.client.post(
-            reverse("company_attendance_reliability"),
-            {
-                "action": "toggle_location",
-                "location_id": str(self.location_b.id),
-            },
-        )
-
-        self.assertEqual(response.status_code, 404)
-
 
 class CompanyAttendanceReliabilityFormUxTests(TestCase):
     def setUp(self):

@@ -1,3 +1,4 @@
+from datetime import time
 from decimal import Decimal
 from html import escape
 from io import BytesIO
@@ -1171,7 +1172,9 @@ def service_item_expense_create(request, job_id):
         return denied
 
     job = get_object_or_404(_service_jobs_for_user(request.user), id=job_id)
+    # Rascunho tambem aceita itens: e assim que se monta o orcamento antes de completar o resto.
     if job.status not in (
+        ServiceJob.Status.DRAFT,
         ServiceJob.Status.PLANNED,
         ServiceJob.Status.SENT,
         ServiceJob.Status.IN_PROGRESS,
@@ -1285,9 +1288,24 @@ def service_clock_action(request, job_id):
             if not open_log:
                 messages.error(request, "Nenhum período aberto para encerrar.")
             else:
-                open_log.end_time = now.time().replace(second=0, microsecond=0)
-                open_log.save()
-                messages.success(request, "Período de trabalho encerrado.")
+                end_time = now.time().replace(second=0, microsecond=0)
+                if now.date() != open_log.work_date:
+                    # Passou da meia-noite: fecha o periodo no fim do dia em que comecou.
+                    open_log.end_time = time(23, 59)
+                    open_log.save()
+                    messages.warning(
+                        request,
+                        f"O período passou da meia-noite e foi fechado às 23:59 de {open_log.work_date:%d/%m}. "
+                        "Se continuou trabalhando hoje, toque em Iniciar de novo.",
+                    )
+                elif end_time <= open_log.start_time:
+                    # Tocou em Iniciar e Parar no mesmo minuto: nao ha periodo para guardar.
+                    open_log.delete()
+                    messages.info(request, "Período descartado: durou menos de 1 minuto.")
+                else:
+                    open_log.end_time = end_time
+                    open_log.save()
+                    messages.success(request, "Período de trabalho encerrado.")
     return redirect("service_job_detail", job_id=job.id)
 
 
@@ -1303,7 +1321,7 @@ def service_job_status_action(request, job_id):
 
     action = (request.POST.get("action") or "").strip()
     if action == "start" and job.status == ServiceJob.Status.DRAFT:
-        messages.error(request, "Complete os dados minimos antes de iniciar o trabalho.")
+        messages.error(request, "Complete os dados mínimos antes de iniciar o trabalho.")
         return redirect("service_job_detail", job_id=job.id)
     if action == "finish" and job.status != ServiceJob.Status.IN_PROGRESS:
         messages.error(request, "Inicie o trabalho antes de finalizar o serviço.")

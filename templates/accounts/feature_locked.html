@@ -3,7 +3,7 @@
 {% block page_title %}Recurso premium{% endblock %}
 
 {% block content %}
-  {% url 'dashboard_empresa' as dashboard_empresa_url %}
+  {% url 'dashboard' as dashboard_empresa_url %}
   <section class="plan-page" style="max-width: 940px; margin: 0 auto;">
     {% include "accounts/components/premium_lock_card.html" with
       premium_title=feature_name

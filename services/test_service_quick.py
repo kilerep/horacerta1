@@ -49,7 +49,7 @@ class QuickServiceViewTests(TestCase):
         self.assertEqual(job.fixed_labor_value, Decimal("150.00"))
         self.assertEqual(job.start_date, date(2026, 10, 24))
         self.assertEqual(job.category.slug, "servico-geral")
-        self.assertIn(job.status, (ServiceJob.Status.PLANNED, ServiceJob.Status.DRAFT))
+        self.assertEqual(job.status, ServiceJob.Status.PLANNED)
 
     def test_without_price_the_value_stays_open(self):
         self.client.post(self.url, {"client_name": "João", "title": "Orçar reforma"})
@@ -95,3 +95,41 @@ class QuickServiceViewTests(TestCase):
         self.client.logout()
 
         self.assertEqual(self.client.get(self.url).status_code, 302)
+
+
+@override_settings(**BASE)
+class ClockEdgeCasesTests(TestCase):
+    """Cronometro do servico: toque duplo no mesmo minuto e periodo que passa da meia-noite."""
+
+    def setUp(self):
+        self.mei = User.objects.create_user(username="relogio@example.com", email="relogio@example.com",
+                                            password="Teste@12345", role=User.Role.FUNCIONARIO)
+        self.client.force_login(self.mei)
+        self.client.post(reverse("service_job_quick"), {"client_name": "Ana", "title": "Revisão"})
+        self.job = ServiceJob.objects.get(professional=self.mei)
+        self.url = reverse("service_clock_action", args=[self.job.id])
+
+    def test_start_and_stop_in_the_same_minute_is_discarded_without_error(self):
+        self.client.post(self.url, {"action": "start"})
+        response = self.client.post(self.url, {"action": "stop"}, follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Período descartado")
+        self.assertFalse(self.job.work_logs.exists())
+
+    def test_period_open_since_yesterday_closes_at_end_of_that_day(self):
+        from datetime import time as dtime, timedelta
+
+        from django.utils import timezone
+
+        from services.models import ServiceWorkLog
+
+        yesterday = timezone.localdate() - timedelta(days=1)
+        ServiceWorkLog.objects.create(service_job=self.job, work_date=yesterday, start_time=dtime(22, 0))
+
+        response = self.client.post(self.url, {"action": "stop"}, follow=True)
+        log = self.job.work_logs.get()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(log.end_time, dtime(23, 59))
+        self.assertContains(response, "passou da meia-noite")

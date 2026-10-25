@@ -24,11 +24,9 @@
 <body
   data-theme="{% if request.user.is_authenticated %}{{ header_user_theme|default:'graphite-premium' }}{% else %}graphite-premium{% endif %}"
   data-default-theme="graphite-premium"
-  data-theme-company="{{ header_company_theme|default:'' }}"
   data-theme-user="{{ header_user_theme|default:'' }}"
   data-authenticated="{% if request.user.is_authenticated %}true{% else %}false{% endif %}"
-  data-company-plan-code="{{ header_current_plan_code|default:'' }}"
-  class="{% if request.user.is_authenticated and request.user.role == 'EMPRESA' %}role-company {% elif request.user.is_authenticated %}role-mei {% endif %}{% block body_class %}{% endblock %}">
+  class="{% if request.user.is_authenticated %}role-mei {% endif %}{% block body_class %}{% endblock %}">
   {% if request.user.is_authenticated %}
     <div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true"></div>
   {% endif %}
@@ -40,69 +38,10 @@
           <div class="sub">
             <span>Plataforma de Gestão de Jornada</span>
             <span class="sub-badge">v1.0 Beta</span>
-            {% if request.user.role == "EMPRESA" and header_current_plan_name %}
-              <span class="sub-plan">
-                <span class="premium-badge premium-badge--{{ header_current_plan_tone }}">
-                  Plano atual: {{ header_current_plan_name }}
-                </span>
-              </span>
-            {% endif %}
           </div>
         </div>
 
         <nav class="menu">
-          {% if request.user.role == "EMPRESA" %}
-            {% with current=request.resolver_match.url_name %}
-              <div class="menu-group">
-                <div class="menu-label">Operação</div>
-                <a class="item {% if current == 'dashboard_empresa' or current == 'company_operational_summary' %}is-active{% endif %}" href="{% url 'dashboard_empresa' %}">
-                  <span class="icon">{% icon "home" %}</span>
-                  <div><strong>Início</strong></div>
-                </a>
-                <a class="item {% if current == 'company_today_center' %}is-active{% endif %}" href="{% url 'company_today_center' %}">
-                  <span class="icon">{% icon "sun" %}</span>
-                  <div><strong>Hoje</strong></div>
-                </a>
-                <a class="item {% if current == 'company_meis' or current == 'company_mei_profile' or current == 'company_contracts' or current == 'company_mei_closure' %}is-active{% endif %}" href="{% url 'company_meis' %}">
-                  <span class="icon">{% icon "users" %}</span>
-                  <div><strong>Prestadores</strong></div>
-                </a>
-                <a class="item {% if current == 'company_history' or current == 'company_history_legacy' or current == 'company_incident_center' or current == 'company_records_review_center' or current == 'company_record_review_detail' %}is-active{% endif %}" href="{% url 'company_history' %}">
-                  <span class="icon">{% icon "list" %}</span>
-                  <div><strong>Registros</strong></div>
-                </a>
-                <a class="item {% if current == 'company_reports' %}is-active{% endif %}" href="{% url 'company_reports' %}">
-                  <span class="icon">{% icon "file" %}</span>
-                  <div><strong>Relatórios</strong></div>
-                </a>
-                <a class="item {% if current == 'company_docs' %}is-active{% endif %}" href="{% url 'company_docs' %}">
-                  <span class="icon">{% icon "folder" %}</span>
-                  <div><strong>Documentos</strong></div>
-                </a>
-                <a class="item {% if current == 'company_service_reports' or current == 'company_service_report_detail' %}is-active{% endif %}" href="{% url 'company_service_reports' %}">
-                  <span class="icon">{% icon "activity" %}</span>
-                  <div><strong>Atividades</strong></div>
-                </a>
-              </div>
-              <div class="menu-group">
-                <div class="menu-label">Conta</div>
-                <a class="item {% if current == 'company_notifications' %}is-active{% endif %}" href="{% url 'company_notifications' %}">
-                  <span class="icon">{% icon "bell" %}</span>
-                  <div>
-                    <strong>
-                      Notificações
-                      {% if unread_notifications_count %}<span class="badge">{{ unread_notifications_count }}</span>{% endif %}
-                    </strong>
-                    
-                  </div>
-                </a>
-                <a class="item {% if current == 'company_settings' or current == 'company_profile' or current == 'company_plan' or current == 'company_attendance_reliability' or current == 'company_location_qr_panel' %}is-active{% endif %}" href="{% url 'company_settings' %}">
-                  <span class="icon">{% icon "settings" %}</span>
-                  <div><strong>Configurações</strong></div>
-                </a>
-              </div>
-            {% endwith %}
-          {% else %}
             {% with current=request.resolver_match.url_name %}
               <div class="menu-group">
                 <div class="menu-label">Operação</div>
@@ -153,7 +92,6 @@
                 </a>
               </div>
             {% endwith %}
-          {% endif %}
 
           {% if header_can_access_internal_dashboard %}
             {% with current=request.resolver_match.url_name %}
@@ -205,23 +143,12 @@
           </button>
           <div class="top-left">
             <div class="top-heading">
-              {% if request.user.role == "EMPRESA" and header_company_logo_url %}
-                <img class="top-avatar" src="{{ header_company_logo_url }}" alt="Logo da empresa">
-              {% elif request.user.role != "EMPRESA" and header_profile_photo_url %}
+              {% if header_profile_photo_url %}
                 <img class="top-avatar" src="{{ header_profile_photo_url }}" alt="Foto de perfil">
               {% endif %}
               <div class="title">{% block page_title %}HoraCerta{% endblock %}</div>
             </div>
-            {% if header_mode == "company" %}
-              <div class="meta">
-                Empresa: <strong>{{ header_company_name|default:"Empresa" }}</strong>
-                {% if header_current_plan_name %}
-                  <span style="margin-left:6px;">| Plano: <strong>{{ header_current_plan_name }}</strong></span>
-                {% endif %}
-              </div>
-            {% else %}
               <div class="meta">Logado como: <strong>{{ header_display_name|default:"Usuário" }}</strong></div>
-            {% endif %}
           </div>
           <div class="top-right">
             <div class="theme-switch" aria-label="Tema visual">
@@ -246,7 +173,6 @@
           {% block content %}{% endblock %}
         </section>
       </main>
-      {% if request.user.role != "EMPRESA" %}
         {% with current=request.resolver_match.url_name %}
         <nav class="bottom-nav" aria-label="Atalhos">
           <a class="bottom-nav__item {% if current == 'employee_dashboard' %}is-active{% endif %}" href="{% url 'employee_dashboard' %}"{% if current == 'employee_dashboard' %} aria-current="page"{% endif %}>{% icon "clock" 22 %}<span>Registrar</span></a>
@@ -256,7 +182,6 @@
           <button class="bottom-nav__item" type="button" data-open-menu aria-controls="appSidebar">{% icon "menu" 22 %}<span>Mais</span></button>
         </nav>
         {% endwith %}
-      {% endif %}
     </div>
   {% else %}
     <div class="wrap" style="flex-direction:column; align-items:center; justify-content:flex-start;">

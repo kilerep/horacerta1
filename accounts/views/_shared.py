@@ -224,9 +224,19 @@ def _contracts_by_employee(company, employees):
     return by_employee
 
 
-def _redirect_for_role(user):
+COMPANY_ACCESS_CLOSED_MESSAGE = (
+    "O acesso de empresa foi encerrado: o HoraCerta agora é só para prestadores. "
+    "Os relatórios continuam chegando para você pelo link que o prestador envia."
+)
+
+
+def _redirect_for_role(user, request=None):
     if user.role == User.Role.EMPRESA:
-        return redirect("dashboard_empresa")
+        # Sessao antiga de empresa: encerra e explica no login.
+        if request is not None:
+            logout(request)
+            messages.error(request, COMPANY_ACCESS_CLOSED_MESSAGE)
+        return redirect("login")
     if user.role == User.Role.FUNCIONARIO:
         return redirect("employee_dashboard")
     return redirect("dashboard")
