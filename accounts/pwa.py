@@ -17,8 +17,15 @@ logger = logging.getLogger(__name__)
 
 
 def offline(request):
-    """Página de fallback quando não há conexão disponível."""
-    return render(request, "offline.html")
+    """Modo sem internet. Pagina generica (sem dado pessoal no HTML), guardada pelo
+    service worker; le do aparelho a lista de clientes e a fila de registros.
+    O JS da fila vai embutido para a pagina funcionar inteira a partir do cache."""
+    from django.contrib.staticfiles import finders
+
+    path = finders.find("js/offline_store.js")
+    with open(path, encoding="utf-8") as handle:
+        offline_store_js = handle.read()
+    return render(request, "offline.html", {"offline_store_js": offline_store_js})
 
 
 @require_GET

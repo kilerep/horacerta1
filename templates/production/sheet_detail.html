@@ -31,7 +31,7 @@
   {% if totals.pending %}<p class="prod-meta" style="margin:-6px 0 0">{{ totals.pending }} item{{ totals.pending|pluralize:"ns" }} sem horário de fim ainda (fora do total).</p>{% endif %}
 
   {% if sheet.is_open %}
-    <form class="card prod-form" method="post" novalidate data-submit-once="true" id="new-entry">
+    <form class="card prod-form" method="post" novalidate data-submit-once="true" id="new-entry" data-sheet-id="{{ sheet.id }}">
       {% csrf_token %}
       <div class="prod-form-head">
         <h2 style="margin:0;font-size:18px">Anotar item</h2>

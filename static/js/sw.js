@@ -16,11 +16,13 @@
  *   - POST/PUT/DELETE nunca entram em fila nem em cache: se a rede cair no meio,
  *     a pessoa vê uma página clara de "não foi possível salvar".
  *
- * Isto é "degradação graciosa" offline, não "offline-first": registrar horários
- * sem conexão continua indisponível de propósito (ver Bloco 6 do roadmap).
+ * v5 (out/2026): a página /offline/ virou o "modo sem internet". Ela é genérica
+ * (nenhum dado pessoal no HTML) e lê do aparelho a lista mínima de clientes e a fila
+ * de registros (IndexedDB, ver static/js/offline_store.js). O envio da fila é feito
+ * pela página, com sessão e CSRF, nunca por este service worker.
  */
 
-const SW_VERSION = "hc-sw-v4";
+const SW_VERSION = "hc-sw-v5";
 const OFFLINE_CACHE = `hc-offline-${SW_VERSION}`;
 const PUBLIC_CACHE = `hc-public-${SW_VERSION}`;
 const OFFLINE_PAGE = "/offline/";
