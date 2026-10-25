@@ -16,7 +16,6 @@ from django.utils import timezone
 
 from .models import ServiceCategory, ServiceJob
 from .views import _redirect_if_not_mei
-from .workflow import planned_status_for_service
 
 QUICK_CATEGORY_SLUG = "servico-geral"
 
@@ -111,17 +110,16 @@ def service_job_quick(request):
                 manual_client_name=data["client_name"],
                 manual_client_whatsapp=data["client_whatsapp"],
                 title=data["title"],
-                start_date=data["start_date"],
+                description=data["title"],
+                start_date=data["start_date"] or timezone.localdate(),
                 billing_mode=ServiceJob.BillingMode.FIXED if price else ServiceJob.BillingMode.UNDEFINED,
                 fixed_labor_value=price,
-                status=ServiceJob.Status.DRAFT,
+                # Quem usa o servico rapido quer trabalhar logo: nasce planejado, sem exigir
+                # endereco (atendimento avulso). Endereco e detalhes podem ser completados depois.
+                status=ServiceJob.Status.PLANNED,
             )
             job.full_clean()
             job.save()
-            status = planned_status_for_service(job, requested_status=ServiceJob.Status.PLANNED)
-            if status != job.status:
-                job.status = status
-                job.save(update_fields=["status", "updated_at"])
             messages.success(request, "Serviço criado. Agora é só adicionar itens ou enviar o orçamento.")
             return redirect("service_job_detail", job_id=job.id)
     else:
