@@ -79,8 +79,9 @@
     </div>
     <div class="row">
       <div><label for="code">Código</label><input id="code" autocomplete="off" placeholder="Ex.: 0011-024"></div>
-      <div><label for="duration">Duração</label><input id="duration" inputmode="decimal" placeholder="Ex.: 1:30"></div>
+      <div><label for="qty">Quantidade</label><input id="qty" type="number" min="1" inputmode="numeric" placeholder="Ex.: 12"></div>
     </div>
+    <div><label for="duration">Duração (se não tiver início e fim)</label><input id="duration" inputmode="decimal" placeholder="Ex.: 1:30"></div>
     <div class="row">
       <div><label for="start">Início</label><input id="start" type="time"></div>
       <div><label for="end">Fim</label><input id="end" type="time"></div>
@@ -160,11 +161,11 @@
 
   $("prodBtn").addEventListener("click", function () {
     var dest = document.querySelector("input[name=dest]:checked");
-    var fields = { work_date: today(), item_code: $("code").value.trim(), destination: dest ? dest.value : "",
+    var fields = { work_date: today(), item_code: $("code").value.trim(), quantity: $("qty").value.trim(), destination: dest ? dest.value : "",
       start_time: $("start").value, end_time: $("end").value, duration: $("duration").value.trim(), note: "" };
     if (!fields.item_code && !fields.start_time && !fields.duration) { say("Preencha pelo menos o código, o início ou a duração.", "warn"); return; }
     api.enqueue({ kind: "production_entry", user_id: profile.user_id, sheet_id: $("sheet").value, fields: fields, occurred_at: new Date().toISOString() }).then(function () {
-      ["code", "duration", "start", "end"].forEach(function (id) { $(id).value = ""; });
+      ["code", "qty", "duration", "start", "end"].forEach(function (id) { $(id).value = ""; });
       if (dest) dest.checked = false;
       say("Item guardado no aparelho.", "ok");
       renderQueue();

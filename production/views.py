@@ -287,16 +287,16 @@ def sheet_csv(request, sheet_id):
     writer.writerow(["Operador", sheet.operator_name])
     writer.writerow(["Máquina", sheet.equipment])
     writer.writerow([])
-    writer.writerow(["Data", "Código", "Destino", "Início", "Fim", "Horas", "Observação"])
+    writer.writerow(["Data", "Código", "Quantidade", "Destino", "Início", "Fim", "Horas", "Observação"])
     for e in sheet.entries.all():
         writer.writerow([
-            e.work_date.strftime("%d/%m/%Y"), e.item_code, e.get_destination_display(),
+            e.work_date.strftime("%d/%m/%Y"), e.item_code, e.quantity or "", e.get_destination_display(),
             e.start_time.strftime("%H:%M") if e.start_time else "", e.end_time.strftime("%H:%M") if e.end_time else "",
             e.duration_label, e.note,
         ])
     totals = _totals_display(sheet)
     writer.writerow([])
-    writer.writerow(["Total", "", "", "", "", totals["total"]])
-    writer.writerow(["Guincho", "", "", "", "", totals["guincho"]])
-    writer.writerow(["Implemento", "", "", "", "", totals["implemento"]])
+    writer.writerow(["Total", "", "", "", "", "", totals["total"]])
+    writer.writerow(["Guincho", "", "", "", "", "", totals["guincho"]])
+    writer.writerow(["Implemento", "", "", "", "", "", totals["implemento"]])
     return response

@@ -55,7 +55,7 @@ class ExportFixture(TestCase):
             supervisor_name="Carlos",
         )
         e = lambda **kw: ProductionEntry.objects.create(sheet=self.sheet, **kw)
-        e(work_date=date(2026, 10, 20), item_code="0011-024", destination=I, start_time=time(7, 0), end_time=time(11, 0))
+        e(work_date=date(2026, 10, 20), item_code="0011-024", quantity=12, destination=I, start_time=time(7, 0), end_time=time(11, 0))
         e(work_date=date(2026, 10, 21), item_code="0011-031", destination=G, start_time=time(13, 0), end_time=time(14, 30))
         e(work_date=date(2026, 10, 21), destination=I, manual_minutes=90, note="Ajuste & <teste> com acentuação")
         e(work_date=date(2026, 10, 22), item_code="X 123", start_time=time(22, 0), end_time=time(1, 0))  # virou a noite
@@ -76,37 +76,38 @@ class XlsxExportTests(ExportFixture):
         ws = self._book().active
         h = self._header_row(ws)
 
-        self.assertEqual([c.value for c in ws[h]][:7], ["Data", "Código", "Destino", "Início", "Fim", "Horas", "Observação"])
-        first = [c.value for c in ws[h + 1]][:7]
+        self.assertEqual([c.value for c in ws[h]][:8], ["Data", "Código", "Qtd.", "Destino", "Início", "Fim", "Horas", "Observação"])
+        first = [c.value for c in ws[h + 1]][:8]
         self.assertEqual(first[0].date(), date(2026, 10, 20))
-        self.assertEqual(first[1:3], ["0011-024", "Implemento"])
-        self.assertEqual((first[3], first[4]), (time(7, 0), time(11, 0)))
-        self.assertEqual(minutes(first[5]), 240)
+        self.assertEqual(first[1:4], ["0011-024", 12, "Implemento"])
+        self.assertEqual((first[4], first[5]), (time(7, 0), time(11, 0)))
+        self.assertEqual(minutes(first[6]), 240)
 
     def test_cells_use_real_excel_formats(self):
         ws = self._book().active
         h = self._header_row(ws)
 
         self.assertEqual(ws.cell(h + 1, 1).number_format, "DD/MM/YYYY")
-        self.assertEqual(ws.cell(h + 1, 4).number_format, "HH:MM")
-        self.assertEqual(ws.cell(h + 1, 6).number_format, "[H]:MM")
+        self.assertEqual(ws.cell(h + 1, 5).number_format, "HH:MM")
+        self.assertEqual(ws.cell(h + 1, 7).number_format, "[H]:MM")
         self.assertEqual(ws.cell(h, 1).font.name, "Arial")
         self.assertTrue(ws.cell(h, 1).font.bold)
         self.assertEqual(ws.freeze_panes, f"A{h + 1}")
-        self.assertEqual(ws.auto_filter.ref, f"A{h}:G{h + 5}")
-        self.assertGreaterEqual(ws.column_dimensions["G"].width, 30)
+        self.assertEqual(ws.auto_filter.ref, f"A{h}:H{h + 5}")
+        self.assertGreaterEqual(ws.column_dimensions["H"].width, 30)
 
     def test_totals_are_formulas_over_exactly_the_data_rows(self):
         ws = self._book().active
         h = self._header_row(ws)
         first, last = h + 1, h + 5
-        formulas = {ws.cell(r, 5).value: ws.cell(r, 6).value for r in range(last + 1, last + 6) if ws.cell(r, 5).value}
+        formulas = {ws.cell(r, 6).value: ws.cell(r, 7).value for r in range(last + 1, last + 7) if ws.cell(r, 6).value}
 
-        self.assertEqual(formulas["Total de horas"], f"=SUM(F{first}:F{last})")
-        self.assertEqual(formulas["Guincho"], f'=SUMIF(C{first}:C{last},"Guincho",F{first}:F{last})')
-        self.assertEqual(formulas["Implemento"], f'=SUMIF(C{first}:C{last},"Implemento",F{first}:F{last})')
+        self.assertEqual(formulas["Total de horas"], f"=SUM(G{first}:G{last})")
+        self.assertEqual(formulas["Guincho"], f'=SUMIF(D{first}:D{last},"Guincho",G{first}:G{last})')
+        self.assertEqual(formulas["Implemento"], f'=SUMIF(D{first}:D{last},"Implemento",G{first}:G{last})')
+        self.assertEqual(formulas["Peças produzidas"], f"=SUM(C{first}:C{last})")
         # O que as formulas vao somar bate com o total do app (o "sem fim" e texto, fica fora).
-        hours = [ws.cell(r, 6).value for r in range(first, last + 1)]
+        hours = [ws.cell(r, 7).value for r in range(first, last + 1)]
         numeric = sum(minutes(v) for v in hours if v != "sem fim")
         self.assertEqual(numeric, self.sheet.totals()["total"])
         self.assertIn("sem fim", hours)
@@ -117,7 +118,7 @@ class XlsxExportTests(ExportFixture):
         info = {ws.cell(r, 1).value: ws.cell(r, 2).value for r in range(3, h)}
 
         overnight = next(r for r in range(h + 1, h + 6) if ws.cell(r, 2).value == "X 123")
-        self.assertEqual(minutes(ws.cell(overnight, 6).value), 180)  # 22:00 -> 01:00
+        self.assertEqual(minutes(ws.cell(overnight, 7).value), 180)  # 22:00 -> 01:00
         self.assertEqual(info["Máquina"], "Chenlong 2")
         self.assertEqual(info["Encarregado"], "Carlos")
         self.assertEqual(info["Período"], "20/10/2026 a 22/10/2026")
@@ -137,7 +138,8 @@ class PdfExportTests(ExportFixture):
         text = pdf_text(content)
 
         self.assertTrue(content.startswith(b"%PDF"))
-        for expected in ("0011-024", "20/10/2026", "07:00", "11:00", "4:00", "Guincho", "Implemento", "sem fim", "10:00", "Carlos"):
+        for expected in ("0011-024", "20/10/2026", "07:00", "11:00", "4:00", "Guincho", "Implemento", "sem fim", "10:00", "Carlos",
+                         "(12)", "produzidas", "QTD."):
             self.assertIn(expected, text, expected)
 
     def test_special_characters_do_not_break_the_pdf(self):

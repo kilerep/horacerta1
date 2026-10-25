@@ -27,6 +27,7 @@ def sheet_rows(sheet):
         rows.append({
             "date": e.work_date,
             "code": e.item_code or "",
+            "quantity": e.quantity,
             "destination": e.get_destination_display() if e.destination else "",
             "destination_key": e.destination,
             "start": e.start_time,
@@ -81,7 +82,8 @@ def build_xlsx(sheet):
     thin = Side(style="thin", color=RULE)
     border = Border(bottom=thin)
     head_border = Border(bottom=Side(style="medium", color=INK))
-    columns = [("Data", 12), ("Código", 16), ("Destino", 13), ("Início", 9), ("Fim", 9), ("Horas", 9), ("Observação", 42)]
+    columns = [("Data", 12), ("Código", 16), ("Qtd.", 8), ("Destino", 13), ("Início", 9), ("Fim", 9), ("Horas", 9),
+               ("Observação", 40)]
     last_col = get_column_letter(len(columns))
 
     ws["A1"] = f"Relatório de produção - {sheet.equipment}"
@@ -101,7 +103,7 @@ def build_xlsx(sheet):
     for idx, (title, width) in enumerate(columns, start=1):
         cell = ws.cell(row=header_row, column=idx, value=title)
         cell.font = Font(name="Arial", size=9, bold=True, color=pt.MUTED)
-        cell.alignment = Alignment(horizontal="right" if title == "Horas" else "left", vertical="center")
+        cell.alignment = Alignment(horizontal="right" if title in ("Horas", "Qtd.") else "left", vertical="center")
         cell.border = head_border
         ws.column_dimensions[get_column_letter(idx)].width = width
     ws.row_dimensions[header_row].height = 20
@@ -111,7 +113,7 @@ def build_xlsx(sheet):
     for i, item in enumerate(rows):
         r = first_data + i
         values = [
-            item["date"], item["code"], item["destination"], item["start"], item["end"],
+            item["date"], item["code"], item["quantity"], item["destination"], item["start"], item["end"],
             item["minutes"] / 1440 if item["minutes"] is not None else "sem fim", item["note"],
         ]
         fill = None
@@ -123,36 +125,39 @@ def build_xlsx(sheet):
             cell = ws.cell(row=r, column=c, value=value)
             cell.font = base
             cell.border = border
-            cell.alignment = Alignment(vertical="center", horizontal="right" if c == 6 else "left",
-                                       wrap_text=(c == 7))
+            cell.alignment = Alignment(vertical="center", horizontal="right" if c in (3, 7) else "left",
+                                       wrap_text=(c == 8))
             if fill:
                 cell.fill = fill
         ws.cell(row=r, column=1).number_format = "DD/MM/YYYY"
-        ws.cell(row=r, column=4).number_format = "HH:MM"
+        ws.cell(row=r, column=3).number_format = "0"
         ws.cell(row=r, column=5).number_format = "HH:MM"
-        ws.cell(row=r, column=6).number_format = "[H]:MM"
+        ws.cell(row=r, column=6).number_format = "HH:MM"
+        ws.cell(row=r, column=7).number_format = "[H]:MM"
         dest_key = item["destination_key"]
         if dest_key and item["minutes"] is not None:
-            ws.cell(row=r, column=3).fill = PatternFill(
+            ws.cell(row=r, column=4).fill = PatternFill(
                 "solid", fgColor=GUINCHO_FILL if dest_key == ProductionEntry.Destination.GUINCHO else IMPLEMENTO_FILL)
     last_data = first_data + max(len(rows), 1) - 1
 
     # Totais com formula: se alguem corrigir uma hora na planilha, o total acompanha.
     total_row = last_data + 2
-    hours = f"F{first_data}:F{last_data}"
-    dest = f"C{first_data}:C{last_data}"
+    hours = f"G{first_data}:G{last_data}"
+    dest = f"D{first_data}:D{last_data}"
+    qty = f"C{first_data}:C{last_data}"
     totals = [
         ("Total de horas", f"=SUM({hours})"),
         ("Guincho", f'=SUMIF({dest},"Guincho",{hours})'),
         ("Implemento", f'=SUMIF({dest},"Implemento",{hours})'),
+        ("Peças produzidas", f"=SUM({qty})"),
     ]
     for offset, (label, formula) in enumerate(totals):
         r = total_row + offset
-        label_cell = ws.cell(row=r, column=5, value=label)
+        label_cell = ws.cell(row=r, column=6, value=label)
         label_cell.font = bold
         label_cell.alignment = Alignment(horizontal="right")
-        value_cell = ws.cell(row=r, column=6, value=formula)
-        value_cell.number_format = "[H]:MM"
+        value_cell = ws.cell(row=r, column=7, value=formula)
+        value_cell.number_format = "0" if label == "Peças produzidas" else "[H]:MM"
         value_cell.font = Font(name="Arial", size=11 if offset else 12, bold=True, color=pt.ACCENT if offset == 0 else INK)
         value_cell.alignment = Alignment(horizontal="right")
         value_cell.border = Border(top=Side(style="medium", color=INK)) if offset == 0 else border
@@ -214,21 +219,23 @@ def build_pdf(sheet):
         rows.append([
             item["date"].strftime("%d/%m/%Y"),
             item["code"] or "-",
+            str(item["quantity"]) if item["quantity"] else "",
             item["destination"] or "-",
             item["start"].strftime("%H:%M") if item["start"] else "-",
             item["end"].strftime("%H:%M") if item["end"] else "-",
             item["note"],
             format_minutes(item["minutes"]) if item["minutes"] is not None else "sem fim",
         ])
-    widths = [2.5, 3.4, 2.7, 1.8, 1.8]
-    widths = [w * cm for w in widths] + [width - (sum(widths) + 2.2) * cm, 2.2 * cm]
-    story.append(pt.data_table(["Data", "Código", "Destino", "Início", "Fim", "Observação", "Horas"], rows, widths,
-                               numeric_cols=(6,), empty_text="Nenhum item anotado.", row_fills=fills))
+    widths = [2.5, 3.2, 1.6, 2.6, 1.7, 1.7]
+    widths = [w * cm for w in widths] + [width - (sum(widths) + 2.1) * cm, 2.1 * cm]
+    story.append(pt.data_table(["Data", "Código", "Qtd.", "Destino", "Início", "Fim", "Observação", "Horas"], rows,
+                               widths, numeric_cols=(2, 7), empty_text="Nenhum item anotado.", row_fills=fills))
     story.append(Spacer(1, 14))
 
     totals = sheet.totals()
     closing = [pt.totals_block(
-        [("Guincho", format_minutes(totals[ProductionEntry.Destination.GUINCHO])),
+        [("Peças produzidas", str(sum(e.quantity or 0 for e in sheet.entries.all()))),
+         ("Guincho", format_minutes(totals[ProductionEntry.Destination.GUINCHO])),
          ("Implemento", format_minutes(totals[ProductionEntry.Destination.IMPLEMENTO]))],
         ("Total de horas", format_minutes(totals["total"])),
         width * 0.38,

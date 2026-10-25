@@ -100,12 +100,13 @@ class ProductionFlowTests(TestCase):
         sheet = self._create_sheet(company_name="Empresa X")
         url = reverse("production_sheet_detail", args=[sheet.id])
 
-        self.client.post(url, {"work_date": "2026-10-20", "item_code": "0011-024", "destination": "IMPLEMENTO",
-                               "start_time": "07:00", "end_time": "11:00"})
+        self.client.post(url, {"work_date": "2026-10-20", "item_code": "0011-024", "quantity": "12",
+                               "destination": "IMPLEMENTO", "start_time": "07:00", "end_time": "11:00"})
         self.client.post(url, {"work_date": "2026-10-20", "destination": "GUINCHO", "duration": "1:30"})
         response = self.client.get(url)
 
-        self.assertContains(response, "0011-024")
+        self.assertContains(response, "0011-024 · 12 un.")
+        self.assertEqual(sheet.entries.get(item_code="0011-024").quantity, 12)
         self.assertContains(response, "<strong>5:30</strong>", html=False)
         self.assertContains(response, "<span>Guincho</span><strong>1:30</strong>", html=False)
         self.assertContains(response, "<span>Implemento</span><strong>4:00</strong>", html=False)
@@ -176,8 +177,8 @@ class ProductionFlowTests(TestCase):
         text = response.content.decode("utf-8-sig")
 
         self.assertIn("attachment;", response["Content-Disposition"])
-        self.assertIn("20/10/2026;0011-024;Implemento;07:00;11:00;4:00", text)
-        self.assertIn("Implemento;;;;;4:00", text)
+        self.assertIn("20/10/2026;0011-024;;Implemento;07:00;11:00;4:00", text)
+        self.assertIn("Implemento;;;;;;4:00", text)
         self.assertIn("Empresa;Empresa X", text)
 
     def test_list_separates_open_and_closed(self):

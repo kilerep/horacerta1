@@ -78,7 +78,7 @@
       if (navigator.onLine) return;
       event.preventDefault();
       var fields = {};
-      ["work_date", "item_code", "destination", "start_time", "end_time", "duration", "note"].forEach(function (name) {
+      ["work_date", "item_code", "quantity", "destination", "start_time", "end_time", "duration", "note"].forEach(function (name) {
         var el = entryForm.querySelector("[name=" + name + "]" + (name === "destination" ? ":checked" : ""));
         fields[name] = el ? el.value : "";
       });

@@ -7,10 +7,15 @@
     {{ form.item_code.errors }}
   </div>
   <div class="prod-field">
-    <label for="{{ form.work_date.id_for_label }}">Data</label>
-    {{ form.work_date }}
-    {{ form.work_date.errors }}
+    <label for="{{ form.quantity.id_for_label }}">Quantidade</label>
+    {{ form.quantity }}
+    {{ form.quantity.errors }}
   </div>
+</div>
+<div class="prod-field">
+  <label for="{{ form.work_date.id_for_label }}">Data</label>
+  {{ form.work_date }}
+  {{ form.work_date.errors }}
 </div>
 <div class="prod-field">
   <span class="prod-field-label" style="display:block;margin-bottom:5px;font-size:13px;font-weight:800;color:var(--color-text-muted)">Destino</span>

@@ -90,6 +90,7 @@ class ProductionEntry(models.Model):
     sheet = models.ForeignKey(ProductionSheet, on_delete=models.CASCADE, related_name="entries")
     work_date = models.DateField("Data", default=timezone.localdate)
     item_code = models.CharField("Código do item", max_length=40, blank=True, default="")
+    quantity = models.PositiveIntegerField("Quantidade", null=True, blank=True)
     destination = models.CharField("Destino", max_length=12, choices=Destination.choices, blank=True, default="")
     start_time = models.TimeField("Início", null=True, blank=True)
     end_time = models.TimeField("Fim", null=True, blank=True)

@@ -59,10 +59,11 @@ class ProductionEntryForm(forms.ModelForm):
 
     class Meta:
         model = ProductionEntry
-        fields = ["work_date", "item_code", "destination", "start_time", "end_time", "note"]
+        fields = ["work_date", "item_code", "quantity", "destination", "start_time", "end_time", "note"]
         widgets = {
             "work_date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
             "item_code": forms.TextInput(attrs={"placeholder": "Ex.: 0011-024", "autocomplete": "off"}),
+            "quantity": forms.NumberInput(attrs={"placeholder": "Ex.: 12", "min": "1", "inputmode": "numeric"}),
             "destination": forms.RadioSelect,
             "start_time": forms.TimeInput(attrs={"type": "time"}, format="%H:%M"),
             "end_time": forms.TimeInput(attrs={"type": "time"}, format="%H:%M"),
