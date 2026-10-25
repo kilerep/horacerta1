@@ -1,7 +1,7 @@
 {% extends "accounts/base.html" %}
 {% load static tz timeclock_formats %}
-{% block title %}HoraCerta - Painel do Profissional{% endblock %}
-{% block page_title %}Painel do profissional{% endblock %}
+{% block title %}Registrar horário | HoraCerta{% endblock %}
+{% block page_title %}Registrar horário{% endblock %}
 {% block body_class %}page-me-registrar{% endblock %}
 
 {% block extra_head %}
@@ -12,23 +12,23 @@
   <div class="hc-page">
     {% if request.GET.event == "punch_saved" %}
       <section class="hc-feedback hc-feedback--ok" role="status" aria-live="polite">
-        Horario registrado com sucesso.
+        Horário registrado com sucesso.
       </section>
     {% elif request.GET.event == "punch_saved_qr_missing" %}
       <section class="hc-feedback hc-feedback--warn" role="status" aria-live="polite">
-        Horario registrado, mas sem confirmacao QR exigida para este momento.
+        Horário registrado, mas sem confirmação QR exigida para este momento.
       </section>
     {% elif request.GET.event == "manual_saved" %}
       <section class="hc-feedback hc-feedback--ok" role="status" aria-live="polite">
-        Registro manual salvo com sucesso{% if request.GET.created %} ({{ request.GET.created }} horario{% if request.GET.created != "1" %}s{% endif %}){% endif %}.
+        Registro manual salvo com sucesso{% if request.GET.created %} ({{ request.GET.created }} horário{% if request.GET.created != "1" %}s{% endif %}){% endif %}.
       </section>
     {% elif request.GET.event == "contract_required" %}
       <section class="hc-feedback hc-feedback--warn" role="status" aria-live="polite">
-        Selecione cliente e contrato antes de registrar horario.
+        Selecione cliente e contrato antes de registrar horário.
       </section>
     {% elif request.GET.event == "invalid_contract" %}
       <section class="hc-feedback hc-feedback--warn" role="status" aria-live="polite">
-        O contrato selecionado esta inativo, encerrado ou nao pertence a sua conta.
+        O contrato selecionado esta inativo, encerrado ou não pertence a sua conta.
       </section>
     {% elif request.GET.event == "qr_confirmed" %}
       <section class="hc-feedback hc-feedback--ok" role="status" aria-live="polite">
@@ -36,11 +36,11 @@
       </section>
     {% elif request.GET.event == "qr_invalid" %}
       <section class="hc-feedback hc-feedback--warn" role="status" aria-live="polite">
-        QR invalido ou inativo para confirmacao presencial.
+        QR inválido ou inativo para confirmação presencial.
       </section>
     {% elif request.GET.event == "qr_contract_missing" %}
       <section class="hc-feedback hc-feedback--warn" role="status" aria-live="polite">
-        Seu perfil nao possui contrato operacional ativo para este local QR.
+        Seu perfil não possui contrato operacional ativo para este local QR.
       </section>
     {% elif request.GET.event == "report_sent" %}
       <section class="hc-feedback hc-feedback--ok" role="status" aria-live="polite">
@@ -59,14 +59,14 @@
 
     {% if pending_report_requests %}
       <section class="hc-panel hc-panel--requests">
-        <h3 class="hc-section-title">Solicitacoes de relatorio pendentes</h3>
+        <h3 class="hc-section-title">Solicitações de relatório pendentes</h3>
         <div class="hc-request-list">
           {% for req in pending_report_requests %}
             <article class="hc-request-item">
               <div class="hc-muted">
                 <strong>{{ req.company.name }}</strong>
                 {% if req.date_from or req.date_to %}
-                  | {{ req.date_from|default:"-" }} ate {{ req.date_to|default:"-" }}
+                  | {{ req.date_from|default:"-" }} até {{ req.date_to|default:"-" }}
                 {% endif %}
               </div>
               {% if req.message %}
@@ -82,7 +82,7 @@
                 <div class="hc-row">
                   <div class="hc-field">
                     <label>Sua resposta</label>
-                    <textarea name="response_text" placeholder="Descreva as atividades do periodo"></textarea>
+                    <textarea name="response_text" placeholder="Descreva as atividades do período"></textarea>
                   </div>
                   <button class="btn primary" type="submit" data-loading-text="Enviando resposta...">Enviar resposta</button>
                 </div>
@@ -93,12 +93,23 @@
       </section>
     {% endif %}
 
-    {% if no_contracts %}
+    {% if no_contracts and is_new_mei %}
+      <section class="hc-panel" id="new-mei-welcome">
+        <h2 class="hc-section-title">Bem-vindo ao HoraCerta{% if request.user.first_name %}, {{ request.user.first_name }}{% endif %}!</h2>
+        <p class="hc-muted" style="margin:0 0 10px;">Falta só um passo para começar: cadastre o primeiro cliente para quem você trabalha e quanto cobra por hora.</p>
+        <ol class="hc-muted" style="margin:0 0 14px;padding-left:1.2rem;display:grid;gap:4px;">
+          <li>Cadastre o cliente e o valor da sua hora (1 minuto).</li>
+          <li>Registre sua entrada e saída quando trabalhar.</li>
+          <li>Veja quanto já ganhou e envie o relatório ao cliente.</li>
+        </ol>
+        <a class="btn primary" href="{% url 'mei_client_create' %}">Cadastrar meu primeiro cliente</a>
+      </section>
+    {% elif no_contracts %}
       <section class="hc-panel">
         <h2 class="hc-section-title">Cadastro confirmado, aguardando liberacao operacional</h2>
         <p class="hc-muted" style="margin:0 0 8px;">
           Seu cadastro no HoraCerta esta ativo{% if employee_company_name %} para <strong>{{ employee_company_name }}</strong>{% endif %},
-          mas ainda nao existe contrato operacional vigente para registrar horarios.
+          mas ainda não existe contrato operacional vigente para registrar horários.
         </p>
         {% if state_context %}
           <p class="hc-muted" style="margin:0;"><strong>Estado atual:</strong> {{ state_context.label }} - {{ state_context.hint }}</p>
@@ -122,46 +133,13 @@
           <span class="hc-journey-status__label">{{ journey_status_label }}</span>
         </div>
         <p class="hc-journey-next">{{ journey_next_action }}</p>
+        {% if show_first_report_cta %}
+          <a class="btn primary" id="first-report-cta" href="{% url 'mei_reports' %}?contract={{ selected_contract.id }}" style="margin:8px 0 4px;">Gerar meu primeiro relatório</a>
+        {% endif %}
 
-        <section class="hc-journey-summary" aria-label="Resumo da jornada do dia">
-          <article class="hc-journey-card">
-            <span class="hc-journey-k">Data</span>
-            <strong class="hc-journey-v">{{ today_date|date:"d/m/Y" }}</strong>
-          </article>
-          <article class="hc-journey-card">
-            <span class="hc-journey-k">Horarios hoje</span>
-            <strong class="hc-journey-v">{{ total_punches_today }}</strong>
-          </article>
-          <article class="hc-journey-card">
-            <span class="hc-journey-k">Ultimo horario</span>
-            <strong class="hc-journey-v">{{ last_punch_today_label }}</strong>
-          </article>
-          <article class="hc-journey-card">
-            <span class="hc-journey-k">Total parcial</span>
-            <strong class="hc-journey-v">{{ today_total_partial_hhmm }}</strong>
-          </article>
-        </section>
-
-        <section class="hc-journey-today" aria-label="Historico rapido de hoje">
-          <h3 class="hc-journey-today-title">Historico rapido de hoje</h3>
-          <div class="hc-chip-list" id="hcTodayChips">
-            {% for punch_time in today_punch_times %}
-              <span class="hc-chip">{{ punch_time }}</span>
-            {% empty %}
-              <span class="hc-empty-text">Nenhum horario registrado hoje.</span>
-            {% endfor %}
-          </div>
-        </section>
-
-        <section class="hc-client-current" aria-labelledby="hcClientCurrentTitle">
-          <div class="hc-client-current__head">
-            <div>
-              <h3 id="hcClientCurrentTitle" class="hc-client-current__title">Cliente atual</h3>
-              <p class="hc-client-current__active">{{ selected_contract.company.name }}</p>
-            </div>
-          </div>
+        <section class="hc-client-current" aria-label="Cliente">
           <div class="hc-client-select-wrap">
-            <label for="hcContractSelect">Selecionar cliente e contrato</label>
+            <label for="hcContractSelect">Cliente</label>
             <select id="hcContractSelect" class="hc-client-select" name="contract_selector">
               {% for c in contracts %}
                 <option
@@ -174,9 +152,9 @@
               {% endfor %}
             </select>
             <div class="hc-client-details" aria-live="polite">
-              <span>Status do contrato: <strong>Ativo</strong></span>
-              <span>Valor por hora: <strong>R$ {{ selected_contract.hourly_rate }}/h</strong></span>
-              <span>Período: <strong>desde {{ selected_contract.start_date|date:"d/m/Y" }}{% if selected_contract.end_date %} ate {{ selected_contract.end_date|date:"d/m/Y" }}{% endif %}</strong></span>
+              <span><strong>R$ {{ selected_contract.hourly_rate }}/h</strong></span>
+              <span>desde {{ selected_contract.start_date|date:"d/m/Y" }}{% if selected_contract.end_date %} até {{ selected_contract.end_date|date:"d/m/Y" }}{% endif %}</span>
+              <span>contrato ativo</span>
             </div>
           </div>
         </section>
@@ -187,7 +165,7 @@
               class="hc-context-note"
               {% if not location_required_for_selected_contract %}hidden{% endif %}
             >
-              Este contrato valida localizacao no momento do registro. Nao ha rastreamento continuo.
+              Este contrato confere a localização no momento do registro. Não há rastreamento contínuo.
             </div>
 
           <form id="hcPunchForm" method="post" action="{{ request.path }}" class="hc-field">
@@ -198,17 +176,45 @@
             <input type="hidden" name="geo_longitude" id="hcGeoLongitude" value="">
             <input type="hidden" name="geo_accuracy_m" id="hcGeoAccuracy" value="">
             <button id="hcPunchBtn" class="hc-punch-btn" type="submit">
-              <span class="hc-punch-btn__label">Registrar horário na {{ selected_contract.company.name }}</span>
+              <span class="hc-punch-btn__label">{{ punch_button_label|default:"Registrar horário" }} · {{ selected_contract.company.name }}</span>
               <span class="hc-punch-btn__spinner" aria-hidden="true"></span>
             </button>
-            <button id="hcManualOpen" class="btn hc-manual-open-btn" type="button">Registrar horario manual</button>
-            <a class="btn" href="{% url 'mei_edit_today_punches' %}">Editar horários de hoje</a>
+            <div class="hc-secondary-actions">
+              <button id="hcManualOpen" class="btn hc-manual-open-btn" type="button">Horário manual</button>
+              <a class="btn" href="{% url 'mei_edit_today_punches' %}">Editar hoje</a>
+            </div>
           </form>
         </div>
+
+        <section class="hc-journey-summary" aria-label="Resumo da jornada do dia">
+          <article class="hc-journey-card">
+            <span class="hc-journey-k">Horários hoje</span>
+            <strong class="hc-journey-v">{{ total_punches_today }}</strong>
+          </article>
+          <article class="hc-journey-card">
+            <span class="hc-journey-k">Último horário</span>
+            <strong class="hc-journey-v">{{ last_punch_today_label }}</strong>
+          </article>
+          <article class="hc-journey-card">
+            <span class="hc-journey-k">Total parcial</span>
+            <strong class="hc-journey-v">{{ today_total_partial_hhmm }}</strong>
+          </article>
+        </section>
+
+        <section class="hc-journey-today" aria-label="Histórico rápido de hoje">
+          <h3 class="hc-journey-today-title">Histórico rápido de hoje</h3>
+          <div class="hc-chip-list" id="hcTodayChips">
+            {% for punch_time in today_punch_times %}
+              <span class="hc-chip">{{ punch_time }}</span>
+            {% empty %}
+              <span class="hc-empty-text">Nenhum horário registrado hoje.</span>
+            {% endfor %}
+          </div>
+        </section>
       </section>
 
       <section class="hc-panel">
-        <h3 class="hc-section-title">Historico recente</h3>
+        <h3 class="hc-section-title">Histórico recente</h3>
         <div class="hc-history-list">
           {% for day in recent_history_days %}
             <article class="hc-history-item {% if day.is_incomplete %}is-warn{% else %}is-ok{% endif %}">
@@ -219,7 +225,7 @@
               <div class="hc-muted">{{ day.punch_times|join:" - "|default:"-" }}</div>
             </article>
           {% empty %}
-            <p class="hc-muted">Sem historico no periodo.</p>
+            <p class="hc-muted">Sem histórico no período.</p>
           {% endfor %}
         </div>
       </section>
@@ -244,7 +250,7 @@
         <div id="hcManualOverlay" class="hc-overlay"></div>
         <section class="hc-modal-card" role="dialog" aria-modal="true" aria-labelledby="hcManualTitle">
           <header class="hc-modal-header">
-            <h3 id="hcManualTitle">Registro manual de horario</h3>
+            <h3 id="hcManualTitle">Registro manual de horário</h3>
             <button id="hcManualCloseTop" type="button" class="hc-modal-close" aria-label="Fechar modal">x</button>
           </header>
 
@@ -264,18 +270,18 @@
             </div>
 
             <div class="hc-field">
-              <label>Horarios</label>
+              <label>Horários</label>
               <div id="hcTimesList" class="hc-times-list">
                 <div class="hc-time-row">
                   <input type="time" name="times" step="60" required>
-                  <button type="button" class="btn hc-time-remove" aria-label="Remover horario">Remover</button>
+                  <button type="button" class="btn hc-time-remove" aria-label="Remover horário">Remover</button>
                 </div>
               </div>
-              <button id="hcAddTimeBtn" type="button" class="btn hc-add-time-btn">Adicionar horario</button>
+              <button id="hcAddTimeBtn" type="button" class="btn hc-add-time-btn">Adicionar horário</button>
             </div>
 
             <div class="hc-field">
-              <label for="hcManualNote">Observacao</label>
+              <label for="hcManualNote">Observação</label>
               <textarea id="hcManualNote" name="manual_note" rows="3" placeholder="Opcional"></textarea>
             </div>
 

@@ -4,24 +4,31 @@ from decimal import Decimal, InvalidOperation
 from io import BytesIO
 
 from django.contrib.auth.decorators import login_required
+
+from accounts.analytics import PUNCH_RECORDED, WORK_PERIOD_COMPLETED, track
 from django.db import transaction
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 from openpyxl import Workbook
 from openpyxl.styles import Font
-from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.units import mm
-from reportlab.platypus import SimpleDocTemplate, Spacer, Table, TableStyle, Paragraph
-from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import SimpleDocTemplate, Spacer
 
 from accounts.models import User
 from accounts.mei_context import resolve_mei_context
-from companies.models import CompanyAttendancePolicy, CompanyAuthorizedLocation
-from .models import ActivityReportRequest, Contract, Punch
-from .services import build_daily_summary, evaluate_punch_confidence, filter_punches_by_period, format_hhmm
+from companies.models import CompanyAttendancePolicy, CompanyAuthorizedLocation, Employee
+from .models import ActivityReportRequest, Contract, Punch, ServiceReport
+from .services import (
+    build_daily_summary,
+    evaluate_punch_confidence,
+    filter_punches_by_period,
+    format_hhmm,
+    locked_report_for_day,
+)
 from .state import contract_operational_q, employee_lifecycle_summary
 
 QR_PRESENCE_SESSION_KEY = "hc_qr_presence_claims"
@@ -261,6 +268,9 @@ def employee_dashboard(request):
             "accounts/dashboard_funcionario.html",
             {
                 "no_contracts": True,
+                # Prestador recem-cadastrado (autocadastro): ainda nao tem nenhum
+                # vinculo. Nao e "aguardando liberacao" - falta cadastrar o 1o cliente.
+                "is_new_mei": not Employee.objects.filter(user=request.user).exists(),
                 "contracts": [],
                 "state_context": state_context,
                 "employee_company_name": employee_company_name,
@@ -334,6 +344,13 @@ def employee_dashboard(request):
                 "request_user_agent": (request.META.get("HTTP_USER_AGENT") or "")[:180],
             },
         )
+        track(request.user, PUNCH_RECORDED)
+        punches_recorded_today = Punch.objects.filter(
+            contract=selected_contract, timestamp__date=timezone.localdate()
+        ).count()
+        if punches_recorded_today % 2 == 0:
+            # A saida fechou um periodo (entrada + saida do mesmo dia).
+            track(request.user, WORK_PERIOD_COMPLETED)
         if qr_required and not qr_location:
             return redirect(f"{request.path}?event=punch_saved_qr_missing&contract={selected_contract.id}")
         return redirect(f"{request.path}?event=punch_saved&contract={selected_contract.id}")
@@ -372,26 +389,33 @@ def employee_dashboard(request):
     else:
         greeting = "Boa noite"
     day_status_label = "Dia fechado" if total_punches_today % 2 == 0 else "Dia em andamento"
+    # Linguagem do prestador: o proximo toque e sempre "entrada" ou "saida" (o
+    # backend continua decidindo pela quantidade de registros do dia).
+    next_punch_kind = "saida" if total_punches_today % 2 == 1 else "entrada"
+    punch_button_label = "Registrar saída" if next_punch_kind == "saida" else "Registrar entrada"
     if total_punches_today == 0:
         journey_status_key = "no_records"
         journey_status_label = "Sem registros hoje"
         journey_status_tone = "neutral"
-        journey_next_action = "Registre o primeiro horario do dia para iniciar a jornada."
+        journey_next_action = "Toque em “Registrar entrada” quando começar a trabalhar."
     elif total_punches_today % 2 == 1 and current_hour >= 20:
         journey_status_key = "incomplete"
         journey_status_label = "Dia incompleto"
         journey_status_tone = "warn"
-        journey_next_action = "Dia encerrado com horario pendente. Ajustes operacionais devem ser tratados com o encarregado."
+        journey_next_action = (
+            f"Você registrou entrada às {last_punch_today_label} e ainda não registrou a saída. "
+            "Toque em “Registrar saída” ou use “Editar horários de hoje” para informar o horário correto."
+        )
     elif total_punches_today % 2 == 1:
         journey_status_key = "in_progress"
-        journey_status_label = "Jornada em andamento"
+        journey_status_label = f"Trabalhando desde {last_punch_today_label}"
         journey_status_tone = "progress"
-        journey_next_action = "Registre o proximo horario ao concluir a etapa atual da jornada."
+        journey_next_action = "Quando terminar, toque em “Registrar saída”."
     else:
         journey_status_key = "finished"
-        journey_status_label = "Dia finalizado"
+        journey_status_label = f"Saída registrada às {last_punch_today_label}"
         journey_status_tone = "ok"
-        journey_next_action = "Jornada do dia fechada. Acompanhe o historico e os totais para conferencia."
+        journey_next_action = "Se voltar a trabalhar hoje, toque em “Registrar entrada”. Veja abaixo os totais do dia."
 
     history_filtered = list(qs_filtered.order_by("timestamp"))
     history_days, history_punch_columns = build_daily_summary(history_filtered, min_punch_columns=4)
@@ -410,6 +434,16 @@ def employee_dashboard(request):
         "day_status_label": day_status_label,
         "journey_status_key": journey_status_key,
         "journey_status_label": journey_status_label,
+        "next_punch_kind": next_punch_kind,
+        # Primeiro periodo fechado e nenhum relatorio ainda: proximo passo do onboarding.
+        "show_first_report_cta": (
+            total_punches_today >= 2
+            and total_punches_today % 2 == 0
+            and not ServiceReport.objects.filter(employee__user=request.user)
+            .exclude(status=ServiceReport.Status.CANCELED)
+            .exists()
+        ),
+        "punch_button_label": punch_button_label,
         "journey_status_tone": journey_status_tone,
         "journey_next_action": journey_next_action,
         "today_total_partial_hhmm": today_total_partial_hhmm,
@@ -520,6 +554,34 @@ def create_manual_punches(request):
     contract = _active_contracts_for_employee_user(request.user).filter(id=contract_id).first()
     if not contract:
         return JsonResponse({"ok": False, "errors": ["Vinculo invalido ou inativo."]}, status=400)
+
+    # O sistema promete (na tela de Historico e ao gerar um relatorio) que dias
+    # ja incluidos num relatorio de horas ficam bloqueados para edicao, "para
+    # preservar a seguranca dos relatorios" - e "editar horarios de hoje" ja
+    # aplicava essa regra (ver accounts.views.mei_edit_today_punches). O
+    # registro manual, porem, nao verificava isso e aceitava novos horarios em
+    # qualquer data passada - inclusive dias de relatorios ja enviados/
+    # visualizados/recebidos pelo cliente, quebrando totais que o cliente ja
+    # havia confirmado. Bug encontrado na auditoria de 12/09/2026.
+    locked_report = locked_report_for_day(launch_date, contract=contract)
+    if locked_report:
+        return JsonResponse(
+            {
+                "ok": False,
+                "errors": [
+                    "Este dia (%s) ja faz parte do relatorio \"%s\" (periodo %s a %s) e esta bloqueado "
+                    "para novos lancamentos. Fale com o suporte se precisar corrigir um horario "
+                    "desse periodo."
+                    % (
+                        launch_date.strftime("%d/%m/%Y"),
+                        locked_report.title,
+                        locked_report.date_from.strftime("%d/%m/%Y"),
+                        locked_report.date_to.strftime("%d/%m/%Y"),
+                    )
+                ],
+            },
+            status=400,
+        )
 
     tz = timezone.get_current_timezone()
     day_start = timezone.make_aware(datetime.combine(launch_date, time.min), tz)
@@ -736,64 +798,46 @@ def export_pdf(request):
     doc = SimpleDocTemplate(
         buffer,
         pagesize=landscape(A4),
-        leftMargin=8 * mm,
-        rightMargin=8 * mm,
-        topMargin=10 * mm,
-        bottomMargin=10 * mm,
+        leftMargin=14 * mm,
+        rightMargin=14 * mm,
+        topMargin=14 * mm,
+        bottomMargin=16 * mm,
     )
-    styles = getSampleStyleSheet()
-    story = []
+    from accounts import print_theme as pt
 
-    story.append(Paragraph("HoraCerta - Resumo de horários", styles["Title"]))
-    story.append(Spacer(1, 6))
-    story.append(Paragraph(f"<b>Funcionario:</b> {employee_name}", styles["Normal"]))
-    story.append(Paragraph(f"<b>Empresa:</b> {contract.company.name}", styles["Normal"]))
-    story.append(Paragraph(f"<b>Periodo:</b> {period_label}", styles["Normal"]))
-    story.append(Paragraph(f"<b>Total de horas:</b> {total_hours_hhmm}", styles["Normal"]))
-    story.append(Paragraph(f"<b>Total de horários:</b> {len(punches)}", styles["Normal"]))
-    story.append(Spacer(1, 10))
+    width = landscape(A4)[0] - doc.leftMargin - doc.rightMargin
+    story = pt.header_block("Resumo de horários", [
+        f"{pt.esc(employee_name)} para <b>{pt.esc(contract.company.name)}</b>",
+        f"Período {pt.esc(period_label.replace(' ate ', ' até '))}",
+    ])
+    story.append(pt.info_grid([
+        ("Profissional", employee_name), ("Cliente", contract.company.name),
+        ("Total de horas", total_hours_hhmm), ("Horários registrados", str(len(punches))),
+    ], width, columns=4))
+    story.append(Spacer(1, 12))
 
-    table_headers = ["Data"] + [f"horário {idx}" for idx in range(1, max_punches + 1)] + ["Total do dia", "Status"]
-    table_data = [table_headers]
-    for row in daily_rows:
-        status_label = "Incompleto" if row["is_incomplete"] else "OK"
-        table_data.append(
-            [
-                row["date"].strftime("%d/%m/%Y"),
-                *row["punch_columns"],
-                row["total_hours_hhmm"],
-                status_label,
-            ]
-        )
+    headers = ["Data"] + [f"Horário {idx}" for idx in range(1, max_punches + 1)] + ["Situação", "Total do dia"]
+    rows, fills = [], {}
+    for index, row in enumerate(daily_rows):
+        if row["is_incomplete"]:
+            fills[index] = pt.WARN_SOFT
+        rows.append([
+            row["date"].strftime("%d/%m/%Y"),
+            *row["punch_columns"],
+            "Incompleto" if row["is_incomplete"] else "OK",
+            row["total_hours_hhmm"],
+        ])
 
-    if len(table_data) == 1:
-        table_data.append(["-"] + ["-"] * max_punches + ["00:00", "OK"])
-
-    date_width = 24 * mm
+    date_width = 26 * mm
     total_width = 26 * mm
-    status_width = 24 * mm
-    usable_width = (landscape(A4)[0] - doc.leftMargin - doc.rightMargin) - (
-        date_width + total_width + status_width
-    )
+    status_width = 26 * mm
+    usable_width = width - (date_width + total_width + status_width)
     each_punch_width = max(16 * mm, usable_width / max(1, max_punches))
-    col_widths = [date_width] + [each_punch_width] * max_punches + [total_width, status_width]
-
-    table = Table(table_data, colWidths=col_widths, repeatRows=1)
-    table.setStyle(
-        TableStyle(
-            [
-                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#20396b")),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#8ea6d1")),
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("FONTSIZE", (0, 0), (-1, -1), 8),
-                ("ALIGN", (1, 1), (max_punches + 2, -1), "CENTER"),
-            ]
-        )
-    )
-    story.append(table)
-    doc.build(story)
+    col_widths = [date_width] + [each_punch_width] * max_punches + [status_width, total_width]
+    story.append(pt.data_table(headers, rows, col_widths, numeric_cols=(len(headers) - 1,),
+                               empty_text="Sem horários no período.", row_fills=fills))
+    decorate = pt.page_decorator("Resumo de horários")
+    doc.build(story, onFirstPage=decorate, onLaterPages=decorate)
     buffer.seek(0)
 
     response = HttpResponse(buffer.getvalue(), content_type="application/pdf")

@@ -13,12 +13,15 @@
       </div>
     </div>
     <div class="internal-shortcuts">
+      <a class="internal-link-card" href="{% url 'internal_health' %}"><strong>Saúde do sistema</strong><div class="muted">E-mail, URL, DEBUG, migrações</div></a>
+      <a class="internal-link-card" href="{% url 'internal_email' %}"><strong>Diagnóstico de e-mail</strong><div class="muted">Testar envio e recuperação de senha</div></a>
+      <a class="internal-link-card" href="{% url 'internal_funnel' %}"><strong>Funil de ativação</strong><div class="muted">Onde os prestadores desistem</div></a>
       <a class="internal-link-card" href="{% url 'internal_companies' %}"><strong>Empresas</strong><div class="muted">Base, uso e status</div></a>
       <a class="internal-link-card" href="{% url 'internal_employees' %}"><strong>Profissionais</strong><div class="muted">Perfis, contratos e acesso</div></a>
       <a class="internal-link-card" href="{% url 'internal_punches' %}"><strong>Registros de ponto</strong><div class="muted">Busca e auditoria</div></a>
       <a class="internal-link-card" href="{% url 'internal_correction_requests' %}"><strong>Solicitações</strong><div class="muted">Pedidos de correção</div></a>
-      <a class="internal-link-card" href="{% url 'internal_notifications' %}"><strong>Notificacoes</strong><div class="muted">Fila global e ciencia</div></a>
-      <a class="internal-link-card" href="{% url 'internal_audit' %}"><strong>Auditoria</strong><div class="muted">Acoes sensiveis</div></a>
+      <a class="internal-link-card" href="{% url 'internal_notifications' %}"><strong>Notificações</strong><div class="muted">Fila global e ciencia</div></a>
+      <a class="internal-link-card" href="{% url 'internal_audit' %}"><strong>Auditoria</strong><div class="muted">Ações sensiveis</div></a>
       <a class="internal-link-card" href="{% url 'internal_workday_changes' %}"><strong>Alterações de horários</strong><div class="muted">Antes/depois das edições do prestador</div></a>
     </div>
   </section>
@@ -64,9 +67,9 @@
         <div class="hint">Pedidos aguardando análise</div>
       </a>
       <a class="metric-card" href="{% url 'internal_notifications' %}">
-        <div class="label">Notificacoes</div>
+        <div class="label">Notificações</div>
         <div class="value">{{ total_notifications }}</div>
-        <div class="hint">{{ total_unread_notifications }} nao lidas</div>
+        <div class="hint">{{ total_unread_notifications }} não lidas</div>
       </a>
       <a class="metric-card" href="{% url 'internal_notifications' %}?ack=pending">
         <div class="label">Ciencia pendente</div>

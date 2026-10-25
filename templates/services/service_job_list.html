@@ -1,5 +1,6 @@
 {% extends "accounts/base.html" %}
 {% load service_format %}
+{% load static %}
 
 {% block title %}Serviços{% endblock %}
 {% block page_title %}Serviços{% endblock %}
@@ -10,6 +11,7 @@
   .services-head{display:grid;gap:6px}
   .services-head h1{margin:0;font-size:26px;line-height:1.12}
   .services-head p{margin:0;color:var(--color-text-muted);line-height:1.4}
+  .link-button{margin-top:2px;padding:0;min-height:44px;display:inline-flex;align-items:center;border:0;background:none;color:var(--color-primary);font:inherit;font-weight:800;cursor:pointer;text-decoration:underline;text-align:left;width:max-content}
   .services-block{display:grid;gap:10px}
   .services-title{margin:0;font-size:16px;line-height:1.2;font-weight:900}
   .quick-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
@@ -17,6 +19,9 @@
   .quick-card strong{font-size:15px;line-height:1.2}
   .quick-card span{font-size:12px;line-height:1.35;color:var(--color-text-muted)}
   .quick-card.primary{border-color:var(--color-primary);background:var(--color-primary-soft)}
+  .quick-card.muted{opacity:.78}
+  .quick-card.muted:hover{opacity:1}
+  .flow-hint{margin:0;color:var(--color-text-muted);font-size:13px;line-height:1.4}
   .service-strip{display:grid;gap:10px}
   .service-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:start;border:1px solid var(--color-border);border-radius:8px;background:var(--gradient-card);box-shadow:var(--shadow-soft);padding:14px}
   .service-card h3{margin:0;font-size:17px;line-height:1.2;overflow-wrap:anywhere}
@@ -33,62 +38,74 @@
   .service-next strong{color:var(--color-text)}
   .service-facts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
   .fact{border:1px solid var(--color-border);border-radius:8px;background:var(--surface-soft);padding:8px 9px;min-width:112px}
-  .fact span{display:block;color:var(--color-text-muted);font-size:11px}
+  .fact span{display:block;color:var(--color-text-muted);font-size:12px}
   .fact strong{display:block;margin-top:3px;font-size:13px}
   .service-actions{display:grid;gap:8px;justify-items:end;min-width:150px}
   .filter-card{display:grid;gap:12px}
   .search-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:end}
   .field label{display:block;margin-bottom:5px;color:var(--color-text-muted);font-size:12px;font-weight:800}
   .chips{display:flex;gap:8px;flex-wrap:wrap}
-  .chip{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:7px 11px;border:1px solid var(--color-border);border-radius:999px;background:var(--surface-soft);color:var(--color-text);font-size:13px;font-weight:800;text-decoration:none}
+  .chip{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:7px 11px;border:1px solid var(--color-border);border-radius:999px;background:var(--surface-soft);color:var(--color-text);font-size:13px;font-weight:800;text-decoration:none}
   .chip.is-active{border-color:var(--color-primary);background:var(--color-primary-soft);color:var(--color-primary)}
   .advanced{border-top:1px solid var(--color-border);padding-top:12px}
-  .advanced summary{display:inline-flex;min-height:36px;align-items:center;padding:8px 12px;border:1px solid var(--color-border);border-radius:8px;background:var(--surface-soft);font-weight:900;cursor:pointer}
+  .advanced summary{display:inline-flex;min-height:44px;align-items:center;padding:8px 12px;border:1px solid var(--color-border);border-radius:8px;background:var(--surface-soft);font-weight:900;cursor:pointer}
   .advanced[open] summary{margin-bottom:12px}
   .advanced-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr)) auto;gap:10px;align-items:end}
+  .tour-invite{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 14px;border:1px solid var(--color-primary);border-radius:8px;background:var(--color-primary-soft)}
+  .tour-invite strong{display:block;font-size:15px}
+  .tour-invite span{display:block;margin-top:2px;font-size:13px;color:var(--color-text-muted)}
+  .tour-invite-actions{display:flex;gap:8px;flex-wrap:wrap}
   .empty-box{border:1px dashed var(--color-border);border-radius:8px;padding:14px;color:var(--color-text-muted);line-height:1.4;background:var(--surface-soft)}
-  @media (max-width:900px){
-    .quick-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-    .advanced-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-  }
-  @media (max-width:680px){
-    .services-head h1{font-size:23px}
-    .quick-grid,.service-card,.search-row,.advanced-grid{grid-template-columns:1fr}
-    .service-actions{justify-items:stretch;min-width:0}
-    .service-actions .btn,.search-row .btn,.advanced-grid .btn{width:100%}
-    .fact{flex:1 1 132px}
-  }
+  @media (max-width:1000px){.quick-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media (max-width:900px){.advanced-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media (max-width:680px){.services-head h1{font-size:23px}.quick-grid,.service-card,.search-row,.advanced-grid{grid-template-columns:1fr}.service-actions{justify-items:stretch;min-width:0}.service-actions .btn,.search-row .btn,.advanced-grid .btn{width:100%}.fact{flex:1 1 132px}}
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="services-page">
+  {% services_nav "jobs" %}
   <header class="services-head">
     <h1>Serviços</h1>
-    <p>Trabalhos avulsos com períodos, itens e relatório sem alterar seu histórico normal.</p>
+    <p>Cada trabalho para um cliente, com horas, materiais e relatório final num lugar só. Não mexe no seu ponto do dia a dia.</p>
+    {% if not show_service_list_tour %}<button type="button" id="service-list-tour-replay" class="link-button">▶ Ver tour desta tela</button>{% endif %}
     <span hidden>Resumo da área Filtrar serviços Pedidos de serviço</span>
   </header>
 
+  {% if show_service_list_tour %}
+  <section class="tour-invite" id="service-tour-invite" aria-label="Conhecer a tela">
+    <div>
+      <strong>Primeira vez aqui?</strong>
+      <span>Um tour de 1 minuto mostra a diferença entre pedido e serviço.</span>
+    </div>
+    <div class="tour-invite-actions">
+      <button type="button" class="btn primary" id="service-list-tour-replay">Ver tour</button>
+      <button type="button" class="btn" id="service-tour-skip">Agora não</button>
+    </div>
+  </section>
+  {% endif %}
+
   {% if not has_active_filters %}
-  <section class="services-block">
+  <section class="services-block" id="services-quick-actions">
     <h2 class="services-title">Ações rápidas</h2>
+    <p class="flow-hint">Como funciona: o <strong>pedido</strong> chega do cliente → você envia o <strong>orçamento</strong> → aceito, vira <strong>serviço</strong> → você executa e registra horas e itens → envia o <strong>relatório</strong> final.</p>
     <div class="quick-grid">
+      <a class="quick-card primary" href="{% url 'service_job_quick' %}">
+        <strong>Serviço rápido</strong>
+        <span>Cliente, o que fazer e valor: pronto em 30 segundos.</span>
+      </a>
       <a class="quick-card primary" href="{% url 'service_request_create' %}">
         <strong>Novo pedido</strong>
         <span>Registrar o chamado inicial vindo do WhatsApp.</span>
       </a>
       <a class="quick-card" href="{% url 'service_job_create' %}">
-        <strong>Novo serviço</strong>
-        <span>Criar um trabalho ja combinado com o cliente.</span>
-      </a>
-      <a class="quick-card" href="{% url 'service_item_catalog_list' %}">
-        <strong>Catálogo de itens</strong>
-        <span>Materiais, pecas e despesas frequentes.</span>
+        <strong>Novo serviço completo</strong>
+        <span>Com local, horário previsto e itens desde o início.</span>
       </a>
     </div>
   </section>
 
-  <section class="services-block">
+  <section class="services-block" id="services-today">
     <h2 class="services-title">Hoje</h2>
     {% if today_jobs %}
       <div class="service-strip">
@@ -102,8 +119,8 @@
   </section>
   {% endif %}
 
-  <section class="services-block">
-    <h2 class="services-title">Pendencias</h2>
+  <section class="services-block" id="services-pending">
+    <h2 class="services-title">Pendências</h2>
     {% if pending_jobs %}
       <div class="service-strip">
         {% for job in pending_jobs %}
@@ -116,7 +133,7 @@
   </section>
 
   <section class="services-block">
-    <h2 class="services-title">Lista de serviços</h2>
+    <h2 class="services-title">{% if has_active_filters %}Resultado da busca{% elif today_jobs or pending_jobs %}Outros serviços{% else %}Lista de serviços{% endif %}</h2>
     <form class="card filter-card" method="get">
       <div class="search-row">
         <div class="field" id="service-search">
@@ -124,69 +141,93 @@
           <input id="filter-search" type="search" name="q" value="{{ search_query }}" placeholder="Serviço, cliente ou categoria">
         </div>
         <button class="btn" type="submit">Buscar</button>
-        {% if search_query or selected_status or has_advanced_filters %}
-          <a class="btn" href="{% url 'service_job_list' %}">Limpar</a>
-        {% endif %}
+        {% if search_query or selected_status or has_advanced_filters %}<a class="btn" href="{% url 'service_job_list' %}">Limpar</a>{% endif %}
       </div>
 
-      <div class="chips" aria-label="Filtros rapidos">
+      <div class="chips" aria-label="Filtros rápidos">
         {% for value,label,url in quick_status_choices %}
           <a class="chip {% if selected_status == value or not selected_status and not value %}is-active{% endif %}" href="{{ url }}">{{ label }}</a>
         {% endfor %}
       </div>
 
       <details class="advanced" {% if has_advanced_filters %}open{% endif %}>
-        <summary>Filtros avancados</summary>
+        <summary>Filtros avançados</summary>
         <div class="advanced-grid">
-          <div class="field">
-            <label for="filter-status">Status</label>
-            <select id="filter-status" name="status">
-              <option value="">Todos</option>
-              {% for value,label in status_choices %}
-                <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="field">
-            <label for="filter-category">Categoria</label>
-            <select id="filter-category" name="category">
-              <option value="">Todas</option>
-              {% for category in categories %}
-                <option value="{{ category.slug }}" {% if selected_category == category.slug %}selected{% endif %}>{{ category.name }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="field">
-            <label for="filter-contract">Cliente</label>
-            <select id="filter-contract" name="contract">
-              <option value="">Todos</option>
-              {% for contract in contracts %}
-                <option value="{{ contract.id }}" {% if selected_contract == contract.id|stringformat:"s" %}selected{% endif %}>{{ contract.company.name }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="field">
-            <label for="filter-date-from">De</label>
-            <input id="filter-date-from" type="date" name="date_from" value="{{ date_from }}">
-          </div>
-          <div class="field">
-            <label for="filter-date-to">Até</label>
-            <input id="filter-date-to" type="date" name="date_to" value="{{ date_to }}">
-          </div>
+          <div class="field"><label for="filter-status">Status</label><select id="filter-status" name="status"><option value="">Todos</option>{% for value,label in status_choices %}<option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+          <div class="field"><label for="filter-category">Categoria</label><select id="filter-category" name="category"><option value="">Todas</option>{% for category in categories %}<option value="{{ category.slug }}" {% if selected_category == category.slug %}selected{% endif %}>{{ category.name }}</option>{% endfor %}</select></div>
+          <div class="field"><label for="filter-contract">Cliente</label><select id="filter-contract" name="contract"><option value="">Todos</option>{% for contract in contracts %}<option value="{{ contract.id }}" {% if selected_contract == contract.id|stringformat:"s" %}selected{% endif %}>{{ contract.company.name }}</option>{% endfor %}</select></div>
+          <div class="field"><label for="filter-date-from">De</label><input id="filter-date-from" type="date" name="date_from" value="{{ date_from }}"></div>
+          <div class="field"><label for="filter-date-to">Até</label><input id="filter-date-to" type="date" name="date_to" value="{{ date_to }}"></div>
           <button class="btn" type="submit">Filtrar</button>
         </div>
       </details>
     </form>
 
     {% if jobs %}
-      <div class="service-strip">
-        {% for job in jobs %}
-          {% include "services/service_job_card.html" with job=job %}
-        {% endfor %}
-      </div>
+      <div class="service-strip">{% for job in jobs %}{% include "services/service_job_card.html" with job=job %}{% endfor %}</div>
     {% else %}
-      <div class="empty-box">Nenhum serviço encontrado.</div>
+      <div class="empty-box">{% if not has_active_filters and today_jobs or not has_active_filters and pending_jobs %}Os demais serviços já aparecem acima, em Hoje e Pendências.{% else %}Nenhum serviço encontrado.{% endif %}</div>
     {% endif %}
   </section>
 </div>
+
+<script src="{% static 'js/product_tour.js' %}"></script>
+<script>
+  (function () {
+    var tourConfig = {
+      tourKey: "service_job_list",
+      dismissUrl: "{% url 'mei_dismiss_tour' %}",
+      csrfToken: "{{ csrf_token }}",
+      steps: [
+        {
+          selector: "#services-nav",
+          title: "Pedidos, Serviços e Mais",
+          text: "Pedidos é onde chegam as solicitações dos clientes. Serviços é o trabalho em andamento. Em Mais ficam o catálogo de itens e as propostas de evento.",
+        },
+        {
+          selector: "#services-quick-actions",
+          title: "Pedido e serviço não são a mesma coisa",
+          text: "Pedido é a solicitação que chega do cliente (ex.: WhatsApp). Serviço é o trabalho já combinado, com itens, execução e relatório. Um pedido aceito vira um serviço.",
+        },
+        {
+          selector: "#services-today",
+          title: "Hoje",
+          text: "Serviços previstos ou em execução hoje aparecem aqui, para você não precisar procurar na lista completa.",
+        },
+        {
+          selector: "#services-pending",
+          title: "Pendências",
+          text: "Serviços que ainda precisam de alguma ação sua — planejamento, execução ou relatório.",
+        },
+        {
+          selector: ".filter-card",
+          title: "Buscar e filtrar",
+          text: "Busque por nome, cliente ou categoria, ou use os filtros rápidos para ver só um status por vez.",
+        },
+      ],
+    };
+
+    var invite = document.getElementById("service-tour-invite");
+    function hideInvite() { if (invite) invite.remove(); }
+
+    var replayButton = document.getElementById("service-list-tour-replay");
+    if (replayButton) {
+      replayButton.addEventListener("click", function () {
+        hideInvite();
+        window.HoraCertaTour.start(tourConfig);
+      });
+    }
+
+    // O tour nao abre sozinho por cima da tela: o convite fica no topo ate a pessoa escolher.
+    var skipButton = document.getElementById("service-tour-skip");
+    if (skipButton) {
+      skipButton.addEventListener("click", function () {
+        hideInvite();
+        var body = new FormData();
+        body.append("tour", tourConfig.tourKey);
+        fetch(tourConfig.dismissUrl, {method: "POST", headers: {"X-CSRFToken": tourConfig.csrfToken}, body: body, credentials: "same-origin"}).catch(function () {});
+      });
+    }
+  })();
+</script>
 {% endblock %}

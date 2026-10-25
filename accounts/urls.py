@@ -1,10 +1,13 @@
 from django.contrib.auth import views as auth_views
-from django.urls import path
+from django.urls import path, re_path
+from django.views.generic import RedirectView
 
 from . import views
 
 urlpatterns = [
     path("signup/", views.signup, name="signup"),
+    path("cadastro/", views.signup_mei, name="signup_mei"),
+    path("conta/email/", views.change_email, name="change_email"),
     path("login/", views.login_view, name="login"),
     path("logout/", views.logout_view, name="logout"),
     path(
@@ -40,6 +43,9 @@ urlpatterns = [
     ),
 
     path("interno/", views.internal_dashboard, name="internal_dashboard"),
+    path("interno/funil/", views.internal_funnel, name="internal_funnel"),
+    path("interno/email/", views.internal_email, name="internal_email"),
+    path("interno/saude/", views.internal_health, name="internal_health"),
     path("interno/empresas/", views.internal_companies, name="internal_companies"),
     path("interno/empresas/<uuid:company_id>/", views.internal_company_detail, name="internal_company_detail"),
     path("interno/funcionarios/", views.internal_employees, name="internal_employees"),
@@ -55,54 +61,13 @@ urlpatterns = [
     path("", views.dashboard),
     path("dashboard/", views.dashboard, name="dashboard"),
     path("dashboard/funcionario/", views.dashboard_employee, name="dashboard_employee"),
-    path("dashboard/profile/", views.company_profile, name="company_profile"),
-    path("empresa/", views.dashboard_empresa, name="dashboard_empresa"),
-    path("empresa/meis/", views.company_meis, name="company_meis"),
-    path("empresa/meis/email-status/", views.company_mei_email_status, name="company_mei_email_status"),
-    path("empresa/meis/<uuid:employee_id>/", views.company_mei_profile, name="company_mei_profile"),
-    path("empresa/meis/<uuid:employee_id>/fechamento/", views.company_mei_closure, name="company_mei_closure"),
-    path("empresa/contratos/", views.company_contracts, name="company_contracts"),
-    path("empresa/relatorios-servico/", views.company_service_reports, name="company_service_reports"),
-    path(
-        "empresa/relatorios-servico/<uuid:report_id>/",
-        views.company_service_report_detail,
-        name="company_service_report_detail",
-    ),
-    path("empresa/relatorios/", views.company_reports, name="company_reports"),
-    path("empresa/operacao-hoje/", views.company_today_center, name="company_today_center"),
-    path("empresa/resumo-operacional/", views.company_operational_summary, name="company_operational_summary"),
-    path("empresa/pendencias/", views.company_incident_center, name="company_incident_center"),
-    path(
-        "empresa/confiabilidade-registro/locais/<uuid:location_id>/qr/",
-        views.company_location_qr_panel,
-        name="company_location_qr_panel",
-    ),
-    path("empresa/revisao-registros/", views.company_records_review_center, name="company_records_review_center"),
-    path(
-        "empresa/revisao-registros/<uuid:punch_id>/",
-        views.company_record_review_detail,
-        name="company_record_review_detail",
-    ),
-    path("empresa/confiabilidade-registro/", views.company_attendance_reliability, name="company_attendance_reliability"),
-    path("empresa/notificacoes/", views.company_notifications, name="company_notifications"),
-    path(
-        "empresa/notificacoes/<uuid:notification_id>/acao/",
-        views.company_notification_action,
-        name="company_notification_action",
-    ),
-    path("empresa/problemas-horario/", views.company_correction_requests, name="company_correction_requests"),
-    path(
-        "empresa/problemas-horario/<uuid:request_id>/",
-        views.company_correction_request_detail,
-        name="company_correction_request_detail",
-    ),
-    path("dashboard/history/", views.company_history, name="company_history"),
-    path("empresa/historico/", views.company_history, name="company_history_legacy"),
-    path("empresa/docs/", views.company_docs, name="company_docs"),
-    path("empresa/meu-plano/", views.company_plan, name="company_plan"),
-    path("empresa/configuracoes/", views.company_settings, name="company_settings"),
+    # Area de empresa removida (out/2026): o HoraCerta e so para prestadores. Endereços antigos
+    # (favoritos, links em e-mails) levam para o inicio, que manda cada um para a tela certa.
+    re_path(r"^empresa(?:/.*)?$", RedirectView.as_view(pattern_name="dashboard", permanent=False)),
+    re_path(r"^dashboard/(?:profile|history)/$", RedirectView.as_view(pattern_name="dashboard", permanent=False)),
 
     path("me/painel/", views.mei_panel, name="mei_panel"),
+    path("me/tour/dispensar/", views.mei_dismiss_tour, name="mei_dismiss_tour"),
     path("me/profile/", views.mei_profile, name="mei_profile"),
     path("me/historico/", views.mei_history, name="mei_history"),
     path("me/editar-horarios-hoje/", views.mei_edit_today_punches, name="mei_edit_today_punches"),
@@ -128,6 +93,7 @@ urlpatterns = [
         name="mei_service_report_request_detail",
     ),
     path("conferencia/relatorio/<uuid:token>/", views.public_service_report_conference, name="public_service_report_conference"),
+    path("conferencia/relatorio/<uuid:token>/responder/", views.public_service_report_respond, name="public_service_report_respond"),
     path("conferencia/relatorio/<uuid:token>/pdf/", views.public_service_report_pdf, name="public_service_report_pdf"),
     path("conferencia/relatorio/<uuid:token>/excel/", views.public_service_report_xlsx, name="public_service_report_xlsx"),
 

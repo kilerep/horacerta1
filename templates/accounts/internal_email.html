@@ -1,0 +1,59 @@
+{% extends "accounts/internal_base.html" %}
+{% block title %}HoraCerta - Diagnóstico de e-mail{% endblock %}
+{% block page_title %}Diagnóstico de e-mail{% endblock %}
+{% block internal_title %}Diagnóstico de e-mail{% endblock %}
+{% block internal_subtitle %}Mostra como o envio de e-mail está configurado (sem a senha) e permite mandar um teste.{% endblock %}
+
+{% block internal_content %}
+  <section class="internal-panel">
+    <div class="internal-head">
+      <div>
+        <h2>Configuração atual</h2>
+        <p class="internal-subtitle">É isto que o servidor usa agora para enviar a recuperação de senha.</p>
+      </div>
+    </div>
+
+    {% if diag.problems %}
+      <div class="internal-panel" style="border-color:#f59e0b">
+        <strong>Problemas encontrados</strong>
+        <ul>{% for p in diag.problems %}<li>{{ p }}</li>{% endfor %}</ul>
+      </div>
+    {% else %}
+      <p class="internal-subtitle">Nenhum problema óbvio na configuração. Envie um teste abaixo para confirmar.</p>
+    {% endif %}
+
+    <div class="metric-grid">
+      <div class="metric-card"><div class="label">Modo</div><div class="value" style="font-size:18px">{{ diag.backend }}</div></div>
+      <div class="metric-card"><div class="label">Servidor</div><div class="value" style="font-size:18px">{{ diag.host }}:{{ diag.port }}</div><div class="hint">TLS: {{ diag.use_tls|yesno:"sim,não" }} · SSL: {{ diag.use_ssl|yesno:"sim,não" }}</div></div>
+      <div class="metric-card"><div class="label">Usuário SMTP</div><div class="value" style="font-size:18px">{{ diag.user_masked }}</div><div class="hint">Senha definida: {{ diag.password_set|yesno:"sim,não" }}</div></div>
+      <div class="metric-card"><div class="label">Remetente</div><div class="value" style="font-size:18px">{{ diag.from_email }}</div></div>
+      <div class="metric-card"><div class="label">Endereço público (links)</div><div class="value" style="font-size:18px">{{ diag.app_base_url }}</div></div>
+    </div>
+  </section>
+
+  <section class="internal-panel">
+    <div class="internal-head">
+      <div>
+        <h2>Enviar e-mail de teste</h2>
+        <p class="internal-subtitle">Se falhar, a causa real aparece aqui.</p>
+      </div>
+    </div>
+
+    {% if result %}
+      {% if result.ok %}
+        <p><strong>Enviado para {{ result.to }}.</strong> Confira a caixa de entrada e o spam. Se o modo acima for "console", nada sai de verdade.</p>
+      {% else %}
+        <p><strong>Falhou ao enviar para {{ result.to }}.</strong></p>
+        <pre style="white-space:pre-wrap;overflow-wrap:anywhere">{{ result.error }}</pre>
+      {% endif %}
+    {% endif %}
+
+    <form method="post" style="display:flex;gap:8px;flex-wrap:wrap;align-items:end">
+      {% csrf_token %}
+      <label style="display:grid;gap:4px">Enviar para
+        <input type="email" name="to_email" value="{{ default_to }}" required style="min-width:260px;padding:8px 10px">
+      </label>
+      <button class="btn primary" type="submit">Enviar teste</button>
+    </form>
+  </section>
+{% endblock %}

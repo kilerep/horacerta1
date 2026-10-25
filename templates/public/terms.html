@@ -9,19 +9,33 @@
   .grid{display:grid;gap:10px}
   .card h2{margin:0;font-size:1.05rem}
   .list{margin:8px 0 0;padding-left:18px;display:grid;gap:6px}
+  .updated-at{margin:6px 0 0;color:var(--muted);font-size:.85rem}
 </style>
 <div class="container wrap">
   <section class="hero">
     <h1>Termos de Uso</h1>
-    <p>Condicoes gerais de uso do HoraCerta como software de controle de horas, clientes e relatorios para profissionais e MEIs.</p>
+    <p>Condições gerais de uso do HoraCerta como plataforma de controle de horas, clientes, serviços e relatórios para MEIs, autônomos e pequenas operações de serviço.</p>
+    <p class="updated-at">HoraCerta está em fase de testes. Estes termos acompanham a evolução do produto e podem mudar conforme novas funcionalidades entram no ar.</p>
   </section>
   <section class="grid">
-    <article class="card"><h2>1. Objeto</h2><p>O HoraCerta oferece recursos para cadastro, registro de horarios, acompanhamento e historico operacional.</p></article>
-    <article class="card"><h2>2. Cadastro e acesso</h2><ul class="list"><li>A empresa e responsavel pelo cadastro de profissionais.</li><li>Credenciais sao pessoais e intransferiveis.</li><li>O usuario deve manter senha sob sigilo.</li></ul></article>
-    <article class="card"><h2>3. Uso adequado</h2><ul class="list"><li>Uso profissional e licito da plataforma.</li><li>Proibido uso fraudulento ou que comprometa integridade dos dados.</li></ul></article>
-    <article class="card"><h2>4. Disponibilidade e evolucao</h2><p>A plataforma pode receber manutencoes e melhorias sem prejuizo da operacao regular.</p></article>
-    <article class="card"><h2>5. Dados e privacidade</h2><p>O tratamento de dados segue a politica de <a href="{% url 'privacy' %}">Privacidade</a> e finalidades operacionais da plataforma.</p></article>
-    <article class="card"><h2>6. Atualizacoes</h2><p>Estes termos podem ser atualizados para refletir evolucao do produto e requisitos legais.</p></article>
+    <article class="card"><h2>1. Objeto</h2><p>O HoraCerta oferece recursos para cadastro de clientes/contratos, registro de horários, gestão de pedidos e serviços, geração de relatórios e compartilhamento com clientes.</p></article>
+    <article class="card">
+      <h2>2. Cadastro e acesso</h2>
+      <ul class="list">
+        <li>O acesso pode ocorrer por autocadastro de empresa/cliente ou por vínculo criado para o prestador (MEI/autônomo) que usa a plataforma para organizar sua rotina de trabalho.</li>
+        <li>Credenciais de acesso são pessoais e intransferíveis; o usuário é responsável por manter a senha em sigilo.</li>
+        <li>Cada prestador só visualiza e gerencia os próprios clientes, contratos, horários, serviços e relatórios.</li>
+      </ul>
+    </article>
+    <article class="card"><h2>3. Uso adequado</h2><ul class="list"><li>Uso profissional e lícito da plataforma.</li><li>Proibido uso fraudulento, tentativa de acesso a dados de outro usuário ou qualquer ação que comprometa a integridade dos dados ou do sistema.</li></ul></article>
+    <article class="card">
+      <h2>4. Disponibilidade e estágio do produto</h2>
+      <p>O HoraCerta está em fase de testes e evolução contínua. A plataforma pode passar por manutenções, instabilidades pontuais e mudanças de funcionalidade sem aviso prévio. Não garantimos disponibilidade ininterrupta.</p>
+    </article>
+    <article class="card"><h2>5. Dados e privacidade</h2><p>O tratamento de dados segue a <a href="{% url 'privacy' %}">Política de Privacidade</a>, que detalha o que é coletado, para quê e como exercer seus direitos.</p></article>
+    <article class="card"><h2>6. Limites de responsabilidade</h2><p>O HoraCerta é uma ferramenta de organização operacional. Não substitui orientação contábil, jurídica ou trabalhista — para questões fiscais, tributárias ou legais específicas do seu negócio, consulte um profissional qualificado.</p></article>
+    <article class="card"><h2>7. Atualizações destes termos</h2><p>Estes termos podem ser atualizados para refletir a evolução do produto e requisitos legais. Mudanças relevantes serão indicadas nesta página.</p></article>
+    <article class="card"><h2>8. Contato</h2><p>Dúvidas sobre estes termos podem ser enviadas para <a href="mailto:kilerepp@gmail.com">kilerepp@gmail.com</a>.</p></article>
   </section>
 </div>
 {% endblock %}

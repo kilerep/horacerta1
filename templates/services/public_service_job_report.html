@@ -1,200 +1,119 @@
-{% load service_format %}
-<!doctype html>
+{% load service_format %}<!doctype html>
 <html lang="pt-br">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% if is_preview %}Prévia do serviço{% else %}Relatório de serviço{% endif %} - HoraCerta</title>
-  <style>
-    *{box-sizing:border-box}
-    body{margin:0;font-family:"Segoe UI",Arial,sans-serif;background:#f3f4f6;color:#111827}
-    .page{max-width:980px;margin:0 auto;padding:18px;display:grid;gap:14px}
-    .card{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:16px;box-shadow:0 8px 20px rgba(15,23,42,.06)}
-    .head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}
-    .brand{font-weight:900;font-size:18px}
-    h1{margin:6px 0 0;font-size:28px;line-height:1.1;overflow-wrap:anywhere}
-    h2{margin:0 0 10px;font-size:18px}
-    p{margin:0;color:#4b5563;line-height:1.5;overflow-wrap:anywhere}
-    .pill{display:inline-flex;border:1px solid #d1d5db;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:700;color:#374151;background:#f9fafb}
-    .meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-    .summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-    .cell{border:1px solid #e5e7eb;border-radius:8px;padding:10px;background:#f9fafb;min-width:0}
-    .cell span{display:block;color:#6b7280;font-size:12px}
-    .cell strong{display:block;margin-top:4px;font-size:17px;overflow-wrap:anywhere}
-    .cell.total{grid-column:1 / -1;background:#eef2ff;border-color:#c7d2fe}
-    .data{display:grid;gap:8px}
-    .data div{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid #e5e7eb;padding-bottom:8px}
-    .data span{color:#6b7280}
-    .data strong{text-align:right;overflow-wrap:anywhere}
-    .list{display:grid;gap:10px}
-    .entry{border:1px solid #e5e7eb;border-radius:8px;padding:12px;background:#f9fafb;display:grid;gap:7px}
-    .entry-head{display:flex;justify-content:space-between;gap:10px}
-    .entry-title{font-weight:900;overflow-wrap:anywhere}
-    .entry-meta{display:flex;flex-wrap:wrap;gap:7px;color:#6b7280;font-size:13px}
-    .entry-total{font-weight:900;text-align:right;white-space:nowrap}
-    .footer{text-align:center;color:#6b7280;font-size:12px}
-    @media (max-width:720px){
-      .page{padding:10px}
-      .head,.grid,.summary,.data div,.entry-head{display:grid;grid-template-columns:1fr}
-      .cell.total{grid-column:auto}
-      .data strong,.entry-total{text-align:left}
-      h1{font-size:24px}
-    }
-  </style>
+  <meta name="robots" content="noindex, nofollow">
+  <title>{% if is_preview %}Orçamento{% else %}Relatório de serviço{% endif %} - {{ job.title }}</title>
+  {% include "services/_public_style.html" %}
 </head>
 <body>
   <main class="page">
-    <section class="card head">
-      <div>
-        <div class="brand">HoraCerta</div>
-        <h1>{% if is_preview %}Prévia do serviço{% else %}Relatório de serviço{% endif %}</h1>
-        <div class="meta">
-          <span class="pill">{{ job.get_status_display }}</span>
-          <span class="pill">Emitido em {{ emitted_at|date:"d/m/Y" }} às {{ emitted_at|time:"H:i" }}</span>
-        </div>
-      </div>
-    </section>
-
-    <section class="grid">
-      <article class="card">
-        <h2>Prestador</h2>
-        <div class="data">
-          <div><span>Prestador</span><strong>{{ professional_name }}</strong></div>
-          <div><span>Contato</span><strong>{{ professional_contact|default:"-" }}</strong></div>
-        </div>
-      </article>
-      <article class="card">
-        <h2>Cliente e local</h2>
-        <div class="data">
-          <div><span>Cliente</span><strong>{{ client_name }}</strong></div>
-          <div><span>WhatsApp</span><strong>{{ client_whatsapp|default:"-" }}</strong></div>
-          <div><span>Endereço</span><strong>{{ service_address|default:"-" }}</strong></div>
-        </div>
-      </article>
-    </section>
-
-    <section class="card">
-      <h2>Serviço solicitado</h2>
-      <div class="data">
-        <div><span>Título</span><strong>{{ job.title }}</strong></div>
-        <div><span>Categoria</span><strong>{{ job.category.name }}</strong></div>
-        <div><span>Data prevista</span><strong>{% if job.start_date %}{{ job.start_date|date:"d/m/Y" }}{% else %}-{% endif %}</strong></div>
-        <div><span>Hora prevista de início</span><strong>{% if job.planned_start_time %}{{ job.planned_start_time|time:"H:i" }}{% else %}-{% endif %}</strong></div>
-        <div><span>Hora prevista de término</span><strong>{% if job.planned_end_time %}{{ job.planned_end_time|time:"H:i" }}{% else %}-{% endif %}</strong></div>
-        <div><span>Status</span><strong>{{ job.get_status_display }}</strong></div>
-      </div>
-      <p style="margin-top:10px;">{{ job.description|default:"Sem descrição registrada." }}</p>
-      {% if job.notes %}<p style="margin-top:10px;">{{ job.notes }}</p>{% endif %}
-    </section>
+    <header class="card">
+      <div class="brandline"><span class="brand">HoraCerta</span><span class="kind">{% if is_preview %}Orçamento{% else %}Relatório de serviço{% endif %}</span></div>
+      <h1>{{ job.title }}</h1>
+      <p class="who">De <strong>{{ professional_name }}</strong> para <strong>{{ client_name }}</strong></p>
+      <p class="issued">Emitido em {{ emitted_at|date:"d/m/Y" }} às {{ emitted_at|time:"H:i" }} · {{ job.category.name }}</p>
+    </header>
 
     {% if is_preview %}
-      <section class="card">
-        <h2>Itens previstos</h2>
-        <div class="list">
-          {% for item in planned_items %}
-            <article class="entry">
-              <div class="entry-head">
-                <div>
-                  <div class="entry-title">{{ item.name }}</div>
-                  <div class="entry-meta"><span>{{ item.get_type_display }}</span><span>{{ item.short_usage_status }}</span><span>Quantidade: {{ item.quantity }} {{ item.get_unit_display }}</span><span>Un.: {{ item.unit_value|brl }}</span></div>
-                </div>
-                <div class="entry-total">Estimado: {{ item.total_value|brl }}</div>
-              </div>
-              {% if item.description %}<p>{{ item.description }}</p>{% endif %}
-            </article>
-          {% empty %}
-            <p>Nenhum item previsto registrado.</p>
-          {% endfor %}
-        </div>
-      </section>
-      <section class="card">
-        <h2>Valores estimados</h2>
-        <div class="summary">
-          <div class="cell"><span>Total estimado de itens</span><strong>{{ summary.preview_items_total_brl }}</strong></div>
-          <div class="cell"><span>Mão de obra estimada</span><strong>{{ summary.preview_labor_total_brl }}</strong></div>
-          <div class="cell total"><span>Total estimado do serviço</span><strong>{{ summary.preview_estimated_total_brl }}</strong></div>
-        </div>
-        <p style="margin-top:10px;">Valores estimados e sujeitos à confirmação na compra e execução do serviço.</p>
-        <p style="margin-top:8px;">Esta prévia serve para conferência antes da execução. Ela não é o relatório final.</p>
+      <section class="card total" aria-label="Valor total">
+        <span class="label">Total estimado do serviço</span>
+        <strong>{{ summary.preview_estimated_total_brl }}</strong>
+        <p>Itens {{ summary.preview_items_total_brl }} + mão de obra {{ summary.preview_labor_total_brl }}. Valores estimados e sujeitos à confirmação na compra e na execução do serviço.</p>
       </section>
     {% else %}
-      <section class="card">
-        <h2>Horas realizadas</h2>
-        <div class="list">
-          {% for log in work_logs %}
-            <article class="entry">
-              <div class="entry-head">
-                <div>
-                  <div class="entry-title">{{ log.work_date|date:"d/m/Y" }}</div>
-                  <div class="entry-meta"><span>{{ log.start_time|time:"H:i" }} até {% if log.end_time %}{{ log.end_time|time:"H:i" }}{% else %}em andamento{% endif %}</span></div>
-                </div>
-                <div class="entry-total">{% if log.end_time %}Total: {{ log.duration_label }}{% else %}Período aberto{% endif %}</div>
-              </div>
-              {% if log.description %}<p>{{ log.description }}</p>{% endif %}
-            </article>
-          {% empty %}
-            <p>Nenhum período de trabalho registrado.</p>
-          {% endfor %}
-        </div>
-      </section>
-
-      <section class="card">
-        <h2>Itens usados/cobrados</h2>
-        <div class="list">
-          {% for item in used_items %}
-            <article class="entry">
-              <div class="entry-head">
-                <div>
-                  <div class="entry-title">{{ item.name }}</div>
-                  <div class="entry-meta"><span>{{ item.get_type_display }}</span><span>{{ item.quantity }} {{ item.get_unit_display }} x {{ item.unit_value|brl }}</span></div>
-                </div>
-                <div class="entry-total">Total: {{ item.total_value|brl }}</div>
-              </div>
-            </article>
-          {% empty %}
-            <p>Nenhum item usado/cobrado registrado.</p>
-          {% endfor %}
-        </div>
-      </section>
-
-      <section class="card">
-        <h2>Itens não usados/devolvidos</h2>
-        <div class="list">
-          {% for item in not_used_items %}
-            <article class="entry">
-              <div class="entry-head">
-                <div>
-                  <div class="entry-title">{{ item.name }}</div>
-                  <div class="entry-meta"><span>{{ item.get_type_display }}</span><span>{{ item.short_usage_status }}</span><span>{{ item.quantity }} {{ item.get_unit_display }} x {{ item.unit_value|brl }}</span></div>
-                </div>
-                <div class="entry-total">Fora do total: {{ item.total_value|brl }}</div>
-              </div>
-              {% if item.receipt_note or item.description %}<p>{{ item.receipt_note|default:item.description }}</p>{% endif %}
-            </article>
-          {% empty %}
-            <p>Nenhum item não usado ou devolvido registrado.</p>
-          {% endfor %}
-        </div>
-      </section>
-
-      <section class="card">
-        <h2>Resumo</h2>
-        <div class="summary">
-          <div class="cell"><span>Total de horas</span><strong>{{ summary.total_hours }}</strong></div>
-          <div class="cell"><span>Mão de obra</span><strong>{{ summary.labor_total_brl }}</strong></div>
-          <div class="cell"><span>Itens/despesas usados</span><strong>{{ summary.used_items_total_brl }}</strong></div>
-          <div class="cell total"><span>Total do serviço</span><strong>{{ summary.estimated_total_brl }}</strong></div>
-        </div>
-      </section>
-
-      <section class="card">
-        <h2>Observações finais</h2>
-        <p>{{ job.notes|default:"Sem observações finais." }}</p>
+      <section class="card total" aria-label="Valor total">
+        <span class="label">Total do serviço</span>
+        <strong>{{ summary.estimated_total_brl }}</strong>
+        <p>{{ summary.total_hours }} trabalhadas ({{ summary.labor_total_brl }}) + itens e despesas usados ({{ summary.used_items_total_brl }}).</p>
       </section>
     {% endif %}
 
-    <div class="footer">{% if is_preview %}Prévia gerada pelo HoraCerta.{% else %}Relatório gerado pelo HoraCerta.{% endif %}</div>
+    <section class="card">
+      <h2>Quando e onde</h2>
+      <dl class="rows">
+        {% if is_preview %}
+          <div><dt>Data</dt><dd>{% if job.start_date %}{{ job.start_date|date:"d/m/Y" }}{% else %}A combinar{% endif %}</dd></div>
+          <div><dt>Horário</dt><dd>{% if job.planned_start_time %}{{ job.planned_start_time|time:"H:i" }}{% if job.planned_end_time %} às {{ job.planned_end_time|time:"H:i" }}{% endif %}{% else %}A combinar{% endif %}</dd></div>
+        {% else %}
+          <div><dt>Período</dt><dd>{{ period_label }}</dd></div>
+        {% endif %}
+        <div><dt>Local</dt><dd>{{ service_address|default:"A combinar" }}</dd></div>
+      </dl>
+    </section>
+
+    <section class="card">
+      <h2>{% if is_preview %}O que será feito{% else %}O que foi feito{% endif %}</h2>
+      <p>{{ job.description|default:"Descrição a combinar com o prestador." }}</p>
+      {% if job.notes %}<p class="hint">{{ job.notes }}</p>{% endif %}
+    </section>
+
+    {% if is_preview %}
+      {% if planned_items %}
+        <section class="card">
+          <h2>Itens previstos</h2>
+          <ul class="list">
+            {% for item in planned_items %}
+              <li class="entry"><div><strong>{{ item.name }}</strong><small>{{ item.quantity }} {{ item.get_unit_display }} × {{ item.unit_value|brl }} · {{ item.short_usage_status }}</small>{% if item.description %}<small>{{ item.description }}</small>{% endif %}</div><span class="sum">{{ item.total_value|brl }}</span></li>
+            {% endfor %}
+          </ul>
+        </section>
+      {% endif %}
+      {% if work_logs %}
+        <section class="card">
+          <h2>Andamento</h2>
+          <ul class="list">
+            {% for log in work_logs %}
+              <li class="entry"><div><strong>{{ log.work_date|date:"d/m/Y" }}</strong><small>{{ log.start_time|time:"H:i" }} até {% if log.end_time %}{{ log.end_time|time:"H:i" }}{% else %}em andamento{% endif %}</small>{% if log.description %}<small>{{ log.description }}</small>{% endif %}</div><span class="sum">{% if log.end_time %}{{ log.duration_label }}{% else %}Em andamento{% endif %}</span></li>
+            {% endfor %}
+          </ul>
+        </section>
+      {% endif %}
+    {% else %}
+      {% if work_logs %}
+        <section class="card">
+          <h2>Horas trabalhadas</h2>
+          <ul class="list">
+            {% for log in work_logs %}
+              <li class="entry"><div><strong>{{ log.work_date|date:"d/m/Y" }}</strong><small>{{ log.start_time|time:"H:i" }} até {% if log.end_time %}{{ log.end_time|time:"H:i" }}{% else %}em andamento{% endif %}</small>{% if log.description %}<small>{{ log.description }}</small>{% endif %}</div><span class="sum">{% if log.end_time %}{{ log.duration_label }}{% else %}Em andamento{% endif %}</span></li>
+            {% endfor %}
+          </ul>
+        </section>
+      {% endif %}
+      {% if used_items %}
+        <section class="card">
+          <h2>Itens e despesas</h2>
+          <ul class="list">
+            {% for item in used_items %}
+              <li class="entry"><div><strong>{{ item.name }}</strong><small>{{ item.quantity }} {{ item.get_unit_display }} × {{ item.unit_value|brl }}</small></div><span class="sum">{{ item.total_value|brl }}</span></li>
+            {% endfor %}
+          </ul>
+        </section>
+      {% endif %}
+      {% if not_used_items %}
+        <section class="card">
+          <h2>Não cobrados</h2>
+          <p>Itens não usados ou devolvidos. Não entram no total.</p>
+          <ul class="list" style="margin-top:10px">
+            {% for item in not_used_items %}
+              <li class="entry muted"><div><strong>{{ item.name }}</strong><small>{{ item.short_usage_status }}{% if item.receipt_note or item.description %} · {{ item.receipt_note|default:item.description }}{% endif %}</small></div><span class="sum">{{ item.total_value|brl }}</span></li>
+            {% endfor %}
+          </ul>
+        </section>
+      {% endif %}
+    {% endif %}
+
+    <section class="card contact">
+      <h2>Dúvidas?</h2>
+      <p>Fale com {{ professional_name }}.</p>
+      {% if professional_contact %}
+        {% if "@" in professional_contact %}<a class="btn" href="mailto:{{ professional_contact }}?subject={{ job.title|urlencode }}">Responder por e-mail</a>{% endif %}
+        <p class="line">Contato: {{ professional_contact }}</p>
+      {% endif %}
+    </section>
+
+    <p class="legal">{% if is_preview %}Este orçamento não substitui contrato, nota fiscal ou laudo técnico. {% endif %}Gerado pelo HoraCerta.</p>
   </main>
 </body>
 </html>

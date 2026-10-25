@@ -1,6 +1,8 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
@@ -26,7 +28,7 @@ class UnifiedSignupForm(forms.Form):
         pwd2 = data.get("password2")
 
         if pwd1 != pwd2:
-            self.add_error("password2", "As senhas nao conferem.")
+            self.add_error("password2", "As senhas não conferem.")
 
         company_name = (data.get("company_name") or "").strip()
         if not company_name:
@@ -43,13 +45,101 @@ class UnifiedSignupForm(forms.Form):
         else:
             data["rh_email"] = rh_email
             if User.objects.filter(email__iexact=rh_email).exists() or User.objects.filter(username__iexact=rh_email).exists():
-                self.add_error("rh_email", "Ja existe um usuario com esse email.")
+                self.add_error("rh_email", "Já existe um usuário com esse email.")
 
         return data
 
 
+class MEISignupForm(forms.Form):
+    """Autocadastro de prestador/MEI: so o essencial para entrar e comecar.
+
+    Cliente, valor/hora e demais dados vem depois, guiados pelo checklist de
+    primeiros passos do painel. O cadastro cria apenas o usuario (papel
+    FUNCIONARIO/MEI) - nenhuma empresa, para nao repetir o modelo antigo.
+    """
+
+    full_name = forms.CharField(label="Seu nome", max_length=150)
+    email = forms.EmailField(label="E-mail")
+    password1 = forms.CharField(label="Senha", widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}))
+    password2 = forms.CharField(
+        label="Confirmar senha", widget=forms.PasswordInput(attrs={"autocomplete": "new-password"})
+    )
+    accept_terms = forms.BooleanField(
+        label="Li e aceito os Termos de Uso e a Política de Privacidade",
+        error_messages={"required": "Para criar a conta, aceite os Termos de Uso e a Política de Privacidade."},
+    )
+    # Isca para robos: pessoas nao veem nem preenchem este campo.
+    website = forms.CharField(required=False, widget=forms.TextInput(attrs={"tabindex": "-1", "autocomplete": "off"}))
+
+    def clean_full_name(self):
+        name = " ".join((self.cleaned_data.get("full_name") or "").split())
+        if len(name) < 2:
+            raise ValidationError("Informe seu nome.")
+        return name
+
+    def clean_email(self):
+        email = (self.cleaned_data.get("email") or "").strip().lower()
+        if User.objects.filter(email__iexact=email).exists() or User.objects.filter(username__iexact=email).exists():
+            raise ValidationError("Não foi possível usar este e-mail. Se você já tem cadastro, tente entrar ou recuperar a senha.")
+        return email
+
+    def clean_website(self):
+        if self.cleaned_data.get("website"):
+            raise ValidationError("Não foi possível concluir o cadastro.")
+        return ""
+
+    def clean(self):
+        data = super().clean()
+        pwd1, pwd2 = data.get("password1"), data.get("password2")
+        if pwd1 and pwd2 and pwd1 != pwd2:
+            self.add_error("password2", "As senhas não conferem.")
+        elif pwd1:
+            candidate = User(
+                username=data.get("email") or "", email=data.get("email") or "", first_name=data.get("full_name") or ""
+            )
+            try:
+                validate_password(pwd1, user=candidate)
+            except ValidationError as exc:
+                self.add_error("password1", exc)
+        return data
+
+
+class ChangeEmailForm(forms.Form):
+    """Troca do e-mail (que tambem e o login) pelo proprio usuario logado.
+
+    Exige a senha atual: sem isso, quem pegasse uma sessao aberta poderia
+    redirecionar a recuperacao de senha para um e-mail proprio.
+    """
+
+    new_email = forms.EmailField(label="Novo e-mail")
+    current_password = forms.CharField(
+        label="Senha atual", widget=forms.PasswordInput(attrs={"autocomplete": "current-password"})
+    )
+
+    def __init__(self, *args, user, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user = user
+
+    def clean_current_password(self):
+        password = self.cleaned_data.get("current_password") or ""
+        if not self.user.check_password(password):
+            raise ValidationError("Senha atual incorreta.")
+        return password
+
+    def clean_new_email(self):
+        email = (self.cleaned_data.get("new_email") or "").strip().lower()
+        if email == (self.user.email or "").lower():
+            raise ValidationError("Este já é o seu e-mail atual.")
+        taken = (
+            User.objects.filter(Q(email__iexact=email) | Q(username__iexact=email)).exclude(pk=self.user.pk).exists()
+        )
+        if taken:
+            raise ValidationError("Não foi possível usar este e-mail. Tente outro.")
+        return email
+
+
 class LoginForm(AuthenticationForm):
-    username = forms.CharField(label="Email ou usuario")  # aceita email via backend
+    username = forms.CharField(label="Email ou usuário")  # aceita email via backend
 
 
 class EmployeeSearchForm(forms.Form):
@@ -91,14 +181,14 @@ class PunchCorrectionRequestForm(forms.ModelForm):
             "description": forms.Textarea(
                 attrs={
                     "rows": 5,
-                    "placeholder": "Descreva o que aconteceu e qual ajuste voce acredita ser necessario.",
+                    "placeholder": "Descreva o que aconteceu e qual ajuste você acredita ser necessário.",
                 }
             ),
         }
         labels = {
             "problem_date": "Data do problema",
             "problem_type": "Tipo de problema",
-            "description": "Descricao",
+            "description": "Descrição",
         }
 
     def __init__(self, *args, employee=None, **kwargs):
@@ -130,7 +220,7 @@ class PunchCorrectionRequestForm(forms.ModelForm):
     def clean_description(self):
         description = (self.cleaned_data.get("description") or "").strip()
         if not description:
-            raise forms.ValidationError("Descreva o problema para enviar a solicitacao.")
+            raise forms.ValidationError("Descreva o problema para enviar a solicitação.")
         return description
 
     def clean(self):
@@ -168,7 +258,7 @@ class PunchCorrectionRequestForm(forms.ModelForm):
             request_obj.save()
         return request_obj
     date_to = forms.DateField(
-        label="Ate",
+        label="Até",
         required=False,
         widget=forms.DateInput(attrs={"type": "date"}),
     )
@@ -252,7 +342,7 @@ class ServiceReportCreateForm(forms.ModelForm):
         date_from = data.get("date_from")
         date_to = data.get("date_to")
         if date_from and date_to and date_from > date_to:
-            self.add_error("date_to", "Data final nao pode ser anterior a data inicial.")
+            self.add_error("date_to", "Data final não pode ser anterior a data inicial.")
         return data
 
     def clean_contract(self):
@@ -260,9 +350,9 @@ class ServiceReportCreateForm(forms.ModelForm):
         if not contract:
             return contract
         if self.employee and contract.employee_id != self.employee.id:
-            raise forms.ValidationError("Selecione um contrato valido do seu perfil.")
+            raise forms.ValidationError("Selecione um contrato válido do seu perfil.")
         if self.user and contract.employee.user_id != self.user.id:
-            raise forms.ValidationError("Selecione um contrato valido do seu perfil.")
+            raise forms.ValidationError("Selecione um contrato válido do seu perfil.")
         return contract
 
     def save(self, commit=True):
@@ -299,7 +389,7 @@ class CompanyActivityReportRequestForm(forms.ModelForm):
         widgets = {
             "date_from": forms.DateInput(attrs={"type": "date"}),
             "date_to": forms.DateInput(attrs={"type": "date"}),
-            "subject": forms.TextInput(attrs={"placeholder": "Ex.: Relatorio de servico semanal"}),
+            "subject": forms.TextInput(attrs={"placeholder": "Ex.: Relatório de serviço semanal"}),
             "instruction": forms.Textarea(
                 attrs={
                     "rows": 3,
@@ -310,7 +400,7 @@ class CompanyActivityReportRequestForm(forms.ModelForm):
         labels = {
             "date_from": "Data inicial",
             "date_to": "Data final",
-            "subject": "Titulo/assunto",
+            "subject": "Título/assunto",
             "instruction": "Instrucao",
         }
 
@@ -357,11 +447,11 @@ class CompanyActivityReportRequestForm(forms.ModelForm):
         instruction = (data.get("instruction") or "").strip()
 
         if not subject:
-            self.add_error("subject", "Informe o titulo da solicitacao.")
+            self.add_error("subject", "Informe o título da solicitação.")
         if not (date_from or date_to):
-            self.add_error("date_from", "Informe uma data ou periodo para a solicitacao.")
+            self.add_error("date_from", "Informe uma data ou período para a solicitação.")
         if date_from and date_to and date_to < date_from:
-            self.add_error("date_to", "Data final nao pode ser anterior a data inicial.")
+            self.add_error("date_to", "Data final não pode ser anterior a data inicial.")
 
         if self.company and employee and employee.company_id != self.company.id:
             self.add_error("employee", "Selecione um profissional da sua empresa.")
@@ -416,7 +506,7 @@ class CompanyMEICreateForm(forms.Form):
         widget=forms.NumberInput(attrs={"step": "0.01", "placeholder": "Ex.: 95.00"}),
     )
     contract_start_date = forms.DateField(
-        label="Inicio do contrato (opcional)",
+        label="Início do contrato (opcional)",
         required=False,
         widget=forms.DateInput(attrs={"type": "date"}),
     )
@@ -477,23 +567,23 @@ class CompanyMEICreateForm(forms.Form):
             else:
                 self.account_mode = "existing"
                 self.account_hint = (
-                    "Este profissional ja possui conta no HoraCerta. "
+                    "Este profissional já possui conta no HoraCerta. "
                     "Sera criado apenas um novo contrato com este cliente."
                 )
                 if self.company and Employee.objects.filter(user=existing_user, company=self.company).exists():
                     self.add_error(
                         "mei_email",
-                        "Este MEI ja possui contrato com este cliente. Use o gerenciamento de contratos para continuar.",
+                        "Este MEI já possui contrato com este cliente. Use o gerenciamento de contratos para continuar.",
                     )
         else:
             self.account_mode = "new"
-            self.account_hint = "Novo email: sera criada a conta principal do MEI com senha."
+            self.account_hint = "Novo email: será criada a conta principal do MEI com senha."
             if not password1:
                 self.add_error("password1", "Defina uma senha para criar a conta do MEI.")
             if not password2:
                 self.add_error("password2", "Confirme a senha para criar a conta do MEI.")
             if password1 and password2 and password1 != password2:
-                self.add_error("password2", "As senhas nao conferem.")
+                self.add_error("password2", "As senhas não conferem.")
 
         contract_requested = self._contract_requested(data)
         start_date = data.get("contract_start_date")
@@ -504,7 +594,7 @@ class CompanyMEICreateForm(forms.Form):
             self.add_error("contract_hourly_rate", "Informe o valor/hora para criar o contrato inicial.")
 
         if contract_requested and start_date and end_date and end_date < start_date:
-            self.add_error("contract_end_date", "A data final nao pode ser anterior a data inicial.")
+            self.add_error("contract_end_date", "A data final não pode ser anterior a data inicial.")
 
         return data
 
@@ -550,12 +640,12 @@ class CompanyMEICreateForm(forms.Form):
         if result.linked_existing_user:
             self.account_mode = "existing"
             self.account_hint = (
-                "Este profissional ja possui conta no HoraCerta. "
+                "Este profissional já possui conta no HoraCerta. "
                 "Sera criado apenas um novo contrato com este cliente."
             )
         else:
             self.account_mode = "new"
-            self.account_hint = "Novo email: sera criada a conta principal do MEI com senha."
+            self.account_hint = "Novo email: será criada a conta principal do MEI com senha."
         return result.employee, result.contract, result
 
     def create_mei_for_company(self, company):
@@ -596,8 +686,8 @@ class CompanyContractForm(forms.ModelForm):
         }
         labels = {
             "hourly_rate": "Valor/hora do contrato",
-            "start_date": "Inicio da vigencia",
-            "end_date": "Fim da vigencia (opcional)",
+            "start_date": "Início da vigência",
+            "end_date": "Fim da vigência (opcional)",
             "contract_file": "PDF do contrato (opcional)",
             "notes": "Observacoes (opcional)",
         }
@@ -641,17 +731,17 @@ class CompanyContractForm(forms.ModelForm):
         employee = data.get("employee")
 
         if not employee:
-            self.add_error("employee", "Selecione um prestador valido.")
+            self.add_error("employee", "Selecione um prestador válido.")
 
         if start_date and end_date and end_date < start_date:
-            self.add_error("end_date", "A data final nao pode ser anterior a data inicial.")
+            self.add_error("end_date", "A data final não pode ser anterior a data inicial.")
 
         if self.company and employee and employee.company_id != self.company.id:
             self.add_error("employee", "Selecione um prestador da sua empresa.")
         if employee and not employee.user_id:
-            self.add_error("employee", "Prestador selecionado sem usuario valido.")
+            self.add_error("employee", "Prestador selecionado sem usuário válido.")
         if employee and not employee.company_id:
-            self.add_error("employee", "Prestador selecionado sem empresa valida.")
+            self.add_error("employee", "Prestador selecionado sem empresa válida.")
         return data
 
     def clean_contract_file(self):
@@ -686,7 +776,7 @@ class CompanyProfileForm(forms.ModelForm):
             "cnpj": "CNPJ",
             "email": "Email",
             "phone": "Telefone",
-            "address": "Endereco",
+            "address": "Endereço",
             "logo": "Logo",
         }
         widgets = {
@@ -708,8 +798,9 @@ class MEIClientForm(forms.Form):
         widget=forms.NumberInput(attrs={"step": "0.01", "min": "0.01", "placeholder": "Ex.: 95.00"}),
     )
     start_date = forms.DateField(
-        label="Data de inicio",
-        widget=forms.DateInput(attrs={"type": "date"}),
+        label="Data de início",
+        # format ISO: <input type="date"> so mostra o valor inicial nesse formato.
+        widget=forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
     )
     closure_type = forms.ChoiceField(
         label="Frequencia",
@@ -767,7 +858,7 @@ class MEIClientForm(forms.Form):
     def clean(self):
         data = super().clean()
         if not self.user:
-            raise forms.ValidationError("Usuario MEI nao identificado.")
+            raise forms.ValidationError("Usuário MEI não identificado.")
         if getattr(self.user, "role", None) != User.Role.FUNCIONARIO:
             raise forms.ValidationError("Apenas profissionais podem cadastrar clientes.")
         return data
@@ -796,7 +887,31 @@ class MEIClientForm(forms.Form):
 
             employee.company = company
             employee.user = self.user
-            employee.full_name = self.user.get_full_name() or self.user.email or self.user.username
+            if not employee.full_name:
+                # O nome/CPF/telefone/endereco do profissional sao guardados
+                # por vinculo (Employee), um registro por cliente - nao existe
+                # um "perfil unico" do usuario. Antes, um cliente novo caia
+                # direto no fallback de e-mail (self.user.email) porque o
+                # User do Django normalmente nao tem first_name/last_name
+                # preenchidos aqui. Isso fazia a tela "Meu Perfil" parecer ter
+                # perdido o nome cadastrado assim que esse vinculo novo virava
+                # o "contrato atual" selecionado - bug da auditoria de
+                # 12/09/2026. Preferimos reaproveitar um nome ja cadastrado
+                # pelo mesmo profissional em outro vinculo antes de cair no
+                # e-mail/usuario.
+                known_full_name = (
+                    Employee.objects.filter(user=self.user)
+                    .exclude(full_name="")
+                    .order_by("-created_at")
+                    .values_list("full_name", flat=True)
+                    .first()
+                )
+                employee.full_name = (
+                    known_full_name
+                    or self.user.get_full_name()
+                    or self.user.email
+                    or self.user.username
+                )
             employee.phone = employee.phone or company.whatsapp or company.phone
             employee.is_active = True
             employee.save()
@@ -826,8 +941,8 @@ class CompanyAttendancePolicyForm(forms.ModelForm):
     default_location = forms.ModelChoiceField(
         queryset=CompanyAuthorizedLocation.objects.none(),
         required=False,
-        empty_label="Sem local padrao",
-        label="Local padrao (opcional)",
+        empty_label="Sem local padrão",
+        label="Local padrão (opcional)",
     )
 
     class Meta:
@@ -843,10 +958,10 @@ class CompanyAttendancePolicyForm(forms.ModelForm):
         labels = {
             "validation_mode": "Como validar os registros",
             "require_location": "Validar localizacao no registro",
-            "require_qr": "Exigir confirmacao presencial por QR",
+            "require_qr": "Exigir confirmação presencial por QR",
             "qr_requirement": "Quando exigir QR",
-            "default_allowed_radius_m": "Raio padrao sugerido (metros)",
-            "default_location": "Local padrao (opcional)",
+            "default_allowed_radius_m": "Raio padrão sugerido (metros)",
+            "default_location": "Local padrão (opcional)",
         }
         widgets = {
             "default_allowed_radius_m": forms.NumberInput(attrs={"min": 30, "step": 10, "placeholder": "100"}),
@@ -873,9 +988,9 @@ class CompanyAttendancePolicyForm(forms.ModelForm):
         default_location = data.get("default_location")
 
         if default_radius is not None and default_radius < 30:
-            self.add_error("default_allowed_radius_m", "Use no minimo 30 metros para evitar leituras instaveis de GPS.")
+            self.add_error("default_allowed_radius_m", "Use no mínimo 30 metros para evitar leituras instáveis de GPS.")
         if default_radius is not None and default_radius > 5000:
-            self.add_error("default_allowed_radius_m", "Para V1, o limite maximo permitido e 5000 metros.")
+            self.add_error("default_allowed_radius_m", "Para V1, o limite máximo permitido e 5000 metros.")
 
         if mode == CompanyAttendancePolicy.ValidationMode.FREE:
             data["require_location"] = False
@@ -914,7 +1029,7 @@ class CompanyAuthorizedLocationForm(forms.ModelForm):
         ]
         labels = {
             "name": "Nome do local",
-            "address_or_description": "Endereco ou descricao",
+            "address_or_description": "Endereço ou descrição",
             "latitude": "Latitude (avancado)",
             "longitude": "Longitude (avancado)",
             "allowed_radius_m": "Raio permitido (metros)",
@@ -954,7 +1069,7 @@ class CompanyAuthorizedLocationForm(forms.ModelForm):
         try:
             parsed = Decimal(normalized)
         except (InvalidOperation, TypeError):
-            raise forms.ValidationError("Informe um numero valido.")
+            raise forms.ValidationError("Informe um número válido.")
         if parsed < Decimal(str(min_value)) or parsed > Decimal(str(max_value)):
             raise forms.ValidationError(f"{field_name} deve ficar entre {min_value} e {max_value}.")
         return parsed.quantize(Decimal("0.000001"), rounding=ROUND_HALF_UP)
@@ -980,9 +1095,9 @@ class CompanyAuthorizedLocationForm(forms.ModelForm):
         if radius is None:
             return radius
         if radius < 30:
-            raise forms.ValidationError("Use no minimo 30 metros para evitar falsas divergencias de GPS.")
+            raise forms.ValidationError("Use no mínimo 30 metros para evitar falsas divergências de GPS.")
         if radius > 5000:
-            raise forms.ValidationError("Para V1, o limite maximo permitido e 5000 metros.")
+            raise forms.ValidationError("Para V1, o limite máximo permitido e 5000 metros.")
         return radius
 
 
@@ -994,7 +1109,7 @@ class MEIProfileForm(forms.ModelForm):
             "full_name": "Nome completo",
             "document": "CPF ou CNPJ",
             "phone": "Telefone",
-            "address": "Endereco",
+            "address": "Endereço",
             "profile_photo": "Foto de perfil",
         }
         widgets = {
@@ -1006,7 +1121,7 @@ class MEIProfileForm(forms.ModelForm):
         if self.instance and not self.instance.company_id:
             raise forms.ValidationError("Perfil MEI sem empresa vinculada.")
         if self.instance and not self.instance.user_id:
-            raise forms.ValidationError("Perfil MEI sem usuario vinculado.")
+            raise forms.ValidationError("Perfil MEI sem usuário vinculado.")
         return data
 
 

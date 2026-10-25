@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}HoraCerta - Criar conta{% endblock %}
+{% block subtitle %}Criar conta{% endblock %}
+
+{% block content %}
+  <style>
+    .mei-signup { margin: 14px auto 28px; max-width: 980px; display: grid; gap: 14px; }
+    .mei-signup-layout { display: grid; gap: 14px; grid-template-columns: 1fr; }
+    .mei-signup-benefits,
+    .mei-signup-card {
+      border: 1px solid var(--color-border);
+      border-radius: 16px;
+      background: var(--surface-raised);
+      box-shadow: var(--shadow-sm);
+      padding: 18px;
+    }
+    .mei-signup-benefits h2 { margin: 0; font-size: 1.05rem; }
+    .mei-signup-benefits ol { margin: 12px 0 0; padding-left: 1.2rem; display: grid; gap: 8px; line-height: 1.45; }
+    .mei-signup-benefits p { margin: 10px 0 0; color: var(--muted); font-size: 0.88rem; line-height: 1.45; }
+    .mei-signup-card h1 { margin: 0; font-size: clamp(1.35rem, 4.4vw, 1.75rem); line-height: 1.18; }
+    .mei-signup-card .sub { margin: 8px 0 0; color: var(--muted); line-height: 1.45; }
+    .mei-field { margin-top: 14px; }
+    .mei-field label { display: block; margin-bottom: 6px; font-size: 0.85rem; font-weight: 700; }
+    .mei-field input[type="text"],
+    .mei-field input[type="email"],
+    .mei-field input[type="password"] {
+      width: 100%;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid var(--field-border);
+      background: var(--field-bg);
+      color: var(--text);
+      font-size: 1rem;
+    }
+    .mei-field input:focus { outline: none; border-color: var(--border-brand); box-shadow: var(--focus-ring); }
+    .mei-terms { display: flex; gap: 10px; align-items: flex-start; margin-top: 16px; font-size: 0.9rem; line-height: 1.4; }
+    .mei-terms input { margin-top: 3px; width: 18px; height: 18px; flex: 0 0 auto; }
+    .mei-error {
+      margin-top: 6px; padding: 6px 8px; border-radius: 10px; font-size: 0.82rem; line-height: 1.4;
+      color: var(--danger-text); border: 1px solid var(--danger-border); background: var(--danger-bg);
+    }
+    .mei-error ul { margin: 0; padding: 0; list-style: none; }
+    .mei-actions { margin-top: 18px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .mei-actions .btn.primary { min-height: 48px; padding: 0 18px; font-weight: 800; }
+    .mei-hint { color: var(--muted); font-size: 0.9rem; }
+    .hp-field { position: absolute; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden; }
+    @media (max-width: 899px) { .mei-signup-card { order: -1; } }
+    @media (min-width: 900px) { .mei-signup-layout { grid-template-columns: minmax(260px, 0.85fr) minmax(400px, 1.15fr); } }
+  </style>
+
+  <div class="mei-signup">
+    <div class="mei-signup-layout">
+      <aside class="mei-signup-benefits">
+        <h2>Em poucos minutos você começa a usar</h2>
+        <ol>
+          <li>Crie sua conta (nome, e-mail e senha).</li>
+          <li>Cadastre seu primeiro cliente e o valor da sua hora.</li>
+          <li>Registre suas horas e acompanhe quanto já ganhou.</li>
+          <li>Gere um relatório e envie ao cliente por link.</li>
+        </ol>
+        <p>Para MEIs e prestadores que atendem mais de um cliente. O HoraCerta não é ponto eletrônico CLT e não emite nota fiscal.</p>
+      </aside>
+
+      <section class="mei-signup-card">
+        <h1>Criar minha conta</h1>
+        <p class="sub">Grátis durante o beta. Sem cartão de crédito.</p>
+
+        <form method="post" novalidate data-submit-once="true">
+          {% csrf_token %}
+
+          <div class="mei-field">
+            <label for="{{ form.full_name.id_for_label }}">{{ form.full_name.label }}</label>
+            <input type="text" name="{{ form.full_name.html_name }}" id="{{ form.full_name.id_for_label }}" value="{{ form.full_name.value|default_if_none:'' }}" autocomplete="name" required>
+            {% if form.full_name.errors %}<div class="mei-error" role="alert">{{ form.full_name.errors }}</div>{% endif %}
+          </div>
+
+          <div class="mei-field">
+            <label for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
+            <input type="email" name="{{ form.email.html_name }}" id="{{ form.email.id_for_label }}" value="{{ form.email.value|default_if_none:'' }}" autocomplete="email" inputmode="email" required>
+            {% if form.email.errors %}<div class="mei-error" role="alert">{{ form.email.errors }}</div>{% endif %}
+          </div>
+
+          <div class="mei-field">
+            <label for="{{ form.password1.id_for_label }}">{{ form.password1.label }}</label>
+            <input type="password" name="{{ form.password1.html_name }}" id="{{ form.password1.id_for_label }}" autocomplete="new-password" required>
+            {% if form.password1.errors %}<div class="mei-error" role="alert">{{ form.password1.errors }}</div>{% endif %}
+          </div>
+
+          <div class="mei-field">
+            <label for="{{ form.password2.id_for_label }}">{{ form.password2.label }}</label>
+            <input type="password" name="{{ form.password2.html_name }}" id="{{ form.password2.id_for_label }}" autocomplete="new-password" required>
+            {% if form.password2.errors %}<div class="mei-error" role="alert">{{ form.password2.errors }}</div>{% endif %}
+          </div>
+
+          <div class="hp-field" aria-hidden="true">
+            <label for="{{ form.website.id_for_label }}">Não preencha este campo</label>
+            {{ form.website }}
+          </div>
+
+          <label class="mei-terms">
+            <input type="checkbox" name="{{ form.accept_terms.html_name }}" id="{{ form.accept_terms.id_for_label }}" {% if form.accept_terms.value %}checked{% endif %}>
+            <span>Li e aceito os <a href="{% url 'terms' %}" target="_blank" rel="noopener">Termos de Uso</a> e a <a href="{% url 'privacy' %}" target="_blank" rel="noopener">Política de Privacidade</a>.</span>
+          </label>
+          {% if form.accept_terms.errors %}<div class="mei-error" role="alert">{{ form.accept_terms.errors }}</div>{% endif %}
+
+          {% if form.non_field_errors %}<div class="mei-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+
+          <div class="mei-actions">
+            <button class="btn primary" type="submit" data-loading-text="Criando conta...">Criar conta</button>
+            <span class="mei-hint">Já tem conta? <a href="{% url 'login' %}">Entrar</a></span>
+          </div>
+        </form>
+      </section>
+    </div>
+  </div>
+{% endblock %}

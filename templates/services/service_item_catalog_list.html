@@ -14,28 +14,33 @@
   .catalog-filter{display:flex;gap:8px;flex-wrap:wrap;align-items:end}
   .catalog-filter .field{display:grid;gap:5px;min-width:240px}
   .catalog-grid{display:grid;gap:10px}
-  .catalog-row{display:grid;grid-template-columns:1.2fr .55fr .7fr .7fr .7fr .7fr .6fr auto;gap:10px;align-items:center;border:1px solid var(--color-border);border-radius:8px;background:var(--surface-card);padding:12px}
+  .catalog-row{display:grid;grid-template-columns:1.4fr .5fr .7fr .7fr .7fr auto;gap:10px;align-items:center;border:1px solid var(--color-border);border-radius:8px;background:var(--surface-card);padding:12px}
   .catalog-title{font-weight:900;overflow-wrap:anywhere}
   .catalog-meta{font-size:12px;color:var(--color-text-muted);display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
-  .catalog-cell span{display:block;font-size:11px;color:var(--color-text-muted);font-weight:800}
+  .catalog-cell span{display:block;font-size:12px;color:var(--color-text-muted);font-weight:800}
   .catalog-cell strong{display:block;margin-top:3px}
   .row-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
   @media (max-width:900px){
-    .catalog-head,.catalog-row{grid-template-columns:1fr;display:grid}
-    .catalog-actions .btn,.row-actions .btn,.row-actions button{width:100%}
+    .catalog-head{grid-template-columns:1fr;display:grid}
+    .catalog-row{grid-template-columns:repeat(2,minmax(0,1fr));display:grid}
+    .catalog-row > div:first-child,.catalog-row .row-actions{grid-column:1 / -1}
+    .row-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+    .catalog-actions .btn,.row-actions .btn,.row-actions button,.row-actions form{width:100%}
   }
+  .checkbox-line{display:flex;align-items:center;gap:10px;min-height:44px}
+  .checkbox-line input{width:22px;height:22px;margin:0}
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="catalog-page">
+  {% services_nav "more" %}
   <section class="card catalog-head">
     <div>
       <h1>Catálogo de itens</h1>
       <p>Guarde materiais, peças e despesas que você usa com frequência. Os valores são estimativas pessoais e devem ser confirmados antes de enviar ao cliente.</p>
     </div>
     <div class="catalog-actions">
-      <a class="btn" href="{% url 'service_job_list' %}">Serviços</a>
       <form method="post" action="{% url 'service_item_catalog_seed_suggestions' %}">
         {% csrf_token %}
         <button class="btn" type="submit">Adicionar sugestões</button>
@@ -71,12 +76,10 @@
             {% if not item.is_active %}<span>Desativado</span>{% endif %}
           </div>
         </div>
-        <div class="catalog-cell"><span>Código</span><strong>{{ item.internal_code|default:"-" }}</strong></div>
         <div class="catalog-cell"><span>Quantidade</span><strong>{{ item.default_quantity }}</strong></div>
         <div class="catalog-cell"><span>Valor estimado</span><strong>{% if item.estimated_unit_value is not None %}{{ item.estimated_unit_value|brl }}{% else %}-{% endif %}</strong></div>
         <div class="catalog-cell"><span>Último valor</span><strong>{% if item.last_used_value is not None %}{{ item.last_used_value|brl }}{% else %}-{% endif %}</strong></div>
-        <div class="catalog-cell"><span>Último uso</span><strong>{% if item.last_used_at %}{{ item.last_used_at|date:"d/m/Y" }}{% else %}-{% endif %}</strong></div>
-        <div class="catalog-cell"><span>Status</span><strong>{% if item.is_active %}Ativo{% else %}Inativo{% endif %}</strong></div>
+        <div class="catalog-cell"><span>Último uso</span><strong>{% if item.last_used_at %}{{ item.last_used_at|date:"d/m/Y" }}{% else %}nunca{% endif %}</strong></div>
         <div class="row-actions">
           <a class="btn" href="{% url 'service_item_catalog_update' item.id %}">Editar</a>
           <form method="post" action="{% url 'service_item_catalog_toggle_favorite' item.id %}">

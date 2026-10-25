@@ -33,7 +33,7 @@
             {% if open_punch_correction_requests_count %}<span class="badge">{{ open_punch_correction_requests_count }}</span>{% endif %}
           </a>
           <a class="internal-nav__item {% if current == 'internal_notifications' %}is-active{% endif %}" href="{% url 'internal_notifications' %}">
-            Notificacoes
+            Notificações
             {% if unread_internal_notifications_count %}<span class="badge">{{ unread_internal_notifications_count }}</span>{% endif %}
           </a>
           <a class="internal-nav__item {% if current == 'internal_audit' %}is-active{% endif %}" href="{% url 'internal_audit' %}">Auditoria</a>

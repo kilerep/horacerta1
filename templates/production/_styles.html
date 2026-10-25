@@ -1,0 +1,51 @@
+<style>
+  .prod-page{display:grid;gap:14px;max-width:980px}
+  .prod-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+  .prod-head h1{margin:0;font-size:26px;line-height:1.15}
+  .prod-head p{margin:6px 0 0;color:var(--color-text-muted);line-height:1.45}
+  .prod-list{display:grid;gap:10px}
+  .prod-card{display:grid;gap:8px;padding:14px;border:1px solid var(--color-border);border-radius:12px;background:var(--gradient-card);text-decoration:none;color:var(--color-text)}
+  .prod-card:hover{border-color:var(--color-primary)}
+  .prod-card strong{font-size:17px}
+  .prod-meta{display:flex;flex-wrap:wrap;gap:6px 12px;color:var(--color-text-muted);font-size:14px}
+  .prod-chip{display:inline-flex;align-items:center;min-height:26px;padding:0 10px;border-radius:999px;border:1px solid var(--color-border);font-size:13px;font-weight:800}
+  .prod-chip.open{background:var(--success-bg);border-color:var(--success-border);color:var(--success-text)}
+  .prod-chip.guincho{background:var(--warning-bg);border-color:var(--warning-border);color:var(--warning-text)}
+  .prod-chip.implemento{background:var(--color-primary-soft);border-color:var(--color-primary);color:var(--color-text)}
+  .prod-totals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .prod-total{padding:10px;border:1px solid var(--color-border);border-radius:10px;background:var(--surface-soft)}
+  .prod-total span{display:block;font-size:13px;color:var(--color-text-muted)}
+  .prod-total strong{display:block;margin-top:2px;font-size:22px}
+  .prod-form{display:grid;gap:12px}
+  .prod-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .prod-field label{display:block;margin-bottom:5px;font-size:13px;font-weight:800;color:var(--color-text-muted)}
+  .prod-field .errorlist{margin:4px 0 0;padding:0;list-style:none;color:var(--danger-text);font-size:13px}
+  .prod-time{display:flex;gap:8px}
+  .prod-time input{flex:1;min-width:0}
+  .prod-time .btn{flex:0 0 auto}
+  .prod-dest{display:flex;gap:8px;flex-wrap:wrap}
+  .prod-dest label{display:flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;border:1px solid var(--color-border);border-radius:999px;background:var(--surface-soft);font-weight:800;cursor:pointer}
+  .prod-dest input{width:20px;height:20px;margin:0}
+  .prod-dest label:has(input:checked){border-color:var(--color-primary);background:var(--color-primary-soft)}
+  .prod-dest ul{display:contents;list-style:none;margin:0;padding:0}
+  .prod-dest li{display:contents}
+  .prod-entries{display:grid;gap:8px}
+  .prod-entry{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px;border:1px solid var(--color-border);border-radius:10px;background:var(--surface-soft);color:var(--color-text);text-decoration:none;min-height:44px}
+  .prod-entry:hover{border-color:var(--color-primary)}
+  .prod-entry.running{border-color:var(--warning-border);background:var(--warning-bg)}
+  .prod-entry strong{font-size:16px}
+  .prod-entry .dur{font-size:18px;font-weight:900;white-space:nowrap}
+  .prod-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .prod-actions form{margin:0}
+  .prod-page [hidden]{display:none!important}
+  .prod-share{display:grid;gap:10px;padding:14px;border:1px solid var(--color-border);border-radius:12px;background:var(--gradient-card)}
+  .prod-share-main{width:100%;justify-content:center}
+  .prod-hint{margin:-4px 0 0;color:var(--color-text-muted);font-size:13px;line-height:1.4}
+  .prod-form-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+  .prod-voice.is-listening{border-color:var(--danger-border);background:var(--danger-bg);color:var(--danger-text)}
+  .prod-voice-status{margin:0;padding:10px 12px;border:1px solid var(--color-primary);border-radius:10px;background:var(--color-primary-soft);font-size:14px;line-height:1.45}
+  .prod-empty{padding:14px;border:1px dashed var(--color-border);border-radius:10px;color:var(--color-text-muted);line-height:1.45}
+  .prod-errors{padding:10px 12px;border:1px solid var(--danger-border);background:var(--danger-bg);color:var(--danger-text);border-radius:10px}
+  @media (max-width:640px){.prod-grid{grid-template-columns:1fr}.prod-totals{grid-template-columns:repeat(3,minmax(0,1fr))}.prod-total strong{font-size:18px}.prod-actions .btn{flex:1 1 auto}}
+  @media print{.no-print,.prod-form,.sidebar,aside,nav,.topbar,.menu-toggle{display:none!important}.prod-entry{break-inside:avoid}}
+</style>

@@ -26,13 +26,7 @@ class ServiceAction:
 def has_minimum_service_data(service):
     has_client = bool(service.client_id or service.contract_id or service.manual_client_name)
     has_address = bool(service.service_location_summary or service.full_service_address)
-    return bool(
-        has_client
-        and service.description
-        and service.category_id
-        and has_address
-        and service.start_date
-    )
+    return bool(has_client and service.description and service.category_id and has_address and service.start_date)
 
 
 def normalize_service_status(service):
@@ -45,7 +39,7 @@ def status_label(service):
     labels = {
         ServiceJob.Status.DRAFT: "Rascunho",
         ServiceJob.Status.PLANNED: "Planejado",
-        ServiceJob.Status.SENT: "Prévia enviada",
+        ServiceJob.Status.SENT: "Orçamento enviado",
         ServiceJob.Status.SCHEDULED: "Planejado",
         ServiceJob.Status.IN_PROGRESS: "Em execução",
         ServiceJob.Status.FINISHED: "Finalizado",
@@ -102,7 +96,7 @@ def get_next_service_action(service, *, open_work_log=None):
         primary = ServiceAction("start", "Iniciar trabalho", "post", "service_clock_action", "start")
         secondary = [
             ServiceAction("manual_period", "Adicionar período manual", "get", anchor="#manual-period"),
-            ServiceAction("send_preview", "Enviar prévia", "get", "service_job_preview_whatsapp", external=True),
+            ServiceAction("send_preview", "Enviar orçamento", "get", "service_job_preview_whatsapp", external=True),
             ServiceAction("add_item", "Adicionar item", "get", anchor="#items"),
             ServiceAction("quote", "Pedir cotação", "get", anchor="#quote"),
         ]
@@ -110,7 +104,7 @@ def get_next_service_action(service, *, open_work_log=None):
         primary = ServiceAction("start", "Iniciar trabalho", "post", "service_clock_action", "start")
         secondary = [
             ServiceAction("manual_period", "Adicionar período manual", "get", anchor="#manual-period"),
-            ServiceAction("update_preview", "Atualizar prévia", "post", "service_job_preview_generate"),
+            ServiceAction("update_preview", "Atualizar orçamento", "post", "service_job_preview_generate"),
             ServiceAction("quote", "Pedir cotação", "get", anchor="#quote"),
         ]
     elif status == ServiceJob.Status.IN_PROGRESS:
@@ -142,6 +136,9 @@ def get_next_service_action(service, *, open_work_log=None):
     else:
         primary = ServiceAction("details", "Ver detalhes", "get", anchor="#details")
         secondary = []
+
+    if service.billing_mode == ServiceJob.BillingMode.FIXED and service.fixed_labor_value is not None:
+        secondary.insert(0, ServiceAction("event_proposal", "Proposta do evento", "get", "service_event_proposal_detail", external=True))
 
     return {
         "status": status,

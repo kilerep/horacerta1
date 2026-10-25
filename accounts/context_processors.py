@@ -39,7 +39,7 @@ def _build_display_name(user, employee=None):
     if username:
         return username
 
-    return "Usuario"
+    return "Usuário"
 
 
 def header_profile_media(request):
