@@ -122,7 +122,7 @@ def _accept_production_entry(user, item):
 
     data = item.get("fields") or {}
     form = ProductionEntryForm({key: str(data.get(key) or "") for key in
-                                ("work_date", "item_code", "destination", "start_time", "end_time", "duration", "note")})
+                                ("work_date", "item_code", "quantity", "destination", "start_time", "end_time", "duration", "note")})
     if not form.is_valid():
         errors = "; ".join(str(e) for errs in form.errors.values() for e in errs)
         return {"status": "erro", "motivo": errors or "Dados do item inválidos."}

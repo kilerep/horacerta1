@@ -48,7 +48,7 @@
     {% for entry in entries %}
       <a class="prod-entry{% if entry.is_running %} running{% endif %}" href="{% url 'production_entry_edit' sheet.id entry.id %}">
         <div>
-          <strong>{{ entry.item_code|default:"Sem código" }}</strong>
+          <strong>{{ entry.item_code|default:"Sem código" }}{% if entry.quantity %} · {{ entry.quantity }} un.{% endif %}</strong>
           <div class="prod-meta">
             <span>{{ entry.work_date|date:"d/m" }}</span>
             {% if entry.destination %}<span class="prod-chip {{ entry.destination|lower }}">{{ entry.get_destination_display }}</span>{% endif %}
