@@ -2,77 +2,124 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#14171c">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0f1216">
   <title>HoraCerta sem internet</title>
   <style>
-    :root{--bg:#14171c;--card:#1c2027;--line:#2c323c;--text:#eef0f3;--muted:#9aa3ae;--accent:#3b82f6;--ok:#34d399;--warn:#f5b44a;--bad:#f87171;--field:#11141a}
-    @media (prefers-color-scheme: light){:root{--bg:#f4f5f7;--card:#ffffff;--line:#dde1e7;--text:#16191e;--muted:#5d6672;--accent:#2563eb;--ok:#0f8a5f;--warn:#a76200;--bad:#c53030;--field:#ffffff}}
+    :root{
+      --bg:#0f1216;--bg2:#151a20;--card:#181d24;--card2:#1e242c;--line:#2a313b;--text:#eef1f4;--muted:#9aa4b0;
+      --accent:#3b82f6;--accent2:#2563eb;--accent-soft:rgba(59,130,246,.14);--ok:#34d399;--ok-soft:rgba(52,211,153,.12);
+      --warn:#f5b44a;--warn-soft:rgba(245,180,74,.12);--bad:#f87171;--bad-soft:rgba(248,113,113,.12);--field:#12161b;
+      --shadow:0 10px 30px rgba(0,0,0,.35)
+    }
+    @media (prefers-color-scheme: light){:root{
+      --bg:#eef1f5;--bg2:#e6eaf0;--card:#ffffff;--card2:#f7f8fa;--line:#dde2e9;--text:#14181d;--muted:#5b6571;
+      --accent:#2563eb;--accent2:#1d4ed8;--accent-soft:rgba(37,99,235,.10);--ok:#0f8a5f;--ok-soft:rgba(15,138,95,.10);
+      --warn:#9a5b00;--warn-soft:rgba(154,91,0,.10);--bad:#c53030;--bad-soft:rgba(197,48,48,.10);--field:#ffffff;
+      --shadow:0 10px 24px rgba(20,30,45,.08)
+    }}
     *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
-    main{max-width:560px;margin:0 auto;padding:16px 16px 40px;display:grid;gap:14px}
-    header{display:flex;justify-content:space-between;align-items:center;gap:10px}
-    header strong{font-size:18px}
-    .net{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border:1px solid var(--line);border-radius:999px;font-size:13px;font-weight:700;color:var(--warn)}
-    .net::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
-    .net.on{color:var(--ok)}
-    .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;display:grid;gap:12px}
-    h1{margin:0;font-size:22px;line-height:1.2}
-    h2{margin:0;font-size:17px}
+    html{-webkit-text-size-adjust:100%}
+    body{margin:0;min-height:100vh;background:radial-gradient(120% 60% at 50% -10%,var(--bg2),var(--bg));color:var(--text);
+      font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+    main{max-width:560px;margin:0 auto;padding:calc(14px + env(safe-area-inset-top)) 16px 40px;display:grid;gap:14px}
+    .top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+    .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:17px;letter-spacing:.01em}
+    .mark{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:var(--accent);color:#fff}
+    .mark svg{width:18px;height:18px}
+    .net{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;background:var(--warn-soft);
+      color:var(--warn);font-size:13px;font-weight:800}
+    .net::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor;animation:pulse 1.6s ease-out infinite}
+    .net.on{background:var(--ok-soft);color:var(--ok)}
+    .net.on::before{animation:none}
+    @keyframes pulse{0%{box-shadow:0 0 0 0 currentColor}70%{box-shadow:0 0 0 7px transparent}100%{box-shadow:0 0 0 0 transparent}}
+    @media (prefers-reduced-motion: reduce){.net::before{animation:none}}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;display:grid;gap:14px;box-shadow:var(--shadow)}
+    .hero{text-align:center;gap:6px;padding:22px 18px}
+    .hero .label{margin:0;color:var(--muted);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.08em}
+    .clock{font-size:clamp(58px,18vw,84px);font-weight:800;line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+    .date{color:var(--muted);font-size:15px}
+    .lead{margin:6px auto 0;max-width:42ch;color:var(--muted);font-size:14px;line-height:1.5}
+    .head{display:flex;align-items:center;gap:10px}
+    .icon{width:36px;height:36px;flex:0 0 auto;border-radius:10px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent)}
+    .icon svg{width:19px;height:19px}
+    h1{margin:0;font-size:20px;line-height:1.2}
+    h2{margin:0;font-size:17px;line-height:1.25}
+    .head p{margin:2px 0 0;color:var(--muted);font-size:13px}
     p{margin:0;color:var(--muted);font-size:14px}
-    label{display:block;margin-bottom:5px;font-size:14px;font-weight:700}
-    select,input{width:100%;min-height:46px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--field);color:var(--text);font:inherit}
+    label{display:block;margin-bottom:6px;font-size:13px;font-weight:700;color:var(--muted)}
+    select,input{width:100%;min-height:48px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--field);
+      color:var(--text);font:inherit;font-size:16px}
+    select:focus,input:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:transparent}
     .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .dest{display:flex;gap:8px;flex-wrap:wrap}
-    .dest label{display:flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border:1px solid var(--line);border-radius:999px;font-weight:700;margin:0}
-    .dest input{width:20px;height:20px;min-height:0}
-    button{min-height:48px;padding:0 16px;border:1px solid var(--line);border-radius:12px;background:var(--field);color:var(--text);font:inherit;font-weight:800;cursor:pointer}
-    button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-size:18px;min-height:58px}
-    button:disabled{opacity:.5}
+    .seg{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:4px;border:1px solid var(--line);border-radius:14px;background:var(--field)}
+    .seg label{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;margin:0;border-radius:10px;
+      color:var(--text);font-size:15px;font-weight:800;cursor:pointer}
+    .seg input{position:absolute;opacity:0;width:1px;height:1px;min-height:0}
+    .seg label:has(input:checked){background:var(--accent);color:#fff}
+    .seg label:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+    button{min-height:50px;padding:0 16px;border:1px solid var(--line);border-radius:14px;background:var(--card2);color:var(--text);
+      font:inherit;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+    button svg{width:20px;height:20px}
+    button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-size:18px;min-height:62px;border-radius:16px;
+      box-shadow:0 8px 20px rgba(37,99,235,.28)}
+    button.primary:active{background:var(--accent2);transform:translateY(1px)}
+    button:disabled{opacity:.45;cursor:not-allowed}
+    .hint{text-align:center;font-size:13px}
+    .count{min-width:26px;height:26px;padding:0 8px;border-radius:999px;background:var(--accent);color:#fff;display:inline-grid;
+      place-items:center;font-size:13px;font-weight:800;margin-left:auto}
     .list{display:grid;gap:8px;margin:0;padding:0;list-style:none}
-    .list li{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:14px}
-    .list li small{display:block;color:var(--muted)}
-    .list li.err{border-color:var(--bad)}
+    .list li{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:12px;border:1px solid var(--line);
+      border-radius:14px;background:var(--card2);font-size:14px}
+    .list li::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--warn)}
+    .list li span{font-weight:700}
+    .list li small{display:block;margin-top:2px;color:var(--muted);font-weight:500}
+    .list li.err{border-color:var(--bad);background:var(--bad-soft)}
+    .list li.err::before{background:var(--bad)}
     .list li.err small{color:var(--bad)}
-    .del{min-height:40px;padding:0 10px;font-size:13px}
-    .msg{padding:10px 12px;border-radius:10px;border:1px solid var(--line);font-size:14px}
-    .msg.ok{border-color:var(--ok);color:var(--ok)}
-    .msg.warn{border-color:var(--warn);color:var(--warn)}
+    .del{min-height:40px;padding:0 12px;font-size:13px;border-radius:10px;background:transparent}
+    .msg{padding:12px 14px;border-radius:14px;font-size:14px;font-weight:600;text-align:left}
+    .msg.ok{background:var(--ok-soft);color:var(--ok)}
+    .msg.warn{background:var(--warn-soft);color:var(--warn)}
+    .foot{text-align:center;color:var(--muted);font-size:12px;padding-top:4px}
     [hidden]{display:none!important}
     a{color:var(--accent)}
   </style>
 </head>
 <body>
 <main>
-  <header>
-    <strong>HoraCerta</strong>
-    <span class="net" id="net">Sem internet</span>
+  <header class="top">
+    <span class="brand"><span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></span>HoraCerta</span>
+    <span class="net" id="net" role="status">Sem internet</span>
   </header>
 
-  <section class="card">
-    <h1>Modo sem internet</h1>
-    <p>Registre seus horários e itens de produção normalmente. Eles ficam guardados neste aparelho e são enviados sozinhos quando a internet voltar.</p>
-    <p class="msg" id="msg" hidden></p>
+  <section class="card hero" aria-labelledby="heroTitle">
+    <p class="label" id="heroTitle">Modo sem internet</p>
+    <div class="clock" id="clock" aria-live="off">--:--</div>
+    <div class="date" id="today"></div>
+    <p class="lead">Registre seus horários e itens de produção normalmente. Eles ficam guardados neste aparelho e são enviados sozinhos quando a internet voltar.</p>
+    <p class="msg" id="msg" role="status" hidden></p>
   </section>
 
   <section class="card" id="noProfile" hidden>
-    <h2>Abra o app uma vez com internet</h2>
-    <p>Para usar sem internet, entre no HoraCerta com conexão ao menos uma vez neste aparelho. Assim ele guarda a lista dos seus clientes.</p>
+    <div class="head"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M2 8.8a15 15 0 0 1 20 0M5.5 12.3a10 10 0 0 1 13 0M9 15.8a5 5 0 0 1 6 0"/><circle cx="12" cy="19" r="1"/></svg></span>
+      <div><h2>Abra o app uma vez com internet</h2><p>Assim ele guarda a lista dos seus clientes neste aparelho.</p></div></div>
     <button type="button" onclick="location.href='/login/'">Tentar abrir o app</button>
   </section>
 
   <section class="card" id="punchCard" hidden>
-    <h2>Registrar horário</h2>
+    <div class="head"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+      <div><h2>Registrar horário</h2><p>Vale para entrada e para saída: conta o horário do toque.</p></div></div>
     <div>
       <label for="contract">Cliente</label>
       <select id="contract"></select>
     </div>
-    <button class="primary" type="button" id="punchBtn">Registrar agora</button>
-    <p>Vale para entrada e para saída: o horário do toque é o que conta.</p>
+    <button class="primary" type="button" id="punchBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Registrar agora</button>
   </section>
 
   <section class="card" id="prodCard" hidden>
-    <h2>Anotar item de produção</h2>
+    <div class="head"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><rect x="5" y="4.5" width="14" height="16.5" rx="2"/><path d="M9 4.5V3.5h6v1M8.5 10h7M8.5 13.5h7M8.5 17h4"/></svg></span>
+      <div><h2>Anotar item de produção</h2><p>Código, quantidade e horário (ou só a duração).</p></div></div>
     <div>
       <label for="sheet">Relatório (máquina)</label>
       <select id="sheet"></select>
@@ -81,12 +128,12 @@
       <div><label for="code">Código</label><input id="code" autocomplete="off" placeholder="Ex.: 0011-024"></div>
       <div><label for="qty">Quantidade</label><input id="qty" type="number" min="1" inputmode="numeric" placeholder="Ex.: 12"></div>
     </div>
-    <div><label for="duration">Duração (se não tiver início e fim)</label><input id="duration" inputmode="decimal" placeholder="Ex.: 1:30"></div>
     <div class="row">
       <div><label for="start">Início</label><input id="start" type="time"></div>
       <div><label for="end">Fim</label><input id="end" type="time"></div>
     </div>
-    <div class="dest" role="radiogroup" aria-label="Destino">
+    <div><label for="duration">Duração (se não tiver início e fim)</label><input id="duration" inputmode="decimal" placeholder="Ex.: 1:30"></div>
+    <div class="seg" role="radiogroup" aria-label="Destino">
       <label><input type="radio" name="dest" value="GUINCHO"> Guincho</label>
       <label><input type="radio" name="dest" value="IMPLEMENTO"> Implemento</label>
     </div>
@@ -94,10 +141,13 @@
   </section>
 
   <section class="card" id="queueCard" hidden>
-    <h2>Aguardando envio</h2>
+    <div class="head"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M20 15.5A4.5 4.5 0 0 0 17.5 7a6 6 0 0 0-11.4 1.6A4 4 0 0 0 6.5 16.5"/><path d="M12 12v8M9 17l3 3 3-3"/></svg></span>
+      <div><h2>Aguardando envio</h2><p>Enviamos sozinhos quando a internet voltar.</p></div><span class="count" id="queueCount">0</span></div>
     <ul class="list" id="queue"></ul>
     <button type="button" id="syncBtn">Enviar agora</button>
   </section>
+
+  <p class="foot">Nada desta tela sai do aparelho até você estar conectado à sua conta.</p>
 </main>
 
 <script>{{ offline_store_js|safe }}</script>
@@ -133,6 +183,7 @@
     if (!profile) return;
     api.pending(profile.user_id).then(function (items) {
       $("queueCard").hidden = !items.length;
+      $("queueCount").textContent = items.length;
       $("syncBtn").disabled = !online;
       $("queue").innerHTML = items.map(function (i) {
         var title = i.kind === "punch"
@@ -195,6 +246,16 @@
         if (ok && changed) trySync();
       });
   }
+
+  var DAYS = ["domingo", "segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado"];
+  var MONTHS = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+  function tick() {
+    var d = new Date();
+    $("clock").textContent = String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+    $("today").textContent = DAYS[d.getDay()] + ", " + d.getDate() + " de " + MONTHS[d.getMonth()];
+  }
+  tick();
+  setInterval(tick, 1000);
 
   api.getProfile().then(function (p) { profile = p; render(); });
   checkNet();
