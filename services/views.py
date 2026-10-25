@@ -572,11 +572,11 @@ def _create_casual_client_contract(user, *, name, whatsapp="", email=None, notes
 
 def _service_request_primary_action(service_request):
     if service_request.status == ServiceRequest.Status.NEW:
-        return {"label": "Transformar em servico", "kind": "post", "url": reverse("service_request_convert", args=[service_request.id])}
+        return {"label": "Transformar em serviço", "kind": "post", "url": reverse("service_request_convert", args=[service_request.id])}
     if service_request.status == ServiceRequest.Status.WAITING_INFO:
         return {"label": "Responder cliente", "kind": "get", "url": reverse("service_request_whatsapp", args=[service_request.id])}
     if service_request.status == ServiceRequest.Status.IN_REVIEW:
-        return {"label": "Transformar em servico", "kind": "post", "url": reverse("service_request_convert", args=[service_request.id])}
+        return {"label": "Transformar em serviço", "kind": "post", "url": reverse("service_request_convert", args=[service_request.id])}
     if service_request.status == ServiceRequest.Status.CONVERTED and service_request.converted_service_id:
         return {"label": "Ver servico", "kind": "get", "url": reverse("service_job_detail", args=[service_request.converted_service_id])}
     if service_request.status == ServiceRequest.Status.REJECTED:
@@ -656,6 +656,15 @@ def service_request_list(request):
             "selected_status": selected_status,
             "status_choices": ServiceRequest.Status.choices,
             "counts": {key: value or 0 for key, value in counts.items()},
+            # Filtros ja trazem a contagem: dispensa a grade de 6 numeros repetidos.
+            "status_chips": [
+                (value, label, counts.get(key) or 0)
+                for (value, label), key in zip(
+                    ServiceRequest.Status.choices,
+                    [{"NEW": "new", "WAITING_INFO": "waiting", "IN_REVIEW": "in_review", "CONVERTED": "converted",
+                      "REJECTED": "rejected", "ARCHIVED": "archived"}.get(v) for v, _ in ServiceRequest.Status.choices],
+                )
+            ],
         },
     )
 

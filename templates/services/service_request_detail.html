@@ -40,6 +40,7 @@
     .request-actions .btn,.request-actions button{width:100%}
     .rq-field.full{grid-column:auto}
   }
+  .back-link{display:inline-flex;align-items:center;min-height:44px;font-weight:800;color:var(--color-primary);text-decoration:none}
 </style>
 {% endblock %}
 
@@ -47,6 +48,7 @@
 <div class="request-detail">
   <section class="card request-top">
     <div>
+      <a class="back-link" href="{% url 'service_request_list' %}">← Voltar para Pedidos</a>
       <h1>{{ service_request.title }}</h1>
       <div class="request-meta">
         <span class="pill">{{ service_request.get_status_display }}</span>
@@ -57,7 +59,6 @@
       </div>
     </div>
     <div class="request-actions">
-      <a class="btn" href="{% url 'service_request_list' %}">Voltar</a>
       {% if primary_action.kind == "post" %}
         <form method="post" action="{{ primary_action.url }}">
           {% csrf_token %}

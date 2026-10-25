@@ -42,7 +42,7 @@ class ServiceRequest(models.Model):
     class Status(models.TextChoices):
         NEW = "NEW", "Novo"
         WAITING_INFO = "WAITING_INFO", "Aguardando informações"
-        IN_REVIEW = "IN_REVIEW", "Em analise"
+        IN_REVIEW = "IN_REVIEW", "Em análise"
         CONVERTED = "CONVERTED", "Transformado em serviço"
         REJECTED = "REJECTED", "Recusado"
         ARCHIVED = "ARCHIVED", "Arquivado"
