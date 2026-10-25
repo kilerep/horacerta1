@@ -1,284 +1,206 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#0b1220">
-    <title>Offline - HoraCerta</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        html, body {
-            width: 100%;
-            height: 100%;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #0b1220 0%, #1a2a3a 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            min-height: 100vh;
-        }
-        
-        .container {
-            background: white;
-            border-radius: 16px;
-            padding: 40px 30px;
-            text-align: center;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 420px;
-            width: 100%;
-            animation: slideUp 0.5s ease-out;
-        }
-        
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        .icon {
-            font-size: 80px;
-            margin-bottom: 20px;
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% {
-                opacity: 1;
-            }
-            50% {
-                opacity: 0.6;
-            }
-        }
-        
-        h1 {
-            color: #0b1220;
-            margin-bottom: 10px;
-            font-size: 28px;
-            font-weight: 600;
-        }
-        
-        .subtitle {
-            color: #666;
-            margin-bottom: 30px;
-            line-height: 1.6;
-            font-size: 15px;
-        }
-        
-        .status {
-            background: #f5f5f5;
-            border-left: 4px solid #ff6b6b;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 30px;
-            text-align: left;
-            font-size: 14px;
-            color: #555;
-        }
-        
-        .status strong {
-            color: #ff6b6b;
-        }
-        
-        .button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 14px 32px;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s;
-            width: 100%;
-            margin-bottom: 12px;
-        }
-        
-        .button:active {
-            transform: scale(0.98);
-        }
-        
-        .button:hover {
-            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
-        }
-        
-        .button-secondary {
-            background: #f5f5f5;
-            color: #333;
-            margin-bottom: 0;
-        }
-        
-        .button-secondary:hover {
-            background: #efefef;
-        }
-        
-        .tips {
-            margin-top: 30px;
-            padding-top: 30px;
-            border-top: 1px solid #eee;
-            text-align: left;
-        }
-        
-        .tips h3 {
-            color: #0b1220;
-            font-size: 14px;
-            margin-bottom: 15px;
-            font-weight: 600;
-        }
-        
-        .tips ul {
-            list-style: none;
-            font-size: 13px;
-            color: #666;
-        }
-        
-        .tips li {
-            margin-bottom: 10px;
-            padding-left: 24px;
-            position: relative;
-        }
-        
-        .tips li:before {
-            content: "✓";
-            position: absolute;
-            left: 0;
-            color: #667eea;
-            font-weight: bold;
-        }
-        
-        .connection-status {
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
-            font-size: 12px;
-            color: #999;
-        }
-        
-        .dot {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #ff6b6b;
-            margin-right: 6px;
-            animation: blink 1s infinite;
-        }
-        
-        @keyframes blink {
-            0%, 100% {
-                opacity: 1;
-            }
-            50% {
-                opacity: 0.5;
-            }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#14171c">
+  <title>HoraCerta sem internet</title>
+  <style>
+    :root{--bg:#14171c;--card:#1c2027;--line:#2c323c;--text:#eef0f3;--muted:#9aa3ae;--accent:#3b82f6;--ok:#34d399;--warn:#f5b44a;--bad:#f87171;--field:#11141a}
+    @media (prefers-color-scheme: light){:root{--bg:#f4f5f7;--card:#ffffff;--line:#dde1e7;--text:#16191e;--muted:#5d6672;--accent:#2563eb;--ok:#0f8a5f;--warn:#a76200;--bad:#c53030;--field:#ffffff}}
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+    main{max-width:560px;margin:0 auto;padding:16px 16px 40px;display:grid;gap:14px}
+    header{display:flex;justify-content:space-between;align-items:center;gap:10px}
+    header strong{font-size:18px}
+    .net{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border:1px solid var(--line);border-radius:999px;font-size:13px;font-weight:700;color:var(--warn)}
+    .net::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
+    .net.on{color:var(--ok)}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;display:grid;gap:12px}
+    h1{margin:0;font-size:22px;line-height:1.2}
+    h2{margin:0;font-size:17px}
+    p{margin:0;color:var(--muted);font-size:14px}
+    label{display:block;margin-bottom:5px;font-size:14px;font-weight:700}
+    select,input{width:100%;min-height:46px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--field);color:var(--text);font:inherit}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .dest{display:flex;gap:8px;flex-wrap:wrap}
+    .dest label{display:flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border:1px solid var(--line);border-radius:999px;font-weight:700;margin:0}
+    .dest input{width:20px;height:20px;min-height:0}
+    button{min-height:48px;padding:0 16px;border:1px solid var(--line);border-radius:12px;background:var(--field);color:var(--text);font:inherit;font-weight:800;cursor:pointer}
+    button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-size:18px;min-height:58px}
+    button:disabled{opacity:.5}
+    .list{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+    .list li{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:14px}
+    .list li small{display:block;color:var(--muted)}
+    .list li.err{border-color:var(--bad)}
+    .list li.err small{color:var(--bad)}
+    .del{min-height:40px;padding:0 10px;font-size:13px}
+    .msg{padding:10px 12px;border-radius:10px;border:1px solid var(--line);font-size:14px}
+    .msg.ok{border-color:var(--ok);color:var(--ok)}
+    .msg.warn{border-color:var(--warn);color:var(--warn)}
+    [hidden]{display:none!important}
+    a{color:var(--accent)}
+  </style>
 </head>
 <body>
-    <div class="container">
-        <div class="icon">📡</div>
+<main>
+  <header>
+    <strong>HoraCerta</strong>
+    <span class="net" id="net">Sem internet</span>
+  </header>
 
-        <h1>Sem Conexão</h1>
-        <p class="subtitle">Não conseguimos falar com o HoraCerta agora. O sistema precisa de internet para carregar seus dados e registrar horários.</p>
+  <section class="card">
+    <h1>Modo sem internet</h1>
+    <p>Registre seus horários e itens de produção normalmente. Eles ficam guardados neste aparelho e são enviados sozinhos quando a internet voltar.</p>
+    <p class="msg" id="msg" hidden></p>
+  </section>
 
-        <div class="status" id="offline-status" role="status" aria-live="polite">
-            <strong>Status:</strong> <span id="status-text">Sem conexão com o servidor</span>
-        </div>
+  <section class="card" id="noProfile" hidden>
+    <h2>Abra o app uma vez com internet</h2>
+    <p>Para usar sem internet, entre no HoraCerta com conexão ao menos uma vez neste aparelho. Assim ele guarda a lista dos seus clientes.</p>
+    <button type="button" onclick="location.href='/login/'">Tentar abrir o app</button>
+  </section>
 
-        <button class="button" id="retry-button" type="button">
-            🔄 Tentar Novamente
-        </button>
-
-        <button class="button button-secondary" id="home-button" type="button">
-            🏠 Ir para Início
-        </button>
-
-        <div class="tips">
-            <h3>💡 Enquanto isso:</h3>
-            <ul>
-                <li>Nada é salvo enquanto você estiver sem conexão — registros só valem depois de confirmados pelo servidor</li>
-                <li>Verifique o Wi-Fi ou os dados móveis</li>
-                <li>Se voltar o sinal, esta tela tenta reconectar sozinha</li>
-            </ul>
-        </div>
-
-        <div class="connection-status">
-            <span class="dot"></span>
-            Verificando a conexão com o servidor...
-        </div>
+  <section class="card" id="punchCard" hidden>
+    <h2>Registrar horário</h2>
+    <div>
+      <label for="contract">Cliente</label>
+      <select id="contract"></select>
     </div>
+    <button class="primary" type="button" id="punchBtn">Registrar agora</button>
+    <p>Vale para entrada e para saída: o horário do toque é o que conta.</p>
+  </section>
 
-    <script>
-        (function () {
-            // navigator.onLine só indica se o aparelho tem uma rede ativa (ex.: Wi-Fi
-            // conectado), não se o HoraCerta responde. Wi-Fi sem internet ou servidor
-            // fora do ar também dão onLine === true; redirecionar por isso causava um
-            // loop offline -> "/" -> offline. Só voltamos ao app depois de uma sonda
-            // real ao servidor (/ping/) ter sucesso.
-            var PING_URL = "/ping/";
-            var statusText = document.getElementById("status-text");
-            var checking = false;
+  <section class="card" id="prodCard" hidden>
+    <h2>Anotar item de produção</h2>
+    <div>
+      <label for="sheet">Relatório (máquina)</label>
+      <select id="sheet"></select>
+    </div>
+    <div class="row">
+      <div><label for="code">Código</label><input id="code" autocomplete="off" placeholder="Ex.: 0011-024"></div>
+      <div><label for="duration">Duração</label><input id="duration" inputmode="decimal" placeholder="Ex.: 1:30"></div>
+    </div>
+    <div class="row">
+      <div><label for="start">Início</label><input id="start" type="time"></div>
+      <div><label for="end">Fim</label><input id="end" type="time"></div>
+    </div>
+    <div class="dest" role="radiogroup" aria-label="Destino">
+      <label><input type="radio" name="dest" value="GUINCHO"> Guincho</label>
+      <label><input type="radio" name="dest" value="IMPLEMENTO"> Implemento</label>
+    </div>
+    <button type="button" id="prodBtn">Guardar item</button>
+  </section>
 
-            // Quando o service worker serve esta página no lugar de outra rota, a
-            // barra de endereço continua na rota original: recarregar volta para ela.
-            var isDirectVisit = window.location.pathname === "/offline/";
+  <section class="card" id="queueCard" hidden>
+    <h2>Aguardando envio</h2>
+    <ul class="list" id="queue"></ul>
+    <button type="button" id="syncBtn">Enviar agora</button>
+  </section>
+</main>
 
-            function serverReachable() {
-                return fetch(PING_URL, { cache: "no-store" })
-                    .then(function (response) { return response.status === 204 || response.ok; })
-                    .catch(function () { return false; });
-            }
+<script>{{ offline_store_js|safe }}</script>
+<script>
+(function () {
+  "use strict";
+  var PING_URL = "/ping/";
+  var api = window.HoraCertaOffline;
+  var $ = function (id) { return document.getElementById(id); };
+  var profile = null;
+  var online = false;
 
-            function goBack() {
-                if (isDirectVisit) {
-                    window.location.replace("/");
-                } else {
-                    window.location.reload();
-                }
-            }
+  function say(text, kind) { var m = $("msg"); m.textContent = text || ""; m.className = "msg" + (kind ? " " + kind : ""); m.hidden = !text; }
+  function hhmm(iso) { var d = new Date(iso); return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); }
+  function dayLabel(iso) { var d = new Date(iso); return String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0"); }
+  function today() { var d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
 
-            function check(manual) {
-                if (checking) return;
-                checking = true;
-                if (manual) statusText.textContent = "Verificando...";
-                serverReachable().then(function (ok) {
-                    checking = false;
-                    if (ok) {
-                        statusText.textContent = "Conexão restabelecida. Voltando...";
-                        goBack();
-                    } else {
-                        statusText.textContent = manual
-                            ? "Ainda sem conexão com o servidor. Tente de novo em instantes."
-                            : "Sem conexão com o servidor";
-                    }
-                });
-            }
+  function nameOf(list, id) { var f = (list || []).filter(function (x) { return x.id === id; })[0]; return f ? f.name : "cliente"; }
 
-            document.getElementById("retry-button").addEventListener("click", function () { check(true); });
-            document.getElementById("home-button").addEventListener("click", function () {
-                window.location.href = "/";
-            });
-            window.addEventListener("online", function () { check(false); });
+  function render() {
+    if (!profile) { $("noProfile").hidden = false; return; }
+    $("noProfile").hidden = true;
+    var contracts = profile.contracts || [];
+    $("punchCard").hidden = !contracts.length;
+    $("contract").innerHTML = contracts.map(function (c) { return '<option value="' + c.id + '">' + c.name.replace(/</g, "&lt;") + "</option>"; }).join("");
+    var sheets = profile.sheets || [];
+    $("prodCard").hidden = !sheets.length;
+    $("sheet").innerHTML = sheets.map(function (s) { return '<option value="' + s.id + '">' + s.name.replace(/</g, "&lt;") + "</option>"; }).join("");
+    renderQueue();
+  }
 
-            // Tentativa automática leve enquanto a página está visível.
-            setInterval(function () {
-                if (!document.hidden) check(false);
-            }, 8000);
-            check(false);
-        })();
-    </script>
+  function renderQueue() {
+    if (!profile) return;
+    api.pending(profile.user_id).then(function (items) {
+      $("queueCard").hidden = !items.length;
+      $("syncBtn").disabled = !online;
+      $("queue").innerHTML = items.map(function (i) {
+        var title = i.kind === "punch"
+          ? "Horário " + hhmm(i.occurred_at) + " · " + nameOf(profile.contracts, i.contract_id)
+          : "Item " + (i.fields.item_code || "sem código") + " · " + nameOf(profile.sheets, i.sheet_id);
+        var detail = i.last_error ? "Não aceito: " + i.last_error : "Feito em " + dayLabel(i.occurred_at) + " às " + hhmm(i.occurred_at);
+        return '<li class="' + (i.last_error ? "err" : "") + '"><span>' + title.replace(/</g, "&lt;") + "<small>" + detail.replace(/</g, "&lt;") +
+          '</small></span><button class="del" type="button" data-del="' + i.client_ref + '">Apagar</button></li>';
+      }).join("");
+    });
+  }
+
+  $("queue").addEventListener("click", function (e) {
+    var ref = e.target.getAttribute("data-del");
+    if (ref && confirm("Apagar este registro guardado? Ele não será enviado.")) api.remove(ref).then(renderQueue);
+  });
+
+  $("punchBtn").addEventListener("click", function () {
+    var contract = $("contract").value;
+    api.enqueue({ kind: "punch", user_id: profile.user_id, contract_id: contract, occurred_at: new Date().toISOString() }).then(function (r) {
+      say("Horário " + hhmm(r.occurred_at) + " guardado para " + nameOf(profile.contracts, contract) + ".", "ok");
+      renderQueue();
+      if (online) trySync();
+    });
+  });
+
+  $("prodBtn").addEventListener("click", function () {
+    var dest = document.querySelector("input[name=dest]:checked");
+    var fields = { work_date: today(), item_code: $("code").value.trim(), destination: dest ? dest.value : "",
+      start_time: $("start").value, end_time: $("end").value, duration: $("duration").value.trim(), note: "" };
+    if (!fields.item_code && !fields.start_time && !fields.duration) { say("Preencha pelo menos o código, o início ou a duração.", "warn"); return; }
+    api.enqueue({ kind: "production_entry", user_id: profile.user_id, sheet_id: $("sheet").value, fields: fields, occurred_at: new Date().toISOString() }).then(function () {
+      ["code", "duration", "start", "end"].forEach(function (id) { $(id).value = ""; });
+      if (dest) dest.checked = false;
+      say("Item guardado no aparelho.", "ok");
+      renderQueue();
+      if (online) trySync();
+    });
+  });
+
+  function trySync() {
+    if (!profile) return;
+    api.sync(profile.user_id).then(function (res) {
+      if (res.error === "login") say("Para enviar, entre no app com internet (sua sessão expirou). Os registros continuam guardados.", "warn");
+      else if (res.sent) say(res.sent + " registro(s) enviado(s) para o HoraCerta.", "ok");
+      renderQueue();
+    });
+  }
+  $("syncBtn").addEventListener("click", trySync);
+
+  function checkNet() {
+    fetch(PING_URL, { cache: "no-store" }).then(function (r) { return r.ok || r.status === 204; }).catch(function () { return false; })
+      .then(function (ok) {
+        var changed = ok !== online;
+        online = ok;
+        var net = $("net");
+        net.textContent = ok ? "Internet de volta" : "Sem internet";
+        net.className = "net" + (ok ? " on" : "");
+        $("syncBtn").disabled = !ok;
+        if (ok && changed) trySync();
+      });
+  }
+
+  api.getProfile().then(function (p) { profile = p; render(); });
+  checkNet();
+  setInterval(checkNet, 15000);
+  window.addEventListener("online", checkNet);
+  window.addEventListener("offline", checkNet);
+})();
+</script>
 </body>
 </html>

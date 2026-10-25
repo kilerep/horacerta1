@@ -72,6 +72,8 @@
     .entry-total{text-align:left}
     .field.full{grid-column:auto}
   }
+  .quote-line{display:flex;flex-wrap:wrap;gap:6px 16px;margin:4px 0 10px;color:var(--color-text-muted);font-size:14px}
+  .quote-line strong{color:var(--color-text-strong);font-variant-numeric:tabular-nums}
 </style>
 {% endblock %}
 
@@ -275,11 +277,7 @@
     <h2>Itens previstos</h2>
     <p class="sub">Use para montar o orçamento e pedir cotação na loja.</p>
     <p class="sub">Status: {{ preview_status_label }}</p>
-    <div class="grid three">
-      <div class="metric"><span>Itens previstos</span><strong>{{ summary.preview_items_total_brl }}</strong></div>
-      <div class="metric"><span>Mão de obra estimada</span><strong>{{ summary.preview_labor_total_brl }}</strong></div>
-      <div class="metric"><span>Total estimado</span><strong>{{ summary.preview_estimated_total_brl }}</strong></div>
-    </div>
+    <p class="quote-line"><span>Itens <strong>{{ summary.preview_items_total_brl }}</strong></span><span>Mão de obra <strong>{{ summary.preview_labor_total_brl }}</strong></span><span>Total estimado <strong>{{ summary.preview_estimated_total_brl }}</strong></span></p>
     <div class="send-box" id="send-client">
       <h3>Orçamento (para o cliente)</h3>
       <p class="sub">Valores estimados e sujeitos à confirmação na compra e execução do serviço.</p>

@@ -26,6 +26,7 @@
   data-default-theme="graphite-premium"
   data-theme-user="{{ header_user_theme|default:'' }}"
   data-authenticated="{% if request.user.is_authenticated %}true{% else %}false{% endif %}"
+  data-user-id="{% if request.user.is_authenticated %}{{ request.user.id }}{% endif %}"
   class="{% if request.user.is_authenticated %}role-mei {% endif %}{% block body_class %}{% endblock %}">
   {% if request.user.is_authenticated %}
     <div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true"></div>
@@ -220,6 +221,8 @@
   {% if request.user.is_authenticated %}
     <script src="{% static 'js/mobile_drawer.js' %}"></script>
     <script src="{% static 'js/form_feedback.js' %}"></script>
+    <script src="{% static 'js/offline_store.js' %}"></script>
+    <script src="{% static 'js/offline_bridge.js' %}"></script>
   {% endif %}
   <script src="{% static 'js/theme_engine.js' %}"></script>
   <script src="{% static 'js/connection_guard.js' %}"></script>

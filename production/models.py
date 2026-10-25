@@ -95,6 +95,8 @@ class ProductionEntry(models.Model):
     end_time = models.TimeField("Fim", null=True, blank=True)
     manual_minutes = models.PositiveIntegerField("Duração informada (min)", null=True, blank=True)
     note = models.CharField("Observação", max_length=160, blank=True, default="")
+    # Identificador gerado no aparelho quando o item foi anotado sem internet (evita duplicar no reenvio).
+    client_ref = models.UUIDField(null=True, blank=True, unique=True, editable=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

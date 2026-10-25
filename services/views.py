@@ -1,6 +1,5 @@
 from datetime import time
 from decimal import Decimal
-from html import escape
 from io import BytesIO
 from urllib.parse import quote
 
@@ -12,11 +11,9 @@ from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
-from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import cm
-from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
 
 from accounts.models import User
 from accounts.mei_context import mei_contracts_for_user
@@ -572,11 +569,11 @@ def _create_casual_client_contract(user, *, name, whatsapp="", email=None, notes
 
 def _service_request_primary_action(service_request):
     if service_request.status == ServiceRequest.Status.NEW:
-        return {"label": "Transformar em servico", "kind": "post", "url": reverse("service_request_convert", args=[service_request.id])}
+        return {"label": "Transformar em serviço", "kind": "post", "url": reverse("service_request_convert", args=[service_request.id])}
     if service_request.status == ServiceRequest.Status.WAITING_INFO:
         return {"label": "Responder cliente", "kind": "get", "url": reverse("service_request_whatsapp", args=[service_request.id])}
     if service_request.status == ServiceRequest.Status.IN_REVIEW:
-        return {"label": "Transformar em servico", "kind": "post", "url": reverse("service_request_convert", args=[service_request.id])}
+        return {"label": "Transformar em serviço", "kind": "post", "url": reverse("service_request_convert", args=[service_request.id])}
     if service_request.status == ServiceRequest.Status.CONVERTED and service_request.converted_service_id:
         return {"label": "Ver servico", "kind": "get", "url": reverse("service_job_detail", args=[service_request.converted_service_id])}
     if service_request.status == ServiceRequest.Status.REJECTED:
@@ -656,6 +653,15 @@ def service_request_list(request):
             "selected_status": selected_status,
             "status_choices": ServiceRequest.Status.choices,
             "counts": {key: value or 0 for key, value in counts.items()},
+            # Filtros ja trazem a contagem: dispensa a grade de 6 numeros repetidos.
+            "status_chips": [
+                (value, label, counts.get(key) or 0)
+                for (value, label), key in zip(
+                    ServiceRequest.Status.choices,
+                    [{"NEW": "new", "WAITING_INFO": "waiting", "IN_REVIEW": "in_review", "CONVERTED": "converted",
+                      "REJECTED": "rejected", "ARCHIVED": "archived"}.get(v) for v, _ in ServiceRequest.Status.choices],
+                )
+            ],
         },
     )
 
@@ -1556,137 +1562,87 @@ def public_service_job_report_pdf(request, token):
     return _service_job_pdf_response(job)
 
 
-def _pdf_text(value, default="-"):
-    return escape(str(value if value not in (None, "") else default))
-
-
-def _pdf_table(rows, col_widths, *, header=True):
-    table = Table(rows, colWidths=col_widths, repeatRows=1 if header else 0)
-    style = [
-        ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#d1d5db")),
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("LEFTPADDING", (0, 0), (-1, -1), 5),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 5),
-        ("TOPPADDING", (0, 0), (-1, -1), 5),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
-    ]
-    if header:
-        style.extend(
-            [
-                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#111827")),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f9fafb")]),
-            ]
-        )
-    table.setStyle(TableStyle(style))
-    return table
-
-
 def _service_job_pdf_response(job):
+    """PDF do relatorio de servico no visual de documento do HoraCerta (accounts/print_theme.py)."""
+    from accounts import print_theme as pt
+
     report = _service_report_context(job)
     buffer = BytesIO()
-    doc = SimpleDocTemplate(
-        buffer,
-        pagesize=A4,
-        rightMargin=1.4 * cm,
-        leftMargin=1.4 * cm,
-        topMargin=1.3 * cm,
-        bottomMargin=1.3 * cm,
-        title="HoraCerta - Relatório de serviço",
-    )
-    styles = getSampleStyleSheet()
-    styles.add(ParagraphStyle(name="Small", parent=styles["Normal"], fontSize=8, leading=10))
-    styles["Title"].fontName = "Helvetica-Bold"
-    styles["Title"].fontSize = 18
-    styles["Heading2"].fontSize = 12
-    styles["Heading2"].leading = 15
+    doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=1.7 * cm, rightMargin=1.7 * cm, topMargin=1.6 * cm,
+                            bottomMargin=1.7 * cm, title=f"Relatório de serviço - {job.title}",
+                            author=report["professional_name"])
+    width = A4[0] - doc.leftMargin - doc.rightMargin
+    st = pt.styles()
 
-    story = [
-        Paragraph("HoraCerta", styles["Title"]),
-        Paragraph("Relatório de serviço", styles["Heading2"]),
-        Paragraph(f"Data de emissao: {timezone.localtime():%d/%m/%Y %H:%M}", styles["Small"]),
-        Spacer(1, 10),
-    ]
-
-    summary_rows = [
-        ["Status", job.get_status_display()],
-        ["Prestador", report["professional_name"]],
-        ["Contato", report["professional_contact"] or "-"],
-        ["Cliente", report["client_name"]],
-        ["WhatsApp", report["client_whatsapp"] or "-"],
-        ["Categoria", job.category.name],
-        ["Endereço/local", report["service_address"] or "-"],
-        ["Data prevista", report["period_label"]],
-        ["Serviço", job.title],
-    ]
-    story.extend([
-        _pdf_table(summary_rows, [3.6 * cm, 13.4 * cm], header=False),
-        Spacer(1, 10),
-        Paragraph("Descrição", styles["Heading2"]),
-        Paragraph(_pdf_text(job.description or "Sem descrição registrada."), styles["Normal"]),
-        Spacer(1, 10),
-        Paragraph("Horas realizadas", styles["Heading2"]),
+    story = pt.header_block(job.title, [
+        f"Relatório de serviço de <b>{pt.esc(report['professional_name'])}</b> para <b>{pt.esc(report['client_name'])}</b>",
+        f"{pt.esc(job.category.name)} · {pt.esc(report['period_label'])} · {pt.esc(job.get_status_display())}",
     ])
+    story.append(pt.info_grid([
+        ("Prestador", report["professional_name"]),
+        ("Contato", report["professional_contact"] or "-"),
+        ("Cliente", report["client_name"]),
+        ("WhatsApp do cliente", report["client_whatsapp"] or "-"),
+        ("Local", report["service_address"] or "-"),
+        ("Data", report["period_label"]),
+    ], width))
 
-    work_rows = [["Data", "Início", "Fim", "Atividade", "Total"]]
+    if job.description and job.description != job.title:
+        story.append(Paragraph("O que foi combinado", st["h2"]))
+        story.append(Paragraph(pt.esc(job.description).replace("\n", "<br/>"), st["body"]))
+
+    story.append(Paragraph("Horas trabalhadas", st["h2"]))
+    work_rows = []
     for log in report["work_logs"]:
         work_rows.append([
             f"{log.work_date:%d/%m/%Y}",
             f"{log.start_time:%H:%M}",
-            f"{log.end_time:%H:%M}" if log.end_time else "Em andamento",
-            Paragraph(_pdf_text(log.description), styles["Small"]),
+            f"{log.end_time:%H:%M}" if log.end_time else "em andamento",
+            log.description or "",
             log.duration_label if log.end_time else "-",
         ])
-    if len(work_rows) == 1:
-        work_rows.append(["-", "-", "-", "Nenhuma hora realizada registrada.", "-"])
-    story.extend([_pdf_table(work_rows, [2.5 * cm, 2 * cm, 2 * cm, 7.5 * cm, 2.2 * cm]), Spacer(1, 10)])
+    story.append(pt.data_table(
+        ["Data", "Início", "Fim", "Atividade", "Horas"], work_rows,
+        [width * 0.15, width * 0.11, width * 0.13, width * 0.47, width * 0.14],
+        numeric_cols=(4,), empty_text="Nenhuma hora registrada.",
+    ))
 
-    story.append(Paragraph("Itens usados/cobrados", styles["Heading2"]))
-    used_rows = [["Nome", "Tipo", "Qtd.", "Unitário", "Total"]]
-    for item in report["used_items"]:
-        used_rows.append([
-            Paragraph(_pdf_text(item.name), styles["Small"]),
-            item.get_type_display(),
-            str(item.quantity),
-            _format_brl(item.unit_value),
-            _format_brl(item.total_value),
-        ])
-    if len(used_rows) == 1:
-        used_rows.append(["-", "-", "-", "-", "R$ 0,00"])
-    story.extend([_pdf_table(used_rows, [6 * cm, 3.2 * cm, 2 * cm, 2.5 * cm, 2.7 * cm]), Spacer(1, 10)])
+    story.append(Paragraph("Materiais e despesas", st["h2"]))
+    used_rows = [[item.name, item.get_type_display(), str(item.quantity), _format_brl(item.unit_value),
+                  _format_brl(item.total_value)] for item in report["used_items"]]
+    story.append(pt.data_table(
+        ["Item", "Tipo", "Qtd.", "Unitário", "Total"], used_rows,
+        [width * 0.40, width * 0.18, width * 0.10, width * 0.16, width * 0.16],
+        numeric_cols=(2, 3, 4), empty_text="Nenhum material ou despesa usado.",
+    ))
 
-    story.append(Paragraph("Itens não usados/devolvidos", styles["Heading2"]))
-    not_used_rows = [["Nome", "Tipo", "Qtd.", "Valor", "Status"]]
-    for item in report["not_used_items"]:
-        not_used_rows.append([
-            Paragraph(_pdf_text(item.name), styles["Small"]),
-            item.get_type_display(),
-            str(item.quantity),
-            _format_brl(item.total_value),
-            item.short_usage_status,
-        ])
-    if len(not_used_rows) == 1:
-        not_used_rows.append(["-", "-", "-", "R$ 0,00", "-"])
-    story.extend([_pdf_table(not_used_rows, [5.2 * cm, 3 * cm, 1.8 * cm, 2.5 * cm, 3.9 * cm]), Spacer(1, 10)])
+    if report["not_used_items"]:
+        story.append(Paragraph("Previstos e não usados", st["h2"]))
+        not_used_rows = [[item.name, item.get_type_display(), str(item.quantity), item.short_usage_status,
+                          _format_brl(item.total_value)] for item in report["not_used_items"]]
+        story.append(pt.data_table(
+            ["Item", "Tipo", "Qtd.", "Situação", "Valor"], not_used_rows,
+            [width * 0.40, width * 0.18, width * 0.10, width * 0.16, width * 0.16],
+            numeric_cols=(2, 4),
+        ))
+        story.append(Paragraph("Estes itens não entram no total do serviço.", st["small"]))
 
-    totals_rows = [
-        ["Total de horas", report["summary"]["total_hours"]],
-        ["Mão de obra", report["summary"]["labor_total_brl"]],
-        ["Total de itens/despesas usados", report["summary"]["used_items_total_brl"]],
-        ["Total do serviço", report["summary"]["estimated_total_brl"]],
-    ]
-    story.extend([
-        Paragraph("Resumo", styles["Heading2"]),
-        _pdf_table(totals_rows, [7 * cm, 9.5 * cm], header=False),
-        Spacer(1, 10),
-        Paragraph("Observações finais", styles["Heading2"]),
-        Paragraph(_pdf_text(job.notes or "Sem observações finais."), styles["Normal"]),
-        Spacer(1, 10),
-        Paragraph("Relatório gerado pelo HoraCerta.", styles["Small"]),
-    ])
+    story.append(Spacer(1, 14))
+    story.append(pt.totals_block(
+        [
+            ("Horas trabalhadas", report["summary"]["total_hours"]),
+            ("Mão de obra", report["summary"]["labor_total_brl"]),
+            ("Materiais e despesas", report["summary"]["used_items_total_brl"]),
+        ],
+        ("Total do serviço", report["summary"]["estimated_total_brl"]),
+        width * 0.58,
+    ))
+    if job.notes:
+        story.append(Paragraph("Observações finais", st["h2"]))
+        story.append(Paragraph(pt.esc(job.notes).replace("\n", "<br/>"), st["body"]))
 
-    doc.build(story)
+    decorate = pt.page_decorator("Relatório de serviço")
+    doc.build(story, onFirstPage=decorate, onLaterPages=decorate)
     client_part = _filename_part(report["client_name"])
     date_part = timezone.localdate().strftime("%Y%m%d")
     response = HttpResponse(buffer.getvalue(), content_type="application/pdf")

@@ -1377,52 +1377,15 @@ def _infer_workday_change_type(before_data, after_data):
 
 
 def _service_report_pdf_response(report):
+    """PDF do relatorio de horas no visual de documento do HoraCerta (accounts/print_theme.py)."""
+    from accounts import print_theme as pt
+
     payload = report.summary_payload or {}
-    def pdf_text(value, default="-"):
-        text = str(value if value not in (None, "") else default)
-        return escape(text)
 
     def filename_part(value):
         text = (str(value or "").strip().lower())
         text = re.sub(r"[^a-z0-9]+", "-", text)
         return text.strip("-") or "relatorio"
-
-    buffer = BytesIO()
-    doc = SimpleDocTemplate(
-        buffer,
-        pagesize=A4,
-        rightMargin=1.5 * cm,
-        leftMargin=1.5 * cm,
-        topMargin=1.4 * cm,
-        bottomMargin=1.4 * cm,
-        title="HoraCerta - Relatório de horas",
-    )
-
-    styles = getSampleStyleSheet()
-    styles.add(
-        ParagraphStyle(
-            name="MetaRight",
-            parent=styles["Normal"],
-            alignment=TA_RIGHT,
-            textColor=colors.HexColor("#4b5563"),
-            fontSize=8,
-            leading=10,
-        )
-    )
-    styles.add(
-        ParagraphStyle(
-            name="SmallMuted",
-            parent=styles["Normal"],
-            textColor=colors.HexColor("#4b5563"),
-            fontSize=8,
-            leading=10,
-        )
-    )
-    styles["Title"].fontName = "Helvetica-Bold"
-    styles["Title"].fontSize = 18
-    styles["Title"].leading = 22
-    styles["Heading2"].fontSize = 12
-    styles["Heading2"].leading = 15
 
     professional_name = payload.get("professional") or report.employee.full_name
     client_name = payload.get("company") or report.company.name
@@ -1431,83 +1394,56 @@ def _service_report_pdf_response(report):
         start_label = report.date_from.strftime("%d/%m/%Y") if report.date_from else "-"
         end_label = report.date_to.strftime("%d/%m/%Y") if report.date_to else "-"
         period_label = f"{start_label} a {end_label}"
+    period_label = period_label.replace(" ate ", " até ")
     period_file_label = "periodo"
     if report.date_from and report.date_to:
         period_file_label = f"{report.date_from:%Y%m%d}-{report.date_to:%Y%m%d}"
     filename = f"horacerta_relatorio_{filename_part(client_name)}_{period_file_label}.pdf"
-    emitted_at = timezone.localtime().strftime("%d/%m/%Y %H:%M")
 
-    story = [
-        Paragraph("HoraCerta - Relatório de horas", styles["Title"]),
-        Paragraph(f"Emitido em {emitted_at}", styles["MetaRight"]),
-        Spacer(1, 10),
-    ]
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=1.7 * cm, rightMargin=1.7 * cm, topMargin=1.6 * cm,
+                            bottomMargin=1.7 * cm, title="Relatório de horas - HoraCerta", author=professional_name)
+    width = A4[0] - doc.leftMargin - doc.rightMargin
+    st = pt.styles()
 
-    summary_rows = [
-        ["Profissional", professional_name],
-        ["Cliente", client_name],
-        ["Período", period_label],
-        ["Total de horas", payload.get("total_hours") or "-"],
-        ["Valor estimado", payload.get("estimated_value_brl") or "-"],
-    ]
-    summary_table = Table(summary_rows, colWidths=[4 * cm, 13 * cm])
-    summary_table.setStyle(
-        TableStyle(
-            [
-                ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#eef2ff")),
-                ("TEXTCOLOR", (0, 0), (0, -1), colors.HexColor("#1f2937")),
-                ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
-                ("FONTNAME", (1, 0), (1, -1), "Helvetica"),
-                ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#d1d5db")),
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("ROWBACKGROUNDS", (1, 0), (1, -1), [colors.white, colors.HexColor("#f9fafb")]),
-                ("LEFTPADDING", (0, 0), (-1, -1), 7),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 7),
-                ("TOPPADDING", (0, 0), (-1, -1), 6),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-            ]
-        )
-    )
-    story.extend([summary_table, Spacer(1, 14), Paragraph("Dias e horários", styles["Heading2"])])
+    story = pt.header_block("Relatório de horas", [
+        f"{pt.esc(professional_name)} para <b>{pt.esc(client_name)}</b>",
+        f"Período {pt.esc(period_label)}",
+    ])
+    story.append(pt.info_grid([
+        ("Profissional", professional_name), ("Cliente", client_name), ("Período", period_label),
+    ], width))
+    story.append(Paragraph("Dias e horários", st["h2"]))
 
-    day_rows = [["Dia", "Horários", "Total", "Status", "Observacoes"]]
-    for day in payload.get("days") or []:
-        status_label = "Incompleto" if day.get("is_incomplete") else "OK"
-        day_rows.append(
-            [
-                Paragraph(pdf_text(day.get("date_label")), styles["SmallMuted"]),
-                Paragraph(pdf_text(", ".join(day.get("punch_times") or []) or "-"), styles["SmallMuted"]),
-                Paragraph(pdf_text(day.get("total_hours")), styles["SmallMuted"]),
-                Paragraph(pdf_text(status_label), styles["SmallMuted"]),
-                Paragraph(pdf_text("; ".join(day.get("notes") or []) or "-"), styles["SmallMuted"]),
-            ]
-        )
-    if len(day_rows) == 1:
-        day_rows.append(["-", "Sem registros no período.", "-", "-", "-"])
+    rows, fills = [], {}
+    for index, day in enumerate(payload.get("days") or []):
+        incomplete = bool(day.get("is_incomplete"))
+        if incomplete:
+            fills[index] = pt.WARN_SOFT
+        rows.append([
+            day.get("date_label") or "-",
+            ", ".join(day.get("punch_times") or []) or "-",
+            "; ".join(day.get("notes") or []) or "",
+            "Incompleto" if incomplete else "OK",
+            day.get("total_hours") or "-",
+        ])
+    story.append(pt.data_table(
+        ["Dia", "Horários", "Observações", "Situação", "Horas"], rows,
+        [width * 0.17, width * 0.30, width * 0.27, width * 0.12, width * 0.14],
+        numeric_cols=(4,), empty_text="Sem registros no período.", row_fills=fills,
+    ))
+    story.append(Spacer(1, 12))
+    story.append(pt.totals_block(
+        [("Total de horas", payload.get("total_hours") or "-")],
+        ("Valor estimado", payload.get("estimated_value_brl") or "-"),
+        width * 0.55,
+    ))
+    if report.description:
+        story.append(Paragraph("Observações", st["h2"]))
+        story.append(Paragraph(pt.esc(report.description).replace("\n", "<br/>"), st["body"]))
 
-    days_table = Table(day_rows, colWidths=[2.7 * cm, 5.4 * cm, 2.1 * cm, 2.3 * cm, 4.5 * cm], repeatRows=1)
-    days_table.setStyle(
-        TableStyle(
-            [
-                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#111827")),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
-                ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#d1d5db")),
-                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f9fafb")]),
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("LEFTPADDING", (0, 0), (-1, -1), 5),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 5),
-                ("TOPPADDING", (0, 0), (-1, -1), 5),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
-            ]
-        )
-    )
-    story.extend([days_table, Spacer(1, 14), Paragraph("Observacoes", styles["Heading2"])])
-    description = pdf_text(report.description or "Sem observacoes gerais.").replace("\n", "<br/>")
-    story.append(Paragraph(description, styles["Normal"]))
-
-    doc.build(story)
+    decorate = pt.page_decorator("Relatório de horas")
+    doc.build(story, onFirstPage=decorate, onLaterPages=decorate)
     pdf = buffer.getvalue()
     buffer.close()
     response = HttpResponse(pdf, content_type="application/pdf")

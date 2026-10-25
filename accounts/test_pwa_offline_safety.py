@@ -33,7 +33,7 @@ class PwaOfflinePageTests(SimpleTestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'var PING_URL = "/ping/";')
-        self.assertContains(response, "Nada é salvo enquanto você estiver sem conexão")
+        self.assertContains(response, "ficam guardados neste aparelho e são enviados sozinhos quando a internet voltar")
 
 
 @override_settings(ALLOWED_HOSTS=["testserver", "localhost", "127.0.0.1"], SECURE_SSL_REDIRECT=False)
@@ -44,10 +44,10 @@ class ServiceWorkerPrivacyTests(SimpleTestCase):
     def _sw(self):
         return self.client.get(reverse("pwa_service_worker")).content.decode()
 
-    def test_service_worker_is_v4_and_never_caches_private_pages(self):
+    def test_service_worker_is_v5_and_never_caches_private_pages(self):
         body = self._sw()
 
-        self.assertIn('const SW_VERSION = "hc-sw-v4";', body)
+        self.assertIn('const SW_VERSION = "hc-sw-v5";', body)
         # allowlist explicita de paginas publicas; "/" fica de fora (redireciona logado)
         self.assertIn('new Set(["/help/", "/terms/", "/privacy/"])', body)
         self.assertNotIn("ESSENTIAL_ASSETS", body)
