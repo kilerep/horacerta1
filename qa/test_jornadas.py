@@ -193,30 +193,55 @@ class OperadorProducaoJourney(Journey):
         self.assertEqual(self.client.get(reverse("production_public_pdf", args=[sheet.share_token])).status_code, 200)
 
 
+
+
 @override_settings(**BASE)
-class EmpresaJourney(Journey):
-    @classmethod
-    def setUpTestData(cls):
-        from .fixtures import build_world
+class EmpresaAcessoEncerradoTests(Journey):
+    """Area de empresa removida (out/2026): o HoraCerta e so para prestadores."""
 
-        cls.w = build_world()
-
-    def test_empresa_acompanha_prestadores_registros_e_relatorios(self):
-        self.client.force_login(self.w["company_user"])
-        for name in ("dashboard_empresa", "company_today_center", "company_meis", "company_history",
-                     "company_reports", "company_service_reports", "company_notifications", "company_settings"):
-            with self.subTest(page=name):
-                self.ok(self.client.get(reverse(name), follow=True))
-        self.ok(self.client.get(reverse("company_mei_profile", args=[self.w["employee"].id]), follow=True))
-
-    def test_empresa_nao_ve_area_do_prestador_nem_dados_de_outra_empresa(self):
-        other = User.objects.create_user(username="outra@horacerta.test", email="outra@horacerta.test",
-                                         password="Teste@12345", role=User.Role.EMPRESA)
+    def setUp(self):
         from companies.models import Company
 
-        Company.objects.create(owner=other, name="Outra Empresa", email="outra@horacerta.test")
-        self.client.force_login(other)
+        self.owner = User.objects.create_user(username="antiga@horacerta.test", email="antiga@horacerta.test",
+                                              password="Teste@12345", role=User.Role.EMPRESA)
+        Company.objects.create(owner=self.owner, name="Empresa Antiga", email="antiga@horacerta.test")
 
-        self.assertIn(self.client.get(reverse("company_mei_profile", args=[self.w["employee"].id])).status_code, (302, 403, 404))
-        services = self.client.get(reverse("service_job_list"))
-        self.assertNotEqual(services.status_code, 200)
+    def test_login_de_empresa_e_recusado_com_explicacao(self):
+        response = self.client.post(reverse("login"), {"username": "antiga@horacerta.test", "password": "Teste@12345"},
+                                    follow=True)
+
+        self.assertContains(response, "O acesso de empresa foi encerrado")
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_sessao_antiga_de_empresa_e_encerrada(self):
+        self.client.force_login(self.owner)
+
+        response = self.client.get(reverse("dashboard"), follow=True)
+
+        self.assertContains(response, "O acesso de empresa foi encerrado")
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_enderecos_antigos_da_empresa_redirecionam(self):
+        for path in ("/empresa/", "/empresa/meis/", "/empresa/configuracoes/", "/dashboard/history/"):
+            with self.subTest(path=path):
+                response = self.client.get(path)
+                self.assertEqual(response.status_code, 302)
+                self.assertEqual(response["Location"], reverse("dashboard"))
+
+    def test_cadastro_de_empresa_leva_para_o_cadastro_de_prestador(self):
+        response = self.client.get(reverse("signup"))
+
+        self.assertRedirects(response, reverse("signup_mei"), fetch_redirect_response=False)
+
+    def test_landing_continua_no_ar(self):
+        self.assertEqual(self.client.get(reverse("landing")).status_code, 200)
+
+    def test_menu_do_prestador_sem_itens_de_empresa(self):
+        mei = User.objects.create_user(username="so-prestador@horacerta.test", email="so-prestador@horacerta.test",
+                                       password="Teste@12345", role=User.Role.FUNCIONARIO)
+        self.client.force_login(mei)
+
+        html = self.client.get(reverse("mei_panel")).content.decode()
+
+        for text in ("Prestadores", "Atividades", "/empresa/"):
+            self.assertNotIn(text, html)

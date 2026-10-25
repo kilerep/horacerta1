@@ -58,18 +58,6 @@ class ShellTests(TestCase):
 
         self.assertRegex(nav, r'is-active" href="%s" aria-current="page"' % reverse("service_job_list"))
 
-    def test_company_user_has_no_mei_bottom_nav(self):
-        owner = User.objects.create_user(username="empresa-shell@example.com", email="empresa-shell@example.com",
-                                         password="Teste@12345", role=User.Role.EMPRESA)
-        Company.objects.create(owner=owner, name="Empresa Shell", email="empresa-shell@example.com")
-        self.client.force_login(owner)
-
-        html = self.client.get(reverse("dashboard_empresa"), follow=True).content.decode()
-
-        self.assertNotIn('class="bottom-nav"', html)
-        self.assertIn('class="hc-icon"', html)
-
-
 @override_settings(**BASE)
 class MeuResumoTests(TestCase):
     def setUp(self):
