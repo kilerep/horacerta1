@@ -4,17 +4,20 @@ As duas saidas usam as mesmas linhas (rows) para nunca divergirem entre si.
 """
 
 from io import BytesIO
-from xml.sax.saxutils import escape
 
 from django.utils import timezone
 
 from .models import ProductionEntry, format_minutes
 
-BRAND = "1F3A5F"       # azul escuro do cabecalho
-BRAND_SOFT = "E8EEF6"  # faixa zebrada
-GUINCHO_FILL = "FFF4DB"
-IMPLEMENTO_FILL = "E6F0FF"
-PENDING_FILL = "FDECEC"
+from accounts import print_theme as pt  # noqa: E402
+
+# Mesmo visual dos PDFs (accounts/print_theme.py): tinta grafite, papel quente, sem azul.
+INK = pt.INK
+RULE = pt.RULE
+PAPER = pt.PAPER
+GUINCHO_FILL = pt.SAND
+IMPLEMENTO_FILL = pt.SAGE
+PENDING_FILL = pt.WARN_SOFT
 
 
 def sheet_rows(sheet):
@@ -75,19 +78,20 @@ def build_xlsx(sheet):
     ws.title = "Relatório"
     base = Font(name="Arial", size=10)
     bold = Font(name="Arial", size=10, bold=True)
-    thin = Side(style="thin", color="C9D3E0")
-    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+    thin = Side(style="thin", color=RULE)
+    border = Border(bottom=thin)
+    head_border = Border(bottom=Side(style="medium", color=INK))
     columns = [("Data", 12), ("Código", 16), ("Destino", 13), ("Início", 9), ("Fim", 9), ("Horas", 9), ("Observação", 42)]
     last_col = get_column_letter(len(columns))
 
     ws["A1"] = f"Relatório de produção - {sheet.equipment}"
-    ws["A1"].font = Font(name="Arial", size=15, bold=True, color=BRAND)
+    ws["A1"].font = Font(name="Georgia", size=16, bold=True, color=INK)
     ws.merge_cells(f"A1:{last_col}1")
     ws.row_dimensions[1].height = 24
 
     row = 3
     for label, value in info_pairs(sheet):
-        ws.cell(row=row, column=1, value=label).font = bold
+        ws.cell(row=row, column=1, value=label).font = Font(name="Arial", size=9, color=pt.MUTED)
         cell = ws.cell(row=row, column=2, value=value)
         cell.font = base
         ws.merge_cells(start_row=row, start_column=2, end_row=row, end_column=4)
@@ -96,10 +100,9 @@ def build_xlsx(sheet):
     header_row = row + 1
     for idx, (title, width) in enumerate(columns, start=1):
         cell = ws.cell(row=header_row, column=idx, value=title)
-        cell.font = Font(name="Arial", size=10, bold=True, color="FFFFFF")
-        cell.fill = PatternFill("solid", fgColor=BRAND)
-        cell.alignment = Alignment(horizontal="center", vertical="center")
-        cell.border = border
+        cell.font = Font(name="Arial", size=9, bold=True, color=pt.MUTED)
+        cell.alignment = Alignment(horizontal="right" if title == "Horas" else "left", vertical="center")
+        cell.border = head_border
         ws.column_dimensions[get_column_letter(idx)].width = width
     ws.row_dimensions[header_row].height = 20
 
@@ -115,12 +118,12 @@ def build_xlsx(sheet):
         if item["minutes"] is None:
             fill = PatternFill("solid", fgColor=PENDING_FILL)
         elif i % 2:
-            fill = PatternFill("solid", fgColor=BRAND_SOFT)
+            fill = PatternFill("solid", fgColor=PAPER)
         for c, value in enumerate(values, start=1):
             cell = ws.cell(row=r, column=c, value=value)
             cell.font = base
             cell.border = border
-            cell.alignment = Alignment(vertical="center", horizontal="left" if c in (2, 7) else "center",
+            cell.alignment = Alignment(vertical="center", horizontal="right" if c == 6 else "left",
                                        wrap_text=(c == 7))
             if fill:
                 cell.fill = fill
@@ -150,10 +153,11 @@ def build_xlsx(sheet):
         label_cell.alignment = Alignment(horizontal="right")
         value_cell = ws.cell(row=r, column=6, value=formula)
         value_cell.number_format = "[H]:MM"
-        value_cell.font = Font(name="Arial", size=11 if offset else 12, bold=True, color=BRAND)
-        value_cell.alignment = Alignment(horizontal="center")
-        value_cell.border = border
-        value_cell.fill = PatternFill("solid", fgColor=BRAND_SOFT)
+        value_cell.font = Font(name="Arial", size=11 if offset else 12, bold=True, color=pt.ACCENT if offset == 0 else INK)
+        value_cell.alignment = Alignment(horizontal="right")
+        value_cell.border = Border(top=Side(style="medium", color=INK)) if offset == 0 else border
+        if offset == 0:
+            value_cell.fill = PatternFill("solid", fgColor=pt.ACCENT_SOFT)
     pending = sum(1 for item in rows if item["minutes"] is None)
     note_row = total_row + len(totals) + 1
     if pending:
@@ -162,7 +166,7 @@ def build_xlsx(sheet):
         note_row += 1
     generated = timezone.localtime().strftime("%d/%m/%Y %H:%M")
     ws.cell(row=note_row, column=1, value=f"Gerado pelo HoraCerta em {generated}.").font = Font(
-        name="Arial", size=8, italic=True, color="6B7280")
+        name="Arial", size=8, italic=True, color=pt.MUTED)
 
     ws.freeze_panes = ws.cell(row=first_data, column=1)
     if rows:
@@ -184,115 +188,56 @@ def build_xlsx(sheet):
 
 
 def build_pdf(sheet):
-    from reportlab.lib import colors
-    from reportlab.lib.enums import TA_CENTER
     from reportlab.lib.pagesizes import A4, landscape
-    from reportlab.lib.styles import ParagraphStyle
     from reportlab.lib.units import cm
-    from reportlab.platypus import KeepTogether, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+    from reportlab.platypus import KeepTogether, Paragraph, SimpleDocTemplate, Spacer
 
-    brand = colors.HexColor("#" + BRAND)
-    soft = colors.HexColor("#" + BRAND_SOFT)
-    line = colors.HexColor("#C9D3E0")
-    muted = colors.HexColor("#6B7280")
     page = landscape(A4)
-
-    title_style = ParagraphStyle("t", fontName="Helvetica-Bold", fontSize=17, leading=21, textColor=brand)
-    label_style = ParagraphStyle("l", fontName="Helvetica", fontSize=8, leading=10, textColor=muted)
-    value_style = ParagraphStyle("v", fontName="Helvetica-Bold", fontSize=10.5, leading=13)
-    cell_style = ParagraphStyle("c", fontName="Helvetica", fontSize=9, leading=11)
-    head_style = ParagraphStyle("h", fontName="Helvetica-Bold", fontSize=9, leading=11, textColor=colors.white,
-                                alignment=TA_CENTER)
-    total_label = ParagraphStyle("tl", fontName="Helvetica", fontSize=8.5, leading=10, textColor=muted, alignment=TA_CENTER)
-    total_value = ParagraphStyle("tv", fontName="Helvetica-Bold", fontSize=16, leading=19, textColor=brand, alignment=TA_CENTER)
-
-    generated = timezone.localtime().strftime("%d/%m/%Y %H:%M")
-
-    def footer(canvas, doc):
-        canvas.saveState()
-        canvas.setFont("Helvetica", 7.5)
-        canvas.setFillColor(muted)
-        canvas.drawString(1.5 * cm, 0.9 * cm, f"{sheet.equipment} - gerado pelo HoraCerta em {generated}")
-        canvas.drawRightString(page[0] - 1.5 * cm, 0.9 * cm, f"Página {doc.page}")
-        canvas.restoreState()
-
     buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=page, leftMargin=1.5 * cm, rightMargin=1.5 * cm,
-                            topMargin=1.3 * cm, bottomMargin=1.5 * cm,
-                            title=f"Relatório de produção - {sheet.equipment}", author="HoraCerta")
-    width = page[0] - 3 * cm
-    story = [Paragraph(escape(f"Relatório de produção - {sheet.equipment}"), title_style), Spacer(1, 8)]
+    doc = SimpleDocTemplate(buffer, pagesize=page, leftMargin=1.6 * cm, rightMargin=1.6 * cm, topMargin=1.5 * cm,
+                            bottomMargin=1.7 * cm, title=f"Relatório de produção - {sheet.equipment}", author="HoraCerta")
+    width = page[0] - doc.leftMargin - doc.rightMargin
+    st = pt.styles()
 
-    pairs = info_pairs(sheet)
-    info_cells = [[Paragraph(escape(label), label_style), Paragraph(escape(value), value_style)] for label, value in pairs]
-    info = Table([info_cells], colWidths=[width / len(pairs)] * len(pairs))
-    info.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), soft),
-        ("BOX", (0, 0), (-1, -1), 0.6, line),
-        ("LINEAFTER", (0, 0), (-2, -1), 0.6, line),
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("TOPPADDING", (0, 0), (-1, -1), 6), ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-    ]))
-    story += [info, Spacer(1, 12)]
+    who = [p for p in (sheet.operator_name and f"Operador {pt.esc(sheet.operator_name)}",
+                        sheet.company_name and pt.esc(sheet.company_name)) if p]
+    story = pt.header_block(f"Relatório de produção · {sheet.equipment}", [
+        " · ".join(who + [f"Período {pt.esc(period_label(sheet))}"]),
+    ])
+    story.append(pt.info_grid(info_pairs(sheet), width, columns=min(6, len(info_pairs(sheet)))))
+    story.append(Spacer(1, 12))
 
-    headers = ["Data", "Código", "Destino", "Início", "Fim", "Horas", "Observação"]
-    data = [[Paragraph(h, head_style) for h in headers]]
-    rows = sheet_rows(sheet)
-    style = [
-        ("BACKGROUND", (0, 0), (-1, 0), brand),
-        ("GRID", (0, 0), (-1, -1), 0.5, line),
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("ALIGN", (0, 1), (0, -1), "CENTER"), ("ALIGN", (2, 1), (5, -1), "CENTER"),
-        ("FONTNAME", (0, 1), (-1, -1), "Helvetica"), ("FONTSIZE", (0, 1), (-1, -1), 9),
-        ("FONTNAME", (5, 1), (5, -1), "Helvetica-Bold"),
-        ("TOPPADDING", (0, 0), (-1, -1), 5), ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
-    ]
-    for i, item in enumerate(rows, start=1):
-        data.append([
+    rows, fills = [], {}
+    for i, item in enumerate(sheet_rows(sheet)):
+        if item["minutes"] is None:
+            fills[i] = PENDING_FILL
+        rows.append([
             item["date"].strftime("%d/%m/%Y"),
-            Paragraph(escape(item["code"] or "-"), cell_style),
+            item["code"] or "-",
             item["destination"] or "-",
             item["start"].strftime("%H:%M") if item["start"] else "-",
             item["end"].strftime("%H:%M") if item["end"] else "-",
+            item["note"],
             format_minutes(item["minutes"]) if item["minutes"] is not None else "sem fim",
-            Paragraph(escape(item["note"]), cell_style),
         ])
-        if item["minutes"] is None:
-            style.append(("BACKGROUND", (0, i), (-1, i), colors.HexColor("#" + PENDING_FILL)))
-        elif i % 2 == 0:
-            style.append(("BACKGROUND", (0, i), (-1, i), soft))
-        if item["destination_key"] and item["minutes"] is not None:
-            fill = GUINCHO_FILL if item["destination_key"] == ProductionEntry.Destination.GUINCHO else IMPLEMENTO_FILL
-            style.append(("BACKGROUND", (2, i), (2, i), colors.HexColor("#" + fill)))
-    if not rows:
-        data.append(["", "", "", "", "", "", Paragraph("Nenhum item anotado.", cell_style)])
-    col_widths = [2.4, 3.4, 2.6, 1.8, 1.8, 1.8]
-    col_widths = [w * cm for w in col_widths] + [width - sum(col_widths) * cm]
-    table = Table(data, colWidths=col_widths, repeatRows=1)
-    table.setStyle(TableStyle(style))
-    story += [table, Spacer(1, 14)]
+    widths = [2.5, 3.4, 2.7, 1.8, 1.8]
+    widths = [w * cm for w in widths] + [width - (sum(widths) + 2.2) * cm, 2.2 * cm]
+    story.append(pt.data_table(["Data", "Código", "Destino", "Início", "Fim", "Observação", "Horas"], rows, widths,
+                               numeric_cols=(6,), empty_text="Nenhum item anotado.", row_fills=fills))
+    story.append(Spacer(1, 14))
 
     totals = sheet.totals()
-    boxes = [
+    closing = [pt.totals_block(
+        [("Guincho", format_minutes(totals[ProductionEntry.Destination.GUINCHO])),
+         ("Implemento", format_minutes(totals[ProductionEntry.Destination.IMPLEMENTO]))],
         ("Total de horas", format_minutes(totals["total"])),
-        ("Guincho", format_minutes(totals[ProductionEntry.Destination.GUINCHO])),
-        ("Implemento", format_minutes(totals[ProductionEntry.Destination.IMPLEMENTO])),
-    ]
-    total_table = Table([[Paragraph(label, total_label) for label, _ in boxes],
-                         [Paragraph(value, total_value) for _, value in boxes]],
-                        colWidths=[5 * cm] * 3, hAlign="RIGHT")
-    total_table.setStyle(TableStyle([
-        ("BOX", (0, 0), (-1, -1), 0.8, brand),
-        ("LINEAFTER", (0, 0), (-2, -1), 0.6, line),
-        ("BACKGROUND", (0, 0), (-1, -1), soft),
-        ("TOPPADDING", (0, 0), (-1, -1), 5), ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-    ]))
-    closing = [total_table]
+        width * 0.38,
+    )]
     if totals["pending"]:
         closing += [Spacer(1, 4), Paragraph(
-            f"{totals['pending']} item(ns) sem horário de fim ficaram fora do total.",
-            ParagraphStyle("p", fontName="Helvetica-Oblique", fontSize=8.5, textColor=muted, alignment=2))]
+            f"{totals['pending']} item(ns) sem horário de fim ficaram fora do total.", st["small"])]
     story.append(KeepTogether(closing))
 
-    doc.build(story, onFirstPage=footer, onLaterPages=footer)
+    decorate = pt.page_decorator(f"Relatório de produção · {sheet.equipment}")
+    doc.build(story, onFirstPage=decorate, onLaterPages=decorate)
     return buffer.getvalue()

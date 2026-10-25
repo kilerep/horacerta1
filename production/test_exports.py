@@ -156,7 +156,8 @@ class PdfExportTests(ExportFixture):
 
         pages = len(re.findall(rb"/Type /Page\b", content))
         self.assertGreaterEqual(pages, 2)
-        self.assertGreaterEqual(pdf_text(content).count("(Observa"), pages)
+        # cabecalho repetido em toda pagina com tabela (a ultima pode ter so os totais)
+        self.assertGreaterEqual(pdf_text(content).count("(OBSERVA"), pages - 1)
         self.assertIn("L-069", pdf_text(content))
 
     def test_empty_report_pdf(self):

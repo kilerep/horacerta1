@@ -14,11 +14,9 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 from openpyxl import Workbook
 from openpyxl.styles import Font
-from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.units import mm
-from reportlab.platypus import SimpleDocTemplate, Spacer, Table, TableStyle, Paragraph
-from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import SimpleDocTemplate, Spacer
 
 from accounts.models import User
 from accounts.mei_context import resolve_mei_context
@@ -800,64 +798,46 @@ def export_pdf(request):
     doc = SimpleDocTemplate(
         buffer,
         pagesize=landscape(A4),
-        leftMargin=8 * mm,
-        rightMargin=8 * mm,
-        topMargin=10 * mm,
-        bottomMargin=10 * mm,
+        leftMargin=14 * mm,
+        rightMargin=14 * mm,
+        topMargin=14 * mm,
+        bottomMargin=16 * mm,
     )
-    styles = getSampleStyleSheet()
-    story = []
+    from accounts import print_theme as pt
 
-    story.append(Paragraph("HoraCerta - Resumo de horários", styles["Title"]))
-    story.append(Spacer(1, 6))
-    story.append(Paragraph(f"<b>Funcionario:</b> {employee_name}", styles["Normal"]))
-    story.append(Paragraph(f"<b>Empresa:</b> {contract.company.name}", styles["Normal"]))
-    story.append(Paragraph(f"<b>Periodo:</b> {period_label}", styles["Normal"]))
-    story.append(Paragraph(f"<b>Total de horas:</b> {total_hours_hhmm}", styles["Normal"]))
-    story.append(Paragraph(f"<b>Total de horários:</b> {len(punches)}", styles["Normal"]))
-    story.append(Spacer(1, 10))
+    width = landscape(A4)[0] - doc.leftMargin - doc.rightMargin
+    story = pt.header_block("Resumo de horários", [
+        f"{pt.esc(employee_name)} para <b>{pt.esc(contract.company.name)}</b>",
+        f"Período {pt.esc(period_label.replace(' ate ', ' até '))}",
+    ])
+    story.append(pt.info_grid([
+        ("Profissional", employee_name), ("Cliente", contract.company.name),
+        ("Total de horas", total_hours_hhmm), ("Horários registrados", str(len(punches))),
+    ], width, columns=4))
+    story.append(Spacer(1, 12))
 
-    table_headers = ["Data"] + [f"horário {idx}" for idx in range(1, max_punches + 1)] + ["Total do dia", "Status"]
-    table_data = [table_headers]
-    for row in daily_rows:
-        status_label = "Incompleto" if row["is_incomplete"] else "OK"
-        table_data.append(
-            [
-                row["date"].strftime("%d/%m/%Y"),
-                *row["punch_columns"],
-                row["total_hours_hhmm"],
-                status_label,
-            ]
-        )
+    headers = ["Data"] + [f"Horário {idx}" for idx in range(1, max_punches + 1)] + ["Situação", "Total do dia"]
+    rows, fills = [], {}
+    for index, row in enumerate(daily_rows):
+        if row["is_incomplete"]:
+            fills[index] = pt.WARN_SOFT
+        rows.append([
+            row["date"].strftime("%d/%m/%Y"),
+            *row["punch_columns"],
+            "Incompleto" if row["is_incomplete"] else "OK",
+            row["total_hours_hhmm"],
+        ])
 
-    if len(table_data) == 1:
-        table_data.append(["-"] + ["-"] * max_punches + ["00:00", "OK"])
-
-    date_width = 24 * mm
+    date_width = 26 * mm
     total_width = 26 * mm
-    status_width = 24 * mm
-    usable_width = (landscape(A4)[0] - doc.leftMargin - doc.rightMargin) - (
-        date_width + total_width + status_width
-    )
+    status_width = 26 * mm
+    usable_width = width - (date_width + total_width + status_width)
     each_punch_width = max(16 * mm, usable_width / max(1, max_punches))
-    col_widths = [date_width] + [each_punch_width] * max_punches + [total_width, status_width]
-
-    table = Table(table_data, colWidths=col_widths, repeatRows=1)
-    table.setStyle(
-        TableStyle(
-            [
-                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#20396b")),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#8ea6d1")),
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("FONTSIZE", (0, 0), (-1, -1), 8),
-                ("ALIGN", (1, 1), (max_punches + 2, -1), "CENTER"),
-            ]
-        )
-    )
-    story.append(table)
-    doc.build(story)
+    col_widths = [date_width] + [each_punch_width] * max_punches + [status_width, total_width]
+    story.append(pt.data_table(headers, rows, col_widths, numeric_cols=(len(headers) - 1,),
+                               empty_text="Sem horários no período.", row_fills=fills))
+    decorate = pt.page_decorator("Resumo de horários")
+    doc.build(story, onFirstPage=decorate, onLaterPages=decorate)
     buffer.seek(0)
 
     response = HttpResponse(buffer.getvalue(), content_type="application/pdf")
