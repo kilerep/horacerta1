@@ -28,7 +28,7 @@
     <div class="prod-total"><span>Guincho</span><strong>{{ totals.guincho }}</strong></div>
     <div class="prod-total"><span>Implemento</span><strong>{{ totals.implemento }}</strong></div>
   </section>
-  {% if totals.pending %}<p class="prod-meta" style="margin:-6px 0 0">{{ totals.pending }} item{{ totals.pending|pluralize:"ns" }} sem horário de fim ainda (fora do total).</p>{% endif %}
+  {% if totals.pending %}<p class="prod-meta" style="margin:-6px 0 0">{{ totals.pending }} {% if totals.pending == 1 %}item ainda sem horário de fim ficou{% else %}itens ainda sem horário de fim ficaram{% endif %} fora do total.</p>{% endif %}
 
   {% if sheet.is_open %}
     <form class="card prod-form" method="post" novalidate data-submit-once="true" id="new-entry" data-sheet-id="{{ sheet.id }}">

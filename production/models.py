@@ -14,6 +14,18 @@ from django.db import models
 from django.utils import timezone
 
 
+def itens(n):
+    """1 -> '1 item', 2 -> '2 itens' (portugues certo, sem 'item(ns)')."""
+    n = int(n or 0)
+    return f"{n} {'item' if n == 1 else 'itens'}"
+
+
+def pending_note(n):
+    """Frase dos itens sem fim que ficaram fora do total, no singular ou plural."""
+    n = int(n or 0)
+    return f"{itens(n)} sem horário de fim {'ficou' if n == 1 else 'ficaram'} fora do total."
+
+
 def format_minutes(minutes):
     """120 -> '2:00', 90 -> '1:30', None/0 -> '0:00'."""
     minutes = int(minutes or 0)
@@ -101,7 +113,7 @@ class ProductionEntry(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ["work_date", "start_time", "created_at"]
+        ordering = ["work_date", models.F("start_time").asc(nulls_last=True), "created_at"]
 
     def __str__(self):
         return f"{self.work_date:%d/%m} {self.item_code or '-'}"

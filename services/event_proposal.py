@@ -126,7 +126,7 @@ def _proposal_message(context):
             f"Data: {context['event_date']}",
             f"Horário previsto: {context['planned_time']}",
             f"Local: {context['service_address']}",
-            f"Composição técnica: {item_count} item(ns) incluso(s) no pacote.",
+            f"Composição técnica: {item_count} {'item incluso' if item_count == 1 else 'itens inclusos'} no pacote.",
             f"Valor fechado do pacote: {context['package_value_brl']}",
             "",
             "Veja todos os detalhes, itens inclusos e condições:",

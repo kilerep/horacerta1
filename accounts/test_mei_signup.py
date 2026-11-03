@@ -92,11 +92,11 @@ class MeiSelfSignupTests(TestCase):
 
         self.assertEqual(response.status_code, 302)
 
-    def test_landing_and_login_point_to_signup(self):
-        landing = self.client.get(reverse("landing"))
+    def test_root_goes_to_login_which_points_to_signup(self):
+        root = self.client.get(reverse("landing"))
         login = self.client.get(reverse("login"))
 
-        self.assertContains(landing, reverse("signup_mei"))
+        self.assertRedirects(root, reverse("login"), fetch_redirect_response=False)
         self.assertContains(login, reverse("signup_mei"))
 
 

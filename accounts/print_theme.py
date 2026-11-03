@@ -103,7 +103,8 @@ def info_grid(pairs, width, columns=3):
     return table
 
 
-def data_table(header, rows, col_widths, *, numeric_cols=(), empty_text="Nada registrado.", row_fills=None):
+def data_table(header, rows, col_widths, *, numeric_cols=(), empty_text="Nada registrado.", row_fills=None,
+               cell_fills=None):
     """Tabela de dados: cabecalho em versalete cinza com filete de tinta, linhas separadas por filete
     fino e zebra de papel. Colunas numericas alinhadas a direita. row_fills: {indice_linha: hex}."""
     from reportlab.platypus import Paragraph, Table, TableStyle
@@ -136,6 +137,8 @@ def data_table(header, rows, col_widths, *, numeric_cols=(), empty_text="Nada re
         style.append(("SPAN", (0, 1), (-1, 1)))
     for index, fill in (row_fills or {}).items():
         style.append(("BACKGROUND", (0, index + 1), (-1, index + 1), rl_color(fill)))
+    for (row_index, col_index), fill in (cell_fills or {}).items():
+        style.append(("BACKGROUND", (col_index, row_index + 1), (col_index, row_index + 1), rl_color(fill)))
     table.setStyle(TableStyle(style))
     return table
 
@@ -184,3 +187,31 @@ def page_decorator(doc_label):
         canvas.restoreState()
 
     return draw
+
+
+def kpi_strip(items, width):
+    """Faixa de resumo: numeros principais lado a lado (rotulo pequeno, valor em serifa).
+    items: [(rotulo, valor, destaque_bool)]. O destaque sai em terracota sobre fundo claro."""
+    from reportlab.lib.enums import TA_LEFT
+    from reportlab.lib.styles import ParagraphStyle
+    from reportlab.platypus import Paragraph, Table, TableStyle
+
+    label = ParagraphStyle("hc_kpi_l", fontName="Helvetica", fontSize=7.6, leading=9.5, textColor=rl_color(MUTED),
+                           alignment=TA_LEFT)
+    value = ParagraphStyle("hc_kpi_v", fontName="Times-Bold", fontSize=19, leading=22, textColor=rl_color(INK))
+    value_hi = ParagraphStyle("hc_kpi_vh", parent=value, textColor=rl_color(ACCENT))
+    cells = [[Paragraph(esc(l).upper(), label), Paragraph(esc(v), value_hi if hi else value)] for l, v, hi in items]
+    table = Table([cells], colWidths=[width / len(items)] * len(items), hAlign="LEFT")
+    style = [
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("BACKGROUND", (0, 0), (-1, -1), rl_color(PAPER)),
+        ("LINEABOVE", (0, 0), (-1, 0), 0.9, rl_color(INK)),
+        ("LINEAFTER", (0, 0), (-2, -1), 0.5, rl_color(RULE)),
+        ("LEFTPADDING", (0, 0), (-1, -1), 10), ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+        ("TOPPADDING", (0, 0), (-1, -1), 8), ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
+    ]
+    for i, (_l, _v, hi) in enumerate(items):
+        if hi:
+            style.append(("BACKGROUND", (i, 0), (i, 0), rl_color(ACCENT_SOFT)))
+    table.setStyle(TableStyle(style))
+    return table

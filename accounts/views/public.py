@@ -204,10 +204,11 @@ def _public_page_context(request, path="/"):
 
 
 def landing_view(request):
+    # Landing page removida (nov/2026): "/" vai direto para o login; quem ja esta
+    # logado segue para a tela certa do seu perfil.
     if request.user.is_authenticated:
-        return redirect("employee_dashboard")
-    context = _public_page_context(request, "/")
-    return render(request, "public/landing.html", context)
+        return redirect("dashboard")
+    return redirect("login")
 
 
 def evaluation_view(request):

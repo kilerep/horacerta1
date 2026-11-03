@@ -96,21 +96,24 @@ class XlsxExportTests(ExportFixture):
         self.assertEqual(ws.auto_filter.ref, f"A{h}:H{h + 5}")
         self.assertGreaterEqual(ws.column_dimensions["H"].width, 30)
 
-    def test_totals_are_formulas_over_exactly_the_data_rows(self):
-        ws = self._book().active
+    def test_totals_are_values_visible_without_recalculation(self):
+        # Visualizadores de celular nao recalculam formulas: o total tem que vir como numero.
+        wb = load_workbook(BytesIO(build_xlsx(self.sheet)), data_only=True)
+        ws = wb.active
         h = self._header_row(ws)
         first, last = h + 1, h + 5
-        formulas = {ws.cell(r, 6).value: ws.cell(r, 7).value for r in range(last + 1, last + 7) if ws.cell(r, 6).value}
+        totals = {ws.cell(r, 4).value: ws.cell(r, 7).value for r in range(last + 1, last + 7) if ws.cell(r, 4).value}
 
-        self.assertEqual(formulas["Total de horas"], f"=SUM(G{first}:G{last})")
-        self.assertEqual(formulas["Guincho"], f'=SUMIF(D{first}:D{last},"Guincho",G{first}:G{last})')
-        self.assertEqual(formulas["Implemento"], f'=SUMIF(D{first}:D{last},"Implemento",G{first}:G{last})')
-        self.assertEqual(formulas["Peças produzidas"], f"=SUM(C{first}:C{last})")
-        # O que as formulas vao somar bate com o total do app (o "sem fim" e texto, fica fora).
+        sums = self.sheet.totals()
+        self.assertEqual(minutes(totals["Total de horas"]), sums["total"])
+        self.assertEqual(minutes(totals["Guincho"]), sums[G])
+        self.assertEqual(minutes(totals["Implemento"]), sums[I])
+        self.assertEqual(totals["Peças produzidas"], 12)
         hours = [ws.cell(r, 7).value for r in range(first, last + 1)]
-        numeric = sum(minutes(v) for v in hours if v != "sem fim")
-        self.assertEqual(numeric, self.sheet.totals()["total"])
-        self.assertIn("sem fim", hours)
+        self.assertEqual(sum(minutes(v) for v in hours if v is not None), sums["total"])
+        # item sem fim: horas em branco e "em andamento" na coluna Fim
+        self.assertIn(None, hours)
+        self.assertIn("em andamento", [ws.cell(r, 6).value for r in range(first, last + 1)])
 
     def test_overnight_and_info_block(self):
         ws = self._book().active
@@ -122,14 +125,14 @@ class XlsxExportTests(ExportFixture):
         self.assertEqual(info["Máquina"], "Chenlong 2")
         self.assertEqual(info["Encarregado"], "Carlos")
         self.assertEqual(info["Período"], "20/10/2026 a 22/10/2026")
-        self.assertIn("Chenlong 2", ws["A1"].value)
+        self.assertIn("Chenlong 2", ws["A2"].value)
 
     def test_empty_report_still_builds(self):
         empty = ProductionSheet.objects.create(owner=self.user, equipment="Vazia")
 
         ws = load_workbook(BytesIO(build_xlsx(empty))).active
 
-        self.assertIn("Vazia", ws["A1"].value)
+        self.assertIn("Vazia", ws["A2"].value)
 
 
 class PdfExportTests(ExportFixture):
@@ -138,8 +141,8 @@ class PdfExportTests(ExportFixture):
         text = pdf_text(content)
 
         self.assertTrue(content.startswith(b"%PDF"))
-        for expected in ("0011-024", "20/10/2026", "07:00", "11:00", "4:00", "Guincho", "Implemento", "sem fim", "10:00", "Carlos",
-                         "(12)", "produzidas", "QTD."):
+        for expected in ("0011-024", "20/10/2026", "07:00", "11:00", "4:00", "Guincho", "Implemento", "em andamento", "10:00", "Carlos",
+                         "(12)", "PRODUZIDAS", "QTD."):
             self.assertIn(expected, text, expected)
 
     def test_special_characters_do_not_break_the_pdf(self):

@@ -142,7 +142,7 @@ def service_job_repeat(request, job_id):
 
         messages.success(
             request,
-            f"Próxima visita criada para {next_date.strftime('%d/%m/%Y')}. {copied} item(ns) copiado(s) como previstos.",
+            f"Próxima visita criada para {next_date.strftime('%d/%m/%Y')}. {copied} {'item copiado' if copied == 1 else 'itens copiados'} como previstos.",
         )
         return redirect("service_job_detail", job_id=job.id)
 

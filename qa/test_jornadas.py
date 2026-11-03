@@ -233,8 +233,8 @@ class EmpresaAcessoEncerradoTests(Journey):
 
         self.assertRedirects(response, reverse("signup_mei"), fetch_redirect_response=False)
 
-    def test_landing_continua_no_ar(self):
-        self.assertEqual(self.client.get(reverse("landing")).status_code, 200)
+    def test_raiz_leva_ao_login(self):
+        self.assertRedirects(self.client.get(reverse("landing")), reverse("login"), fetch_redirect_response=False)
 
     def test_menu_do_prestador_sem_itens_de_empresa(self):
         mei = User.objects.create_user(username="so-prestador@horacerta.test", email="so-prestador@horacerta.test",

@@ -239,7 +239,7 @@
         results.appendChild(button);
       });
       results.classList.add("is-visible");
-      if(selection) selection.textContent = items.length + " item(ns) encontrado(s). Selecione um para preencher.";
+      if(selection) selection.textContent = (items.length === 1 ? "1 item encontrado" : items.length + " itens encontrados") + ". Selecione um para preencher.";
     }
     function searchCatalog(){
       if(!searchInput) return;
