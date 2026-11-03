@@ -11,7 +11,7 @@ from django.views.decorators.http import require_POST
 
 from .exports import build_pdf, build_xlsx, safe_filename
 from .forms import ProductionEntryForm, ProductionSheetForm
-from .models import ProductionEntry, ProductionSheet, format_minutes
+from .models import ProductionEntry, ProductionSheet, format_minutes, pending_note
 
 
 def _default_operator(user):
@@ -165,7 +165,7 @@ def _whatsapp_message(sheet, links=None):
     lines.append("")
     lines.append(f"*Total: {totals['total']}* (Guincho {totals['guincho']} | Implemento {totals['implemento']})")
     if totals["pending"]:
-        lines.append(f"{totals['pending']} item(ns) sem horário de fim, fora do total.")
+        lines.append(pending_note(totals["pending"]))
     if links:
         lines.append("")
         lines.append(f"PDF: {links['pdf']}")

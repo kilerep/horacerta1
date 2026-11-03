@@ -21,7 +21,7 @@
         <div class="prod-meta"><span class="prod-chip open">Aberto</span>{% if row.sheet.company_name %}<span>{{ row.sheet.company_name }}</span>{% endif %}</div>
         <strong>{{ row.sheet.equipment }}</strong>
         <div class="prod-meta">
-          <span>{{ row.count }} item{{ row.count|pluralize:"ns" }}</span>
+          <span>{{ row.count }} {% if row.count == 1 %}item{% else %}itens{% endif %}</span>
           {% if row.start %}<span>{{ row.start|date:"d/m" }}{% if row.end != row.start %} a {{ row.end|date:"d/m" }}{% endif %}</span>{% endif %}
           <span>Total {{ row.totals.total }}</span>
         </div>
@@ -39,7 +39,7 @@
           <a class="prod-card" href="{% url 'production_sheet_detail' row.sheet.id %}">
             <strong>{{ row.sheet.equipment }}</strong>
             <div class="prod-meta">
-              <span>{{ row.count }} item{{ row.count|pluralize:"ns" }}</span>
+              <span>{{ row.count }} {% if row.count == 1 %}item{% else %}itens{% endif %}</span>
               {% if row.start %}<span>{{ row.start|date:"d/m" }}{% if row.end != row.start %} a {{ row.end|date:"d/m" }}{% endif %}</span>{% endif %}
               <span>Total {{ row.totals.total }}</span>
               {% if row.sheet.closed_at %}<span>Fechado em {{ row.sheet.closed_at|date:"d/m/Y" }}</span>{% endif %}

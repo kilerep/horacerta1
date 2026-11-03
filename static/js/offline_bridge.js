@@ -27,13 +27,15 @@
     banner.hidden = !text;
   }
 
+  function regs(n) { return n === 1 ? "1 registro feito sem internet" : n + " registros feitos sem internet"; }
+
   function refreshBanner(extra) {
     return api.pending(userId).then(function (items) {
       var waiting = items.filter(function (i) { return !i.last_error; }).length;
       var failed = items.length - waiting;
       if (extra) return showBanner(extra, "ok");
-      if (failed) return showBanner(failed + " registro(s) feito(s) sem internet não foram aceitos. Abra o modo offline para ver o motivo.", "warn");
-      if (waiting) return showBanner(waiting + " registro(s) feito(s) sem internet aguardando envio" + (navigator.onLine ? "..." : ". Enviaremos quando a internet voltar."), navigator.onLine ? "" : "warn");
+      if (failed) return showBanner(regs(failed) + (failed === 1 ? " não foi aceito" : " não foram aceitos") + ". Abra o modo offline para ver o motivo.", "warn");
+      if (waiting) return showBanner(regs(waiting) + " aguardando envio" + (navigator.onLine ? "..." : ". Enviaremos quando a internet voltar."), navigator.onLine ? "" : "warn");
       showBanner("");
     });
   }
@@ -41,7 +43,7 @@
   function trySync() {
     return api.sync(userId).then(function (res) {
       if (res && res.sent) {
-        refreshBanner(res.sent + " registro(s) feito(s) sem internet enviado(s).");
+        refreshBanner(regs(res.sent) + (res.sent === 1 ? " foi enviado." : " foram enviados."));
         setTimeout(function () { refreshBanner(); }, 6000);
       } else {
         refreshBanner();

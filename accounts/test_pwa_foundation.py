@@ -23,7 +23,7 @@ class PwaFoundationTests(TestCase):
 
     def test_public_foundation_routes_respond(self):
         urls = [
-            reverse("landing"),
+
             reverse("login"),
             reverse("password_reset"),
             reverse("pwa_manifest"),

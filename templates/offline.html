@@ -228,7 +228,7 @@
     if (!profile) return;
     api.sync(profile.user_id).then(function (res) {
       if (res.error === "login") say("Para enviar, entre no app com internet (sua sessão expirou). Os registros continuam guardados.", "warn");
-      else if (res.sent) say(res.sent + " registro(s) enviado(s) para o HoraCerta.", "ok");
+      else if (res.sent) say((res.sent === 1 ? "1 registro enviado" : res.sent + " registros enviados") + " para o HoraCerta.", "ok");
       renderQueue();
     });
   }
