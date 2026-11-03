@@ -13,7 +13,7 @@
         <p class="internal-subtitle">{{ employee.user.email|default:employee.user.username }} | {{ employee.company.name }}</p>
       </div>
       <div class="internal-actions">
-        <a class="btn" href="{% url 'internal_punches' %}?employee={{ employee.id }}">Ver registros de ponto</a>
+        <a class="btn" href="{% url 'internal_punches' %}?employee={{ employee.id }}">Ver registros de horário</a>
         <a class="btn" href="{% url 'internal_correction_requests' %}?employee={{ employee.id }}">Ver solicitações</a>
         <a class="btn" href="{% url 'internal_corrections' %}?employee={{ employee.id }}">Abrir correção de horário</a>
       </div>
@@ -75,14 +75,14 @@
     <div class="internal-head">
       <div>
         <h3>Resumo dos últimos 30 dias</h3>
-        <p class="internal-subtitle">Leitura calculada a partir das batidas existentes, sem alterar regras de ponto.</p>
+        <p class="internal-subtitle">Leitura calculada a partir dos horários registrados, sem alterar nenhuma regra.</p>
       </div>
     </div>
     <div class="metric-grid">
       <div class="metric-card"><div class="label">Dias com registro</div><div class="value">{{ summary_30_days.days_with_records }}</div><div class="hint">Dias distintos</div></div>
-      <div class="metric-card"><div class="label">Registros</div><div class="value">{{ summary_30_days.punch_count }}</div><div class="hint">Batidas no período</div></div>
+      <div class="metric-card"><div class="label">Registros</div><div class="value">{{ summary_30_days.punch_count }}</div><div class="hint">Horários no período</div></div>
       <div class="metric-card"><div class="label">Total de horas</div><div class="value">{{ summary_30_days.total_hours }}</div><div class="hint">Pares entrada/saída</div></div>
-      <div class="metric-card"><div class="label">Dias incompletos</div><div class="value">{{ summary_30_days.incomplete_days }}</div><div class="hint">Quantidade ímpar de batidas</div></div>
+      <div class="metric-card"><div class="label">Dias incompletos</div><div class="value">{{ summary_30_days.incomplete_days }}</div><div class="hint">Quantidade ímpar de horários</div></div>
     </div>
   </section>
 
@@ -177,7 +177,7 @@
   </section>
 
   <section class="internal-panel">
-    <h3>Últimos registros de ponto</h3>
+    <h3>Últimos registros de horário</h3>
     <div class="table-wrap">
       <table class="internal-table">
         <thead><tr><th>Data/hora</th><th>Empresa</th><th>Contrato</th><th>Status</th><th>Observação</th></tr></thead>
@@ -191,7 +191,7 @@
               <td>{{ punch.note|default:"-" }}</td>
             </tr>
           {% empty %}
-            <tr><td colspan="5"><div class="empty-state">Nenhum registro de ponto para este profissional.</div></td></tr>
+            <tr><td colspan="5"><div class="empty-state">Nenhum registro de horário para este profissional.</div></td></tr>
           {% endfor %}
         </tbody>
       </table>

@@ -155,3 +155,25 @@ class LotesCETests(TestCase):
         self.assertNotIn('id="appSidebar"', html)
         self.assertIn("Entrar no HoraCerta", html)
         self.assertIn("Criar conta", html)
+
+
+class SemVocabularioDePontoTests(SimpleTestCase):
+    """O HoraCerta e gestor de horas e servicos, nao ponto eletronico: nenhum texto visivel
+    pode usar 'ponto', 'jornada' ou 'batida' no sentido de controle de jornada CLT."""
+
+    def test_templates_e_scripts_sem_vocabulario_de_ponto(self):
+        import re
+        from pathlib import Path
+
+        from django.conf import settings
+
+        base = Path(settings.BASE_DIR)
+        pattern = re.compile(r"\b(ponto|pontos|jornada|jornadas|batida|batidas)\b", re.IGNORECASE)
+        allowed = re.compile(r"ponto de refer", re.IGNORECASE)
+        hits = []
+        for folder, glob in (("templates", "**/*.html"), ("static/js", "*.js")):
+            for path in (base / folder).glob(glob):
+                for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+                    if pattern.search(line) and not allowed.search(line):
+                        hits.append(f"{path.relative_to(base)}:{number}")
+        self.assertEqual(hits, [], hits)

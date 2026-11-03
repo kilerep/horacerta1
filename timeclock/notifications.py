@@ -120,12 +120,12 @@ def notify_punch_admin_action(punch, *, actor_user, action_type):
         PunchCorrectionLog.ActionType.CANCELLED: (
             InternalNotification.NotificationType.PUNCH_CANCELLED,
             "Registro cancelado",
-            "Um registro de ponto foi cancelado pelo Painel Interno.",
+            "Um horário registrado foi cancelado pelo Painel Interno.",
         ),
         PunchCorrectionLog.ActionType.RESTORED: (
             InternalNotification.NotificationType.PUNCH_RESTORED,
             "Registro restaurado",
-            "Um registro de ponto foi restaurado pelo Painel Interno.",
+            "Um horário registrado foi restaurado pelo Painel Interno.",
         ),
         PunchCorrectionLog.ActionType.ADMIN_NOTE_ADDED: (
             InternalNotification.NotificationType.ADMIN_NOTE_ADDED,

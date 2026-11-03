@@ -80,8 +80,8 @@ def manifest(request):
         ],
         "shortcuts": [
             {
-                "name": "Registrar Ponto",
-                "short_name": "Ponto",
+                "name": "Registrar horário",
+                "short_name": "Horário",
                 "description": "Registre suas horas rapidamente",
                 "url": "/timeclock/me/",
                 "icons": [

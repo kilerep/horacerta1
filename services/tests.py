@@ -295,7 +295,7 @@ class ServiceJobAreaTests(TestCase):
         self.assertContains(response, "Pedidos de serviço")
         self.assertContains(response, "Nenhum serviço encontrado.")
         self.assertContains(response, "Catálogo de itens")
-        self.assertContains(response, "Não mexe no seu ponto do dia a dia")
+        self.assertContains(response, "Não mistura com as horas registradas por cliente")
 
     def test_new_service_page_has_legible_client_select_and_guidance(self):
         response = self.client.get(reverse("service_job_create"))

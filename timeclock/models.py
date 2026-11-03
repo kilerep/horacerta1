@@ -329,7 +329,7 @@ class WorkdayChangeLog(models.Model):
 class PunchCorrectionRequest(models.Model):
     class ProblemType(models.TextChoices):
         EXTRA_PUNCH = "extra_punch", "Registro a mais"
-        MISSED_PUNCH = "missed_punch", "Esqueci uma batida"
+        MISSED_PUNCH = "missed_punch", "Esqueci de registrar um horário"
         WRONG_TIME = "wrong_time", "Horario errado"
         DUPLICATED_PUNCH = "duplicated_punch", "Registro duplicado"
         OTHER = "other", "Outro"

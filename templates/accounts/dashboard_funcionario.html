@@ -32,7 +32,7 @@
       </section>
     {% elif request.GET.event == "qr_confirmed" %}
       <section class="hc-feedback hc-feedback--ok" role="status" aria-live="polite">
-        Presenca confirmada por QR. Faça sua marcacao normalmente.
+        Presença confirmada por QR. Registre seu horário normalmente.
       </section>
     {% elif request.GET.event == "qr_invalid" %}
       <section class="hc-feedback hc-feedback--warn" role="status" aria-live="polite">
@@ -186,7 +186,7 @@
           </form>
         </div>
 
-        <section class="hc-journey-summary" aria-label="Resumo da jornada do dia">
+        <section class="hc-journey-summary" aria-label="Resumo das horas do dia">
           <article class="hc-journey-card">
             <span class="hc-journey-k">Horários hoje</span>
             <strong class="hc-journey-v">{{ total_punches_today }}</strong>
@@ -231,7 +231,7 @@
       </section>
 
       <section class="hc-panel">
-        <h3 class="hc-section-title">Pontos para revisar</h3>
+        <h3 class="hc-section-title">Dias para revisar</h3>
         {% if recent_inconsistencies %}
           <div class="hc-alert-list">
             {% for day in recent_inconsistencies %}
