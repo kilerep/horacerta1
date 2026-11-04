@@ -1,24 +1,22 @@
 {% load service_format %}
-<article class="service-card">
-  <div>
+<article class="service-card tone-{% if job.is_overdue %}danger{% else %}{{ job.status_tone }}{% endif %}">
+  <div class="sc-body">
+    <div class="sc-top">
+      <span class="sc-client">{{ job.client_display_name }}</span>
+      {% if job.is_overdue %}<span class="status-chip danger">Atrasado</span>{% else %}<span class="status-chip {{ job.status_tone }}">{{ job.status_label }}</span>{% endif %}
+    </div>
     <h3>{{ job.title }}</h3>
     <div class="service-meta">
-      <span>{{ job.client_display_name }}</span>
-      <span>{{ job.category.name }}</span>
-      <span class="status-chip {{ job.status_tone }}">{{ job.status_label }}</span>
+      <span class="sc-when"><span class="sc-label">Previsão:</span>
+        {% if job.start_date %}{{ job.start_date|date:"d/m" }}{% if job.planned_start_time %} · {{ job.planned_start_time|time:"H:i" }}{% endif %}{% else %}Sem data{% endif %}
+      </span>
+      {% if job.category %}<span>{{ job.category.name }}</span>{% endif %}
+      {% if not compact %}
+        <span>{{ job.total_hours_label }} trabalhadas</span>
+        <span class="sc-value">{{ job.estimated_total|brl }}</span>
+      {% endif %}
     </div>
-    <p class="service-line">
-      Previsão:
-      {% if job.start_date %}{{ job.start_date|date:"d/m/Y" }}{% else %}sem data{% endif %}
-      {% if job.planned_start_time %} as {{ job.planned_start_time|time:"H:i" }}{% endif %}
-    </p>
     <div class="service-next">Próxima ação: <strong>{{ job.next_action.primary.label }}</strong></div>
-    {% if not compact %}
-      <div class="service-facts">
-        <div class="fact"><span>Horas realizadas</span><strong>{{ job.total_hours_label }}</strong></div>
-        <div class="fact"><span>Total estimado</span><strong>{{ job.estimated_total|brl }}</strong></div>
-      </div>
-    {% endif %}
   </div>
   <div class="service-actions">
     {% if job.next_action.primary.method == "post" %}

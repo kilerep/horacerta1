@@ -2,8 +2,8 @@
 [data-theme="graphite-premium"] {
   color-scheme: dark;
 
-  --color-primary: #60a5fa;
-  --color-primary-hover: #3b82f6;
+  --color-primary: #6ea8fe;
+  --color-primary-hover: #8ab9ff;
   --color-secondary: #38bdf8;
   --color-bg: #0b1220;
   --color-bg-soft: #0f172a;
@@ -22,7 +22,7 @@
   --color-success: #22c55e;
   --color-warning: #f59e0b;
   --color-danger: #ef4444;
-  --color-primary-strong: #3b82f6;
+  --color-primary-strong: #9cc4ff;
   --color-primary-soft: rgba(59, 130, 246, 0.18);
   --color-accent: #38bdf8;
   --shadow-color: rgba(2, 6, 23, 0.42);
@@ -30,15 +30,15 @@
   --gradient-card: radial-gradient(circle at 12% 0, var(--color-primary-soft), transparent 44%), linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
   --gradient-hero: radial-gradient(900px 420px at 6% -20%, var(--color-primary-soft), transparent 62%), linear-gradient(180deg, var(--surface-raised), var(--surface-subtle));
   --gradient-panel: var(--gradient-card);
-  --gradient-button: linear-gradient(180deg, var(--color-primary-strong), #2563eb);
+  --gradient-button: linear-gradient(180deg, var(--color-primary-strong), var(--color-primary));
 
   --surface-raised: #111b30;
   --surface-subtle: #0f172a;
   --surface-soft: #16213a;
   --surface-brand-soft: rgba(59, 130, 246, 0.18);
-  --surface-brand-strong: linear-gradient(180deg, #3b82f6, #2563eb);
+  --surface-brand-strong: var(--gradient-button);
 
-  --text-inverse: #ffffff;
+  --text-inverse: #08111f;
 
   --border-strong: rgba(148, 163, 184, 0.44);
   --color-border-strong: var(--border-strong);
@@ -73,8 +73,8 @@
   --badge-bg: #16233e;
   --badge-border: rgba(148, 163, 184, 0.35);
   --badge-text: #cbd5e1;
-  --badge-solid-bg: #3b82f6;
-  --badge-solid-text: #ffffff;
+  --badge-solid-bg: #6ea8fe;
+  --badge-solid-text: #08111f;
 
   --success-bg: rgba(34, 197, 94, 0.14);
   --success-border: rgba(34, 197, 94, 0.42);
@@ -133,7 +133,7 @@
   --surface-subtle: #12151b;
   --surface-soft: #20242d;
   --surface-brand-soft: rgba(229, 231, 235, 0.12);
-  --surface-brand-strong: linear-gradient(180deg, #f3f4f6, #d1d5db);
+  --surface-brand-strong: var(--gradient-button);
 
   --text-inverse: #111827;
   --border-strong: #4b5563;
@@ -182,8 +182,8 @@
 [data-theme="brazil-corporate"] {
   color-scheme: dark;
 
-  --color-primary: #1f8f4d;
-  --color-primary-hover: #17743e;
+  --color-primary: #3ccf7a;
+  --color-primary-hover: #5bd990;
   --color-secondary: #d6b13f;
   --color-bg: #07130d;
   --color-bg-soft: #0b1710;
@@ -202,7 +202,7 @@
   --color-success: #22c55e;
   --color-warning: #d6b13f;
   --color-danger: #ef4444;
-  --color-primary-strong: #2fbf68;
+  --color-primary-strong: #74e3a3;
   --color-primary-soft: rgba(31, 143, 77, 0.16);
   --color-accent: #d6b13f;
   --shadow-color: rgba(0, 0, 0, 0.42);
@@ -216,8 +216,8 @@
   --surface-subtle: #0b1710;
   --surface-soft: #152a1d;
   --surface-brand-soft: rgba(31, 143, 77, 0.18);
-  --surface-brand-strong: linear-gradient(180deg, #1f8f4d, #17743e);
-  --text-inverse: #f8fafc;
+  --surface-brand-strong: var(--gradient-button);
+  --text-inverse: #04160b;
   --border-strong: #2f6b45;
   --color-border-strong: var(--border-strong);
   --border-brand: rgba(31, 143, 77, 0.62);
@@ -245,8 +245,8 @@
   --badge-bg: #152a1d;
   --badge-border: #1f3d2a;
   --badge-text: #b7c8bd;
-  --badge-solid-bg: #1f8f4d;
-  --badge-solid-text: #f8fafc;
+  --badge-solid-bg: #3ccf7a;
+  --badge-solid-text: #04160b;
   --success-bg: rgba(31, 143, 77, 0.16);
   --success-border: rgba(31, 143, 77, 0.5);
   --success-text: #bbf7d0;
@@ -282,7 +282,7 @@
   --color-card-strong: #f8fafc;
   --color-text-strong: #0f172a;
   --color-text: #1e293b;
-  --color-text-muted: #64748b;
+  --color-text-muted: #556072;
   --color-clock-main: #0f172a;
   --color-border: rgba(15, 23, 42, 0.14);
   --color-success: #16a34a;
@@ -302,7 +302,7 @@
   --surface-subtle: #f8fafc;
   --surface-soft: #f1f5f9;
   --surface-brand-soft: rgba(37, 99, 235, 0.1);
-  --surface-brand-strong: linear-gradient(180deg, #2563eb, #1d4ed8);
+  --surface-brand-strong: var(--gradient-button);
   --text-inverse: #ffffff;
   --border-strong: rgba(15, 23, 42, 0.28);
   --color-border-strong: var(--border-strong);
@@ -322,7 +322,7 @@
   --btn-primary-shadow: 0 10px 20px rgba(37, 99, 235, 0.22);
   --field-bg: #ffffff;
   --field-border: rgba(15, 23, 42, 0.18);
-  --field-placeholder: #94a3b8;
+  --field-placeholder: #76808e;
   --select-arrow: #475569;
   --file-btn-bg: rgba(37, 99, 235, 0.08);
   --file-btn-border: rgba(37, 99, 235, 0.3);
@@ -335,7 +335,7 @@
   --badge-solid-text: #ffffff;
   --success-bg: rgba(22, 163, 74, 0.1);
   --success-border: rgba(22, 163, 74, 0.35);
-  --success-text: #15803d;
+  --success-text: #166534;
   --warning-bg: rgba(180, 83, 9, 0.1);
   --warning-border: rgba(180, 83, 9, 0.35);
   --warning-text: #92400e;
@@ -353,8 +353,8 @@
 [data-theme="rubro-professional"] {
   color-scheme: dark;
 
-  --color-primary: #d71920;
-  --color-primary-hover: #e11d2e;
+  --color-primary: #ff6b6b;
+  --color-primary-hover: #ff8585;
   --color-secondary: #ffffff;
   --color-bg: #050505;
   --color-bg-soft: #0b0b0d;
@@ -373,7 +373,7 @@
   --color-success: #22c55e;
   --color-warning: #facc15;
   --color-danger: #ef4444;
-  --color-primary-strong: #e11d2e;
+  --color-primary-strong: #ff8f8f;
   --color-primary-soft: rgba(215, 25, 32, 0.16);
   --color-accent: #d71920;
   --shadow-color: rgba(0, 0, 0, 0.62);
@@ -381,14 +381,14 @@
   --gradient-card: linear-gradient(180deg, rgba(255,255,255,0.045), rgba(215,25,32,0.06));
   --gradient-hero: radial-gradient(circle at top left, rgba(215,25,32,0.22), transparent 38%), linear-gradient(180deg, #141414, #0b0b0d);
   --gradient-panel: linear-gradient(180deg, #141414, #0b0b0d);
-  --gradient-button: linear-gradient(135deg, #d71920, #8b0000);
+  --gradient-button: linear-gradient(135deg, var(--color-primary-strong), var(--color-primary));
 
   --surface-raised: #141414;
   --surface-subtle: #0b0b0d;
   --surface-soft: #1c1c1c;
   --surface-brand-soft: rgba(215, 25, 32, 0.12);
-  --surface-brand-strong: linear-gradient(135deg, #d71920, #8b0000);
-  --text-inverse: #ffffff;
+  --surface-brand-strong: var(--gradient-button);
+  --text-inverse: #1a0606;
   --border-strong: #7f1d1d;
   --color-border-strong: var(--border-strong);
   --border-brand: rgba(215, 25, 32, 0.45);
@@ -416,8 +416,8 @@
   --badge-bg: #1c1c1c;
   --badge-border: #3a1a1a;
   --badge-text: #c9c9c9;
-  --badge-solid-bg: #d71920;
-  --badge-solid-text: #ffffff;
+  --badge-solid-bg: #ff6b6b;
+  --badge-solid-text: #1a0606;
   --success-bg: rgba(34, 197, 94, 0.14);
   --success-border: rgba(34, 197, 94, 0.42);
   --success-text: #bbf7d0;
@@ -433,6 +433,187 @@
 }
 
 :root,
+[data-theme="areia-terracota"] {
+  color-scheme: light;
+
+  --color-primary: #a64a24;
+  --color-primary-hover: #8a3b1b;
+  --color-secondary: #0f766e;
+  --color-bg: #f5efe6;
+  --color-bg-soft: #ebe2d4;
+  --bg-1: #fbf7f1;
+  --bg-2: #f5efe6;
+  --bg-3: #ebe2d4;
+  --color-surface: #fffdf9;
+  --color-surface-2: #fbf7f1;
+  --color-card: #fffdf9;
+  --color-card-strong: #fbf7f1;
+  --color-text-strong: #24180e;
+  --color-text: #2e2216;
+  --color-text-muted: #6a5847;
+  --color-clock-main: #24180e;
+  --color-border: rgba(48, 33, 20, 0.14);
+  --color-success: #15803d;
+  --color-warning: #b45309;
+  --color-danger: #dc2626;
+  --color-primary-strong: #8a3b1b;
+  --color-primary-soft: rgba(166, 74, 36, 0.1);
+  --color-accent: #0f766e;
+  --shadow-color: rgba(48, 33, 20, 0.14);
+  --gradient-page: var(--color-bg);
+  --gradient-card: linear-gradient(180deg, rgba(255,255,255,.95), rgba(248,250,252,.95));
+  --gradient-hero: radial-gradient(900px 420px at 6% -20%, var(--color-primary-soft), transparent 62%), linear-gradient(180deg, #fffdf9, var(--color-bg-soft));
+  --gradient-panel: var(--gradient-card);
+  --gradient-button: linear-gradient(180deg, var(--color-primary-strong), #7a3216);
+
+  --surface-raised: #fffdf9;
+  --surface-subtle: #fbf7f1;
+  --surface-soft: #f5efe6;
+  --surface-brand-soft: rgba(166, 74, 36, 0.1);
+  --surface-brand-strong: var(--gradient-button);
+  --text-inverse: #fffdf9;
+  --border-strong: rgba(48, 33, 20, 0.28);
+  --color-border-strong: var(--border-strong);
+  --border-brand: rgba(166, 74, 36, 0.45);
+  --icon-bg: rgba(166, 74, 36, 0.1);
+  --icon-border: rgba(166, 74, 36, 0.35);
+  --icon-fg: #8a3b1b;
+  --menu-hover-bg: #f5efe6;
+  --menu-active-bg: linear-gradient(90deg, rgba(166, 74, 36, 0.14), rgba(166, 74, 36, 0.05));
+  --menu-active-border: rgba(166, 74, 36, 0.4);
+  --menu-active-text: #8a3b1b;
+  --btn-bg: #fffdf9;
+  --btn-border: rgba(48, 33, 20, 0.16);
+  --btn-text: #24180e;
+  --btn-hover-bg: #f5efe6;
+  --btn-hover-border: rgba(48, 33, 20, 0.24);
+  --btn-primary-shadow: 0 10px 20px rgba(166, 74, 36, 0.22);
+  --field-bg: #fffdf9;
+  --field-border: rgba(48, 33, 20, 0.18);
+  --field-placeholder: #8c7b69;
+  --select-arrow: #5b4a3a;
+  --file-btn-bg: rgba(166, 74, 36, 0.08);
+  --file-btn-border: rgba(166, 74, 36, 0.3);
+  --file-btn-text: #8a3b1b;
+  --table-row-hover: #f5efe6;
+  --badge-bg: #f5efe6;
+  --badge-border: rgba(48, 33, 20, 0.16);
+  --badge-text: #5b4a3a;
+  --badge-solid-bg: #a64a24;
+  --badge-solid-text: #fffdf9;
+  --success-bg: rgba(21, 128, 61, 0.1);
+  --success-border: rgba(21, 128, 61, 0.35);
+  --success-text: #166534;
+  --warning-bg: rgba(180, 83, 9, 0.1);
+  --warning-border: rgba(180, 83, 9, 0.35);
+  --warning-text: #92400e;
+  --danger-bg: rgba(220, 38, 38, 0.1);
+  --danger-border: rgba(220, 38, 38, 0.35);
+  --danger-text: #b91c1c;
+  --overlay-bg: rgba(48, 33, 20, 0.45);
+  --shadow-xs: 0 1px 2px rgba(48, 33, 20, 0.1);
+  --shadow-soft: 0 8px 20px rgba(48, 33, 20, 0.1);
+  --shadow-strong: 0 18px 36px var(--shadow-color);
+  --shadow-sm: var(--shadow-soft);
+  --shadow-md: var(--shadow-strong);
+}
+
+[data-theme="oceano-noturno"] {
+  color-scheme: dark;
+
+  --color-primary: #2dd4bf;
+  --color-primary-hover: #5eead4;
+  --color-secondary: #38bdf8;
+  --color-bg: #061416;
+  --color-bg-soft: #0a1d20;
+  --bg-1: #020c0d;
+  --bg-2: #041416;
+  --bg-3: #071b1e;
+  --color-surface: #0a1d20;
+  --color-surface-2: #0d2428;
+  --color-card: #0d2428;
+  --color-card-strong: #122e33;
+  --color-text-strong: #e0f2f1;
+  --color-text: #e0f2f1;
+  --color-text-muted: #93b4b2;
+  --color-clock-main: #f0fffd;
+  --color-border: rgba(125, 175, 175, 0.32);
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --color-primary-strong: #7af0dc;
+  --color-primary-soft: rgba(20, 184, 166, 0.18);
+  --color-accent: #38bdf8;
+  --shadow-color: rgba(0, 12, 14, 0.42);
+  --gradient-page: var(--color-bg);
+  --gradient-card: radial-gradient(circle at 12% 0, var(--color-primary-soft), transparent 44%), linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+  --gradient-hero: radial-gradient(900px 420px at 6% -20%, var(--color-primary-soft), transparent 62%), linear-gradient(180deg, var(--surface-raised), var(--surface-subtle));
+  --gradient-panel: var(--gradient-card);
+  --gradient-button: linear-gradient(180deg, var(--color-primary-strong), var(--color-primary));
+
+  --surface-raised: #0d2428;
+  --surface-subtle: #0a1d20;
+  --surface-soft: #122e33;
+  --surface-brand-soft: rgba(20, 184, 166, 0.18);
+  --surface-brand-strong: var(--gradient-button);
+
+  --text-inverse: #032320;
+
+  --border-strong: rgba(125, 175, 175, 0.44);
+  --color-border-strong: var(--border-strong);
+  --border-brand: rgba(45, 212, 191, 0.5);
+
+  --icon-bg: rgba(20, 184, 166, 0.18);
+  --icon-border: rgba(45, 212, 191, 0.4);
+  --icon-fg: #b5f5ea;
+
+  --menu-hover-bg: #133035;
+  --menu-active-bg: linear-gradient(90deg, rgba(20, 184, 166, 0.24), rgba(20, 184, 166, 0.08));
+  --menu-active-border: rgba(45, 212, 191, 0.48);
+  --menu-active-text: #e6fffb;
+
+  --btn-bg: #0d2428;
+  --btn-border: rgba(125, 175, 175, 0.35);
+  --btn-text: #e0f2f1;
+  --btn-hover-bg: #133035;
+  --btn-hover-border: rgba(125, 175, 175, 0.5);
+  --btn-primary-shadow: 0 10px 20px rgba(20, 184, 166, 0.34);
+
+  --field-bg: #0d2428;
+  --field-border: rgba(125, 175, 175, 0.35);
+  --field-placeholder: #93b4b2;
+  --select-arrow: #c4dcda;
+  --file-btn-bg: rgba(20, 184, 166, 0.18);
+  --file-btn-border: rgba(45, 212, 191, 0.45);
+  --file-btn-text: #ccfbf1;
+
+  --table-row-hover: #163a40;
+
+  --badge-bg: #133035;
+  --badge-border: rgba(125, 175, 175, 0.35);
+  --badge-text: #c4dcda;
+  --badge-solid-bg: #2dd4bf;
+  --badge-solid-text: #032320;
+
+  --success-bg: rgba(34, 197, 94, 0.14);
+  --success-border: rgba(34, 197, 94, 0.42);
+  --success-text: #bbf7d0;
+  --warning-bg: rgba(245, 158, 11, 0.14);
+  --warning-border: rgba(245, 158, 11, 0.46);
+  --warning-text: #fde68a;
+  --danger-bg: rgba(239, 68, 68, 0.15);
+  --danger-border: rgba(239, 68, 68, 0.45);
+  --danger-text: #fecaca;
+
+  --overlay-bg: rgba(0, 12, 14, 0.66);
+
+  --shadow-xs: 0 1px 2px rgba(0, 12, 14, 0.38);
+  --shadow-soft: 0 8px 20px rgba(0, 12, 14, 0.35);
+  --shadow-strong: 0 18px 36px var(--shadow-color);
+  --shadow-sm: var(--shadow-soft);
+  --shadow-md: var(--shadow-strong);
+}
+
 [data-theme] {
   --primary: var(--color-primary);
   --border: var(--color-border);

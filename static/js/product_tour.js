@@ -29,7 +29,7 @@
       ".hc-tour-bubble__step{font-size:12px;color:var(--muted,#9aa7c2);white-space:nowrap;}",
       ".hc-tour-bubble__actions{display:flex;gap:8px;}",
       ".hc-tour-bubble button{border-radius:10px;padding:8px 14px;min-height:44px;font:inherit;font-weight:800;cursor:pointer;border:1px solid var(--line,rgba(255,255,255,.14));background:transparent;color:inherit;}",
-      ".hc-tour-bubble button.hc-tour-primary{background:var(--color-primary-strong,#3b82f6);border-color:var(--color-primary-strong,#3b82f6);color:#fff;}",
+      ".hc-tour-bubble button.hc-tour-primary{background:var(--gradient-button,#3b82f6);border-color:transparent;color:var(--text-inverse,#fff);}",
     ].join("\n");
     document.head.appendChild(style);
   }

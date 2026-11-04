@@ -87,3 +87,35 @@ class FinishingTouchesTests(SimpleTestCase):
         forms_py = self.read("services/forms.py")
         for old in ('"Valor unitario"', '"Observacao"', '"Titulo do servico"'):
             self.assertNotIn(old, forms_py)
+
+
+@override_settings(ALLOWED_HOSTS=["testserver", "localhost"], SECURE_SSL_REDIRECT=False)
+class ServiceListAttentionTests(ServiceListShowsEachJobOnceTests):
+    """Redesign da lista: 'Precisa de voce' com contadores tocaveis e atrasados marcados."""
+
+    def test_attention_counts_only_what_needs_action(self):
+        from datetime import timedelta
+
+        self._job("Atrasado", ServiceJob.Status.PLANNED, start_date=timezone.localdate() - timedelta(days=2))
+        self._job("Relatorio pendente", ServiceJob.Status.FINISHED)
+
+        html = self.client.get(reverse("service_job_list")).content.decode()
+        attention = section(html, 'id="services-attention"', "</section>")
+
+        self.assertIn("Atrasados", attention)
+        self.assertIn("Relatório a enviar", attention)
+        self.assertNotIn("Em execução", attention)
+        self.assertIn('<span class="status-chip danger">Atrasado</span>', html)
+
+    def test_all_good_when_nothing_waits(self):
+        html = self.client.get(reverse("service_job_list")).content.decode()
+
+        self.assertIn("Tudo em dia", section(html, 'id="services-attention"', "</section>"))
+
+    def test_quick_filters_show_counts(self):
+        self._job("Rascunho A", ServiceJob.Status.DRAFT)
+        self._job("Rascunho B", ServiceJob.Status.DRAFT)
+
+        html = self.client.get(reverse("service_job_list")).content.decode()
+
+        self.assertRegex(html, r'Rascunhos <span class="chip-count">2</span>')

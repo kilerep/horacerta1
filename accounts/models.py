@@ -13,6 +13,8 @@ class User(AbstractUser):
         BRAZIL = "brazil-corporate", "Brasil Corporativo"
         RUBRO = "rubro-professional", "Rubro Profissional"
         CLARO = "claro-operacional", "Claro Operacional"
+        AREIA = "areia-terracota", "Areia Terracota"
+        OCEANO = "oceano-noturno", "Oceano Noturno"
 
     role = models.CharField(
         max_length=20,

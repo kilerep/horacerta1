@@ -150,7 +150,7 @@ class ThemeAwareColorsTests(SimpleTestCase):
         css = read("static/css/design_tokens.css")
 
         for token in ("--warning-text", "--warning-bg", "--warning-border", "--success-text", "--success-bg", "--success-border"):
-            self.assertEqual(css.count(token + ":"), 5, token)  # 5 temas visuais
+            self.assertEqual(css.count(token + ":"), 7, token)  # 7 temas visuais
 
     def test_proposal_list_has_no_decorative_side_stripe(self):
         self.assertNotIn("border-left:3px", read("templates/services/service_event_proposal_list.html"))
