@@ -104,10 +104,16 @@ def _next_action_context(job, *, open_work_log=None):
 
 
 def _attach_service_card_state(jobs):
+    today = timezone.localdate()
     for job in jobs:
         job.status_label = status_label(job)
         job.status_tone = status_tone(job)
         job.next_action = _next_action_context(job)
+        job.is_overdue = bool(
+            job.start_date
+            and job.start_date < today
+            and job.status in (ServiceJob.Status.PLANNED, ServiceJob.Status.SENT)
+        )
     return jobs
 
 
@@ -471,13 +477,29 @@ def service_job_list(request):
         # Cada servico aparece uma vez so: o que ja esta em Hoje/Pendencias sai da lista de baixo.
         jobs = jobs.exclude(id__in=today_ids + [job.id for job in pending_jobs])
     jobs = _attach_service_card_state(list(jobs.prefetch_related("work_logs", "item_expenses")))
+    list_url = reverse("service_job_list")
     quick_status_choices = [
-        ("", "Todos", reverse("service_job_list")),
-        (ServiceJob.Status.DRAFT, "Rascunhos", f"{reverse('service_job_list')}?status={ServiceJob.Status.DRAFT}"),
-        (ServiceJob.Status.PLANNED, "Planejados", f"{reverse('service_job_list')}?status={ServiceJob.Status.PLANNED}"),
-        (ServiceJob.Status.IN_PROGRESS, "Em execução", f"{reverse('service_job_list')}?status={ServiceJob.Status.IN_PROGRESS}"),
-        (ServiceJob.Status.FINISHED, "Finalizados", f"{reverse('service_job_list')}?status={ServiceJob.Status.FINISHED}"),
-        (ServiceJob.Status.ARCHIVED, "Arquivados", f"{reverse('service_job_list')}?status={ServiceJob.Status.ARCHIVED}"),
+        ("", "Todos", list_url, main_jobs.count()),
+        (ServiceJob.Status.DRAFT, "Rascunhos", f"{list_url}?status={ServiceJob.Status.DRAFT}", status_counts["drafts"]),
+        (ServiceJob.Status.PLANNED, "Planejados", f"{list_url}?status={ServiceJob.Status.PLANNED}", status_counts["planned"]),
+        (ServiceJob.Status.IN_PROGRESS, "Em execução", f"{list_url}?status={ServiceJob.Status.IN_PROGRESS}", status_counts["in_progress"]),
+        (ServiceJob.Status.FINISHED, "Finalizados", f"{list_url}?status={ServiceJob.Status.FINISHED}", status_counts["finished"]),
+        (ServiceJob.Status.ARCHIVED, "Arquivados", f"{list_url}?status={ServiceJob.Status.ARCHIVED}", status_counts["archived"]),
+    ]
+    overdue_count = main_jobs.filter(
+        status__in=[ServiceJob.Status.PLANNED, ServiceJob.Status.SENT], start_date__lt=today
+    ).count()
+    requests_open = (request_counts["new"] or 0) + (request_counts["waiting"] or 0) + (request_counts["in_review"] or 0)
+    # "Precisa de voce": so o que pede acao agora, do mais urgente ao menos; contadores zerados somem.
+    attention = [
+        item for item in (
+            ("Atrasados", overdue_count, f"{list_url}?status={ServiceJob.Status.PLANNED}", "danger"),
+            ("Pedidos para responder", requests_open, reverse("service_request_list"), "warning"),
+            ("Em execução", status_counts["in_progress"], f"{list_url}?status={ServiceJob.Status.IN_PROGRESS}", "progress"),
+            ("Relatório a enviar", status_counts["finished"], f"{list_url}?status={ServiceJob.Status.FINISHED}", "finished"),
+            ("Rascunhos", status_counts["drafts"], f"{list_url}?status={ServiceJob.Status.DRAFT}", "draft"),
+        )
+        if item[1]
     ]
     official_status_choices = [
         choice
@@ -512,6 +534,8 @@ def service_job_list(request):
             "archived": f"{reverse('service_job_list')}?status={ServiceJob.Status.ARCHIVED}",
         },
         "service_request_url": reverse("service_request_list"),
+        "attention": attention,
+        "has_any_job": main_jobs.exists() or bool(status_counts["archived"]),
         "summary": {
             "in_progress": status_counts["in_progress"] or 0,
             "finished": status_counts["finished"] or 0,
@@ -521,7 +545,7 @@ def service_job_list(request):
             "drafts": status_counts["drafts"] or 0,
             "archived": status_counts["archived"] or 0,
             "estimated_total_brl": _format_brl(estimated_total),
-            "requests_open": (request_counts["new"] or 0) + (request_counts["waiting"] or 0) + (request_counts["in_review"] or 0),
+            "requests_open": requests_open,
         },
         "show_service_list_tour": not request.user.has_dismissed_tour("service_job_list"),
     }
