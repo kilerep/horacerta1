@@ -44,7 +44,7 @@
     <header class="card">
       <div class="brandline"><span class="brand">HoraCerta</span><span class="kind">Nota de envio</span></div>
       <div class="numline"><h1>nº {{ note.number_label }}</h1></div>
-      <p class="who">Enviada por <strong>{{ note.owner.get_full_name|default:note.owner.email }}</strong> para <strong>{{ note.destination_company }}</strong></p>
+      <p class="who">Enviada por <strong>{{ note.sender_name }}</strong> para <strong>{{ note.destination_company }}</strong></p>
       <div class="facts">
         <div><span>Saída do caminhão</span><strong>{{ note.departed_at|date:"d/m/Y" }} às {{ note.departed_at|time:"H:i" }}</strong></div>
         <div><span>Total de peças</span><strong>{{ note.total_quantity }}</strong></div>

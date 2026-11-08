@@ -99,7 +99,10 @@ def _save_note(note, data):
             ShipmentItem(note=note, position=i, **item) for i, item in enumerate(data["items"])
         )
         for role, values in data["recipients"].items():
-            ShipmentRecipient.objects.update_or_create(note=note, role=role, defaults=values)
+            if values["name"]:
+                ShipmentRecipient.objects.update_or_create(note=note, role=role, defaults=values)
+            else:  # nome apagado: essa pessoa nao recebe a nota
+                ShipmentRecipient.objects.filter(note=note, role=role).delete()
     return note
 
 

@@ -52,7 +52,7 @@ class ShipmentModelTests(TestCase):
         with self.assertRaises(ValidationError):
             make_note(self.owner, items=0).send()
         with self.assertRaises(ValidationError):
-            make_note(self.owner, names=("João", "")).send()
+            make_note(self.owner, names=("", "")).send()
         self.assertFalse(ShipmentNote.objects.filter(status=ShipmentNote.Status.SENT).exists())
 
     def test_authorize_keeps_first_timestamp_and_marks_viewed(self):
@@ -408,3 +408,53 @@ class ShipmentReviewFixTests(TestCase):
         copy = ShipmentNote.objects.get(replaces=note)
 
         self.assertEqual(copy.departed_at, note.departed_at)
+
+
+@override_settings(**BASE)
+class ShipmentAdjustmentsTests(TestCase):
+    """Ajustes pedidos pelo Fagner (2026-11-08): nome em vez de e-mail e envio para uma pessoa so."""
+
+    def setUp(self):
+        self.owner = make_user("fagner-ajuste@example.com")
+        self.client.force_login(self.owner)
+
+    def test_sender_uses_profile_name_not_email(self):
+        from companies.models import Company, Employee
+
+        company = Company.objects.create(owner=self.owner, name="Ensimec")
+        Employee.objects.create(user=self.owner, company=company, full_name="Fagner Dos Santos", is_active=True)
+        note = make_note(self.owner)
+        note.send()
+        boss = note.recipients.first()
+
+        self.assertEqual(note.sender_name, "Fagner Dos Santos")
+        html = self.client.get(reverse("shipment_public", args=[boss.token])).content.decode()
+        self.assertIn("Fagner Dos Santos", html)
+        self.assertNotIn("fagner-ajuste@example.com", html)
+
+    def test_sender_without_any_name_does_not_show_full_email(self):
+        self.assertEqual(make_note(self.owner).sender_name, "fagner-ajuste")
+
+    def test_can_send_to_only_one_person(self):
+        self.client.post(reverse("shipment_create"), form_data(supervisor_name="", supervisor_whatsapp=""))
+        note = ShipmentNote.objects.get(owner=self.owner)
+        self.client.post(reverse("shipment_send", args=[note.id]))
+        note.refresh_from_db()
+
+        self.assertEqual(note.number, 1)
+        self.assertEqual(list(note.recipients.values_list("role", flat=True)), [ShipmentRecipient.Role.ENCARREGADO])
+        note.recipients.get().authorize()
+        self.assertEqual(note.situation[0], "Autorizada 1 de 1")
+
+    def test_send_needs_at_least_one_person(self):
+        note = make_note(self.owner, names=("", ""))
+
+        with self.assertRaises(ValidationError):
+            note.send()
+
+    def test_clearing_a_name_removes_that_person_from_the_draft(self):
+        self.client.post(reverse("shipment_create"), form_data())
+        note = ShipmentNote.objects.get(owner=self.owner)
+        self.client.post(reverse("shipment_edit", args=[note.id]), form_data(boss_name="", boss_whatsapp=""))
+
+        self.assertEqual(list(note.recipients.values_list("role", flat=True)), [ShipmentRecipient.Role.SUPERVISOR])
