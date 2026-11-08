@@ -34,7 +34,7 @@ class AllRoutesNoServerErrorTests(TestCase):
             "job_id": w["job"].id if w["job"] else None,
             "sheet_id": w["sheet"].id,
             "note_id": w["shipment"].id,
-            "role": "encarregado",
+            "role": "1",
             "entry_id": w["entry"].id,
             "report_id": w["report"].id,
             "contract_id": w["contract"].id,

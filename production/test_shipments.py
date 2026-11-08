@@ -177,7 +177,7 @@ class ShipmentOwnerViewTests(TestCase):
         self.client.post(reverse("shipment_send", args=[note.id]))
         boss = note.recipients.get(role=ShipmentRecipient.Role.ENCARREGADO)
 
-        response = self.client.get(reverse("shipment_whatsapp", args=[note.id, "encarregado"]))
+        response = self.client.get(reverse("shipment_whatsapp", args=[note.id, "1"]))
 
         self.assertTrue(response["Location"].startswith("https://wa.me/5511988887777?text="))
         self.assertIn(str(boss.token), response["Location"])
@@ -488,3 +488,37 @@ class ShipmentOwnerPreviewTests(TestCase):
         self.supervisor.refresh_from_db()
 
         self.assertIsNotNone(self.supervisor.viewed_at)
+
+
+@override_settings(**BASE)
+class ShipmentNoRoleLabelsTests(TestCase):
+    """Pedido 2026-11-08: so nome e WhatsApp das duas pessoas, sem 'encarregado'/'supervisor' visivel."""
+
+    def test_no_role_words_in_form_detail_public_and_files(self):
+        from io import BytesIO
+
+        from openpyxl import load_workbook
+
+        from production.shipment_exports import build_shipment_xlsx
+
+        owner = make_user("sem-cargo@example.com")
+        self.client.force_login(owner)
+        note = make_note(owner)
+        note.send()
+        token = note.recipients.first().token
+
+        pages = [
+            self.client.get(reverse("shipment_create")).content.decode(),
+            self.client.get(reverse("shipment_detail", args=[note.id])).content.decode(),
+        ]
+        self.client.logout()
+        pages.append(self.client.get(reverse("shipment_public", args=[token])).content.decode())
+        ws = load_workbook(BytesIO(build_shipment_xlsx(note))).active
+        pages.append(" ".join(str(c) for row in ws.iter_rows(values_only=True) for c in row if c))
+        self.client.post(reverse("shipment_public_seen", args=[token]))
+        from timeclock.models import InternalNotification
+
+        pages.append(InternalNotification.objects.get(recipient_user=owner).message)
+
+        for text in pages:
+            self.assertNotRegex(text, r"(?i)\b(encarregado|supervisor)\b")
