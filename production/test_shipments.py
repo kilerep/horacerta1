@@ -198,3 +198,62 @@ class ShipmentOwnerViewTests(TestCase):
 
         self.assertIn(reverse("shipment_list"), html)
         self.assertIn("Notas de envio", html)
+
+
+@override_settings(**BASE)
+class ShipmentPublicTests(TestCase):
+    def setUp(self):
+        from timeclock.models import InternalNotification
+
+        self.Notification = InternalNotification
+        self.owner = make_user("publico-envio@example.com")
+        self.note = make_note(self.owner)
+        self.note.send()
+        self.boss = self.note.recipients.get(role=ShipmentRecipient.Role.ENCARREGADO)
+
+    def test_get_does_not_mark_viewed(self):
+        response = self.client.get(reverse("shipment_public", args=[self.boss.token]))
+        self.boss.refresh_from_db()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(self.boss.viewed_at)
+        self.assertContains(response, "nº 0001")
+
+    def test_post_seen_marks_once_and_notifies_owner(self):
+        url = reverse("shipment_public_seen", args=[self.boss.token])
+        self.assertEqual(self.client.post(url).status_code, 204)
+        self.client.post(url)
+        self.boss.refresh_from_db()
+
+        self.assertIsNotNone(self.boss.viewed_at)
+        notes = self.Notification.objects.filter(recipient_user=self.owner)
+        self.assertEqual(notes.count(), 1)
+        self.assertIn("vista por João", notes.get().title)
+
+    def test_authorize_is_idempotent(self):
+        url = reverse("shipment_public_authorize", args=[self.boss.token])
+        self.client.post(url)
+        self.boss.refresh_from_db()
+        first = self.boss.authorized_at
+        self.client.post(url)
+        self.boss.refresh_from_db()
+
+        self.assertEqual(self.boss.authorized_at, first)
+        html = self.client.get(reverse("shipment_public", args=[self.boss.token])).content.decode()
+        self.assertIn("Autorizado por você", html)
+
+    def test_draft_token_is_404(self):
+        draft = make_note(self.owner)
+        token = draft.recipients.first().token
+
+        self.assertEqual(self.client.get(reverse("shipment_public", args=[token])).status_code, 404)
+        self.assertEqual(self.client.post(reverse("shipment_public_authorize", args=[token])).status_code, 404)
+
+    def test_page_has_noindex_and_no_native_dialogs(self):
+        response = self.client.get(reverse("shipment_public", args=[self.boss.token]))
+        html = response.content.decode()
+
+        self.assertEqual(response["X-Robots-Tag"], "noindex, nofollow")
+        self.assertIn('name="robots" content="noindex, nofollow"', html)
+        self.assertNotIn("confirm(", html)
+        self.assertNotIn("alert(", html)
