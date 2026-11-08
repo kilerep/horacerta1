@@ -330,3 +330,81 @@ class ShipmentPdfFullNoteTests(TestCase):
         note.send()
 
         self.assertTrue(build_shipment_pdf(note).startswith(b"%PDF"))
+
+
+@override_settings(**BASE)
+class ShipmentReviewFixTests(TestCase):
+    """Achados da revisao final: corridas entre editar/enviar/autorizar, Excel e valores extremos."""
+
+    def setUp(self):
+        self.owner = make_user("revisao-envio@example.com")
+        self.client.force_login(self.owner)
+
+    def test_stale_edit_cannot_unlock_sent_note(self):
+        from production.shipment_views import _read_form, _save_note
+        from django.http import QueryDict
+
+        note = make_note(self.owner)
+        stale = ShipmentNote.objects.get(pk=note.pk)  # carregada como rascunho antes do envio
+        note.send()
+        post = QueryDict(mutable=True)
+        post.update({k: v for k, v in form_data().items() if not isinstance(v, list)})
+        for key, values in form_data().items():
+            if isinstance(values, list):
+                post.setlist(key, values)
+        data, _errors = _read_form(post)
+
+        with self.assertRaises(ValidationError):
+            _save_note(stale, data)
+        note.refresh_from_db()
+        self.assertEqual((note.status, note.number), (ShipmentNote.Status.SENT, 1))
+        self.assertEqual(note.items.count(), 1)
+
+    def test_stale_authorize_keeps_first_timestamp(self):
+        note = make_note(self.owner)
+        note.send()
+        first = ShipmentRecipient.objects.get(note=note, role=ShipmentRecipient.Role.ENCARREGADO)
+        second = ShipmentRecipient.objects.get(pk=first.pk)
+
+        self.assertTrue(first.authorize())
+        self.assertFalse(second.authorize())
+        first.refresh_from_db()
+        self.assertEqual(ShipmentRecipient.objects.get(pk=first.pk).authorized_at, first.authorized_at)
+
+    def test_xlsx_keeps_formula_like_text_as_text(self):
+        from io import BytesIO
+
+        from openpyxl import load_workbook
+
+        from production.shipment_exports import build_shipment_xlsx
+
+        note = make_note(self.owner)
+        note.items.update(description='=HYPERLINK("http://x","y")', production_order="+55", drawing_number="@DES")
+        note.send()
+        ws = load_workbook(BytesIO(build_shipment_xlsx(note))).active
+        cells = [c for row in ws.iter_rows() for c in row if isinstance(c.value, str) and c.value[:1] in "=+@"]
+
+        self.assertTrue(cells)
+        self.assertTrue(all(c.data_type == "s" for c in cells), [(c.coordinate, c.data_type) for c in cells])
+
+    def test_huge_quantity_is_a_form_error_not_a_crash(self):
+        response = self.client.post(reverse("shipment_create"), form_data(item_quantity=["99999999999", "2", ""]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "quantidade")
+        self.assertFalse(ShipmentNote.objects.filter(owner=self.owner).exists())
+
+    def test_correction_keeps_original_departure(self):
+        from datetime import datetime
+
+        from django.utils import timezone
+
+        note = make_note(self.owner)
+        note.departed_at = timezone.make_aware(datetime(2026, 11, 1, 7, 30))
+        note.save()
+        note.send()
+
+        self.client.post(reverse("shipment_replace", args=[note.id]))
+        copy = ShipmentNote.objects.get(replaces=note)
+
+        self.assertEqual(copy.departed_at, note.departed_at)

@@ -22,7 +22,7 @@ COMPANY_EMAIL = "demo.cliente@horacerta.test"
 def build_world():
     from accounts.models import User
     from companies.models import CompanyAuthorizedLocation, Employee
-    from production.models import ProductionEntry, ProductionSheet
+    from production.models import ProductionEntry, ProductionSheet, ShipmentItem, ShipmentNote, ShipmentRecipient
     from services.models import ServiceItemCatalog, ServiceItemExpense, ServiceJob, ServiceRequest
     from timeclock.models import Contract, InternalNotification, Punch, PunchCorrectionRequest, ServiceReport
 
@@ -51,6 +51,12 @@ def build_world():
                                            supervisor_whatsapp="11988887777")
     entry = ProductionEntry.objects.create(sheet=sheet, item_code="0011-024", destination="IMPLEMENTO",
                                            manual_minutes=90)
+    # Nota de envio ja enviada (travada), para a varredura abrir detalhe, PDF, Excel e o link publico.
+    shipment = ShipmentNote.objects.create(owner=mei, destination_company="Ensimec QA")
+    ShipmentItem.objects.create(note=shipment, production_order="OP-1", drawing_number="DES-1", quantity=3)
+    for role, name in ((ShipmentRecipient.Role.ENCARREGADO, "Carlos"), (ShipmentRecipient.Role.SUPERVISOR, "Ana")):
+        ShipmentRecipient.objects.create(note=shipment, role=role, name=name, whatsapp="11988887777")
+    shipment.send()
 
     mei_notice = InternalNotification.objects.create(
         recipient_user=mei, audience=InternalNotification.Audience.MEI,
@@ -83,6 +89,7 @@ def build_world():
         "report": report,
         "sheet": sheet,
         "entry": entry,
+        "shipment": shipment,
         "mei_notice": mei_notice,
         "company_notice": company_notice,
         "location": location,

@@ -33,6 +33,8 @@ class AllRoutesNoServerErrorTests(TestCase):
         values = {
             "job_id": w["job"].id if w["job"] else None,
             "sheet_id": w["sheet"].id,
+            "note_id": w["shipment"].id,
+            "role": "encarregado",
             "entry_id": w["entry"].id,
             "report_id": w["report"].id,
             "contract_id": w["contract"].id,
@@ -59,6 +61,8 @@ class AllRoutesNoServerErrorTests(TestCase):
             values["notification_id"] = w["company_notice"].id
         if route.startswith("conferencia/relatorio/"):
             values["token"] = w["report"].conference_token
+        elif route.startswith("nota-envio/"):
+            values["token"] = w["shipment"].recipients.get(role="ENCARREGADO").token
         elif route.startswith("relatorio-producao/"):
             values["token"] = w["sheet"].share_token
         elif route.startswith("servicos/") and w["job"]:

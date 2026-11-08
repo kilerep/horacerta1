@@ -23,6 +23,7 @@ ROLES = {
     "encarregado": ShipmentRecipient.Role.ENCARREGADO,
     "supervisor": ShipmentRecipient.Role.SUPERVISOR,
 }
+MAX_QUANTITY = 999999
 # Prefixo dos campos de cada destinatario no formulario.
 RECIPIENT_FIELDS = (("boss", ShipmentRecipient.Role.ENCARREGADO), ("supervisor", ShipmentRecipient.Role.SUPERVISOR))
 
@@ -66,10 +67,10 @@ def _read_form(post):
             qty = int(quantity)
         except ValueError:
             qty = 0
-        if not drawing or qty < 1:
-            errors.append(f"Linha {index}: informe o nº do desenho e uma quantidade maior que zero.")
+        if not drawing or not 1 <= qty <= MAX_QUANTITY:
+            errors.append(f"Linha {index}: informe o nº do desenho e uma quantidade entre 1 e {MAX_QUANTITY}.")
         data["items"].append({"production_order": order[:40], "drawing_number": drawing[:60],
-                              "quantity": max(qty, 1), "description": description[:120]})
+                              "quantity": min(max(qty, 1), MAX_QUANTITY), "description": description[:120]})
     if not data["destination_company"]:
         errors.append("Informe a empresa de destino.")
     if data["departed_at"] is None:
@@ -77,11 +78,22 @@ def _read_form(post):
     return data, errors
 
 
+NOTE_FIELDS = ("destination_company", "departed_at", "driver_name", "vehicle_plate", "notes")
+
+
 def _save_note(note, data):
     with transaction.atomic():
-        for field in ("destination_company", "departed_at", "driver_name", "vehicle_plate", "notes"):
+        is_new = note._state.adding
+        if not is_new and not ShipmentNote.objects.select_for_update().filter(
+                pk=note.pk, status=ShipmentNote.Status.DRAFT).exists():
+            # Foi enviada enquanto o formulario estava aberto: nota travada nao muda.
+            raise ValidationError("Esta nota já foi enviada e está travada.")
+        for field in NOTE_FIELDS:
             setattr(note, field, data[field])
-        note.save()
+        if is_new:
+            note.save()
+        else:  # nunca regrava status/numero/envio a partir de um objeto possivelmente antigo
+            note.save(update_fields=[*NOTE_FIELDS, "updated_at"])
         note.items.all().delete()
         ShipmentItem.objects.bulk_create(
             ShipmentItem(note=note, position=i, **item) for i, item in enumerate(data["items"])
@@ -157,8 +169,12 @@ def shipment_edit(request, note_id):
     if request.method == "POST":
         data, errors = _read_form(request.POST)
         if not errors:
-            _save_note(note, data)
-            messages.success(request, "Rascunho atualizado.")
+            try:
+                _save_note(note, data)
+            except ValidationError as error:
+                messages.error(request, " ".join(error.messages))
+            else:
+                messages.success(request, "Rascunho atualizado.")
             return redirect("shipment_detail", note_id=note.id)
         return render(request, "production/shipment_form.html", _form_context(note=note, data=data, errors=errors))
     return render(request, "production/shipment_form.html", _form_context(note=note))
@@ -204,7 +220,8 @@ def shipment_replace(request, note_id):
     original = _note_for(request, note_id)
     with transaction.atomic():
         copy = ShipmentNote.objects.create(
-            owner=request.user, destination_company=original.destination_company, driver_name=original.driver_name,
+            owner=request.user, destination_company=original.destination_company, departed_at=original.departed_at,
+            driver_name=original.driver_name,
             vehicle_plate=original.vehicle_plate, notes=original.notes, replaces=original,
         )
         ShipmentItem.objects.bulk_create(

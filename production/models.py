@@ -205,18 +205,19 @@ class ShipmentNote(models.Model):
     def send(self):
         if self.is_locked:
             return
-        if not self.items.exists():
-            raise ValidationError("Adicione pelo menos um item antes de enviar.")
-        recipients = list(self.recipients.all())
-        if len(recipients) < 2 or any(not r.name.strip() for r in recipients):
-            raise ValidationError("Informe o nome do encarregado e do supervisor antes de enviar.")
         with transaction.atomic():
-            # Trava as notas do dono para dois envios ao mesmo tempo nao pegarem o mesmo numero.
+            # Trava as notas do dono para dois envios ao mesmo tempo nao pegarem o mesmo numero,
+            # e confere itens/destinatarios ja com a trava (uma edicao em paralelo nao escapa).
             list(ShipmentNote.objects.select_for_update().filter(owner=self.owner).values_list("id", flat=True))
             current = ShipmentNote.objects.select_for_update().get(pk=self.pk)
             if current.status == self.Status.SENT:
                 self.number, self.status, self.sent_at = current.number, current.status, current.sent_at
                 return
+            if not self.items.exists():
+                raise ValidationError("Adicione pelo menos um item antes de enviar.")
+            recipients = list(self.recipients.all())
+            if len(recipients) < 2 or any(not r.name.strip() for r in recipients):
+                raise ValidationError("Informe o nome do encarregado e do supervisor antes de enviar.")
             last = ShipmentNote.objects.filter(owner=self.owner).aggregate(models.Max("number"))["number__max"] or 0
             self.number = last + 1
             self.status = self.Status.SENT
@@ -259,18 +260,17 @@ class ShipmentRecipient(models.Model):
 
     def mark_viewed(self):
         """Registra o primeiro visto; devolve True so quando mudou algo."""
-        if self.viewed_at:
-            return False
-        self.viewed_at = timezone.now()
-        self.save(update_fields=["viewed_at"])
-        return True
+        now = timezone.now()
+        # Update condicional: dois toques ao mesmo tempo nao trocam o horario do primeiro.
+        changed = ShipmentRecipient.objects.filter(pk=self.pk, viewed_at__isnull=True).update(viewed_at=now)
+        self.refresh_from_db(fields=["viewed_at", "authorized_at"])
+        return changed == 1
 
     def authorize(self):
         """Registra a primeira autorizacao (e o visto, se faltava); repetir nao muda o horario."""
-        if self.authorized_at:
-            return False
         now = timezone.now()
-        self.authorized_at = now
-        self.viewed_at = self.viewed_at or now
-        self.save(update_fields=["authorized_at", "viewed_at"])
-        return True
+        changed = ShipmentRecipient.objects.filter(pk=self.pk, authorized_at__isnull=True).update(authorized_at=now)
+        if changed:
+            ShipmentRecipient.objects.filter(pk=self.pk, viewed_at__isnull=True).update(viewed_at=now)
+        self.refresh_from_db(fields=["viewed_at", "authorized_at"])
+        return changed == 1

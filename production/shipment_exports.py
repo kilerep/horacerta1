@@ -178,6 +178,12 @@ def build_shipment_xlsx(note):
     ws.cell(row=row, column=1, value=f"Código de conferência {check_code(note)}. Nota travada após o envio.").font = Font(
         name="Arial", size=9, italic=True, color=pt.MUTED)
 
+    # Texto do usuario que comeca com = + - @ seria lido como formula ao abrir: grava sempre como texto.
+    for line in ws.iter_rows():
+        for cell in line:
+            if cell.data_type == "f":
+                cell.data_type = "s"
+
     buffer = BytesIO()
     wb.save(buffer)
     return buffer.getvalue()
