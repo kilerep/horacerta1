@@ -151,7 +151,7 @@
             <div>
               <span class="attention-item__eyebrow">Registro incompleto</span>
               <strong class="attention-item__title">{{ item.contract.company.name }}</strong>
-              <p class="attention-item__text">{{ item.count }} dia(s) incompleto(s). Último em {{ item.latest_date|date:"d/m/Y" }}.</p>
+              <p class="attention-item__text">{{ item.count }} {% if item.count == 1 %}dia incompleto{% else %}dias incompletos{% endif %}. Último em {{ item.latest_date|date:"d/m/Y" }}.</p>
             </div>
             <a class="btn" href="{% url 'mei_history' %}?contract={{ item.contract.id }}&amp;date_from={{ item.latest_date|date:"Y-m-d" }}&amp;date_to={{ item.latest_date|date:"Y-m-d" }}">Ver dia</a>
           </article>
@@ -195,7 +195,7 @@
             <div>
               <span class="attention-item__eyebrow">Relatório não visualizado</span>
               <strong class="attention-item__title">{{ item.company_name }}</strong>
-              <p class="attention-item__text">Enviado há {{ item.sent_days_ago }} dia(s) e o cliente ainda não abriu. Vale lembrar pelo WhatsApp.</p>
+              <p class="attention-item__text">Enviado há {{ item.sent_days_ago }} {% if item.sent_days_ago == 1 %}dia{% else %}dias{% endif %} e o cliente ainda não abriu. Vale lembrar pelo WhatsApp.</p>
             </div>
             <a class="btn" href="{% url 'mei_service_report_whatsapp' item.report.id %}">Lembrar no WhatsApp</a>
           </article>
@@ -216,7 +216,7 @@
             <span class="attention-item__dot" aria-hidden="true"></span>
             <div>
               <span class="attention-item__eyebrow">Pedidos novos</span>
-              <strong class="attention-item__title">{{ new_service_requests_count }} pedido(s) aguardando análise</strong>
+              <strong class="attention-item__title">{{ new_service_requests_count }} {% if new_service_requests_count == 1 %}pedido aguardando{% else %}pedidos aguardando{% endif %} análise</strong>
               <p class="attention-item__text">Veja o que foi pedido e responda com um orçamento.</p>
             </div>
             <a class="btn" href="{% url 'service_request_list' %}">Ver pedidos</a>
@@ -227,7 +227,7 @@
             <span class="attention-item__dot" aria-hidden="true"></span>
             <div>
               <span class="attention-item__eyebrow">Notificações</span>
-              <strong class="attention-item__title">{{ important_notifications_count }} aviso(s) não lido(s)</strong>
+              <strong class="attention-item__title">{{ important_notifications_count }} {% if important_notifications_count == 1 %}aviso não lido{% else %}avisos não lidos{% endif %}</strong>
               <p class="attention-item__text">Revise os avisos importantes da sua conta.</p>
             </div>
             <a class="btn" href="{% url 'mei_notifications' %}">Abrir avisos</a>

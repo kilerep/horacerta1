@@ -123,7 +123,7 @@
         <div class="clients-section-head">
           <div>
             <h2>Clientes vinculados</h2>
-            <p><span data-client-result-count>{{ client_rows|length }}</span> contrato(s) visível(is) para sua conta.</p>
+            <p><span data-client-result-count>{{ client_rows|length }}</span> <span data-client-result-word>{% if client_rows|length == 1 %}contrato visível{% else %}contratos visíveis{% endif %}</span> para sua conta.</p>
           </div>
         </div>
 
@@ -442,11 +442,13 @@
         });
 
         if (resultCount) resultCount.textContent = String(visibleCount);
+        var resultWord = document.querySelector("[data-client-result-word]");
+        if (resultWord) resultWord.textContent = visibleCount === 1 ? "contrato visível" : "contratos visíveis";
         if (emptyState) emptyState.hidden = visibleCount !== 0;
         if (feedback) {
           feedback.textContent = visibleCount === cards.length
             ? "Use a busca ou os filtros para localizar um cliente."
-            : visibleCount + " cliente(s) encontrado(s).";
+            : visibleCount + (visibleCount === 1 ? " cliente encontrado." : " clientes encontrados.");
         }
       }
 

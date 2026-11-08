@@ -20,6 +20,42 @@ a {
   text-decoration: none;
 }
 
+/* Controles herdam a fonte do app (o navegador usa a dele por padrao) e campos ficam em 16px,
+   o que tambem evita o zoom automatico do iPhone ao tocar num campo. */
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+input,
+select,
+textarea {
+  font-size: max(16px, 1em);
+  caret-color: var(--color-primary);
+}
+
+:root {
+  accent-color: var(--color-primary);
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: var(--color-primary-soft);
+  color: var(--color-text);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.content :where(td, th, strong, .value, .kpi-value) {
+  font-variant-numeric: tabular-nums;
+}
+
 .muted {
   color: var(--color-text-muted);
 }
