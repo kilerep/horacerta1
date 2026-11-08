@@ -10,7 +10,8 @@ import uuid
 from datetime import datetime, timedelta
 
 from django.conf import settings
-from django.db import models
+from django.core.exceptions import ValidationError
+from django.db import models, transaction
 from django.utils import timezone
 
 
@@ -140,3 +141,136 @@ class ProductionEntry(models.Model):
     def is_running(self):
         """Comecou mas ainda nao tem fim nem duracao: item em andamento."""
         return bool(self.start_time and not self.end_time and self.manual_minutes is None)
+
+
+class ShipmentNote(models.Model):
+    """Nota de envio: comprovante das pecas que saem no caminhao para outra empresa.
+
+    Rascunho pode ser editado e apagado; ao enviar ganha numero sequencial do dono e fica
+    travada para sempre (corrigir = nova nota que aponta a anterior em `replaces`).
+    """
+
+    class Status(models.TextChoices):
+        DRAFT = "DRAFT", "Rascunho"
+        SENT = "SENT", "Enviada"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="shipment_notes")
+    number = models.PositiveIntegerField("Número", null=True, blank=True)
+    destination_company = models.CharField("Empresa de destino", max_length=120)
+    departed_at = models.DateTimeField("Saída", default=timezone.now)
+    driver_name = models.CharField("Motorista", max_length=80, blank=True, default="")
+    vehicle_plate = models.CharField("Placa", max_length=10, blank=True, default="")
+    notes = models.TextField("Observação", blank=True, default="")
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.DRAFT)
+    sent_at = models.DateTimeField(null=True, blank=True)
+    replaces = models.ForeignKey("self", null=True, blank=True, on_delete=models.SET_NULL, related_name="replaced_by")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [models.UniqueConstraint(fields=["owner", "number"], name="shipment_number_per_owner")]
+
+    def __str__(self):
+        return f"Nota de envio {self.number_label}"
+
+    @property
+    def number_label(self):
+        return f"{self.number:04d}" if self.number else "Rascunho"
+
+    @property
+    def is_locked(self):
+        return self.status == self.Status.SENT
+
+    @property
+    def total_quantity(self):
+        return sum(item.quantity for item in self.items.all())
+
+    @property
+    def situation(self):
+        """(rotulo, tom) para o selo da lista: tom segue as classes de status do sistema."""
+        if not self.is_locked:
+            return "Rascunho", "neutral"
+        recipients = list(self.recipients.all())
+        authorized = sum(1 for r in recipients if r.authorized_at)
+        viewed = sum(1 for r in recipients if r.viewed_at)
+        total = len(recipients)
+        if authorized:
+            return f"Autorizada {authorized} de {total}", "progress"
+        if viewed:
+            return f"Vista {viewed} de {total}", "warning"
+        return "Enviada", "planned"
+
+    def send(self):
+        if self.is_locked:
+            return
+        with transaction.atomic():
+            # Trava as notas do dono para dois envios ao mesmo tempo nao pegarem o mesmo numero,
+            # e confere itens/destinatarios ja com a trava (uma edicao em paralelo nao escapa).
+            list(ShipmentNote.objects.select_for_update().filter(owner=self.owner).values_list("id", flat=True))
+            current = ShipmentNote.objects.select_for_update().get(pk=self.pk)
+            if current.status == self.Status.SENT:
+                self.number, self.status, self.sent_at = current.number, current.status, current.sent_at
+                return
+            if not self.items.exists():
+                raise ValidationError("Adicione pelo menos um item antes de enviar.")
+            recipients = list(self.recipients.all())
+            if len(recipients) < 2 or any(not r.name.strip() for r in recipients):
+                raise ValidationError("Informe o nome do encarregado e do supervisor antes de enviar.")
+            last = ShipmentNote.objects.filter(owner=self.owner).aggregate(models.Max("number"))["number__max"] or 0
+            self.number = last + 1
+            self.status = self.Status.SENT
+            self.sent_at = timezone.now()
+            self.save(update_fields=["number", "status", "sent_at", "updated_at"])
+
+
+class ShipmentItem(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    note = models.ForeignKey(ShipmentNote, on_delete=models.CASCADE, related_name="items")
+    position = models.PositiveSmallIntegerField(default=0)
+    production_order = models.CharField("Ordem de produção", max_length=40)
+    drawing_number = models.CharField("Nº do desenho", max_length=60)
+    quantity = models.PositiveIntegerField("Quantidade", default=1)
+    description = models.CharField("Descrição", max_length=120, blank=True, default="")
+
+    class Meta:
+        ordering = ["position", "id"]
+
+
+class ShipmentRecipient(models.Model):
+    """Encarregado ou supervisor: cada um recebe o proprio link (token) e deixa visto/autorizacao."""
+
+    class Role(models.TextChoices):
+        ENCARREGADO = "ENCARREGADO", "Encarregado"
+        SUPERVISOR = "SUPERVISOR", "Supervisor"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    note = models.ForeignKey(ShipmentNote, on_delete=models.CASCADE, related_name="recipients")
+    role = models.CharField(max_length=12, choices=Role.choices)
+    name = models.CharField("Nome", max_length=80, blank=True, default="")
+    whatsapp = models.CharField("WhatsApp", max_length=20, blank=True, default="")
+    token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    viewed_at = models.DateTimeField(null=True, blank=True)
+    authorized_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["role"]
+        constraints = [models.UniqueConstraint(fields=["note", "role"], name="shipment_one_recipient_per_role")]
+
+    def mark_viewed(self):
+        """Registra o primeiro visto; devolve True so quando mudou algo."""
+        now = timezone.now()
+        # Update condicional: dois toques ao mesmo tempo nao trocam o horario do primeiro.
+        changed = ShipmentRecipient.objects.filter(pk=self.pk, viewed_at__isnull=True).update(viewed_at=now)
+        self.refresh_from_db(fields=["viewed_at", "authorized_at"])
+        return changed == 1
+
+    def authorize(self):
+        """Registra a primeira autorizacao (e o visto, se faltava); repetir nao muda o horario."""
+        now = timezone.now()
+        changed = ShipmentRecipient.objects.filter(pk=self.pk, authorized_at__isnull=True).update(authorized_at=now)
+        if changed:
+            ShipmentRecipient.objects.filter(pk=self.pk, viewed_at__isnull=True).update(viewed_at=now)
+        self.refresh_from_db(fields=["viewed_at", "authorized_at"])
+        return changed == 1

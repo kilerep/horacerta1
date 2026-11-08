@@ -1,0 +1,75 @@
+<style>
+  /* Notas de envio: comprovante das pecas que saem no caminhao. So tokens de tema. */
+  .ship-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+  .ship-head h1{margin:0;font-size:26px;line-height:1.15}
+  .ship-head p{margin:6px 0 0;color:var(--color-text-muted);line-height:1.45;max-width:60ch}
+  .ship-search{display:flex;gap:8px}
+  .ship-search input{flex:1;min-width:0}
+  .ship-section-title{margin:6px 0 0;font-size:13px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;color:var(--color-text-muted)}
+  .ship-card{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;padding:14px 16px;border:1px solid var(--color-border);border-radius:12px;background:var(--color-card);box-shadow:var(--shadow-xs);text-decoration:none;color:var(--color-text);min-height:44px}
+  .ship-card:hover{border-color:var(--border-brand)}
+  .ship-num{display:grid;place-items:center;min-width:64px;padding:8px 10px;border-radius:10px;background:var(--surface-soft);border:1px solid var(--color-border);font-variant-numeric:tabular-nums}
+  .ship-num small{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--color-text-muted)}
+  .ship-num strong{font-size:20px;line-height:1.1}
+  .ship-card .ship-body{display:grid;gap:4px;min-width:0}
+  .ship-card .ship-body strong{font-size:16.5px;overflow-wrap:anywhere}
+  .ship-meta{display:flex;flex-wrap:wrap;gap:4px 12px;color:var(--color-text-muted);font-size:13.5px}
+  .ship-chip{flex:none;display:inline-flex;align-items:center;min-height:26px;padding:0 10px;border-radius:999px;border:1px solid var(--badge-border);background:var(--badge-bg);color:var(--badge-text);font-size:12px;font-weight:900;white-space:nowrap}
+  .ship-chip.planned{background:var(--color-primary-soft);border-color:var(--border-brand);color:var(--menu-active-text)}
+  .ship-chip.warning{background:var(--warning-bg);border-color:var(--warning-border);color:var(--warning-text)}
+  .ship-chip.progress{background:var(--success-bg);border-color:var(--success-border);color:var(--success-text)}
+
+  .ship-page .sr-only,.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+  .link-back{display:inline-flex;align-items:center;min-height:44px;color:var(--color-primary);font-weight:800;text-decoration:none;width:max-content}
+
+  /* Folha da nota (detalhe do dono) */
+  .ship-sheet{display:grid;gap:0;border:1px solid var(--color-border);border-radius:14px;background:var(--color-card);box-shadow:var(--shadow-soft);overflow:hidden}
+  .ship-sheet-top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;padding:18px 20px;border-bottom:1px solid var(--color-border);background:var(--surface-subtle)}
+  .ship-sheet-top .eyebrow{font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--color-text-muted)}
+  .ship-sheet-top h2{margin:2px 0 0;font-size:30px;line-height:1.1;font-variant-numeric:tabular-nums}
+  .ship-facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0;border-bottom:1px solid var(--color-border)}
+  .ship-fact{padding:12px 20px;border-right:1px solid var(--color-border)}
+  .ship-fact:last-child{border-right:0}
+  .ship-fact span{display:block;font-size:12px;font-weight:800;color:var(--color-text-muted)}
+  .ship-fact strong{display:block;margin-top:2px;font-size:15px;overflow-wrap:anywhere}
+  .ship-items{width:100%;border-collapse:collapse;font-size:15px}
+  .ship-items th{padding:10px 20px;text-align:left;font-size:12px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:var(--color-text-muted);border-bottom:1px solid var(--color-border)}
+  .ship-items td{padding:12px 20px;border-bottom:1px solid var(--color-border);vertical-align:top}
+  .ship-items .qty{text-align:right;font-weight:900;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .ship-items tfoot td{border-bottom:0;font-weight:900;background:var(--surface-subtle)}
+  .ship-items small{display:block;color:var(--color-text-muted);font-size:13px}
+  .ship-notes{padding:12px 20px;border-bottom:1px solid var(--color-border);color:var(--color-text-muted);line-height:1.45}
+  .ship-people{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .ship-person{display:grid;gap:8px;padding:14px 16px;border:1px solid var(--color-border);border-radius:12px;background:var(--color-card)}
+  .ship-person .role{font-size:12px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;color:var(--color-text-muted)}
+  .ship-person strong{font-size:16px}
+  .ship-stamp{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--color-text-muted)}
+  .ship-stamp.ok{color:var(--success-text)}
+  .ship-stamp .dot{width:9px;height:9px;border-radius:999px;background:currentColor;flex:none}
+  .ship-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .ship-actions form{margin:0}
+  .ship-alert{padding:12px 14px;border:1px solid var(--border-brand);border-radius:12px;background:var(--surface-brand-soft);line-height:1.45}
+
+  /* Formulario */
+  .ship-form{display:grid;gap:16px}
+  .ship-box{display:grid;gap:12px;padding:16px;border:1px solid var(--color-border);border-radius:12px;background:var(--color-card)}
+  .ship-box h2{margin:0;font-size:16px}
+  .ship-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .ship-field label{display:block;margin-bottom:5px;font-size:13px;font-weight:800;color:var(--color-text-muted)}
+  .ship-rows{display:grid;gap:8px}
+  .ship-row{display:grid;grid-template-columns:1.1fr 1.3fr .6fr 1.6fr;gap:8px}
+  .ship-row-head{font-size:12px;font-weight:900;color:var(--color-text-muted)}
+  .ship-add{justify-self:start}
+  @media (max-width:720px){
+    .ship-card{grid-template-columns:auto minmax(0,1fr)}.ship-card .ship-chip{grid-column:2;justify-self:start}
+    .ship-grid,.ship-people{grid-template-columns:1fr}
+    .ship-row{grid-template-columns:1fr 1fr;padding:10px;border:1px solid var(--color-border);border-radius:10px;background:var(--surface-subtle)}
+    .ship-row-head{display:none}
+    .ship-items thead{display:none}
+    .ship-items tr{display:grid;grid-template-columns:1fr auto;padding:10px 16px;border-bottom:1px solid var(--color-border)}
+    .ship-items td{padding:2px 0;border:0}
+    .ship-items .qty{grid-row:1 / span 3;grid-column:2;align-self:center;font-size:18px}
+    .ship-actions .btn,.ship-actions form{flex:1 1 auto}.ship-actions form .btn{width:100%}
+    .ship-fact{border-right:0;border-bottom:1px solid var(--color-border)}
+  }
+</style>

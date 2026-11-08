@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Nota de envio nº {{ note.number_label }} — {{ note.destination_company }}</title>
+  {% include "services/_public_style.html" %}
+  <style>
+    .numline{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .numline h1{font-variant-numeric:tabular-nums}
+    .facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0;margin-top:14px;border-top:1px solid var(--line)}
+    .facts div{padding:10px 0;border-bottom:1px solid var(--line)}
+    .facts div:nth-child(odd){padding-right:12px}
+    .facts span{display:block;font-size:13px;color:var(--muted)}
+    .facts strong{display:block;overflow-wrap:anywhere}
+    .pieces{width:100%;border-collapse:collapse;font-size:15px}
+    .pieces th{padding:0 0 8px;text-align:left;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line)}
+    .pieces td{padding:11px 0;border-bottom:1px solid var(--line);vertical-align:top}
+    .pieces td+td,.pieces th+th{padding-left:12px}
+    .pieces .qty{text-align:right;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+    .pieces small{display:block;color:var(--muted);font-size:13.5px}
+    .pieces tfoot td{border-bottom:0;font-weight:800;padding-top:12px}
+    .people{display:grid;gap:10px}
+    .person{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--soft)}
+    .person .role{display:block;font-size:12.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:700}
+    .person strong{display:block}
+    .stamp{flex:none;display:inline-flex;align-items:center;min-height:28px;padding:2px 10px;border-radius:999px;font-size:13.5px;font-weight:700;border:1px solid var(--line);color:var(--muted);background:var(--card);text-align:right}
+    .stamp.seen{color:#7a4a05;background:#fbf0d9;border-color:#ecd7a6}
+    .stamp.ok{color:#1d5b34;background:#e3f2e7;border-color:#b9dcc3}
+    .decision{border-top:4px solid var(--accent)}
+    .decision.done{border-top-color:#2f7a4a}
+    .big{display:inline-flex;align-items:center;justify-content:center;width:100%;min-height:52px;padding:0 18px;border-radius:10px;border:1px solid transparent;background:var(--accent);color:var(--accent-ink);font:inherit;font-weight:800;font-size:16.5px;cursor:pointer;text-decoration:none}
+    .big.ghost{background:var(--card);color:var(--ink);border-color:var(--line)}
+    .confirm{display:grid;gap:10px;margin-top:12px}
+    .confirm[hidden]{display:none}
+    .downloads{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .done-line{display:flex;align-items:center;gap:10px;color:#1d5b34;font-weight:700}
+    @media (max-width:520px){.facts{grid-template-columns:1fr}.facts div:nth-child(odd){padding-right:0}.person{display:grid}.stamp{justify-self:start}.downloads{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="card">
+      <div class="brandline"><span class="brand">HoraCerta</span><span class="kind">Nota de envio</span></div>
+      <div class="numline"><h1>nº {{ note.number_label }}</h1></div>
+      <p class="who">Enviada por <strong>{{ note.owner.get_full_name|default:note.owner.email }}</strong> para <strong>{{ note.destination_company }}</strong></p>
+      <div class="facts">
+        <div><span>Saída do caminhão</span><strong>{{ note.departed_at|date:"d/m/Y" }} às {{ note.departed_at|time:"H:i" }}</strong></div>
+        <div><span>Total de peças</span><strong>{{ note.total_quantity }}</strong></div>
+        {% if note.driver_name %}<div><span>Motorista</span><strong>{{ note.driver_name }}</strong></div>{% endif %}
+        {% if note.vehicle_plate %}<div><span>Placa</span><strong>{{ note.vehicle_plate }}</strong></div>{% endif %}
+        {% if note.replaces %}<div><span>Corrige</span><strong>Nota nº {{ note.replaces.number_label }}</strong></div>{% endif %}
+      </div>
+    </header>
+
+    <section class="card" aria-labelledby="pieces-title">
+      <h2 id="pieces-title">Peças enviadas</h2>
+      <table class="pieces">
+        <thead><tr><th>Ordem de produção</th><th>Desenho</th><th class="qty">Qtd</th></tr></thead>
+        <tbody>
+          {% for item in items %}
+            <tr><td>{{ item.production_order|default:"—" }}</td><td><strong>{{ item.drawing_number }}</strong>{% if item.description %}<small>{{ item.description }}</small>{% endif %}</td><td class="qty">{{ item.quantity }}</td></tr>
+          {% endfor %}
+        </tbody>
+        <tfoot><tr><td colspan="2">Total</td><td class="qty">{{ note.total_quantity }}</td></tr></tfoot>
+      </table>
+      {% if note.notes %}<p class="hint">{{ note.notes|linebreaksbr }}</p>{% endif %}
+    </section>
+
+    <section class="card decision {% if recipient.authorized_at %}done{% endif %}" aria-labelledby="decision-title">
+      <h2 id="decision-title">{{ recipient.name|default:recipient.get_role_display }}, {% if recipient.authorized_at %}obrigado{% else %}confira e autorize{% endif %}</h2>
+      {% if recipient.authorized_at %}
+        <p class="done-line">✓ Autorizado por você em {{ recipient.authorized_at|date:"d/m/Y" }} às {{ recipient.authorized_at|time:"H:i" }}.</p>
+      {% else %}
+        <p>Ao autorizar, fica registrado que você conferiu esta nota, com seu nome, data e hora.</p>
+        <button type="button" class="big" data-authorize-open style="margin-top:12px">Autorizar nota</button>
+        <form class="confirm" method="post" action="{% url 'shipment_public_authorize' recipient.token %}" data-authorize-confirm hidden>
+          {% csrf_token %}
+          <p><strong>Confirmar autorização da nota nº {{ note.number_label }}?</strong></p>
+          <button class="big" type="submit">Sim, autorizar</button>
+          <button class="big ghost" type="button" data-authorize-cancel>Voltar</button>
+        </form>
+      {% endif %}
+    </section>
+
+    <section class="card" aria-labelledby="people-title">
+      <h2 id="people-title">Quem recebeu</h2>
+      <div class="people">
+        {% for person in recipients %}
+          <div class="person">
+            <div><span class="role">{{ person.get_role_display }}</span><strong>{{ person.name }}</strong></div>
+            {% if person.authorized_at %}<span class="stamp ok">Autorizado em {{ person.authorized_at|date:"d/m H:i" }}</span>
+            {% elif person.viewed_at %}<span class="stamp seen">Visto em {{ person.viewed_at|date:"d/m H:i" }}</span>
+            {% else %}<span class="stamp">Ainda não abriu</span>{% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="files-title">
+      <h2 id="files-title">Baixar a nota</h2>
+      <div class="downloads">
+        <a class="big ghost" href="{% url 'shipment_public_pdf' recipient.token %}" target="_blank" rel="noopener">PDF</a>
+        <a class="big ghost" href="{% url 'shipment_public_xlsx' recipient.token %}">Excel</a>
+      </div>
+    </section>
+
+    <p class="legal">Nota registrada no HoraCerta em {{ note.sent_at|date:"d/m/Y" }} às {{ note.sent_at|time:"H:i" }}. Depois de enviada, não pode ser alterada. Código de conferência {{ note.id|stringformat:"s"|slice:":8"|upper }}.</p>
+  </main>
+  <script>
+    (function () {
+      var token = document.querySelector("[name=csrfmiddlewaretoken]");
+      var csrf = token ? token.value : "{{ csrf_token }}";
+      // Visto so e registrado aqui, depois que a pagina abriu de verdade no aparelho da pessoa.
+      fetch("{% url 'shipment_public_seen' recipient.token %}", {method: "POST", headers: {"X-CSRFToken": csrf}, credentials: "same-origin"}).catch(function () {});
+
+      var open = document.querySelector("[data-authorize-open]");
+      var confirmBox = document.querySelector("[data-authorize-confirm]");
+      var cancel = document.querySelector("[data-authorize-cancel]");
+      if (open && confirmBox) {
+        open.addEventListener("click", function () { open.hidden = true; confirmBox.hidden = false; });
+        cancel.addEventListener("click", function () { confirmBox.hidden = true; open.hidden = false; open.focus(); });
+      }
+    })();
+  </script>
+</body>
+</html>
