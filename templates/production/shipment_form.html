@@ -1,0 +1,84 @@
+{% extends "accounts/base.html" %}
+
+{% block title %}{% if note %}Editar nota{% else %}Nova nota de envio{% endif %}{% endblock %}
+{% block page_title %}Relatórios de produção{% endblock %}
+
+{% block extra_head %}{% include "production/_styles.html" %}{% include "production/_shipment_styles.html" %}{% endblock %}
+
+{% block content %}
+<div class="prod-page">
+  {% include "production/_production_tabs.html" with active="notes" %}
+  <header class="ship-head">
+    <div>
+      <h1>{% if note %}Editar rascunho{% else %}Nova nota de envio{% endif %}</h1>
+      <p>Anote cada peça que vai no caminhão. A nota só ganha número e fica travada quando você tocar em <strong>Enviar nota</strong>.</p>
+    </div>
+  </header>
+
+  {% if errors %}
+    <div class="prod-errors" role="alert">{% for error in errors %}<div>{{ error }}</div>{% endfor %}</div>
+  {% endif %}
+
+  <form class="ship-form" method="post">
+    {% csrf_token %}
+    <section class="ship-box" aria-labelledby="ship-dest">
+      <h2 id="ship-dest">Para onde vai</h2>
+      <div class="ship-grid">
+        <div class="ship-field"><label for="f-dest">Empresa de destino</label><input id="f-dest" name="destination_company" value="{{ data.destination_company }}" required maxlength="120"></div>
+        <div class="ship-field"><label for="f-departed">Data e hora de saída</label><input id="f-departed" type="datetime-local" name="departed_at" value="{{ data.departed_at_raw }}" required></div>
+        <div class="ship-field"><label for="f-driver">Motorista (opcional)</label><input id="f-driver" name="driver_name" value="{{ data.driver_name }}" maxlength="80"></div>
+        <div class="ship-field"><label for="f-plate">Placa do caminhão (opcional)</label><input id="f-plate" name="vehicle_plate" value="{{ data.vehicle_plate }}" maxlength="10" autocapitalize="characters"></div>
+      </div>
+    </section>
+
+    <section class="ship-box" aria-labelledby="ship-items">
+      <h2 id="ship-items">Peças</h2>
+      <div class="ship-rows" data-ship-rows>
+        <div class="ship-row ship-row-head" aria-hidden="true"><span>Ordem de produção</span><span>Nº do desenho</span><span>Qtd</span><span>Descrição (opcional)</span></div>
+        {% for row in rows %}
+          <div class="ship-row" data-ship-row>
+            <input name="item_order" value="{{ row.production_order }}" placeholder="Ordem de produção" aria-label="Ordem de produção" maxlength="40">
+            <input name="item_drawing" value="{{ row.drawing_number }}" placeholder="Nº do desenho" aria-label="Nº do desenho" maxlength="60">
+            <input name="item_quantity" value="{{ row.quantity }}" type="number" min="1" inputmode="numeric" placeholder="Qtd" aria-label="Quantidade">
+            <input name="item_description" value="{{ row.description }}" placeholder="Descrição" aria-label="Descrição" maxlength="120">
+          </div>
+        {% endfor %}
+      </div>
+      <button type="button" class="btn ship-add" data-ship-add>+ Adicionar peça</button>
+    </section>
+
+    <section class="ship-box" aria-labelledby="ship-people">
+      <h2 id="ship-people">Quem recebe o link</h2>
+      <div class="ship-grid">
+        <div class="ship-field"><label for="f-boss">Encarregado</label><input id="f-boss" name="boss_name" value="{{ boss.name }}" maxlength="80"></div>
+        <div class="ship-field"><label for="f-boss-w">WhatsApp do encarregado</label><input id="f-boss-w" name="boss_whatsapp" value="{{ boss.whatsapp }}" inputmode="tel" placeholder="(11) 99999-9999"></div>
+        <div class="ship-field"><label for="f-sup">Supervisor</label><input id="f-sup" name="supervisor_name" value="{{ supervisor.name }}" maxlength="80"></div>
+        <div class="ship-field"><label for="f-sup-w">WhatsApp do supervisor</label><input id="f-sup-w" name="supervisor_whatsapp" value="{{ supervisor.whatsapp }}" inputmode="tel" placeholder="(11) 99999-9999"></div>
+      </div>
+    </section>
+
+    <section class="ship-box">
+      <div class="ship-field"><label for="f-notes">Observação (opcional)</label><textarea id="f-notes" name="notes" rows="2">{{ data.notes }}</textarea></div>
+    </section>
+
+    <div class="ship-actions">
+      <button class="btn primary" type="submit">Salvar rascunho</button>
+      <a class="btn" href="{% if note %}{% url 'shipment_detail' note.id %}{% else %}{% url 'shipment_list' %}{% endif %}">Cancelar</a>
+    </div>
+  </form>
+</div>
+<script>
+  (function () {
+    var rows = document.querySelector("[data-ship-rows]");
+    var add = document.querySelector("[data-ship-add]");
+    if (!rows || !add) return;
+    add.addEventListener("click", function () {
+      var all = rows.querySelectorAll("[data-ship-row]");
+      var copy = all[all.length - 1].cloneNode(true);
+      copy.querySelectorAll("input").forEach(function (input) { input.value = ""; });
+      rows.appendChild(copy);
+      copy.querySelector("input").focus();
+    });
+  })();
+</script>
+{% endblock %}

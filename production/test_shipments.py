@@ -87,3 +87,114 @@ class ShipmentModelTests(TestCase):
         note.number = 7
         self.assertEqual(note.number_label, "0007")
         self.assertEqual(make_note(self.owner, items=3).total_quantity, 6)
+
+
+from django.test import override_settings  # noqa: E402
+from django.urls import reverse  # noqa: E402
+
+BASE = dict(ALLOWED_HOSTS=["testserver", "localhost"], SECURE_SSL_REDIRECT=False)
+
+
+def form_data(**extra):
+    data = {
+        "destination_company": "Ensimec", "departed_at": "2026-11-08T07:30", "driver_name": "Carlos",
+        "vehicle_plate": "ABC1D23", "notes": "",
+        "item_order": ["OP-501", "OP-502", ""], "item_drawing": ["D-11", "D-12", ""],
+        "item_quantity": ["4", "2", ""], "item_description": ["Chapa", "", ""],
+        "boss_name": "João", "boss_whatsapp": "11988887777",
+        "supervisor_name": "Maria", "supervisor_whatsapp": "11977776666",
+    }
+    data.update(extra)
+    return data
+
+
+@override_settings(**BASE)
+class ShipmentOwnerViewTests(TestCase):
+    def setUp(self):
+        self.owner = make_user("dono-envio@example.com")
+        self.client.force_login(self.owner)
+
+    def _create(self, **extra):
+        self.client.post(reverse("shipment_create"), form_data(**extra))
+        return ShipmentNote.objects.filter(owner=self.owner).latest("created_at")
+
+    def test_create_draft_with_items_and_recipients(self):
+        note = self._create()
+
+        self.assertEqual(note.status, ShipmentNote.Status.DRAFT)
+        self.assertEqual(list(note.items.values_list("drawing_number", "quantity")), [("D-11", 4), ("D-12", 2)])
+        self.assertEqual(note.recipients.get(role=ShipmentRecipient.Role.SUPERVISOR).name, "Maria")
+
+    def test_send_locks_note(self):
+        note = self._create()
+        self.client.post(reverse("shipment_send", args=[note.id]))
+        note.refresh_from_db()
+
+        self.assertEqual(note.number, 1)
+        response = self.client.get(reverse("shipment_edit", args=[note.id]))
+        self.assertRedirects(response, reverse("shipment_detail", args=[note.id]))
+        self.client.post(reverse("shipment_edit", args=[note.id]), form_data(destination_company="Outra"))
+        self.client.post(reverse("shipment_delete", args=[note.id]))
+        note.refresh_from_db()
+        self.assertEqual(note.destination_company, "Ensimec")
+        self.assertEqual(note.items.count(), 2)
+
+    def test_send_without_items_shows_message(self):
+        note = self._create(item_order=[""], item_drawing=[""], item_quantity=[""], item_description=[""])
+        response = self.client.post(reverse("shipment_send", args=[note.id]), follow=True)
+
+        self.assertContains(response, "Adicione pelo menos um item")
+        note.refresh_from_db()
+        self.assertIsNone(note.number)
+
+    def test_other_owner_gets_404(self):
+        note = self._create()
+        self.client.force_login(make_user("intruso-envio@example.com"))
+
+        self.assertEqual(self.client.get(reverse("shipment_detail", args=[note.id])).status_code, 404)
+
+    def test_search_by_drawing_number(self):
+        self._create()
+        self._create(item_order=["OP-9"], item_drawing=["ZZ-77"], item_quantity=["1"], item_description=[""],
+                     destination_company="Metal Sul")
+
+        html = self.client.get(reverse("shipment_list"), {"q": "ZZ-77"}).content.decode()
+
+        self.assertIn("Metal Sul", html)
+        self.assertNotIn("Ensimec", html)
+
+    def test_prefill_from_last_sent_note(self):
+        note = self._create()
+        self.client.post(reverse("shipment_send", args=[note.id]))
+
+        html = self.client.get(reverse("shipment_create")).content.decode()
+
+        self.assertIn('value="Ensimec"', html)
+        self.assertIn('value="Maria"', html)
+
+    def test_whatsapp_redirect_contains_recipient_token(self):
+        note = self._create()
+        self.client.post(reverse("shipment_send", args=[note.id]))
+        boss = note.recipients.get(role=ShipmentRecipient.Role.ENCARREGADO)
+
+        response = self.client.get(reverse("shipment_whatsapp", args=[note.id, "encarregado"]))
+
+        self.assertTrue(response["Location"].startswith("https://wa.me/5511988887777?text="))
+        self.assertIn(str(boss.token), response["Location"])
+
+    def test_replace_creates_draft_pointing_to_original(self):
+        note = self._create()
+        self.client.post(reverse("shipment_send", args=[note.id]))
+
+        self.client.post(reverse("shipment_replace", args=[note.id]))
+        copy = ShipmentNote.objects.filter(owner=self.owner, status=ShipmentNote.Status.DRAFT).get()
+
+        self.assertEqual(copy.replaces, note)
+        self.assertEqual(copy.items.count(), 2)
+        self.assertEqual(copy.recipients.count(), 2)
+
+    def test_sheet_list_shows_tabs(self):
+        html = self.client.get(reverse("production_sheet_list")).content.decode()
+
+        self.assertIn(reverse("shipment_list"), html)
+        self.assertIn("Notas de envio", html)

@@ -1,0 +1,42 @@
+{% extends "accounts/base.html" %}
+
+{% block title %}Notas de envio{% endblock %}
+{% block page_title %}Relatórios de produção{% endblock %}
+
+{% block extra_head %}{% include "production/_styles.html" %}{% include "production/_shipment_styles.html" %}{% endblock %}
+
+{% block content %}
+<div class="prod-page">
+  {% include "production/_production_tabs.html" with active="notes" %}
+  <header class="ship-head">
+    <div>
+      <h1>Notas de envio</h1>
+      <p>Comprovante das peças que saem no caminhão. Depois de enviada, a nota fica travada e guardada aqui com número, data e quem viu e autorizou.</p>
+    </div>
+    <a class="btn primary" href="{% url 'shipment_create' %}">Nova nota</a>
+  </header>
+
+  <form class="ship-search" method="get" role="search">
+    <label class="sr-only" for="ship-q">Buscar nota</label>
+    <input id="ship-q" type="search" name="q" value="{{ query }}" placeholder="Nº da nota, ordem de produção, desenho ou empresa">
+    <button class="btn" type="submit">Buscar</button>
+    {% if query %}<a class="btn" href="{% url 'shipment_list' %}">Limpar</a>{% endif %}
+  </form>
+
+  {% if drafts %}
+    <h2 class="ship-section-title">Rascunhos</h2>
+    <section class="prod-list" aria-label="Rascunhos">
+      {% for note in drafts %}{% include "production/_shipment_card.html" %}{% endfor %}
+    </section>
+  {% endif %}
+
+  <h2 class="ship-section-title">{% if query %}Resultado da busca{% else %}Notas enviadas{% endif %}</h2>
+  <section class="prod-list" aria-label="Notas enviadas">
+    {% for note in sent %}
+      {% include "production/_shipment_card.html" %}
+    {% empty %}
+      <div class="prod-empty">{% if query %}Nenhuma nota encontrada para “{{ query }}”.{% else %}Nenhuma nota enviada ainda. Toque em <strong>Nova nota</strong>, anote a ordem de produção, o desenho e a quantidade de cada peça e envie para o encarregado e o supervisor.{% endif %}</div>
+    {% endfor %}
+  </section>
+</div>
+{% endblock %}

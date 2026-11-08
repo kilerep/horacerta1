@@ -1,0 +1,71 @@
+{% extends "accounts/base.html" %}
+
+{% block title %}Nota de envio {{ note.number_label }}{% endblock %}
+{% block page_title %}Relatórios de produção{% endblock %}
+
+{% block extra_head %}{% include "production/_styles.html" %}{% include "production/_shipment_styles.html" %}{% endblock %}
+
+{% block content %}
+<div class="prod-page">
+  {% include "production/_production_tabs.html" with active="notes" %}
+  <a class="link-back" href="{% url 'shipment_list' %}">← Todas as notas</a>
+
+  {% if not note.is_locked %}
+    <div class="ship-alert"><strong>Rascunho.</strong> Confira as peças. Ao tocar em <strong>Enviar nota</strong>, ela ganha número e fica travada: ninguém consegue alterar ou apagar.</div>
+  {% endif %}
+
+  <article class="ship-sheet" aria-label="Nota de envio">
+    <div class="ship-sheet-top">
+      <div>
+        <div class="eyebrow">Nota de envio</div>
+        <h2>{% if note.number %}nº {{ note.number_label }}{% else %}Rascunho{% endif %}</h2>
+      </div>
+      <span class="ship-chip {{ situation.1 }}">{{ situation.0 }}</span>
+    </div>
+    <div class="ship-facts">
+      <div class="ship-fact"><span>Destino</span><strong>{{ note.destination_company }}</strong></div>
+      <div class="ship-fact"><span>Saída</span><strong>{{ note.departed_at|date:"d/m/Y" }} às {{ note.departed_at|time:"H:i" }}</strong></div>
+      {% if note.driver_name %}<div class="ship-fact"><span>Motorista</span><strong>{{ note.driver_name }}</strong></div>{% endif %}
+      {% if note.vehicle_plate %}<div class="ship-fact"><span>Placa</span><strong>{{ note.vehicle_plate }}</strong></div>{% endif %}
+      {% if note.replaces %}<div class="ship-fact"><span>Corrige</span><strong>Nota nº {{ note.replaces.number_label }}</strong></div>{% endif %}
+    </div>
+    <table class="ship-items">
+      <thead><tr><th>Ordem de produção</th><th>Desenho</th><th class="qty">Qtd</th></tr></thead>
+      <tbody>
+        {% for item in items %}
+          <tr><td>{{ item.production_order|default:"—" }}</td><td><strong>{{ item.drawing_number }}</strong>{% if item.description %}<small>{{ item.description }}</small>{% endif %}</td><td class="qty">{{ item.quantity }}</td></tr>
+        {% empty %}
+          <tr><td colspan="3">Nenhuma peça anotada ainda.</td></tr>
+        {% endfor %}
+      </tbody>
+      {% if items %}<tfoot><tr><td colspan="2">Total de peças</td><td class="qty">{{ note.total_quantity }}</td></tr></tfoot>{% endif %}
+    </table>
+    {% if note.notes %}<div class="ship-notes">{{ note.notes|linebreaksbr }}</div>{% endif %}
+  </article>
+
+  <section class="ship-people" aria-label="Encarregado e supervisor">
+    {% for person in recipients %}
+      <div class="ship-person">
+        <span class="role">{{ person.get_role_display }}</span>
+        <strong>{{ person.name|default:"Sem nome" }}</strong>
+        {% if note.is_locked %}
+          {% if person.authorized_at %}<span class="ship-stamp ok"><span class="dot"></span>Autorizou em {{ person.authorized_at|date:"d/m/Y" }} às {{ person.authorized_at|time:"H:i" }}</span>
+          {% elif person.viewed_at %}<span class="ship-stamp"><span class="dot"></span>Viu em {{ person.viewed_at|date:"d/m/Y" }} às {{ person.viewed_at|time:"H:i" }}, ainda não autorizou</span>
+          {% else %}<span class="ship-stamp"><span class="dot"></span>Ainda não abriu o link</span>{% endif %}
+          <a class="btn primary" href="{% url 'shipment_whatsapp' note.id person.role|lower %}" target="_blank" rel="noopener">Enviar pelo WhatsApp</a>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </section>
+
+  <div class="ship-actions">
+    {% if note.is_locked %}
+      <form method="post" action="{% url 'shipment_replace' note.id %}">{% csrf_token %}<button class="btn" type="submit">Criar nota de correção</button></form>
+    {% else %}
+      <form method="post" action="{% url 'shipment_send' note.id %}">{% csrf_token %}<button class="btn primary" type="submit">Enviar nota</button></form>
+      <a class="btn" href="{% url 'shipment_edit' note.id %}">Editar</a>
+      <form method="post" action="{% url 'shipment_delete' note.id %}">{% csrf_token %}<button class="btn" type="submit">Apagar rascunho</button></form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

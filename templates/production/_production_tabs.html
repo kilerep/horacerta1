@@ -1,0 +1,4 @@
+<nav class="prod-tabs" aria-label="Relatórios de produção">
+  <a class="prod-tab {% if active == 'sheets' %}is-active{% endif %}" href="{% url 'production_sheet_list' %}" {% if active == 'sheets' %}aria-current="page"{% endif %}>Relatórios</a>
+  <a class="prod-tab {% if active == 'notes' %}is-active{% endif %}" href="{% url 'shipment_list' %}" {% if active == 'notes' %}aria-current="page"{% endif %}>Notas de envio</a>
+</nav>

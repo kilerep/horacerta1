@@ -413,6 +413,7 @@ class InternalNotification(models.Model):
         PUNCH_RESTORED = "punch_restored", "Registro restaurado"
         ADMIN_NOTE_ADDED = "admin_note_added", "Observacao administrativa adicionada"
         COMPANY_ACKNOWLEDGED = "company_acknowledged", "Ciencia da empresa registrada"
+        SHIPMENT_NOTE = "shipment_note", "Nota de envio"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     recipient_user = models.ForeignKey(
