@@ -1,44 +1,60 @@
 {% extends "accounts/base.html" %}
+{% load hc_icons %}
 {% block title %}Meus clientes{% endblock %}
 {% block page_title %}Meus clientes{% endblock %}
 
 {% block content %}
   <style>
     .clients-page{display:grid;gap:14px;min-width:0}
-    .clients-hero,.clients-panel,.client-card{
-      border:1px solid var(--border);
-      border-radius:var(--radius);
-      background:radial-gradient(circle at 12% 0,var(--color-primary-soft),transparent 42%),linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02));
-      box-shadow:var(--shadow);
-      min-width:0;
-    }
-    .clients-hero{padding:16px;display:grid;gap:14px}
+    .clients-hero,.clients-panel{min-width:0}
+    .client-card{border:1px solid var(--color-border);border-radius:14px;background:var(--color-card);box-shadow:var(--shadow-xs);min-width:0;transition:border-color .15s ease}
+    .client-card:hover{border-color:var(--border-brand)}
+    .clients-hero{display:grid;gap:14px}
     .clients-hero__top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
     .clients-eyebrow{margin:0 0 4px;color:var(--muted);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
     .clients-title{margin:0;font-size:clamp(22px,4vw,32px);line-height:1.1}
     .clients-subtitle{margin:6px 0 0;color:var(--muted);max-width:680px}
     .clients-actions,.client-actions,.quick-closure-actions,.client-report-actions{display:flex;gap:8px;flex-wrap:wrap}
-    .clients-summary,.client-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
-    .clients-stat,.client-metric{border:1px solid var(--line-soft);border-radius:12px;padding:10px;background:color-mix(in oklab,var(--surface-soft) 72%,transparent);min-width:0}
-    .clients-stat span,.client-metric span{display:block;color:var(--muted);font-size:12px;font-weight:700}
-    .clients-stat strong{display:block;margin-top:4px;font-size:20px;overflow-wrap:anywhere}
+    .client-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+    .client-metric{border:1px solid var(--line-soft);border-radius:12px;padding:10px;background:color-mix(in oklab,var(--surface-soft) 72%,transparent);min-width:0}
+    .client-metric span{display:block;color:var(--muted);font-size:12px;font-weight:700}
+    /* Resumo do mes numa faixa unica, sem quatro caixas */
+    .clients-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--color-border);border-radius:14px;background:var(--color-card);overflow:hidden}
+    .clients-stat{padding:12px 14px;min-width:0;border-left:1px solid var(--color-border)}
+    .clients-stat:first-child{border-left:0}
+    .clients-stat span{display:block;color:var(--color-text-muted);font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .clients-stat strong{display:block;margin-top:2px;font-size:19px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
     .client-metric strong{display:block;margin-top:3px;font-size:15px;overflow-wrap:anywhere}
-    .clients-panel{padding:14px}
+    .clients-panel{padding:0}
     .clients-section-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
     .clients-section-head h2,.clients-section-head h3{margin:0;font-size:18px}
     .clients-section-head p{margin:3px 0 0;color:var(--muted);font-size:13px}
-    .client-list{display:grid;gap:10px}
-    .client-card{padding:14px;display:grid;gap:12px}
+    .client-list{display:grid;gap:8px}
+    .client-card{padding:12px 14px;display:grid;gap:10px}
+    /* Linha compacta: inicial, nome e numeros do mes, valor estimado a direita */
+    .client-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center}
+    .client-avatar{display:grid;place-items:center;width:42px;height:42px;border-radius:12px;background:var(--icon-bg);border:1px solid var(--icon-border);color:var(--icon-fg);font-weight:900;font-size:17px}
+    .client-avatar.warn{background:var(--surface-soft);border-color:var(--color-border);color:var(--color-text-muted)}
+    .client-main{display:grid;gap:2px;min-width:0}
+    .client-titleline{display:flex;align-items:flex-start;gap:8px;min-width:0}
+    .client-line{margin:0;display:flex;flex-wrap:wrap;gap:2px 10px;color:var(--color-text-muted);font-size:13.5px;font-variant-numeric:tabular-nums}
+    .client-value{display:grid;justify-items:end;gap:1px;text-align:right}
+    .client-value strong{font-size:16px;font-variant-numeric:tabular-nums;white-space:nowrap}
+    .client-value span{font-size:12px;color:var(--color-text-muted)}
+    .client-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;padding-top:10px;border-top:1px solid var(--color-border)}
+    .client-foot .client-next-action{flex:1;min-width:0}
+    .client-foot .btn{flex:none;gap:6px;min-height:44px;padding:0 12px}
+    .client-card.is-details-open .client-foot .hc-icon{transform:rotate(90deg)}
     .client-card[hidden]{display:none}
     .client-card.is-selected,.client-card.is-details-open{border-color:var(--border-brand);box-shadow:0 0 0 2px var(--color-primary-soft),var(--shadow)}
     .client-card__head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
-    .client-name{margin:0;font-size:19px;line-height:1.2;overflow-wrap:anywhere}
+    .client-name{margin:0;font-size:16.5px;line-height:1.25;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere}
     .client-period{margin:4px 0 0;color:var(--muted);font-size:12px}
-    .client-status,.mini-badge{display:inline-flex;align-items:center;width:max-content;max-width:100%;min-width:0;border-radius:999px;padding:5px 9px;font-size:12px;font-weight:900;line-height:1.25;border:1px solid var(--line-soft);background:var(--surface-soft);color:var(--muted);white-space:normal;overflow-wrap:anywhere}
+    .client-status,.mini-badge{flex:none;display:inline-flex;align-items:center;width:max-content;max-width:100%;min-width:0;border-radius:999px;padding:3px 9px;font-size:11.5px;font-weight:900;line-height:1.25;border:1px solid var(--line-soft);background:var(--surface-soft);color:var(--muted);white-space:normal;overflow-wrap:anywhere}
     .client-status.success,.mini-badge.success{color:var(--color-success);border-color:var(--border-brand);background:var(--surface-brand-soft)}
     .client-status.pending,.mini-badge.pending{color:var(--muted)}
     .client-status.warn{color:var(--danger-text);background:var(--danger-bg)}
-    .client-next-action{margin:0;padding:9px 10px;border:1px solid var(--line-soft);border-radius:10px;background:color-mix(in oklab,var(--surface-soft) 62%,transparent);font-size:12px;line-height:1.45;color:var(--muted)}
+    .client-next-action{margin:0;font-size:13px;line-height:1.4;color:var(--color-text-muted)}
     .client-next-action strong{color:var(--color-text-strong)}
     .btn[aria-disabled="true"]{opacity:.48;cursor:not-allowed}
     .client-detail-panel{border-top:1px solid var(--line-soft);padding-top:12px}
@@ -76,16 +92,21 @@
     .clients-filter-result{margin:10px 0 0;color:var(--muted);font-size:12px}
     .clients-filter-empty{margin-top:10px}
     @media (max-width:900px){
-      .clients-summary,.client-metrics,.client-detail-grid,.quick-closure-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .client-metrics,.client-detail-grid,.quick-closure-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .clients-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .clients-stat:nth-child(3){border-left:0}
+      .clients-stat:nth-child(n+3){border-top:1px solid var(--color-border)}
       .client-filters{grid-template-columns:1fr 1fr}
       .client-filters .btn{grid-column:1/-1}
     }
     @media (max-width:640px){
-      .clients-hero__top,.client-card__head{display:grid}
-      .clients-actions .btn,.client-actions .btn{width:100%;justify-content:center}
+      .clients-hero__top{display:grid}
+      .clients-actions{display:grid;grid-template-columns:1fr 1fr}
+      .clients-actions .btn,.client-actions--detail .btn{width:100%;justify-content:center}
+      .client-avatar{width:38px;height:38px;border-radius:10px}
       .client-detail-grid,.quick-closure-grid,.client-detail-item,.client-report-totals,.client-filters{grid-template-columns:1fr}
-      .clients-summary,.client-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-      .clients-stat strong{font-size:18px}
+      .client-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+      .clients-stat strong{font-size:17px}
       .client-report-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}
       .client-report-actions form,.client-report-actions .btn,.client-report-actions form .btn{width:100%;justify-content:center}
     }
@@ -123,7 +144,7 @@
         <div class="clients-section-head">
           <div>
             <h2>Clientes vinculados</h2>
-            <p><span data-client-result-count>{{ client_rows|length }}</span> contrato(s) visível(is) para sua conta.</p>
+            <p><span data-client-result-count>{{ client_rows|length }}</span> <span data-client-result-word>{% if client_rows|length == 1 %}contrato visível{% else %}contratos visíveis{% endif %}</span> para sua conta.</p>
           </div>
         </div>
 
@@ -159,34 +180,31 @@
               data-client-state="{{ row.status.tone }}"
               data-client-rate="{{ row.contract.hourly_rate|default:0 }}"
             >
-              <header class="client-card__head">
-                <div>
-                  <h3 class="client-name">{{ row.contract.company.name }}</h3>
-                  <p class="client-period">
-                    Desde {{ row.contract.start_date|date:"d/m/Y" }}
-                    {% if row.contract.end_date %} até {{ row.contract.end_date|date:"d/m/Y" }}{% else %} | contrato em aberto{% endif %}
+              <div class="client-row">
+                <span class="client-avatar {{ row.status.tone }}" aria-hidden="true">{{ row.contract.company.name|slice:":1"|upper }}</span>
+                <div class="client-main">
+                  <div class="client-titleline">
+                    <h3 class="client-name">{{ row.contract.company.name }}</h3>
+                    <span class="client-status {{ row.status.tone }}">{{ row.status.label }}</span>
+                  </div>
+                  <p class="client-line">
+                    <span>{% if row.contract.hourly_rate %}R$ {{ row.contract.hourly_rate }}/h{% else %}Sem valor/hora{% endif %}</span>
+                    <span>{{ row.total_hours_month }} no mês</span>
                   </p>
                 </div>
-                <span class="client-status {{ row.status.tone }}">{{ row.status.label }}</span>
-              </header>
-
-              <div class="client-metrics">
-                <div class="client-metric"><span>Valor por hora</span><strong>{% if row.contract.hourly_rate %}R$ {{ row.contract.hourly_rate }}/h{% else %}Não definido{% endif %}</strong></div>
-                <div class="client-metric"><span>Horas no mês</span><strong>{{ row.total_hours_month }}</strong></div>
-                <div class="client-metric"><span>Valor estimado</span><strong>{{ row.estimated_value_brl }}</strong></div>
+                <div class="client-value"><strong>{{ row.estimated_value_brl }}</strong><span>estimado</span></div>
               </div>
 
-              {% if not row.contract.hourly_rate %}
-                <p class="client-next-action"><strong>Próximo passo:</strong> defina o valor por hora para estimar corretamente seus fechamentos.</p>
-              {% elif row.status.tone == "warn" %}
-                <p class="client-next-action"><strong>Contrato inativo:</strong> consulte os detalhes antes de voltar a registrar horas para este cliente.</p>
-              {% elif row.quick_closure.is_custom %}
-                <p class="client-next-action"><strong>Fechamento personalizado:</strong> revise as datas antes de gerar o próximo relatório.</p>
-              {% else %}
-                <p class="client-next-action"><strong>Próximo fechamento:</strong> {{ row.quick_closure.period_label }}.</p>
-              {% endif %}
-
-              <div class="client-actions">
+              <div class="client-foot client-actions">
+                {% if not row.contract.hourly_rate %}
+                  <p class="client-next-action"><strong>Próximo passo:</strong> defina o valor por hora.</p>
+                {% elif row.status.tone == "warn" %}
+                  <p class="client-next-action"><strong>Contrato inativo:</strong> veja os detalhes antes de registrar horas.</p>
+                {% elif row.quick_closure.is_custom %}
+                  <p class="client-next-action"><strong>Fechamento personalizado:</strong> revise as datas.</p>
+                {% else %}
+                  <p class="client-next-action"><strong>Próximo fechamento:</strong> {{ row.quick_closure.period_label }}.</p>
+                {% endif %}
                 <a
                   class="btn"
                   href="{{ row.details_url }}"
@@ -194,7 +212,7 @@
                   data-client-id="{{ row.contract.id }}"
                   aria-controls="client-details-{{ row.contract.id }}"
                   aria-expanded="{% if active_contract and row.contract.id == active_contract.id %}true{% else %}false{% endif %}"
-                >{% if active_contract and row.contract.id == active_contract.id %}Fechar detalhes{% else %}Ver detalhes{% endif %}</a>
+                ><span data-toggle-label>{% if active_contract and row.contract.id == active_contract.id %}Fechar detalhes{% else %}Ver detalhes{% endif %}</span> {% icon "chevron" 16 %}</a>
               </div>
 
               <section
@@ -407,7 +425,7 @@
         card.classList.toggle("is-details-open", shouldOpen);
         card.classList.toggle("is-selected", shouldOpen);
         toggle.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
-        toggle.textContent = shouldOpen ? "Fechar detalhes" : "Ver detalhes";
+        (toggle.querySelector("[data-toggle-label]") || toggle).textContent = shouldOpen ? "Fechar detalhes" : "Ver detalhes";
         if (!shouldOpen) setReportsOpen(clientId, false);
         if (updateUrl) updateContractInUrl(clientId, shouldOpen);
       }
@@ -442,11 +460,13 @@
         });
 
         if (resultCount) resultCount.textContent = String(visibleCount);
+        var resultWord = document.querySelector("[data-client-result-word]");
+        if (resultWord) resultWord.textContent = visibleCount === 1 ? "contrato visível" : "contratos visíveis";
         if (emptyState) emptyState.hidden = visibleCount !== 0;
         if (feedback) {
           feedback.textContent = visibleCount === cards.length
             ? "Use a busca ou os filtros para localizar um cliente."
-            : visibleCount + " cliente(s) encontrado(s).";
+            : visibleCount + (visibleCount === 1 ? " cliente encontrado." : " clientes encontrados.");
         }
       }
 

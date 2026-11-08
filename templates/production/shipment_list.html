@@ -1,4 +1,5 @@
 {% extends "accounts/base.html" %}
+{% load hc_icons %}
 
 {% block title %}Notas de envio{% endblock %}
 {% block page_title %}Relatórios de produção{% endblock %}
@@ -13,8 +14,15 @@
       <h1>Notas de envio</h1>
       <p>Comprovante das peças que saem no caminhão. Depois de enviada, a nota fica travada e guardada aqui com número, data e quem viu e autorizou.</p>
     </div>
-    <a class="btn primary" href="{% url 'shipment_create' %}">Nova nota</a>
+    <a class="btn primary" href="{% url 'shipment_create' %}">{% icon "plus" 18 %} Nova nota</a>
   </header>
+
+  {% if sent and not query %}
+    <div class="ship-tally" aria-label="Resumo das notas">
+      <span><strong>{{ sent|length }}</strong> {% if sent|length == 1 %}nota enviada{% else %}notas enviadas{% endif %}</span>
+      {% if waiting %}<span class="is-waiting"><strong>{{ waiting }}</strong> {% if waiting == 1 %}aguardando autorização{% else %}aguardando autorização{% endif %}</span>{% else %}<span>Todas autorizadas</span>{% endif %}
+    </div>
+  {% endif %}
 
   <form class="ship-search" method="get" role="search">
     <label class="sr-only" for="ship-q">Buscar nota</label>
@@ -35,7 +43,7 @@
     {% for note in sent %}
       {% include "production/_shipment_card.html" %}
     {% empty %}
-      <div class="prod-empty">{% if query %}Nenhuma nota encontrada para “{{ query }}”.{% else %}Nenhuma nota enviada ainda. Toque em <strong>Nova nota</strong>, anote a ordem de produção, o desenho e a quantidade de cada peça e envie para o encarregado e o supervisor.{% endif %}</div>
+      <div class="prod-empty">{% if query %}Nenhuma nota encontrada para “{{ query }}”.{% else %}Nenhuma nota enviada ainda. Toque em <strong>Nova nota</strong>, anote a ordem de produção, o desenho e a quantidade de cada peça e envie para quem precisa conferir.{% endif %}</div>
     {% endfor %}
   </section>
 </div>

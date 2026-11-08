@@ -458,3 +458,33 @@ class ShipmentAdjustmentsTests(TestCase):
         self.client.post(reverse("shipment_edit", args=[note.id]), form_data(boss_name="", boss_whatsapp=""))
 
         self.assertEqual(list(note.recipients.values_list("role", flat=True)), [ShipmentRecipient.Role.SUPERVISOR])
+
+
+@override_settings(**BASE)
+class ShipmentOwnerPreviewTests(TestCase):
+    """O dono abrindo o link do supervisor (logado) nao pode marcar visto nem autorizar no lugar dele."""
+
+    def setUp(self):
+        self.owner = make_user("dono-previa@example.com")
+        self.note = make_note(self.owner)
+        self.note.send()
+        self.supervisor = self.note.recipients.get(role=ShipmentRecipient.Role.SUPERVISOR)
+        self.client.force_login(self.owner)
+
+    def test_owner_opening_link_does_not_count_as_seen_or_authorized(self):
+        html = self.client.get(reverse("shipment_public", args=[self.supervisor.token])).content.decode()
+        self.client.post(reverse("shipment_public_seen", args=[self.supervisor.token]))
+        self.client.post(reverse("shipment_public_authorize", args=[self.supervisor.token]))
+        self.supervisor.refresh_from_db()
+
+        self.assertIsNone(self.supervisor.viewed_at)
+        self.assertIsNone(self.supervisor.authorized_at)
+        self.assertIn("Você está vendo como remetente", html)
+        self.assertNotIn("Autorizar nota", html)
+
+    def test_recipient_without_login_still_counts(self):
+        self.client.logout()
+        self.client.post(reverse("shipment_public_seen", args=[self.supervisor.token]))
+        self.supervisor.refresh_from_db()
+
+        self.assertIsNotNone(self.supervisor.viewed_at)

@@ -144,9 +144,12 @@ def shipment_list(request):
             match |= Q(number=int(digits))
         notes = notes.filter(match).distinct()
     notes = list(notes)
+    sent = [n for n in notes if n.is_locked]
+    waiting = sum(1 for n in sent if any(not r.authorized_at for r in n.recipients.all()))
     return render(request, "production/shipment_list.html", {
         "drafts": [n for n in notes if not n.is_locked],
-        "sent": [n for n in notes if n.is_locked],
+        "sent": sent,
+        "waiting": waiting,
         "query": query,
     })
 
@@ -186,9 +189,12 @@ def shipment_edit(request, note_id):
 @login_required
 def shipment_detail(request, note_id):
     note = _note_for(request, note_id)
+    recipients = list(note.recipients.all())
     return render(request, "production/shipment_detail.html", {
-        "note": note, "items": note.items.all(), "recipients": note.recipients.all(),
-        "situation": note.situation,
+        "note": note, "items": note.items.all(), "recipients": recipients, "situation": note.situation,
+        "recipients_count": len(recipients),
+        "viewed_count": sum(1 for r in recipients if r.viewed_at),
+        "authorized_count": sum(1 for r in recipients if r.authorized_at),
     })
 
 
@@ -275,6 +281,11 @@ def _recipient_for(token):
     return recipient
 
 
+def _is_owner_preview(request, recipient):
+    """Quem enviou a nota abrindo o link de outra pessoa: so mostra, nunca conta visto nem autoriza."""
+    return request.user.is_authenticated and request.user.pk == recipient.note.owner_id
+
+
 def _notify_owner(recipient, action):
     from timeclock.models import InternalNotification
     from timeclock.notifications import create_internal_notification
@@ -293,8 +304,13 @@ def _notify_owner(recipient, action):
 def shipment_public(request, token):
     recipient = _recipient_for(token)
     note = recipient.note
+    recipients = list(note.recipients.all())
+    authorized = sum(1 for r in recipients if r.authorized_at)
     response = render(request, "production/shipment_public.html", {
-        "note": note, "recipient": recipient, "items": note.items.all(), "recipients": note.recipients.all(),
+        "note": note, "recipient": recipient, "items": note.items.all(), "recipients": recipients,
+        "recipients_count": len(recipients), "viewed_count": sum(1 for r in recipients if r.viewed_at),
+        "authorized_count": authorized, "authorized_all": bool(recipients) and authorized == len(recipients),
+        "owner_preview": _is_owner_preview(request, recipient),
     })
     response["X-Robots-Tag"] = "noindex, nofollow"
     return response
@@ -304,7 +320,7 @@ def shipment_public(request, token):
 def shipment_public_seen(request, token):
     # Chamado pelo JavaScript da pagina: a previa de link do WhatsApp nao executa JS e nao conta como visto.
     recipient = _recipient_for(token)
-    if recipient.mark_viewed():
+    if not _is_owner_preview(request, recipient) and recipient.mark_viewed():
         _notify_owner(recipient, "vista")
     return HttpResponse(status=204)
 
@@ -312,7 +328,7 @@ def shipment_public_seen(request, token):
 @require_POST
 def shipment_public_authorize(request, token):
     recipient = _recipient_for(token)
-    if recipient.authorize():
+    if not _is_owner_preview(request, recipient) and recipient.authorize():
         _notify_owner(recipient, "autorizada")
     return redirect("shipment_public", token=token)
 

@@ -1,4 +1,5 @@
 {% extends "accounts/base.html" %}
+{% load hc_icons %}
 
 {% block title %}{% if note %}Editar nota{% else %}Nova nota de envio{% endif %}{% endblock %}
 {% block page_title %}Relatórios de produção{% endblock %}
@@ -22,7 +23,7 @@
   <form class="ship-form" method="post">
     {% csrf_token %}
     <section class="ship-box" aria-labelledby="ship-dest">
-      <h2 id="ship-dest">Para onde vai</h2>
+      <h2 id="ship-dest">{% icon "truck" 18 %} Para onde vai</h2>
       <div class="ship-grid">
         <div class="ship-field"><label for="f-dest">Empresa de destino</label><input id="f-dest" name="destination_company" value="{{ data.destination_company }}" required maxlength="120"></div>
         <div class="ship-field"><label for="f-departed">Data e hora de saída</label><input id="f-departed" type="datetime-local" name="departed_at" value="{{ data.departed_at_raw }}" required></div>
@@ -32,7 +33,7 @@
     </section>
 
     <section class="ship-box" aria-labelledby="ship-items">
-      <h2 id="ship-items">Peças</h2>
+      <h2 id="ship-items">{% icon "list" 18 %} Peças</h2>
       <div class="ship-rows" data-ship-rows>
         <div class="ship-row ship-row-head" aria-hidden="true"><span>Ordem de produção</span><span>Nº do desenho</span><span>Qtd</span><span>Descrição (opcional)</span></div>
         {% for row in rows %}
@@ -44,11 +45,11 @@
           </div>
         {% endfor %}
       </div>
-      <button type="button" class="btn ship-add" data-ship-add>+ Adicionar peça</button>
+      <button type="button" class="btn ship-add" data-ship-add>{% icon "plus" 18 %} Adicionar peça</button>
     </section>
 
     <section class="ship-box" aria-labelledby="ship-people">
-      <h2 id="ship-people">Quem recebe o link</h2>
+      <h2 id="ship-people">{% icon "users" 18 %} Quem recebe o link</h2>
       <p class="prod-hint">Preencha uma pessoa ou as duas. Quem ficar sem nome não recebe a nota.</p>
       <div class="ship-grid">
         <div class="ship-field"><label for="f-boss">Encarregado</label><input id="f-boss" name="boss_name" value="{{ boss.name }}" maxlength="80"></div>
@@ -62,7 +63,7 @@
       <div class="ship-field"><label for="f-notes">Observação (opcional)</label><textarea id="f-notes" name="notes" rows="2">{{ data.notes }}</textarea></div>
     </section>
 
-    <div class="ship-actions">
+    <div class="ship-submit">
       <button class="btn primary" type="submit">Salvar rascunho</button>
       <a class="btn" href="{% if note %}{% url 'shipment_detail' note.id %}{% else %}{% url 'shipment_list' %}{% endif %}">Cancelar</a>
     </div>
