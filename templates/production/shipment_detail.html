@@ -60,6 +60,8 @@
 
   <div class="ship-actions">
     {% if note.is_locked %}
+      <a class="btn" href="{% url 'shipment_pdf' note.id %}" target="_blank" rel="noopener">Baixar PDF</a>
+      <a class="btn" href="{% url 'shipment_xlsx' note.id %}">Baixar Excel</a>
       <form method="post" action="{% url 'shipment_replace' note.id %}">{% csrf_token %}<button class="btn" type="submit">Criar nota de correção</button></form>
     {% else %}
       <form method="post" action="{% url 'shipment_send' note.id %}">{% csrf_token %}<button class="btn primary" type="submit">Enviar nota</button></form>

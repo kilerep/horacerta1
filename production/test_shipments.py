@@ -257,3 +257,63 @@ class ShipmentPublicTests(TestCase):
         self.assertIn('name="robots" content="noindex, nofollow"', html)
         self.assertNotIn("confirm(", html)
         self.assertNotIn("alert(", html)
+
+
+@override_settings(**BASE)
+class ShipmentExportTests(TestCase):
+    def setUp(self):
+        self.owner = make_user("export-envio@example.com")
+        self.note = make_note(self.owner, items=2)
+        self.note.number = 7
+        self.note.send()  # ja recebe o proximo numero do dono; garante SENT
+        self.note.refresh_from_db()
+        self.client.force_login(self.owner)
+
+    def test_pdf_starts_with_pdf_magic_and_has_number(self):
+        from production.shipment_exports import build_shipment_pdf, shipment_filename
+
+        data = build_shipment_pdf(self.note)
+
+        self.assertTrue(data.startswith(b"%PDF"))
+        self.assertEqual(shipment_filename(self.note, "pdf"), f"nota-envio-{self.note.number_label}-ensimec.pdf")
+        response = self.client.get(reverse("shipment_pdf", args=[self.note.id]))
+        self.assertEqual(response["Content-Type"], "application/pdf")
+
+    def test_xlsx_has_items_and_total_value(self):
+        from io import BytesIO
+
+        from openpyxl import load_workbook
+
+        response = self.client.get(reverse("shipment_xlsx", args=[self.note.id]))
+        ws = load_workbook(BytesIO(response.content)).active
+        values = [cell for row in ws.iter_rows(values_only=True) for cell in row if cell is not None]
+
+        self.assertIn(f"Nota de envio nº {self.note.number_label}", values)
+        self.assertIn("OP-100", values)
+        self.assertIn("DES-1", values)
+        self.assertIn(4, values)  # total de pecas gravado como valor, nao formula
+
+    def test_public_download_only_for_sent(self):
+        boss = self.note.recipients.first()
+        self.assertEqual(self.client.get(reverse("shipment_public_pdf", args=[boss.token])).status_code, 200)
+        self.assertEqual(self.client.get(reverse("shipment_public_xlsx", args=[boss.token])).status_code, 200)
+
+        draft = make_note(self.owner)
+        token = draft.recipients.first().token
+        self.assertEqual(self.client.get(reverse("shipment_public_pdf", args=[token])).status_code, 404)
+
+
+@override_settings(**BASE)
+class ShipmentDownloadLinksTests(TestCase):
+    def test_detail_and_public_page_link_the_files(self):
+        owner = make_user("links-envio@example.com")
+        note = make_note(owner)
+        note.send()
+        boss = note.recipients.first()
+        self.client.force_login(owner)
+
+        detail = self.client.get(reverse("shipment_detail", args=[note.id])).content.decode()
+        public = self.client.get(reverse("shipment_public", args=[boss.token])).content.decode()
+
+        self.assertIn(reverse("shipment_pdf", args=[note.id]), detail)
+        self.assertIn(reverse("shipment_public_xlsx", args=[boss.token]), public)

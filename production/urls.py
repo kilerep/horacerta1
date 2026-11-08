@@ -28,4 +28,8 @@ urlpatterns = [
     path("nota-envio/<uuid:token>/", sv.shipment_public, name="shipment_public"),
     path("nota-envio/<uuid:token>/visto/", sv.shipment_public_seen, name="shipment_public_seen"),
     path("nota-envio/<uuid:token>/autorizar/", sv.shipment_public_authorize, name="shipment_public_authorize"),
+    path("me/relatorios-producao/notas/<uuid:note_id>/pdf/", sv.shipment_pdf, name="shipment_pdf"),
+    path("me/relatorios-producao/notas/<uuid:note_id>/excel/", sv.shipment_xlsx, name="shipment_xlsx"),
+    path("nota-envio/<uuid:token>/pdf/", sv.shipment_public_pdf, name="shipment_public_pdf"),
+    path("nota-envio/<uuid:token>/excel/", sv.shipment_public_xlsx, name="shipment_public_xlsx"),
 ]

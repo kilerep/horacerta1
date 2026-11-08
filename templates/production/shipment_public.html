@@ -98,6 +98,14 @@
       </div>
     </section>
 
+    <section class="card" aria-labelledby="files-title">
+      <h2 id="files-title">Baixar a nota</h2>
+      <div class="downloads">
+        <a class="big ghost" href="{% url 'shipment_public_pdf' recipient.token %}" target="_blank" rel="noopener">PDF</a>
+        <a class="big ghost" href="{% url 'shipment_public_xlsx' recipient.token %}">Excel</a>
+      </div>
+    </section>
+
     <p class="legal">Nota registrada no HoraCerta em {{ note.sent_at|date:"d/m/Y" }} às {{ note.sent_at|time:"H:i" }}. Depois de enviada, não pode ser alterada. Código de conferência {{ note.id|stringformat:"s"|slice:":8"|upper }}.</p>
   </main>
   <script>

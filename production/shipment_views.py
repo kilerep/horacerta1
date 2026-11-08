@@ -15,6 +15,9 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from .models import ShipmentItem, ShipmentNote, ShipmentRecipient
+from .shipment_exports import build_shipment_pdf, build_shipment_xlsx, shipment_filename
+
+XLSX_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 ROLES = {
     "encarregado": ShipmentRecipient.Role.ENCARREGADO,
@@ -292,3 +295,32 @@ def shipment_public_authorize(request, token):
     if recipient.authorize():
         _notify_owner(recipient, "autorizada")
     return redirect("shipment_public", token=token)
+
+
+def _file(content, content_type, filename, inline=False):
+    response = HttpResponse(content, content_type=content_type)
+    response["Content-Disposition"] = f'{"inline" if inline else "attachment"}; filename="{filename}"'
+    response["Cache-Control"] = "private, no-store"
+    return response
+
+
+@login_required
+def shipment_pdf(request, note_id):
+    note = _note_for(request, note_id)
+    return _file(build_shipment_pdf(note), "application/pdf", shipment_filename(note, "pdf"), inline=True)
+
+
+@login_required
+def shipment_xlsx(request, note_id):
+    note = _note_for(request, note_id)
+    return _file(build_shipment_xlsx(note), XLSX_TYPE, shipment_filename(note, "xlsx"))
+
+
+def shipment_public_pdf(request, token):
+    note = _recipient_for(token).note
+    return _file(build_shipment_pdf(note), "application/pdf", shipment_filename(note, "pdf"), inline=True)
+
+
+def shipment_public_xlsx(request, token):
+    note = _recipient_for(token).note
+    return _file(build_shipment_xlsx(note), XLSX_TYPE, shipment_filename(note, "xlsx"))
