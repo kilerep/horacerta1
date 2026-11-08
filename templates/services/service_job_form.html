@@ -20,7 +20,9 @@
   .os-field .help{margin-top:5px;color:var(--color-text-muted);font-size:12px;line-height:1.35}
   .os-errors{display:grid;gap:6px;margin-top:6px;color:var(--danger-text);font-size:12px}
   .client-mode{display:flex;gap:10px;flex-wrap:wrap}
-  .client-mode label{display:flex;align-items:center;gap:8px;border:1px solid var(--color-border);border-radius:12px;padding:10px 12px;background:var(--surface-soft);font-weight:800}
+  .client-mode label{display:flex;align-items:center;gap:8px;min-height:44px;border:1px solid var(--color-border);border-radius:12px;padding:10px 12px;background:var(--surface-soft);font-weight:800}
+  .cep-notice{margin:8px 0 0;padding:10px 12px;border:1px solid var(--warning-border);border-radius:8px;background:var(--warning-bg);color:var(--warning-text);font-size:14px;line-height:1.4}
+  .cep-notice.is-ok{border-color:var(--success-border);background:var(--success-bg);color:var(--success-text)}
   .cep-row{display:flex;gap:10px;align-items:end}
   .cep-row .os-field{flex:1;min-width:0}
   .category-description{border:1px solid var(--color-border);border-radius:12px;background:var(--surface-soft);padding:10px 12px;color:var(--color-text-muted);font-size:13px;line-height:1.4}
@@ -28,7 +30,7 @@
   .billing-panel.is-visible{display:block}
   .planned-items{display:grid;gap:10px}
   .planned-item-row{display:grid;grid-template-columns:1.1fr 1.1fr .7fr .55fr .65fr .75fr 1fr auto;gap:8px;align-items:end;border:1px solid var(--color-border);border-radius:8px;background:var(--surface-soft);padding:10px}
-  .planned-item-row label{display:block;margin-bottom:5px;color:var(--color-text-muted);font-size:11px;font-weight:800}
+  .planned-item-row label{display:block;margin-bottom:5px;color:var(--color-text-muted);font-size:12px;font-weight:800}
   .catalog-suggest{position:relative}
   .catalog-results{display:none;position:absolute;z-index:20;top:100%;left:0;right:0;border:1px solid var(--color-border);border-radius:8px;background:var(--surface-card);box-shadow:var(--shadow-soft);max-height:220px;overflow:auto}
   .catalog-results.is-visible{display:grid}
@@ -37,9 +39,13 @@
   .catalog-result strong{display:block}
   .catalog-result span{display:block;color:var(--color-text-muted);font-size:12px;margin-top:2px}
   .catalog-options{grid-column:1 / -2;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
-  .catalog-options label{display:flex;align-items:center;gap:7px;margin:0}
+  .catalog-options label{display:flex;align-items:center;gap:10px;margin:0;min-height:44px}
+  .catalog-options input[type=checkbox]{width:22px;height:22px;margin:0}
   .last-used-hint{grid-column:1 / -2;color:var(--color-text-muted);font-size:12px;line-height:1.35}
   .os-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+  .os-more{border:1px solid var(--color-border);border-radius:12px;padding:10px 12px;margin-top:4px}
+  .os-more>summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-weight:800}
+  .os-more[open]>summary{margin-bottom:10px}
   .maps-link{display:none}
   .maps-link.is-visible{display:inline-flex}
   @media (max-width: 760px){
@@ -102,6 +108,63 @@
     </section>
 
     <section class="os-section">
+      <h2>Sobre o serviço</h2>
+      <div class="os-grid">
+        <div class="os-field">
+          <label for="{{ form.category.id_for_label }}">{{ form.category.label }}</label>
+          <select name="{{ form.category.html_name }}" id="{{ form.category.id_for_label }}" class="hc-input" data-category-select>
+            <option value="">Selecione uma categoria</option>
+            {% for category in form.fields.category.queryset %}
+              <option value="{{ category.id }}" data-description="{{ category.description }}" {% if form.category.value|stringformat:"s" == category.id|stringformat:"s" %}selected{% endif %}>{{ category.name }}</option>
+            {% endfor %}
+          </select>
+          {% if form.category.errors %}<div class="os-errors">{{ form.category.errors }}</div>{% endif %}
+        </div>
+        <div class="os-field">
+          <label for="{{ form.title.id_for_label }}">{{ form.title.label }}</label>
+          {{ form.title }}
+          {% if form.title.errors %}<div class="os-errors">{{ form.title.errors }}</div>{% endif %}
+        </div>
+        <div class="os-field full">
+          <div class="category-description" data-category-description>Escolha uma categoria para ver uma descrição rápida.</div>
+        </div>
+        <div class="os-field full">
+          <label for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
+          {{ form.description }}
+          {% if form.description.errors %}<div class="os-errors">{{ form.description.errors }}</div>{% endif %}
+        </div>
+        <div class="os-field full">
+          <label for="{{ form.notes.id_for_label }}">{{ form.notes.label }}</label>
+          {{ form.notes }}
+        </div>
+      </div>
+    </section>
+
+    <section class="os-section">
+      <h2>Como cobrar</h2>
+      <p class="os-section__hint">O valor da hora (ou o valor fechado) é usado para calcular o total do serviço.</p>
+      <div class="os-grid three">
+        <div class="os-field full">
+          <label for="{{ form.billing_mode.id_for_label }}">{{ form.billing_mode.label }}</label>
+          {{ form.billing_mode }}
+        </div>
+        <div class="os-field billing-panel" data-billing-panel="HOURLY">
+          <label for="{{ form.hourly_rate_snapshot.id_for_label }}">{{ form.hourly_rate_snapshot.label }}</label>
+          {{ form.hourly_rate_snapshot }}
+          {% if form.hourly_rate_snapshot.errors %}<div class="os-errors">{{ form.hourly_rate_snapshot.errors }}</div>{% endif %}
+        </div>
+        <div class="os-field billing-panel" data-billing-panel="FIXED">
+          <label for="{{ form.fixed_labor_value.id_for_label }}">{{ form.fixed_labor_value.label }}</label>
+          {{ form.fixed_labor_value }}
+          {% if form.fixed_labor_value.errors %}<div class="os-errors">{{ form.fixed_labor_value.errors }}</div>{% endif %}
+        </div>
+      </div>
+    </section>
+
+    <details class="os-more"{% if is_edit or form.errors %} open{% endif %}>
+      <summary class="btn">Local, data e itens previstos (opcional)</summary>
+      <p class="os-section__hint">Dá para preencher depois, dentro do serviço. Informe agora só o que já souber.</p>
+    <section class="os-section">
       <h2>Local do serviço</h2>
       <p class="os-section__hint">Informe o endereço de atendimento. A busca por CEP é apenas uma ajuda; revise os dados antes de salvar.</p>
       <div class="cep-row">
@@ -114,6 +177,7 @@
         <button class="btn" type="button" data-client-address>Usar endereço do cliente</button>
         <a class="btn maps-link" href="#" target="_blank" rel="noopener" data-maps-link>Abrir no Maps</a>
       </div>
+      <p class="cep-notice" data-cep-notice role="status" aria-live="polite" hidden></p>
       <div class="os-grid">
         <div class="os-field full">
           <label for="{{ form.service_street.id_for_label }}">{{ form.service_street.label }}</label>
@@ -148,39 +212,6 @@
     </section>
 
     <section class="os-section">
-      <h2>Sobre o serviço</h2>
-      <div class="os-grid">
-        <div class="os-field">
-          <label for="{{ form.category.id_for_label }}">{{ form.category.label }}</label>
-          <select name="{{ form.category.html_name }}" id="{{ form.category.id_for_label }}" class="hc-input" data-category-select>
-            <option value="">Selecione uma categoria</option>
-            {% for category in form.fields.category.queryset %}
-              <option value="{{ category.id }}" data-description="{{ category.description }}" {% if form.category.value|stringformat:"s" == category.id|stringformat:"s" %}selected{% endif %}>{{ category.name }}</option>
-            {% endfor %}
-          </select>
-          {% if form.category.errors %}<div class="os-errors">{{ form.category.errors }}</div>{% endif %}
-        </div>
-        <div class="os-field">
-          <label for="{{ form.title.id_for_label }}">{{ form.title.label }}</label>
-          {{ form.title }}
-          {% if form.title.errors %}<div class="os-errors">{{ form.title.errors }}</div>{% endif %}
-        </div>
-        <div class="os-field full">
-          <div class="category-description" data-category-description>Escolha uma categoria para ver uma descrição rápida.</div>
-        </div>
-        <div class="os-field full">
-          <label for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
-          {{ form.description }}
-          {% if form.description.errors %}<div class="os-errors">{{ form.description.errors }}</div>{% endif %}
-        </div>
-        <div class="os-field full">
-          <label for="{{ form.notes.id_for_label }}">{{ form.notes.label }}</label>
-          {{ form.notes }}
-        </div>
-      </div>
-    </section>
-
-    <section class="os-section">
       <h2>Previsão de atendimento</h2>
       <p class="os-section__hint">Use a previsão para organizar o atendimento. As horas realizadas serão registradas dentro do serviço.</p>
       <div class="os-grid three">
@@ -197,42 +228,28 @@
           {{ form.planned_end_time }}
           {% if form.planned_end_time.errors %}<div class="os-errors">{{ form.planned_end_time.errors }}</div>{% endif %}
         </div>
-        <div class="os-field full">
-          <label for="{{ form.billing_mode.id_for_label }}">{{ form.billing_mode.label }}</label>
-          {{ form.billing_mode }}
-        </div>
-        <div class="os-field billing-panel" data-billing-panel="HOURLY">
-          <label for="{{ form.hourly_rate_snapshot.id_for_label }}">{{ form.hourly_rate_snapshot.label }}</label>
-          {{ form.hourly_rate_snapshot }}
-          {% if form.hourly_rate_snapshot.errors %}<div class="os-errors">{{ form.hourly_rate_snapshot.errors }}</div>{% endif %}
-        </div>
-        <div class="os-field billing-panel" data-billing-panel="FIXED">
-          <label for="{{ form.fixed_labor_value.id_for_label }}">{{ form.fixed_labor_value.label }}</label>
-          {{ form.fixed_labor_value }}
-          {% if form.fixed_labor_value.errors %}<div class="os-errors">{{ form.fixed_labor_value.errors }}</div>{% endif %}
-        </div>
       </div>
     </section>
 
     {% if not is_edit %}
       <section class="os-section">
         <h2>Itens previstos</h2>
-        <p class="os-section__hint">Adicione materiais, pecas ou despesas previstas para este servico. O status inicial sera Previsto.</p>
+        <p class="os-section__hint">Adicione materiais, peças ou despesas que você imagina usar. Eles entram como Previstos; depois você marca o que foi usado.</p>
         <div class="planned-items" data-planned-items>
           <div class="planned-item-row" data-planned-item-row>
             <div class="catalog-suggest">
               <label>Buscar item do catálogo</label>
-              <input class="hc-input" type="search" data-catalog-search placeholder="Código ou nome">
+              <input class="hc-input" type="search" data-catalog-search placeholder="Código ou nome" aria-label="Buscar item do catálogo">
               <input type="hidden" name="planned_item_catalog_id" data-catalog-id>
               <div class="catalog-results" data-catalog-results></div>
             </div>
             <div>
               <label>Nome do item</label>
-              <input class="hc-input" type="text" name="planned_item_name" placeholder="Ex.: Disjuntor 20A">
+              <input class="hc-input" type="text" name="planned_item_name" placeholder="Ex.: Disjuntor 20A" aria-label="Nome do item">
             </div>
             <div>
               <label>Tipo</label>
-              <select class="hc-input" name="planned_item_type">
+              <select class="hc-input" name="planned_item_type" aria-label="Tipo do item">
                 {% for value,label in item_type_choices %}
                   <option value="{{ value }}">{{ label }}</option>
                 {% endfor %}
@@ -240,7 +257,7 @@
             </div>
             <div>
               <label>Unidade</label>
-              <select class="hc-input" name="planned_item_unit">
+              <select class="hc-input" name="planned_item_unit" aria-label="Unidade do item">
                 {% for value,label in item_unit_choices %}
                   <option value="{{ value }}">{{ label }}</option>
                 {% endfor %}
@@ -248,15 +265,15 @@
             </div>
             <div>
               <label>Quantidade</label>
-              <input class="hc-input" type="number" name="planned_item_quantity" min="0" step="0.01" value="1">
+              <input class="hc-input" type="number" name="planned_item_quantity" min="0" step="0.01" value="1" aria-label="Quantidade">
             </div>
             <div>
               <label>Valor/un.</label>
-              <input class="hc-input" type="number" name="planned_item_unit_value" min="0" step="0.01" placeholder="0,00">
+              <input class="hc-input" type="number" name="planned_item_unit_value" min="0" step="0.01" placeholder="0,00" aria-label="Valor por unidade">
             </div>
             <div>
-              <label>Observacao</label>
-              <input class="hc-input" type="text" name="planned_item_description" placeholder="Opcional">
+              <label>Observação</label>
+              <input class="hc-input" type="text" name="planned_item_description" placeholder="Opcional" aria-label="Observação do item">
             </div>
             <button class="btn" type="button" data-remove-planned-item>Remover</button>
             <div class="catalog-options">
@@ -269,6 +286,8 @@
         <button class="btn" type="button" data-add-planned-item>Adicionar item previsto</button>
       </section>
     {% endif %}
+
+    </details>
 
     <div class="os-actions">
       <a class="btn" href="{% url 'service_job_list' %}">Voltar</a>
@@ -337,19 +356,27 @@
       var field = form.querySelector('[name="' + name + '"]');
       if(field && value) field.value = value;
     }
+    var cepNotice = form.querySelector("[data-cep-notice]");
+    function showNotice(text, kind){
+      if(!cepNotice) return;
+      cepNotice.textContent = text || "";
+      cepNotice.hidden = !text;
+      cepNotice.classList.toggle("is-ok", kind === "ok");
+    }
     if(cepButton && zipInput){
       cepButton.addEventListener("click", function(){
         var digits = (zipInput.value || "").replace(/\D/g, "");
         if(digits.length !== 8){
-          alert("Informe um CEP com 8 dígitos.");
+          showNotice("Digite o CEP com 8 números para buscar.");
           return;
         }
+        showNotice("");
         cepButton.disabled = true;
         fetch("https://viacep.com.br/ws/" + digits + "/json/")
           .then(function(response){ return response.json(); })
           .then(function(data){
             if(data.erro){
-              alert("CEP não encontrado. Preencha o endereço manualmente.");
+              showNotice("Não achamos esse CEP. Preencha o endereço abaixo.");
               return;
             }
             setField("service_street", data.logradouro);
@@ -357,8 +384,9 @@
             setField("service_city", data.localidade);
             setField("service_state", data.uf);
             updateMapsLink();
+            showNotice("Endereço preenchido. Confira o número e o complemento.", "ok");
           })
-          .catch(function(){ alert("Não foi possível buscar o CEP agora. Preencha manualmente."); })
+          .catch(function(){ showNotice("Não deu para buscar o CEP agora. Preencha o endereço abaixo."); })
           .finally(function(){ cepButton.disabled = false; });
       });
     }
@@ -370,7 +398,7 @@
         var contractId = contractSelect ? contractSelect.value : "";
         var address = clientAddressMap[contractId] || "";
         if(!address){
-          alert("Este cliente não possui endereço cadastrado.");
+          showNotice("Este cliente não tem endereço cadastrado. Preencha abaixo.");
           return;
         }
         var addressFields = ["service_street","service_number","service_complement","service_district","service_city","service_state"];

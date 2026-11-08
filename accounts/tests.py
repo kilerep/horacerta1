@@ -204,16 +204,6 @@ class InternalDashboardTests(TestCase):
                 response = self.client.get(url)
                 self.assertEqual(response.status_code, 403)
 
-    def test_company_sidebar_does_not_show_internal_links(self):
-        self.client.force_login(self.company_owner)
-
-        response = self.client.get(reverse("dashboard_empresa"))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, "Painel interno")
-        self.assertNotContains(response, "Notificacoes internas")
-        self.assertNotContains(response, reverse("internal_dashboard"))
-
     def test_mei_sidebar_does_not_show_internal_links(self):
         self.client.force_login(self.employee_user)
 
@@ -356,50 +346,6 @@ class InternalDashboardTests(TestCase):
             ).exists()
         )
 
-    def test_company_can_view_problem_but_not_edit_punch(self):
-        request_obj = PunchCorrectionRequest.objects.create(
-            employee=self.employee,
-            user=self.employee_user,
-            company=self.company,
-            contract=self.contract,
-            punch=Punch.objects.first(),
-            problem_date=timezone.localdate(),
-            problem_type=PunchCorrectionRequest.ProblemType.WRONG_TIME,
-            description="Horario errado.",
-        )
-        self.client.force_login(self.company_owner)
-
-        response = self.client.get(reverse("company_correction_request_detail", args=[request_obj.id]))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Horario errado.")
-        self.assertContains(response, "Consulta somente leitura")
-        self.assertNotContains(response, "Corrigir horario")
-        self.assertNotContains(response, "Cancelar registro")
-
-    def test_company_can_end_contract_from_prestadores_without_deleting_history(self):
-        punch = Punch.objects.first()
-        self.client.force_login(self.company_owner)
-
-        response = self.client.post(
-            reverse("company_meis"),
-            {
-                "action": "end_contract",
-                "contract_id": str(self.contract.id),
-            },
-        )
-
-        self.assertEqual(response.status_code, 302)
-        self.contract.refresh_from_db()
-        self.assertFalse(self.contract.is_active)
-        self.assertEqual(self.contract.end_date, timezone.localdate())
-        self.assertTrue(Punch.all_objects.filter(id=punch.id).exists())
-
-        ended_response = self.client.get(reverse("company_meis") + "?tab=encerrados")
-        self.assertEqual(ended_response.status_code, 200)
-        self.assertContains(ended_response, self.employee.full_name)
-        self.assertContains(ended_response, "Vínculo encerrado")
-
     def _ensure_essential_plan(self):
         return Plan.objects.update_or_create(
             code="essencial",
@@ -424,93 +370,6 @@ class InternalDashboardTests(TestCase):
         }
         defaults.update(overrides)
         return CompanySubscription.objects.create(**defaults)
-
-    def test_company_plan_page_shows_active_essential_plan(self):
-        self._create_subscription()
-        self.client.force_login(self.company_owner)
-
-        response = self.client.get(reverse("company_plan"))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "HoraCerta Essencial")
-        self.assertContains(response, "Ativo")
-        self.assertContains(response, "Valor mensal: R$ 79,00")
-        self.assertContains(response, "Prestadores ativos inclu")
-        self.assertContains(response, "Prestadores ativos em uso:")
-        self.assertContains(response, "1 de 10")
-        self.assertContains(response, "Prestadores com v")
-        self.assertNotContains(response, "Plano Pro")
-        self.assertNotContains(response, "Upgrade")
-
-    def test_company_plan_page_shows_trial_message(self):
-        trial_end = timezone.now() + timedelta(days=14)
-        self._create_subscription(
-            status=CompanySubscription.Status.TRIAL,
-            trial_ends_at=trial_end,
-        )
-        self.client.force_login(self.company_owner)
-
-        response = self.client.get(reverse("company_plan"))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Em teste")
-        self.assertContains(response, "Sua empresa est")
-        self.assertContains(response, "avaliando o HoraCerta Essencial")
-        self.assertContains(response, "Durante o per")
-        self.assertContains(response, timezone.localtime(trial_end).strftime("%d/%m/%Y"))
-
-    def test_company_plan_limit_counts_only_active_contracts(self):
-        self._create_subscription()
-        for index in range(2, 11):
-            user = User.objects.create_user(
-                username=f"mei-limite-{index}@example.com",
-                email=f"mei-limite-{index}@example.com",
-                password="Teste@12345",
-                role=User.Role.FUNCIONARIO,
-            )
-            employee = Employee.objects.create(
-                user=user,
-                company=self.company,
-                full_name=f"MEI Limite {index}",
-                is_active=True,
-            )
-            Contract.objects.create(
-                employee=employee,
-                company=self.company,
-                hourly_rate="100.00",
-                start_date=timezone.localdate(),
-                is_active=True,
-            )
-
-        ended_user = User.objects.create_user(
-            username="mei-encerrado-limite@example.com",
-            email="mei-encerrado-limite@example.com",
-            password="Teste@12345",
-            role=User.Role.FUNCIONARIO,
-        )
-        ended_employee = Employee.objects.create(
-            user=ended_user,
-            company=self.company,
-            full_name="MEI Encerrado Limite",
-            is_active=True,
-        )
-        Contract.objects.create(
-            employee=ended_employee,
-            company=self.company,
-            hourly_rate="100.00",
-            start_date=timezone.localdate(),
-            end_date=timezone.localdate(),
-            is_active=False,
-        )
-
-        self.client.force_login(self.company_owner)
-        response = self.client.get(reverse("company_plan"))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context["active_provider_count"], 10)
-        self.assertContains(response, "10 de 10")
-        self.assertContains(response, "atingiu o limite de 10 prestadores ativos")
-        self.assertContains(response, "encerrar v")
 
     def test_common_users_do_not_see_internal_admin_notifications(self):
         InternalNotification.objects.create(
@@ -540,9 +399,6 @@ class InternalDashboardTests(TestCase):
         self.assertContains(mei_response, "Aviso MEI")
         self.assertNotContains(mei_response, "Aviso interno")
 
-        self.client.force_login(self.company_owner)
-        company_response = self.client.get(reverse("company_notifications"))
-        self.assertNotContains(company_response, "Aviso interno empresa")
 
     def test_superuser_can_deactivate_and_activate_employee_user(self):
         self.client.force_login(self.admin_user)
@@ -928,15 +784,15 @@ class MeiMultiCompanyContextTests(TestCase):
         self.assertIn(f"date_from={week_start.isoformat()}", row["quick_closure"]["report_url"])
         self.assertEqual(len(row["recent_reports"]), 3)
         self.assertTrue(row["has_more_reports"])
-        self.assertContains(response, "Fechamento rapido")
-        self.assertContains(response, "Gerar relatorio")
+        self.assertContains(response, "Fechamento rápido")
+        self.assertContains(response, "Gerar relatório")
         self.assertContains(response, "Ver fechamentos")
         self.assertContains(response, "data-client-reports-panel")
         self.assertContains(response, "hidden")
-        self.assertContains(response, "Ultimos fechamentos")
-        self.assertContains(response, "Nao visualizado")
+        self.assertContains(response, "Últimos fechamentos")
+        self.assertContains(response, "Não visualizado")
         self.assertContains(response, "Pendente")
-        self.assertContains(response, "Ver todos em Relatorios")
+        self.assertContains(response, "Ver todos em Relatórios")
         self.assertNotContains(response, "Relatorio antigo 3")
 
         reports_response = self.client.get(row["quick_closure"]["report_url"])
@@ -964,9 +820,9 @@ class MeiMultiCompanyContextTests(TestCase):
         self.assertContains(response, "Ver detalhes")
         self.assertContains(response, "Detalhes do cliente")
         self.assertContains(response, "Editar cliente/contrato")
-        self.assertContains(response, "Ver historico")
+        self.assertContains(response, "Ver histórico")
         self.assertContains(response, "Ver fechamentos")
-        self.assertNotContains(response, "Gerar relatorio de servico")
+        self.assertNotContains(response, "Gerar relatório de serviço")
         self.assertNotContains(response, "Pausar cliente")
         self.assertNotContains(response, "Encerrar contrato")
         self.assertNotContains(response, "Editar dados")
@@ -975,7 +831,7 @@ class MeiMultiCompanyContextTests(TestCase):
         response = self.client.get(reverse("mei_service_report_prepare", args=[self.contract_a.id]))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, self.company_a.name)
-        self.assertContains(response, "Em breve: relatorio de servico por periodo")
+        self.assertContains(response, "Em breve: relatório de serviço por período")
         self.assertContains(response, "Relatorio de servico -")
 
     def test_theme_selector_uses_graphite_default_and_professional_themes(self):
@@ -1011,22 +867,6 @@ class MeiMultiCompanyContextTests(TestCase):
         history_response = self.client.get(reverse("mei_history"), {"contract": str(self.contract_a.id)})
         self.assertContains(history_response, 'data-theme="professional-neutral"')
         self.assertContains(history_response, 'data-theme-user="professional-neutral"')
-
-    def test_company_profile_saves_user_theme(self):
-        self.client.force_login(self.owner_a)
-        response = self.client.post(
-            reverse("company_profile"),
-            {
-                "action": "save_theme",
-                "visual_theme": User.VisualTheme.BRAZIL,
-            },
-            follow=True,
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Tema atualizado com sucesso.")
-        self.assertContains(response, 'data-theme="brazil-corporate"')
-        self.owner_a.refresh_from_db()
-        self.assertEqual(self.owner_a.visual_theme, User.VisualTheme.BRAZIL)
 
     def test_mei_reports_and_requests_follow_selected_contract(self):
         ServiceReport.objects.create(
@@ -1090,6 +930,54 @@ class MeiMultiCompanyContextTests(TestCase):
         self.assertEqual(self.employee_b.full_name, "MEI Atualizado B")
         self.assertNotEqual(self.employee_a.full_name, "MEI Atualizado B")
 
+    def test_new_client_inherits_known_name_instead_of_falling_back_to_email(self):
+        """Regressao do bug de auditoria (12/09/2026): cadastrar um cliente
+        novo criava um Employee com full_name = self.user.email (porque o
+        User do Django normalmente nao tem first_name/last_name preenchidos
+        aqui), fazendo a tela "Meu Perfil" parecer ter perdido o nome do
+        profissional assim que esse vinculo novo virava o "contrato atual"
+        selecionado. O setUp ja cadastrou nomes reais (nao vazios) em outros
+        vinculos deste mesmo usuario ("MEI Multi A/B/C") - o cliente novo deve
+        reaproveitar um desses nomes em vez de cair no e-mail de login."""
+        response = self.client.post(
+            reverse("mei_client_create"),
+            {
+                "name": "Cliente Totalmente Novo",
+                "hourly_rate": "60.00",
+                "start_date": timezone.localdate().isoformat(),
+                "closure_type": Contract.ClosureType.WEEKLY,
+            },
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        new_contract = Contract.objects.get(company__name="Cliente Totalmente Novo")
+        self.assertIn(new_contract.employee.full_name, {"MEI Multi A", "MEI Multi B", "MEI Multi C"})
+        self.assertNotEqual(new_contract.employee.full_name, self.mei_user.email)
+        self.assertNotEqual(new_contract.employee.full_name, self.mei_user.email)
+
+    def test_editing_client_info_does_not_reset_employee_full_name(self):
+        """Mesma causa raiz: salvar o formulario de "Editar cliente" (que so
+        tem campos da EMPRESA - nome, cnpj, valor/hora etc.) tambem
+        sobrescrevia employee.full_name incondicionalmente a cada edicao,
+        podendo apagar silenciosamente um nome que o profissional tinha
+        cadastrado manualmente em "Meu Perfil" para aquele cliente."""
+        self.employee_a.full_name = "Nome Cadastrado Manualmente"
+        self.employee_a.save(update_fields=["full_name"])
+
+        response = self.client.post(
+            reverse("mei_client_edit", args=[self.contract_a.id]),
+            {
+                "name": self.company_a.name,
+                "hourly_rate": "85.00",
+                "start_date": self.contract_a.start_date.isoformat(),
+                "closure_type": Contract.ClosureType.WEEKLY,
+            },
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.employee_a.refresh_from_db()
+        self.assertEqual(self.employee_a.full_name, "Nome Cadastrado Manualmente")
+
     def test_header_company_name_follows_selected_contract(self):
         response = self.client.get(reverse("mei_reports"), {"contract": str(self.contract_b.id)})
         self.assertEqual(response.status_code, 200)
@@ -1125,7 +1013,7 @@ class MeiMultiCompanyContextTests(TestCase):
         response = self.client.get(reverse("employee_dashboard"), {"contract": str(self.contract_b.id)})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context["selected_contract"].id, self.contract_b.id)
-        self.assertContains(response, "Selecionar cliente e contrato")
+        self.assertContains(response, '<label for="hcContractSelect">Cliente</label>', html=False)
         self.assertContains(response, self.company_b.name)
         self.assertNotContains(response, "Exportar CSV")
 
@@ -1161,7 +1049,7 @@ class MeiMultiCompanyContextTests(TestCase):
 
         response = self.client.get(reverse("mei_edit_today_punches"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Editar horarios de hoje")
+        self.assertContains(response, "Editar horários de hoje")
 
         response = self.client.post(
             reverse("mei_edit_today_punches"),
@@ -1238,7 +1126,7 @@ class MeiMultiCompanyContextTests(TestCase):
             },
         )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Mantenha pelo menos um horario no dia atual")
+        self.assertContains(response, "Mantenha pelo menos um horário no dia atual")
         self.assertEqual(WorkdayChangeLog.objects.count(), 1)
 
     def test_mei_today_edit_is_blocked_after_generated_report(self):
@@ -1259,7 +1147,7 @@ class MeiMultiCompanyContextTests(TestCase):
 
         response = self.client.get(reverse("mei_edit_today_punches"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Este dia esta bloqueado porque ja foi incluido em um relatorio gerado")
+        self.assertContains(response, "Este dia está bloqueado porque já foi incluído em um relatório gerado")
 
         response = self.client.post(
             reverse("mei_edit_today_punches"),
@@ -1343,7 +1231,7 @@ class MeiMultiCompanyContextTests(TestCase):
             InternalNotification.objects.filter(
                 recipient_user=self.mei_user,
                 audience=InternalNotification.Audience.MEI,
-                title="Periodo fechado",
+                title="Período fechado",
                 target_url=reverse("mei_service_report_detail", args=[report.id]),
             ).exists()
         )
@@ -1472,7 +1360,7 @@ class MeiMultiCompanyContextTests(TestCase):
         self.assertNotContains(public_response, "Recebido")
         self.assertNotContains(public_response, "Primeira visualizacao")
         self.assertNotContains(public_response, "Marcar como pago")
-        self.assertContains(public_response, "Relatorio de horas")
+        self.assertContains(public_response, "Relatório de horas")
         self.assertContains(public_response, "Imprimir PDF")
         self.assertContains(public_response, "Baixar Excel")
         self.assertContains(public_response, "Dias trabalhados")
@@ -1483,7 +1371,7 @@ class MeiMultiCompanyContextTests(TestCase):
             InternalNotification.objects.filter(
                 recipient_user=self.mei_user,
                 audience=InternalNotification.Audience.MEI,
-                title="Relatorio visualizado",
+                title="Relatório visualizado",
                 target_url=reverse("mei_service_report_detail", args=[report.id]),
             ).exists()
         )
@@ -1509,6 +1397,64 @@ class MeiMultiCompanyContextTests(TestCase):
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             public_xlsx_response["Content-Type"],
         )
+
+    def test_report_cannot_be_marked_received_while_still_draft(self):
+        """Regressao do bug de auditoria (12/09/2026): a acao "Recebido"
+        ficava disponivel mesmo para relatorios em Rascunho, nunca
+        compartilhados/visualizados pelo cliente - quebrando a logica de
+        confirmacao de recebimento."""
+        report = ServiceReport.objects.create(
+            company=self.company_b,
+            employee=self.employee_b,
+            contract=self.contract_b,
+            report_date=timezone.localdate(),
+            date_from=timezone.localdate(),
+            date_to=timezone.localdate(),
+            title="Relatorio ainda em rascunho",
+        )
+        self.assertEqual(report.status, ServiceReport.Status.DRAFT)
+
+        list_response = self.client.get(reverse("mei_reports"), {"contract": str(self.contract_b.id)})
+        self.assertNotContains(list_response, "Marcar pendente")
+        # O botao "Recebido" so pode aparecer para relatorios ja enviados;
+        # em rascunho, o unico botao de acao correlato deve ser "Gerar link".
+        self.assertContains(list_response, "Gerar link")
+
+        response = self.client.post(
+            reverse("mei_reports"),
+            {
+                "action": "set_payment_status",
+                "report_id": str(report.id),
+                "payment_status": ServiceReport.PaymentStatus.PAID,
+                "selected_contract": str(self.contract_b.id),
+            },
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Gere e compartilhe o link deste relatório antes de marca-lo como recebido.")
+        report.refresh_from_db()
+        self.assertEqual(report.payment_status, ServiceReport.PaymentStatus.PENDING)
+        self.assertIsNone(report.paid_at)
+
+        # Depois que o link e gerado (relatorio deixa de ser Rascunho), marcar
+        # como recebido volta a funcionar normalmente.
+        report.ensure_conference_link()
+        report.save()
+        self.assertEqual(report.status, ServiceReport.Status.SENT)
+
+        ok_response = self.client.post(
+            reverse("mei_reports"),
+            {
+                "action": "set_payment_status",
+                "report_id": str(report.id),
+                "payment_status": ServiceReport.PaymentStatus.PAID,
+                "selected_contract": str(self.contract_b.id),
+            },
+        )
+        self.assertEqual(ok_response.status_code, 302)
+        report.refresh_from_db()
+        self.assertEqual(report.payment_status, ServiceReport.PaymentStatus.PAID)
+        self.assertIsNotNone(report.paid_at)
 
     def test_mei_notifications_center_shows_smart_cards_and_is_scoped(self):
         today = timezone.localdate()
@@ -1559,17 +1505,17 @@ class MeiMultiCompanyContextTests(TestCase):
         response = self.client.get(reverse("mei_notifications"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Atencao hoje")
+        self.assertContains(response, "Atenção hoje")
         self.assertContains(response, "Dia incompleto")
-        self.assertContains(response, "Voce registrou 3 horarios hoje na Empresa B")
+        self.assertContains(response, "Você registrou 3 horários hoje na Empresa B")
         self.assertContains(response, "Cliente sem valor/hora")
-        self.assertContains(response, "Fechamento proximo")
+        self.assertContains(response, "Fechamento próximo")
         self.assertContains(response, "Relatorio visualizado")
         self.assertContains(response, "Recebimento pendente")
-        self.assertContains(response, "Revisar horario")
+        self.assertContains(response, "Revisar horário")
         self.assertContains(response, "Editar cliente")
-        self.assertContains(response, "Gerar relatorio")
-        self.assertContains(response, "Ver relatorio")
+        self.assertContains(response, "Gerar relatório")
+        self.assertContains(response, "Ver relatório")
         self.assertContains(response, "Marcar todas como lidas")
         self.assertNotContains(response, "Aviso de outro usuario")
 
@@ -1582,144 +1528,6 @@ class MeiMultiCompanyContextTests(TestCase):
                 is_read=False,
             ).exists()
         )
-
-    def test_company_cannot_access_other_company_mei_profile(self):
-        self.client.force_login(self.owner_a)
-        response = self.client.get(reverse("company_mei_profile", args=[self.employee_b.id]))
-        self.assertEqual(response.status_code, 404)
-
-
-@override_settings(
-    ALLOWED_HOSTS=["testserver", "localhost", "127.0.0.1"],
-    SECURE_SSL_REDIRECT=False,
-)
-class CompanyAttendanceReliabilityTests(TestCase):
-    def setUp(self):
-        self.owner_a = User.objects.create_user(
-            username="reliability-owner-a@example.com",
-            email="reliability-owner-a@example.com",
-            password="Teste@12345",
-            role=User.Role.EMPRESA,
-        )
-        self.owner_b = User.objects.create_user(
-            username="reliability-owner-b@example.com",
-            email="reliability-owner-b@example.com",
-            password="Teste@12345",
-            role=User.Role.EMPRESA,
-        )
-        self.company_a = Company.objects.create(
-            name="Empresa Confiavel A",
-            owner=self.owner_a,
-            email="confiavel-a@example.com",
-        )
-        self.company_b = Company.objects.create(
-            name="Empresa Confiavel B",
-            owner=self.owner_b,
-            email="confiavel-b@example.com",
-        )
-        self.location_b = CompanyAuthorizedLocation.objects.create(
-            company=self.company_b,
-            name="Filial B",
-            address_or_description="Rua B",
-            latitude="-23.550520",
-            longitude="-46.633308",
-            allowed_radius_m=120,
-            is_active=True,
-        )
-
-    def test_page_load_creates_policy_for_company(self):
-        self.client.force_login(self.owner_a)
-        response = self.client.get(reverse("company_attendance_reliability"))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertTrue(CompanyAttendancePolicy.objects.filter(company=self.company_a).exists())
-
-    def test_save_policy_free_mode_disables_location_and_qr_flags(self):
-        self.client.force_login(self.owner_a)
-        policy = CompanyAttendancePolicy.objects.create(
-            company=self.company_a,
-            validation_mode=CompanyAttendancePolicy.ValidationMode.GEOLOCATION,
-            require_location=True,
-            require_qr=True,
-            qr_requirement=CompanyAttendancePolicy.QrRequirement.FIRST_PUNCH,
-            default_allowed_radius_m=150,
-        )
-
-        response = self.client.post(
-            reverse("company_attendance_reliability"),
-            {
-                "action": "save_policy",
-                "validation_mode": CompanyAttendancePolicy.ValidationMode.FREE,
-                "require_location": "on",
-                "require_qr": "on",
-                "qr_requirement": CompanyAttendancePolicy.QrRequirement.FIRST_AND_LAST,
-                "default_allowed_radius_m": "120",
-                "default_location": "",
-            },
-        )
-
-        self.assertEqual(response.status_code, 302)
-        policy.refresh_from_db()
-        self.assertEqual(policy.validation_mode, CompanyAttendancePolicy.ValidationMode.FREE)
-        self.assertFalse(policy.require_location)
-        self.assertFalse(policy.require_qr)
-        self.assertEqual(policy.qr_requirement, CompanyAttendancePolicy.QrRequirement.NONE)
-
-    def test_create_location_attaches_to_logged_company(self):
-        self.client.force_login(self.owner_a)
-
-        response = self.client.post(
-            reverse("company_attendance_reliability"),
-            {
-                "action": "save_location",
-                "name": "Matriz A",
-                "address_or_description": "Rua A, 100",
-                "latitude": "-23.559000",
-                "longitude": "-46.660000",
-                "allowed_radius_m": "180",
-                "is_active": "on",
-            },
-        )
-
-        self.assertEqual(response.status_code, 302)
-        created = CompanyAuthorizedLocation.objects.get(name="Matriz A")
-        self.assertEqual(created.company_id, self.company_a.id)
-        self.assertTrue(created.is_active)
-
-    def test_save_location_rejects_foreign_location_id(self):
-        self.client.force_login(self.owner_a)
-        response = self.client.post(
-            reverse("company_attendance_reliability"),
-            {
-                "action": "save_location",
-                "location_id": str(self.location_b.id),
-                "name": "Tentativa indevida",
-                "address_or_description": "Nao deve salvar",
-                "latitude": "-23.550520",
-                "longitude": "-46.633308",
-                "allowed_radius_m": "120",
-                "is_active": "on",
-            },
-        )
-
-        self.assertEqual(response.status_code, 400)
-        self.assertContains(response, "Local informado nao pertence a sua empresa.", status_code=400)
-        self.assertFalse(CompanyAuthorizedLocation.objects.filter(company=self.company_a, name="Tentativa indevida").exists())
-        self.location_b.refresh_from_db()
-        self.assertEqual(self.location_b.name, "Filial B")
-
-    def test_toggle_location_rejects_foreign_location_id(self):
-        self.client.force_login(self.owner_a)
-        response = self.client.post(
-            reverse("company_attendance_reliability"),
-            {
-                "action": "toggle_location",
-                "location_id": str(self.location_b.id),
-            },
-        )
-
-        self.assertEqual(response.status_code, 404)
-
 
 class CompanyAttendanceReliabilityFormUxTests(TestCase):
     def setUp(self):

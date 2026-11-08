@@ -13,12 +13,15 @@
       </div>
     </div>
     <div class="internal-shortcuts">
+      <a class="internal-link-card" href="{% url 'internal_health' %}"><strong>Saúde do sistema</strong><div class="muted">E-mail, URL, DEBUG, migrações</div></a>
+      <a class="internal-link-card" href="{% url 'internal_email' %}"><strong>Diagnóstico de e-mail</strong><div class="muted">Testar envio e recuperação de senha</div></a>
+      <a class="internal-link-card" href="{% url 'internal_funnel' %}"><strong>Funil de ativação</strong><div class="muted">Onde os prestadores desistem</div></a>
       <a class="internal-link-card" href="{% url 'internal_companies' %}"><strong>Empresas</strong><div class="muted">Base, uso e status</div></a>
       <a class="internal-link-card" href="{% url 'internal_employees' %}"><strong>Profissionais</strong><div class="muted">Perfis, contratos e acesso</div></a>
-      <a class="internal-link-card" href="{% url 'internal_punches' %}"><strong>Registros de ponto</strong><div class="muted">Busca e auditoria</div></a>
+      <a class="internal-link-card" href="{% url 'internal_punches' %}"><strong>Registros de horário</strong><div class="muted">Busca e auditoria</div></a>
       <a class="internal-link-card" href="{% url 'internal_correction_requests' %}"><strong>Solicitações</strong><div class="muted">Pedidos de correção</div></a>
-      <a class="internal-link-card" href="{% url 'internal_notifications' %}"><strong>Notificacoes</strong><div class="muted">Fila global e ciencia</div></a>
-      <a class="internal-link-card" href="{% url 'internal_audit' %}"><strong>Auditoria</strong><div class="muted">Acoes sensiveis</div></a>
+      <a class="internal-link-card" href="{% url 'internal_notifications' %}"><strong>Notificações</strong><div class="muted">Fila global e ciencia</div></a>
+      <a class="internal-link-card" href="{% url 'internal_audit' %}"><strong>Auditoria</strong><div class="muted">Ações sensiveis</div></a>
       <a class="internal-link-card" href="{% url 'internal_workday_changes' %}"><strong>Alterações de horários</strong><div class="muted">Antes/depois das edições do prestador</div></a>
     </div>
   </section>
@@ -49,7 +52,7 @@
         <div class="hint">{{ total_active_employees }} ativados / {{ total_pending_employees }} pendentes</div>
       </a>
       <a class="metric-card" href="{% url 'internal_punches' %}">
-        <div class="label">Registros de ponto</div>
+        <div class="label">Registros de horário</div>
         <div class="value">{{ total_punches }}</div>
         <div class="hint">Ativos para cálculo de horas</div>
       </a>
@@ -64,9 +67,9 @@
         <div class="hint">Pedidos aguardando análise</div>
       </a>
       <a class="metric-card" href="{% url 'internal_notifications' %}">
-        <div class="label">Notificacoes</div>
+        <div class="label">Notificações</div>
         <div class="value">{{ total_notifications }}</div>
-        <div class="hint">{{ total_unread_notifications }} nao lidas</div>
+        <div class="hint">{{ total_unread_notifications }} não lidas</div>
       </a>
       <a class="metric-card" href="{% url 'internal_notifications' %}?ack=pending">
         <div class="label">Ciencia pendente</div>
@@ -105,7 +108,7 @@
     <div class="internal-head">
       <div>
         <h3>Empresas e uso</h3>
-        <p class="internal-subtitle">Quantidade de profissionais, registros de ponto e último uso por cliente.</p>
+        <p class="internal-subtitle">Quantidade de profissionais, registros de horário e último uso por cliente.</p>
       </div>
     </div>
 
@@ -115,7 +118,7 @@
           <tr>
             <th>Empresa</th>
             <th>Profissionais</th>
-            <th>Registros de ponto</th>
+            <th>Registros de horário</th>
             <th>Último registro</th>
             <th>Status aproximado</th>
           </tr>
@@ -125,7 +128,7 @@
             <tr>
               <td data-label="Empresa"><a class="strong-link" href="{% url 'internal_company_detail' row.company.id %}">{{ row.company.name }}</a></td>
               <td data-label="Profissionais">{{ row.employee_count }}</td>
-              <td data-label="Registros de ponto">{{ row.punch_count }}</td>
+              <td data-label="Registros de horário">{{ row.punch_count }}</td>
               <td data-label="Último registro">
                 {% if row.last_punch_at %}
                   {{ row.last_punch_at|date:"d/m/Y H:i" }}

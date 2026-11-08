@@ -329,7 +329,7 @@ class WorkdayChangeLog(models.Model):
 class PunchCorrectionRequest(models.Model):
     class ProblemType(models.TextChoices):
         EXTRA_PUNCH = "extra_punch", "Registro a mais"
-        MISSED_PUNCH = "missed_punch", "Esqueci uma batida"
+        MISSED_PUNCH = "missed_punch", "Esqueci de registrar um horário"
         WRONG_TIME = "wrong_time", "Horario errado"
         DUPLICATED_PUNCH = "duplicated_punch", "Registro duplicado"
         OTHER = "other", "Outro"
@@ -413,6 +413,7 @@ class InternalNotification(models.Model):
         PUNCH_RESTORED = "punch_restored", "Registro restaurado"
         ADMIN_NOTE_ADDED = "admin_note_added", "Observacao administrativa adicionada"
         COMPANY_ACKNOWLEDGED = "company_acknowledged", "Ciencia da empresa registrada"
+        SHIPMENT_NOTE = "shipment_note", "Nota de envio"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     recipient_user = models.ForeignKey(
@@ -655,6 +656,10 @@ class ServiceReport(models.Model):
     payment_status = models.CharField(max_length=20, choices=PaymentStatus.choices, default=PaymentStatus.PENDING)
     paid_at = models.DateTimeField(null=True, blank=True)
     paid_note = models.TextField(blank=True, default="")
+    # Cancelamento pelo prestador (ex.: cliente contestou): libera os dias do
+    # periodo para edicao. O relatorio nao e apagado - fica no historico.
+    canceled_at = models.DateTimeField(null=True, blank=True)
+    cancel_reason = models.CharField(max_length=255, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -722,6 +727,22 @@ class ServiceReport(models.Model):
         self.conference_final_status = self.ConferenceStatus.PENDING
         if self.status == self.Status.DRAFT:
             self.status = self.Status.SENT
+
+    @property
+    def can_be_canceled(self):
+        return self.status != self.Status.CANCELED and self.status != self.Status.PAID and (
+            self.payment_status != self.PaymentStatus.PAID
+        )
+
+    def cancel(self, reason=""):
+        """Cancela o relatorio: libera os dias e desativa o link publico."""
+        now = timezone.now()
+        self.status = self.Status.CANCELED
+        self.canceled_at = now
+        self.cancel_reason = (reason or "").strip()[:255]
+        if self.conference_token and not self.conference_revoked_at:
+            self.conference_revoked_at = now
+            self.conference_final_status = self.ConferenceStatus.REVOKED
 
     def revoke_conference_link(self):
         self.conference_revoked_at = timezone.now()

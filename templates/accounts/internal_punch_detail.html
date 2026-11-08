@@ -1,15 +1,15 @@
 {% extends "accounts/internal_base.html" %}
 {% block title %}HoraCerta - Registro interno{% endblock %}
 {% block page_title %}Detalhe do registro{% endblock %}
-{% block internal_breadcrumb %}<span class="internal-breadcrumb__sep">></span><a href="{% url 'internal_punches' %}">Registros de ponto</a><span class="internal-breadcrumb__sep">></span><span>{{ punch.id }}</span>{% endblock %}
-{% block internal_title %}Registro de ponto{% endblock %}
+{% block internal_breadcrumb %}<span class="internal-breadcrumb__sep">></span><a href="{% url 'internal_punches' %}">Registros de horário</a><span class="internal-breadcrumb__sep">></span><span>{{ punch.id }}</span>{% endblock %}
+{% block internal_title %}Registro de horário{% endblock %}
 {% block internal_subtitle %}{{ punch.id }}{% endblock %}
 
 {% block internal_content %}
   <section class="internal-panel">
     <div class="internal-head">
       <div>
-        <h2>Registro de ponto</h2>
+        <h2>Registro de horário</h2>
         <p class="internal-subtitle">{{ punch.id }}</p>
       </div>
       <div class="internal-actions">
@@ -100,8 +100,8 @@
           <textarea id="admin_note" name="admin_note" required>{{ punch.admin_note }}</textarea>
         </div>
         <div class="field" style="margin-top:10px;">
-          <label for="reason_note">Motivo obrigatorio</label>
-          <textarea id="reason_note" name="reason" required placeholder="Ex: Complemento registrado apos analise interna."></textarea>
+          <label for="reason_note">Motivo obrigatório</label>
+          <textarea id="reason_note" name="reason" required placeholder="Ex: Complemento registrado após analise interna."></textarea>
         </div>
         <button class="btn primary" type="submit">Salvar observação</button>
       </form>
@@ -124,7 +124,7 @@
               <td>{{ log.reason }}</td>
             </tr>
           {% empty %}
-            <tr><td colspan="6"><div class="empty-state">Nenhuma correção registrada para esta batida.</div></td></tr>
+            <tr><td colspan="6"><div class="empty-state">Nenhuma correção registrada para este horário.</div></td></tr>
           {% endfor %}
         </tbody>
       </table>

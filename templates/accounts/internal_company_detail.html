@@ -28,7 +28,7 @@
     <div class="metric-grid">
       <div class="metric-card"><div class="label">Profissionais</div><div class="value">{{ company.employee_count }}</div><div class="hint">Total associado</div></div>
       <div class="metric-card"><div class="label">Profissionais ativos</div><div class="value">{{ company.active_employee_count }}</div><div class="hint">Perfis ativos</div></div>
-      <div class="metric-card"><div class="label">Registros totais</div><div class="value">{{ company.punch_count }}</div><div class="hint">Batidas ativas</div></div>
+      <div class="metric-card"><div class="label">Registros totais</div><div class="value">{{ company.punch_count }}</div><div class="hint">Horários ativos</div></div>
       <div class="metric-card"><div class="label">Registros últimos 30 dias</div><div class="value">{{ company.punch_count_last_30_days }}</div><div class="hint">Uso recente</div></div>
       <div class="metric-card"><div class="label">Último registro</div><div class="value">{% if company.last_punch_at %}{{ company.last_punch_at|date:"d/m" }}{% else %}-{% endif %}</div><div class="hint">{% if company.last_punch_at %}{{ company.last_punch_at|date:"d/m/Y H:i" }}{% else %}Sem registros{% endif %}</div></div>
     </div>
@@ -84,12 +84,12 @@
     <div class="internal-head">
       <div>
         <h3>Profissionais ativos</h3>
-        <p class="internal-subtitle">Contratos ativos deste cliente. Encerrar contrato nao apaga login nem historico.</p>
+        <p class="internal-subtitle">Contratos ativos deste cliente. Encerrar contrato não apaga login nem histórico.</p>
       </div>
     </div>
     <div class="table-wrap">
       <table class="internal-table">
-        <thead><tr><th>Nome</th><th>E-mail</th><th>Status</th><th>Registros</th><th>Ultimo registro</th><th>Acao</th></tr></thead>
+        <thead><tr><th>Nome</th><th>E-mail</th><th>Status</th><th>Registros</th><th>Último registro</th><th>Ação</th></tr></thead>
         <tbody>
           {% for row in active_employee_rows %}
             <tr>
@@ -103,13 +103,13 @@
                   {% csrf_token %}
                   <input type="hidden" name="action" value="end_relationship">
                   <input type="hidden" name="relationship_id" value="{{ row.employee.id }}">
-                  <input name="description" required placeholder="Motivo obrigatorio">
+                  <input name="description" required placeholder="Motivo obrigatório">
                   <button class="btn danger" type="submit" onclick="return confirm('Encerrar somente este contrato com o cliente?')">Encerrar contrato</button>
                 </form>
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="6"><div class="empty-state">Nenhum funcionario ativo.</div></td></tr>
+            <tr><td colspan="6"><div class="empty-state">Nenhum funcionário ativo.</div></td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -120,7 +120,7 @@
     <div class="internal-head">
       <div>
         <h3>Contratos encerrados</h3>
-        <p class="internal-subtitle">Historico preservado em modo consulta.</p>
+        <p class="internal-subtitle">Histórico preservado em modo consulta.</p>
       </div>
     </div>
     <div class="table-wrap">
@@ -195,7 +195,7 @@
   </section>
 
   <section class="internal-panel">
-    <h3>Últimos registros de ponto</h3>
+    <h3>Últimos registros de horário</h3>
     <div class="table-wrap">
       <table class="internal-table">
         <thead><tr><th>Data/hora</th><th>Profissional</th><th>Contrato</th><th>Status</th><th>Observação</th></tr></thead>
@@ -209,7 +209,7 @@
               <td>{{ punch.note|default:"-" }}</td>
             </tr>
           {% empty %}
-            <tr><td colspan="5"><div class="empty-state">Nenhum registro de ponto para esta empresa.</div></td></tr>
+            <tr><td colspan="5"><div class="empty-state">Nenhum registro de horário para este cliente.</div></td></tr>
           {% endfor %}
         </tbody>
       </table>

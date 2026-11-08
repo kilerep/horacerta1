@@ -1,0 +1,58 @@
+{% if form.non_field_errors %}<div class="prod-errors">{{ form.non_field_errors }}</div>{% endif %}
+<div class="prod-grid">
+  <div class="prod-field">
+    <label for="{{ form.item_code.id_for_label }}">Código do item</label>
+    <input type="text" name="{{ form.item_code.html_name }}" id="{{ form.item_code.id_for_label }}" value="{{ form.item_code.value|default_if_none:'' }}" list="code-suggestions" placeholder="Ex.: 0011-024" autocomplete="off">
+    <datalist id="code-suggestions">{% for code in code_suggestions %}<option value="{{ code }}">{% endfor %}</datalist>
+    {{ form.item_code.errors }}
+  </div>
+  <div class="prod-field">
+    <label for="{{ form.quantity.id_for_label }}">Quantidade</label>
+    {{ form.quantity }}
+    {{ form.quantity.errors }}
+  </div>
+</div>
+<div class="prod-field">
+  <label for="{{ form.work_date.id_for_label }}">Data</label>
+  {{ form.work_date }}
+  {{ form.work_date.errors }}
+</div>
+<div class="prod-field">
+  <span class="prod-field-label" style="display:block;margin-bottom:5px;font-size:13px;font-weight:800;color:var(--color-text-muted)">Destino</span>
+  <div class="prod-dest" role="radiogroup" aria-label="Destino">
+    {% for radio in form.destination %}<label for="{{ radio.id_for_label }}">{{ radio.tag }} {{ radio.choice_label }}</label>{% endfor %}
+  </div>
+</div>
+<div class="prod-grid">
+  <div class="prod-field">
+    <label for="{{ form.start_time.id_for_label }}">Início</label>
+    <div class="prod-time">{{ form.start_time }}<button class="btn" type="button" data-now="{{ form.start_time.id_for_label }}">Agora</button></div>
+    {{ form.start_time.errors }}
+  </div>
+  <div class="prod-field">
+    <label for="{{ form.end_time.id_for_label }}">Fim</label>
+    <div class="prod-time">{{ form.end_time }}<button class="btn" type="button" data-now="{{ form.end_time.id_for_label }}">Agora</button></div>
+    {{ form.end_time.errors }}
+  </div>
+</div>
+<div class="prod-grid">
+  <div class="prod-field">
+    <label for="{{ form.duration.id_for_label }}">Duração (se não tiver horário)</label>
+    {{ form.duration }}
+    {{ form.duration.errors }}
+  </div>
+  <div class="prod-field">
+    <label for="{{ form.note.id_for_label }}">Observação</label>
+    {{ form.note }}
+    {{ form.note.errors }}
+  </div>
+</div>
+<script>
+  document.querySelectorAll("[data-now]").forEach(function (button) {
+    button.addEventListener("click", function () {
+      var input = document.getElementById(button.getAttribute("data-now"));
+      var d = new Date();
+      input.value = String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+    });
+  });
+</script>

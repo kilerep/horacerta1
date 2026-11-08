@@ -1,6 +1,6 @@
 {% extends "accounts/base.html" %}
-{% block title %}HoraCerta - Editar horarios de hoje{% endblock %}
-{% block page_title %}Editar horarios de hoje{% endblock %}
+{% block title %}HoraCerta - Editar horários de hoje{% endblock %}
+{% block page_title %}Editar horários de hoje{% endblock %}
 
 {% block content %}
   <style>
@@ -49,9 +49,9 @@
 
   <div class="today-edit">
     <section class="today-edit__panel">
-      <h2 class="today-edit__title">Editar horarios de hoje</h2>
+      <h2 class="today-edit__title">Editar horários de hoje</h2>
       <p class="today-edit__sub">
-        Voce so pode editar horarios do dia atual. Dias anteriores ficam bloqueados para preservar a seguranca dos relatorios.
+        Você so pode editar horários do dia atual. Dias anteriores ficam bloqueados para preservar a seguranca dos relatórios.
       </p>
       {% if is_locked %}
         <div class="today-edit__locked" style="margin-top:12px;">{{ lock_message }}</div>
@@ -82,7 +82,7 @@
         </div>
 
         <div>
-          <div class="today-edit__label">Horarios registrados</div>
+          <div class="today-edit__label">Horários registrados</div>
           <div class="today-edit__times" id="existingTimes" style="margin-top:8px;">
             {% for punch in today_punches %}
               <div class="today-edit__time">
@@ -94,24 +94,24 @@
                 </label>
               </div>
             {% empty %}
-              <div class="today-edit__empty">Nenhum horario registrado hoje.</div>
+              <div class="today-edit__empty">Nenhum horário registrado hoje.</div>
             {% endfor %}
           </div>
         </div>
 
         <div>
-          <div class="today-edit__label">Adicionar horario</div>
+          <div class="today-edit__label">Adicionar horário</div>
           <div class="today-edit__times" id="newTimes" style="margin-top:8px;">
             <div class="today-edit__time">
               <input type="time" name="new_time" {% if is_locked %}disabled{% endif %}>
               <button class="btn" type="button" data-remove-new {% if is_locked %}disabled{% endif %}>Remover</button>
             </div>
           </div>
-          <button class="btn" type="button" id="addTimeBtn" style="margin-top:8px;" {% if is_locked %}disabled{% endif %}>Adicionar horario</button>
+          <button class="btn" type="button" id="addTimeBtn" style="margin-top:8px;" {% if is_locked %}disabled{% endif %}>Adicionar horário</button>
         </div>
 
         <div class="today-edit__field">
-          <label for="day_note">Observacao</label>
+          <label for="day_note">Observação</label>
           <textarea id="day_note" name="day_note" rows="3" placeholder="Opcional" {% if is_locked %}disabled{% endif %}>{{ day_note }}</textarea>
         </div>
 

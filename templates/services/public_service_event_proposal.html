@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Proposta de evento - {{ job.title }}</title>
+  {% include "services/_public_style.html" %}
+</head>
+<body>
+  <main class="page">
+    <header class="card">
+      <div class="brandline"><span class="brand">HoraCerta</span><span class="kind">Proposta de evento</span></div>
+      <h1>{{ job.title }}</h1>
+      <p class="who">De <strong>{{ professional_name }}</strong> para <strong>{{ job.client_display_name }}</strong></p>
+      <p class="issued">Gerada em {{ generated_at|date:"d/m/Y" }} às {{ generated_at|time:"H:i" }}</p>
+    </header>
+
+    <section class="card total" aria-label="Valor do pacote">
+      <span class="label">Investimento do pacote · Valor fechado</span>
+      <strong>{{ package_value_brl }}</strong>
+      <p>Valor fechado para a composição descrita nesta proposta. Condições de pagamento e sinal devem ser confirmadas com o prestador.</p>
+    </section>
+
+    <section class="card">
+      <h2>Quando e onde</h2>
+      <dl class="rows">
+        <div><dt>Data</dt><dd>{{ event_date }}</dd></div>
+        <div><dt>Horário</dt><dd>{{ planned_time }}</dd></div>
+        <div><dt>Local</dt><dd>{{ service_address }}</dd></div>
+      </dl>
+    </section>
+
+    <section class="card">
+      <h2>O que será feito</h2>
+      <p>{{ job.description|default:"Descrição do atendimento a combinar." }}</p>
+    </section>
+
+    <section class="card">
+      <h2>O que está incluso</h2>
+      <p>Os itens abaixo fazem parte do pacote. Não há preço individual por equipamento.</p>
+      <ul class="list" style="margin-top:10px">
+        {% for item in included_items %}
+          <li class="entry"><div><strong>{{ item.name }}</strong>{% if item.description %}<small>{{ item.description }}</small>{% endif %}</div><span class="sum">{{ item.quantity }} {{ item.get_unit_display }}</span></li>
+        {% empty %}
+          <li><p>Nenhum equipamento ou item técnico foi listado ainda.</p></li>
+        {% endfor %}
+      </ul>
+    </section>
+
+    {% if job.notes %}
+      <section class="card">
+        <h2>Observações e condições</h2>
+        <p>{{ job.notes }}</p>
+      </section>
+    {% endif %}
+
+    <section class="card contact">
+      <h2>Dúvidas?</h2>
+      <p>Fale com {{ professional_name }}.</p>
+      {% if professional_contact %}
+        {% if "@" in professional_contact %}<a class="btn" href="mailto:{{ professional_contact }}?subject={{ job.title|urlencode }}">Responder por e-mail</a>{% endif %}
+        <p class="line">Contato: {{ professional_contact }}</p>
+      {% endif %}
+    </section>
+
+    <p class="legal">Esta proposta não substitui contrato. Gerada pelo HoraCerta.</p>
+  </main>
+</body>
+</html>

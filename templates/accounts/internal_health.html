@@ -1,0 +1,28 @@
+{% extends "accounts/internal_base.html" %}
+{% block title %}HoraCerta - Saúde do sistema{% endblock %}
+{% block page_title %}Saúde do sistema{% endblock %}
+{% block internal_title %}Saúde do sistema{% endblock %}
+{% block internal_subtitle %}Confere a configuração de produção para pegar falhas silenciosas antes dos usuários.{% endblock %}
+
+{% block internal_content %}
+  <section class="internal-panel">
+    <div class="internal-head">
+      <div>
+        <h2>{% if health.healthy %}Tudo certo{% else %}Atenção: {{ health.summary.fail }} falha(s){% endif %}</h2>
+        <p class="internal-subtitle">{{ health.summary.ok }} ok · {{ health.summary.warn }} aviso(s) · {{ health.summary.fail }} falha(s). Nunca mostra senhas.</p>
+      </div>
+    </div>
+    <div style="display:grid;gap:8px">
+      {% for c in health.checks %}
+        <div class="metric-card" style="display:flex;gap:10px;align-items:flex-start">
+          <strong style="min-width:64px">{% if c.status == "ok" %}✅ ok{% elif c.status == "warn" %}⚠️ aviso{% else %}❌ falha{% endif %}</strong>
+          <div>
+            <div>{{ c.label }}</div>
+            {% if c.detail %}<div class="hint" style="overflow-wrap:anywhere">{{ c.detail }}</div>{% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+    <p class="internal-subtitle" style="margin-top:12px">Relacionados: <a href="{% url 'internal_email' %}">Diagnóstico de e-mail</a> · <a href="{% url 'internal_funnel' %}">Funil</a></p>
+  </section>
+{% endblock %}

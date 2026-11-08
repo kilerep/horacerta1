@@ -68,9 +68,11 @@
               <option value="professional-neutral">Neutro Profissional</option>
               <option value="brazil-corporate">Brasil Corporativo</option>
               <option value="rubro-professional">Rubro Profissional</option>
+              <option value="claro-operacional">Claro Operacional</option>
+              <option value="areia-terracota">Areia Terracota</option>
+              <option value="oceano-noturno">Oceano Noturno</option>
             </select>
           </div>
-          <a class="link hide-sm" href="{% url 'landing' %}#recursos">Recursos</a>
           <a class="link" href="{% url 'help' %}">Ajuda</a>
           <a class="btn" href="{% url 'login' %}">Entrar no sistema</a>
         </nav>
@@ -89,6 +91,7 @@
     </div>
   </footer>
   <script src="{% static 'js/theme_engine.js' %}"></script>
+  <script src="{% static 'js/connection_guard.js' %}"></script>
   <script src="{% static 'js/pwa-register.js' %}"></script>
 </body>
 </html>

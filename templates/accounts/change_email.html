@@ -1,0 +1,49 @@
+{% extends "accounts/base.html" %}
+{% block title %}Alterar e-mail{% endblock %}
+{% block page_title %}Segurança da conta{% endblock %}
+
+{% block content %}
+  <style>
+    .security-page{max-width:720px;display:grid;gap:14px}
+    .security-card{border:1px solid var(--border);border-radius:var(--radius);background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));padding:16px;box-shadow:var(--shadow)}
+    .security-card h1{margin:0;font-size:clamp(24px,4vw,30px);line-height:1.15}
+    .security-card p{margin:8px 0 0;color:var(--muted);line-height:1.5}
+    .security-form{display:grid;gap:12px;margin-top:16px}
+    .security-field{display:grid;gap:6px}
+    .security-field label{color:var(--muted);font-size:13px;font-weight:800}
+    .security-field input{width:100%;min-height:42px;padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--text);outline:none}
+    .security-field input:focus{border-color:var(--border-brand);box-shadow:0 0 0 3px var(--color-primary-soft)}
+    .security-errors{margin:0;color:var(--danger-text);font-size:13px;line-height:1.45}
+    .security-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+    @media (max-width:640px){.security-actions .btn{width:100%;justify-content:center}}
+  </style>
+
+  <div class="security-page">
+    <section class="security-card">
+      <h1>Alterar e-mail</h1>
+      <p>Seu e-mail atual é <strong>{{ request.user.email }}</strong>. Ele é usado para entrar e para recuperar a senha, então confira com atenção. Confirme com sua senha atual.</p>
+
+      <form class="security-form" method="post" novalidate data-submit-once="true">
+        {% csrf_token %}
+        {% if form.non_field_errors %}<p class="security-errors">{{ form.non_field_errors }}</p>{% endif %}
+
+        <div class="security-field">
+          <label for="{{ form.new_email.id_for_label }}">{{ form.new_email.label }}</label>
+          <input type="email" name="{{ form.new_email.html_name }}" id="{{ form.new_email.id_for_label }}" value="{{ form.new_email.value|default_if_none:'' }}" autocomplete="email" inputmode="email" required>
+          {% if form.new_email.errors %}<p class="security-errors">{{ form.new_email.errors }}</p>{% endif %}
+        </div>
+
+        <div class="security-field">
+          <label for="{{ form.current_password.id_for_label }}">{{ form.current_password.label }}</label>
+          <input type="password" name="{{ form.current_password.html_name }}" id="{{ form.current_password.id_for_label }}" autocomplete="current-password" required>
+          {% if form.current_password.errors %}<p class="security-errors">{{ form.current_password.errors }}</p>{% endif %}
+        </div>
+
+        <div class="security-actions">
+          <button class="btn primary" type="submit" data-loading-text="Salvando...">Salvar novo e-mail</button>
+          <a class="btn" href="{% url 'mei_profile' %}">Cancelar</a>
+        </div>
+      </form>
+    </section>
+  </div>
+{% endblock %}
