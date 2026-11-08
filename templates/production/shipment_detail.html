@@ -59,12 +59,12 @@
     {% for person in recipients %}
       <div class="ship-person {% if person.authorized_at %}is-ok{% endif %}">
         <span class="ship-avatar" aria-hidden="true">{% if person.authorized_at %}{% icon "check" 20 %}{% else %}{{ person.name|slice:":1"|upper }}{% endif %}</span>
-        <span class="who"><span class="role">{{ person.get_role_display }}</span><strong>{{ person.name }}</strong></span>
+        <span class="who"><strong>{{ person.name }}</strong>{% if person.whatsapp %}<span class="role">{{ person.whatsapp }}</span>{% endif %}</span>
         {% if note.is_locked %}
           {% if person.authorized_at %}<span class="ship-stamp ok">{% icon "check" 16 %} Autorizou em {{ person.authorized_at|date:"d/m/Y" }} às {{ person.authorized_at|time:"H:i" }}</span>
           {% elif person.viewed_at %}<span class="ship-stamp seen">{% icon "eye" 16 %} Viu em {{ person.viewed_at|date:"d/m" }} às {{ person.viewed_at|time:"H:i" }}, falta autorizar</span>
           {% else %}<span class="ship-stamp">{% icon "clock" 16 %} Ainda não abriu o link</span>{% endif %}
-          <a class="btn {% if not person.authorized_at %}primary{% endif %}" href="{% url 'shipment_whatsapp' note.id person.role|lower %}" target="_blank" rel="noopener">{% icon "send" 18 %} {% if person.authorized_at %}Mandar de novo{% else %}Enviar pelo WhatsApp{% endif %}</a>
+          <a class="btn {% if not person.authorized_at %}primary{% endif %}" href="{% url 'shipment_whatsapp' note.id person.slot %}" target="_blank" rel="noopener">{% icon "send" 18 %} {% if person.authorized_at %}Mandar de novo{% else %}Enviar pelo WhatsApp{% endif %}</a>
         {% endif %}
       </div>
     {% endfor %}

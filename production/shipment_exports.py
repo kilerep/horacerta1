@@ -86,8 +86,7 @@ def build_shipment_pdf(note):
     boxes = []
     for r in note.recipients.all():
         boxes.append([
-            Paragraph(f"<font size=8 color='#{pt.MUTED}'>{r.get_role_display().upper()}</font><br/>"
-                      f"<b>{pt.esc(r.name)}</b><br/><font size=9>{pt.esc(stamp(r))}</font>", st["body"]),
+            Paragraph(f"<b>{pt.esc(r.name)}</b><br/><font size=9>{pt.esc(stamp(r))}</font>", st["body"]),
         ])
     if boxes:
         table = Table([[b[0] for b in boxes]], colWidths=[width / len(boxes)] * len(boxes))
@@ -169,9 +168,8 @@ def build_shipment_xlsx(note):
 
     row += 2
     for r in note.recipients.all():
-        ws.cell(row=row, column=1, value=r.get_role_display()).font = Font(name="Arial", size=9, color=pt.MUTED)
-        ws.cell(row=row, column=2, value=r.name).font = Font(name="Arial", size=11, bold=True, color=pt.INK)
-        ws.cell(row=row, column=3, value=stamp(r)).font = Font(name="Arial", size=10, color=pt.INK_SOFT)
+        ws.cell(row=row, column=1, value=r.name).font = Font(name="Arial", size=11, bold=True, color=pt.INK)
+        ws.cell(row=row, column=2, value=stamp(r)).font = Font(name="Arial", size=10, color=pt.INK_SOFT)
         row += 1
     row += 1
     ws.cell(row=row, column=1, value=f"Código de conferência {check_code(note)}. Nota travada após o envio.").font = Font(

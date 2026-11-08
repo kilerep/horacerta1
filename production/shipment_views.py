@@ -1,4 +1,4 @@
-"""Notas de envio: telas do dono e link publico do encarregado/supervisor."""
+"""Notas de envio: telas do dono e link publico de cada pessoa que recebe a nota."""
 
 from datetime import datetime
 from urllib.parse import quote
@@ -19,9 +19,10 @@ from .shipment_exports import build_shipment_pdf, build_shipment_xlsx, shipment_
 
 XLSX_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
+# Duas vagas por nota; o campo role so guarda a posicao (1 ou 2), nada de cargo na tela.
 ROLES = {
-    "encarregado": ShipmentRecipient.Role.ENCARREGADO,
-    "supervisor": ShipmentRecipient.Role.SUPERVISOR,
+    "1": ShipmentRecipient.Role.ENCARREGADO,
+    "2": ShipmentRecipient.Role.SUPERVISOR,
 }
 MAX_QUANTITY = 999999
 # Prefixo dos campos de cada destinatario no formulario.
@@ -291,11 +292,11 @@ def _notify_owner(recipient, action):
     from timeclock.notifications import create_internal_notification
 
     note = recipient.note
-    who = recipient.name or recipient.get_role_display()
+    who = recipient.name or "Quem recebeu o link"
     create_internal_notification(
         notification_type=InternalNotification.NotificationType.SHIPMENT_NOTE,
         title=f"Nota nº {note.number_label} {action} por {who}",
-        message=f"{recipient.get_role_display()} {who} {action} a nota de envio para {note.destination_company}.",
+        message=f"{who} {action} a nota de envio para {note.destination_company}.",
         recipient_user=note.owner,
         target_url=reverse("shipment_detail", args=[note.id]),
     )

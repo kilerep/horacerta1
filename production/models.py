@@ -267,6 +267,11 @@ class ShipmentRecipient(models.Model):
         ordering = ["role"]
         constraints = [models.UniqueConstraint(fields=["note", "role"], name="shipment_one_recipient_per_role")]
 
+    @property
+    def slot(self):
+        """'1' ou '2': posicao da pessoa na nota (o cargo nao aparece para ninguem)."""
+        return "1" if self.role == self.Role.ENCARREGADO else "2"
+
     def mark_viewed(self):
         """Registra o primeiro visto; devolve True so quando mudou algo."""
         now = timezone.now()
