@@ -317,3 +317,16 @@ class ShipmentDownloadLinksTests(TestCase):
 
         self.assertIn(reverse("shipment_pdf", args=[note.id]), detail)
         self.assertIn(reverse("shipment_public_xlsx", args=[boss.token]), public)
+
+
+class ShipmentPdfFullNoteTests(TestCase):
+    def test_pdf_with_driver_plate_and_notes(self):
+        """5 campos de informacao em grade de 3 colunas: a linha incompleta nao pode quebrar o PDF."""
+        from production.shipment_exports import build_shipment_pdf
+
+        note = make_note(make_user("pdf-completo@example.com"), items=4)
+        note.driver_name, note.vehicle_plate, note.notes = "Carlos", "RTX4B21", "2 paletes"
+        note.save()
+        note.send()
+
+        self.assertTrue(build_shipment_pdf(note).startswith(b"%PDF"))

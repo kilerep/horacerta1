@@ -91,7 +91,7 @@ def info_grid(pairs, width, columns=3):
     for start in range(0, len(cells), columns):
         chunk = cells[start:start + columns]
         while len(chunk) < columns:
-            chunk.append(["", ""])
+            chunk.append([Paragraph("", st["label"]), Paragraph("", st["value"])])
         rows.append([[c[0], c[1]] for c in chunk])
     table = Table(rows, colWidths=[width / columns] * columns, hAlign="LEFT")
     table.setStyle(TableStyle([
