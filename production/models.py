@@ -184,6 +184,14 @@ class ShipmentNote(models.Model):
         return self.status == self.Status.SENT
 
     @property
+    def sender_name(self):
+        """Nome de quem envia, como no topo do sistema: perfil > nome da conta > parte do e-mail antes do @."""
+        from companies.models import Employee
+
+        name = Employee.objects.filter(user=self.owner).exclude(full_name="").values_list("full_name", flat=True).first()
+        return (name or "").strip() or self.owner.get_full_name().strip() or self.owner.email.split("@")[0]
+
+    @property
     def total_quantity(self):
         return sum(item.quantity for item in self.items.all())
 
@@ -215,9 +223,10 @@ class ShipmentNote(models.Model):
                 return
             if not self.items.exists():
                 raise ValidationError("Adicione pelo menos um item antes de enviar.")
-            recipients = list(self.recipients.all())
-            if len(recipients) < 2 or any(not r.name.strip() for r in recipients):
-                raise ValidationError("Informe o nome do encarregado e do supervisor antes de enviar.")
+            # Uma pessoa basta (encarregado ou supervisor); quem ficou sem nome nao recebe link.
+            if not any(r.name.strip() for r in self.recipients.all()):
+                raise ValidationError("Informe o nome de pelo menos uma pessoa (encarregado ou supervisor) antes de enviar.")
+            self.recipients.filter(name="").delete()
             last = ShipmentNote.objects.filter(owner=self.owner).aggregate(models.Max("number"))["number__max"] or 0
             self.number = last + 1
             self.status = self.Status.SENT

@@ -28,8 +28,7 @@ def check_code(note):
 
 
 def info_pairs(note):
-    owner = note.owner.get_full_name() or note.owner.email
-    pairs = [("Remetente", owner), ("Destino", note.destination_company), ("Saída", _when(note.departed_at))]
+    pairs = [("Remetente", note.sender_name), ("Destino", note.destination_company), ("Saída", _when(note.departed_at))]
     if note.driver_name:
         pairs.append(("Motorista", note.driver_name))
     if note.vehicle_plate:
