@@ -36,14 +36,36 @@
     .confirm[hidden]{display:none}
     .downloads{display:grid;grid-template-columns:1fr 1fr;gap:10px}
     .done-line{display:flex;align-items:center;gap:10px;color:#1d5b34;font-weight:700}
-    @media (max-width:520px){.facts{grid-template-columns:1fr}.facts div:nth-child(odd){padding-right:0}.person{display:grid}.stamp{justify-self:start}.downloads{grid-template-columns:1fr}}
+    .seal{display:inline-flex;align-items:center;gap:6px;min-height:30px;padding:3px 12px;border-radius:999px;font-size:14px;font-weight:800;border:1.5px solid currentColor}
+    .seal.wait{color:#8a5a0c}
+    .seal.ok{color:#1d5b34}
+    .numline h1{font-size:40px;letter-spacing:-.02em}
+    .steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:14px 0 0;padding:14px 0 0;list-style:none;border-top:1px solid var(--line)}
+    .steps li{position:relative;display:grid;gap:3px;font-size:13.5px;color:var(--muted)}
+    .steps li::before{content:"";position:absolute;top:10px;left:24px;right:6px;height:2px;background:var(--line)}
+    .steps li:last-child::before{display:none}
+    .steps .dot{position:relative;z-index:1;display:grid;place-items:center;width:22px;height:22px;border-radius:999px;border:2px solid var(--line);background:var(--card);font-size:12px;font-weight:900;color:var(--muted)}
+    .steps li.done .dot{border-color:#2f7a4a;background:#2f7a4a;color:#fff}
+    .steps li.done::before{background:#9ccaa9}
+    .steps li.half .dot{border-color:#c48a1c;color:#8a5a0c}
+    .steps strong{color:var(--ink);font-size:14px}
+    .dock{display:none}
+    .preview{border-color:#ecd7a6;background:#fbf0d9;color:#5c3d08;line-height:1.5}
+    @media (max-width:520px){
+      .dock{position:fixed;left:0;right:0;bottom:0;z-index:20;display:block;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:rgba(255,253,249,.94);border-top:1px solid var(--line);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+      .dock[hidden]{display:none}
+      body.has-dock .page{padding-bottom:96px}
+      .numline h1{font-size:34px}.person{display:grid}.stamp{justify-self:start}.downloads{grid-template-columns:1fr}}
   </style>
 </head>
-<body>
+<body{% if not recipient.authorized_at and not owner_preview %} class="has-dock"{% endif %}>
   <main class="page">
+    {% if owner_preview %}
+      <div class="card preview" role="status"><strong>Você está vendo como remetente.</strong> Abrir este link com a sua conta não marca visto nem autoriza no lugar de {{ recipient.name }}. Só conta quando a própria pessoa abrir no celular dela.</div>
+    {% endif %}
     <header class="card">
       <div class="brandline"><span class="brand">HoraCerta</span><span class="kind">Nota de envio</span></div>
-      <div class="numline"><h1>nº {{ note.number_label }}</h1></div>
+      <div class="numline"><h1>nº {{ note.number_label }}</h1>{% with sit=note.situation %}<span class="seal {% if authorized_all %}ok{% else %}wait{% endif %}">{% if authorized_all %}✓ Autorizada{% else %}{{ sit.0 }}{% endif %}</span>{% endwith %}</div>
       <p class="who">Enviada por <strong>{{ note.sender_name }}</strong> para <strong>{{ note.destination_company }}</strong></p>
       <div class="facts">
         <div><span>Saída do caminhão</span><strong>{{ note.departed_at|date:"d/m/Y" }} às {{ note.departed_at|time:"H:i" }}</strong></div>
@@ -52,6 +74,11 @@
         {% if note.vehicle_plate %}<div><span>Placa</span><strong>{{ note.vehicle_plate }}</strong></div>{% endif %}
         {% if note.replaces %}<div><span>Corrige</span><strong>Nota nº {{ note.replaces.number_label }}</strong></div>{% endif %}
       </div>
+      <ol class="steps" aria-label="Andamento da nota">
+        <li class="done"><span class="dot">1</span><strong>Enviada</strong><span>{{ note.sent_at|date:"d/m H:i" }}</span></li>
+        <li class="{% if viewed_count == recipients_count %}done{% elif viewed_count %}half{% endif %}"><span class="dot">2</span><strong>Vista</strong><span>{{ viewed_count }} de {{ recipients_count }}</span></li>
+        <li class="{% if authorized_all %}done{% elif authorized_count %}half{% endif %}"><span class="dot">3</span><strong>Autorizada</strong><span>{{ authorized_count }} de {{ recipients_count }}</span></li>
+      </ol>
     </header>
 
     <section class="card" aria-labelledby="pieces-title">
@@ -68,6 +95,7 @@
       {% if note.notes %}<p class="hint">{{ note.notes|linebreaksbr }}</p>{% endif %}
     </section>
 
+    {% if not owner_preview %}
     <section class="card decision {% if recipient.authorized_at %}done{% endif %}" aria-labelledby="decision-title">
       <h2 id="decision-title">{{ recipient.name|default:recipient.get_role_display }}, {% if recipient.authorized_at %}obrigado{% else %}confira e autorize{% endif %}</h2>
       {% if recipient.authorized_at %}
@@ -83,6 +111,7 @@
         </form>
       {% endif %}
     </section>
+    {% endif %}
 
     <section class="card" aria-labelledby="people-title">
       <h2 id="people-title">Quem recebeu</h2>
@@ -106,6 +135,10 @@
       </div>
     </section>
 
+    {% if not recipient.authorized_at and not owner_preview %}
+      <div class="dock" data-dock><button type="button" class="big" data-authorize-open>Autorizar nota nº {{ note.number_label }}</button></div>
+    {% endif %}
+
     <p class="legal">Nota registrada no HoraCerta em {{ note.sent_at|date:"d/m/Y" }} às {{ note.sent_at|time:"H:i" }}. Depois de enviada, não pode ser alterada. Código de conferência {{ note.id|stringformat:"s"|slice:":8"|upper }}.</p>
   </main>
   <script>
@@ -113,14 +146,27 @@
       var token = document.querySelector("[name=csrfmiddlewaretoken]");
       var csrf = token ? token.value : "{{ csrf_token }}";
       // Visto so e registrado aqui, depois que a pagina abriu de verdade no aparelho da pessoa.
-      fetch("{% url 'shipment_public_seen' recipient.token %}", {method: "POST", headers: {"X-CSRFToken": csrf}, credentials: "same-origin"}).catch(function () {});
+      {% if not owner_preview %}fetch("{% url 'shipment_public_seen' recipient.token %}", {method: "POST", headers: {"X-CSRFToken": csrf}, credentials: "same-origin"}).catch(function () {});{% endif %}
 
-      var open = document.querySelector("[data-authorize-open]");
+      var opens = document.querySelectorAll("[data-authorize-open]");
       var confirmBox = document.querySelector("[data-authorize-confirm]");
       var cancel = document.querySelector("[data-authorize-cancel]");
-      if (open && confirmBox) {
-        open.addEventListener("click", function () { open.hidden = true; confirmBox.hidden = false; });
-        cancel.addEventListener("click", function () { confirmBox.hidden = true; open.hidden = false; open.focus(); });
+      var dock = document.querySelector("[data-dock]");
+      var inline = document.querySelector(".decision [data-authorize-open]");
+      if (opens.length && confirmBox) {
+        opens.forEach(function (button) {
+          button.addEventListener("click", function () {
+            if (inline) inline.hidden = true;
+            if (dock) dock.hidden = true;
+            confirmBox.hidden = false;
+            confirmBox.scrollIntoView({behavior: "smooth", block: "center"});
+          });
+        });
+        cancel.addEventListener("click", function () {
+          confirmBox.hidden = true;
+          if (inline) { inline.hidden = false; inline.focus(); }
+          if (dock) dock.hidden = false;
+        });
       }
     })();
   </script>

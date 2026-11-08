@@ -1,12 +1,17 @@
-<a class="ship-card" href="{% url 'shipment_detail' note.id %}">
+<a class="ship-card {% if not note.is_locked %}is-draft{% endif %}" href="{% url 'shipment_detail' note.id %}">
   <span class="ship-num"><small>Nº</small><strong>{% if note.number %}{{ note.number_label }}{% else %}—{% endif %}</strong></span>
   <span class="ship-body">
     <strong>{{ note.destination_company }}</strong>
     <span class="ship-meta">
-      <span>Saída {{ note.departed_at|date:"d/m/Y H:i" }}</span>
-      <span>{{ note.items.all|length }} {% if note.items.all|length == 1 %}item{% else %}itens{% endif %} · {{ note.total_quantity }} {% if note.total_quantity == 1 %}peça{% else %}peças{% endif %}</span>
-      {% if note.replaces %}<span>Corrige a nº {{ note.replaces.number_label }}</span>{% endif %}
+      <span>{{ note.departed_at|date:"d/m" }} às {{ note.departed_at|time:"H:i" }}</span>
+      <span>{{ note.total_quantity }} {% if note.total_quantity == 1 %}peça{% else %}peças{% endif %}</span>
+      {% if note.replaces %}<span>corrige nº {{ note.replaces.number_label }}</span>{% endif %}
     </span>
   </span>
-  <span class="ship-chip {{ note.situation.1 }}">{{ note.situation.0 }}</span>
+  <span class="ship-side">
+    <span class="ship-chip {{ note.situation.1 }}">{{ note.situation.0 }}</span>
+    {% if note.is_locked %}
+      <span class="ship-dots" aria-hidden="true">{% for r in note.recipients.all %}<span class="ship-dot {% if r.authorized_at %}ok{% elif r.viewed_at %}seen{% endif %}"></span>{% endfor %}</span>
+    {% endif %}
+  </span>
 </a>

@@ -746,7 +746,7 @@ def export_xlsx(request):
     ws.append(["Resumo", "", "", ""])
     ws[f"A{ws.max_row}"].font = Font(bold=True)
     period_label = (
-        f"{start_date.strftime('%d/%m/%Y')} ate {end_date.strftime('%d/%m/%Y')}"
+        f"{start_date.strftime('%d/%m/%Y')} até {end_date.strftime('%d/%m/%Y')}"
         if start_date and end_date
         else "Periodo completo"
     )
@@ -785,7 +785,7 @@ def export_pdf(request):
 
     employee_name = _contract_employee_label(contract)
     period_label = (
-        f"{start_date.strftime('%d/%m/%Y')} ate {end_date.strftime('%d/%m/%Y')}"
+        f"{start_date.strftime('%d/%m/%Y')} até {end_date.strftime('%d/%m/%Y')}"
         if start_date and end_date
         else "Periodo completo"
     )
