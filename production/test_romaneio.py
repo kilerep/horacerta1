@@ -52,3 +52,59 @@ class EntryBalanceTests(TestCase):
 
     def test_form_has_production_order(self):
         self.assertIn("production_order", ProductionEntryForm().fields)
+
+
+@override_settings(**BASE)
+class FromEntriesTests(TestCase):
+    def setUp(self):
+        self.owner = make_user("romaneio@example.com")
+        self.client.force_login(self.owner)
+        self.entry = make_entry(self.owner)
+        self.url = reverse("shipment_from_entries", args=[self.entry.sheet_id])
+
+    def test_creates_draft_with_remaining_quantity(self):
+        sent_note_with(self.entry, 30)
+        other = make_entry(self.owner, code="8201-120-01", quantity=4, order="4030.6")
+
+        response = self.client.post(self.url, {"entry": [self.entry.id, other.id], "target": "new"})
+        draft = ShipmentNote.objects.get(owner=self.owner, status=ShipmentNote.Status.DRAFT)
+
+        self.assertRedirects(response, reverse("shipment_edit", args=[draft.id]))
+        rows = list(draft.items.values_list("production_order", "drawing_number", "quantity", "source_entry"))
+        self.assertEqual(rows, [("7542.1", "0128-208", 19, self.entry.id), ("4030.6", "8201-120-01", 4, other.id)])
+        self.assertEqual(draft.recipients.get().name, "João")  # herda quem recebeu o ultimo
+        self.assertEqual(draft.destination_company, "Gbach")
+
+    def test_adds_to_existing_draft(self):
+        draft = ShipmentNote.objects.create(owner=self.owner, destination_company="Gbach")
+        ShipmentItem.objects.create(note=draft, drawing_number="X", quantity=1)
+
+        self.client.post(self.url, {"entry": [self.entry.id], "target": str(draft.id)})
+
+        self.assertEqual(draft.items.count(), 2)
+        self.assertEqual(draft.items.last().drawing_number, "0128-208")
+
+    def test_sent_target_creates_new_draft(self):
+        sent = sent_note_with(make_entry(self.owner, code="Z"), 1)
+
+        self.client.post(self.url, {"entry": [self.entry.id], "target": str(sent.id)})
+
+        self.assertEqual(sent.items.count(), 1)
+        self.assertTrue(ShipmentNote.objects.filter(owner=self.owner, status=ShipmentNote.Status.DRAFT).exists())
+
+    def test_other_owner_entries_ignored(self):
+        intruder = make_entry(make_user("outro-romaneio@example.com"), code="ALHEIO")
+
+        response = self.client.post(self.url, {"entry": [intruder.id], "target": "new"})
+
+        self.assertEqual(response.status_code, 404)
+        self.assertFalse(ShipmentNote.objects.filter(owner=self.owner).exists())
+
+    def test_entry_without_quantity_or_code_and_fully_shipped(self):
+        empty = make_entry(self.owner, code="", quantity=None, order="")
+        sent_note_with(self.entry, 49)
+
+        self.client.post(self.url, {"entry": [empty.id, self.entry.id], "target": "new"})
+        draft = ShipmentNote.objects.get(owner=self.owner, status=ShipmentNote.Status.DRAFT)
+
+        self.assertEqual(list(draft.items.values_list("drawing_number", "quantity")), [("-", 1), ("0128-208", 1)])

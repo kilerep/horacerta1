@@ -361,3 +361,63 @@ def shipment_public_pdf(request, token):
 def shipment_public_xlsx(request, token):
     note = _recipient_for(token).note
     return _file(build_shipment_xlsx(note), XLSX_TYPE, shipment_filename(note, "xlsx"))
+
+
+# ---- romaneio a partir dos itens do relatorio de producao ----
+
+def _new_draft_like_last(owner):
+    """Rascunho novo com destino e pessoas do ultimo romaneio enviado (quase sempre os mesmos)."""
+    last = ShipmentNote.objects.filter(owner=owner, status=ShipmentNote.Status.SENT).order_by("-sent_at").first()
+    draft = ShipmentNote.objects.create(owner=owner, destination_company=last.destination_company if last else "")
+    if last:
+        ShipmentRecipient.objects.bulk_create(
+            ShipmentRecipient(note=draft, role=r.role, name=r.name, whatsapp=r.whatsapp) for r in last.recipients.all()
+        )
+    return draft
+
+
+@login_required
+@require_POST
+def shipment_from_entries(request, sheet_id):
+    from .models import ProductionEntry, ProductionSheet
+
+    sheet = get_object_or_404(ProductionSheet, id=sheet_id, owner=request.user)
+    wanted = [value for value in request.POST.getlist("entry") if value]
+    by_id = {str(e.id): e for e in ProductionEntry.objects.filter(sheet=sheet, id__in=_valid_uuids(wanted))}
+    entries = [by_id[value] for value in wanted if value in by_id]  # na ordem em que foram marcados
+    if not entries:
+        raise Http404
+    with transaction.atomic():
+        target = request.POST.get("target", "new")
+        draft = None
+        if target != "new":
+            draft = ShipmentNote.objects.select_for_update().filter(
+                id__in=_valid_uuids([target]), owner=request.user, status=ShipmentNote.Status.DRAFT).first()
+        if draft is None:  # "novo" ou o rascunho escolhido ja foi enviado: comeca outro
+            draft = _new_draft_like_last(request.user)
+        start = draft.items.count()
+        ShipmentItem.objects.bulk_create(
+            ShipmentItem(
+                note=draft, position=start + i, source_entry=e, production_order=e.production_order[:40],
+                drawing_number=(e.item_code or "-")[:60],
+                # o que falta enviar; item sem quantidade ou ja todo enviado entra com 1 e o dono ajusta
+                quantity=min(max(e.remaining_quantity() or 1, 1), MAX_QUANTITY),
+            )
+            for i, e in enumerate(entries)
+        )
+    count = len(entries)
+    messages.success(request, f"{count} {'item adicionado' if count == 1 else 'itens adicionados'} ao romaneio. "
+                              "Ajuste as quantidades se só parte for no caminhão.")
+    return redirect("shipment_edit", note_id=draft.id)
+
+
+def _valid_uuids(values):
+    import uuid
+
+    valid = []
+    for value in values:
+        try:
+            valid.append(uuid.UUID(str(value)))
+        except ValueError:
+            continue
+    return valid
