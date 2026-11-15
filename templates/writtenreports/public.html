@@ -34,7 +34,7 @@
         <div><span>Prestador</span><strong>{{ sender }}</strong></div>
         <div><span>Cliente</span><strong>{{ data.client }}</strong></div>
         {% if report.kind == "HOURS" %}<div><span>Período</span><strong>{{ data.period }}</strong></div><div><span>Total de horas</span><strong>{{ data.total_hours }}</strong></div>
-        {% else %}<div><span>Serviço</span><strong>{{ data.service }}</strong></div><div><span>Total do serviço</span><strong>{{ data.total_value }}</strong></div>{% endif %}
+        {% else %}<div><span>Serviço</span><strong>{{ data.service }}</strong></div>{% if data.period %}<div><span>Data</span><strong>{{ data.period }}</strong></div>{% endif %}{% if data.total_value %}<div><span>Total do serviço</span><strong>{{ data.total_value }}</strong></div>{% endif %}{% endif %}
       </div>
     </header>
 

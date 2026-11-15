@@ -30,7 +30,8 @@ class WrittenReport(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="written_reports")
-    kind = models.CharField(max_length=10, choices=Kind.choices, default=Kind.HOURS)
+    # So "de servico" e criado hoje; HOURS fica para relatorios antigos (o de horas e o Fechamento de horas).
+    kind = models.CharField(max_length=10, choices=Kind.choices, default=Kind.SERVICE)
     number = models.PositiveIntegerField(null=True, blank=True)
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.DRAFT)
     title = models.CharField("Título", max_length=140)
@@ -38,6 +39,8 @@ class WrittenReport(models.Model):
                                  related_name="written_reports")
     service_job = models.ForeignKey("services.ServiceJob", null=True, blank=True, on_delete=models.SET_NULL,
                                     related_name="written_reports")
+    client_name = models.CharField("Cliente / empresa", max_length=140, blank=True, default="")
+    service_name = models.CharField("Serviço realizado", max_length=160, blank=True, default="")
     date_from = models.DateField(null=True, blank=True)
     date_to = models.DateField(null=True, blank=True)
     objective = models.TextField("Objetivo", blank=True, default="")
@@ -72,9 +75,12 @@ class WrittenReport(models.Model):
         return [(label, getattr(self, field).strip()) for field, label in SECTIONS if getattr(self, field).strip()]
 
     @property
-    def client_name(self):
+    def client_label(self):
+        """Nome do cliente para exibir: o congelado na emissao, o digitado ou o do contrato/servico antigo."""
         if self.snapshot.get("client"):
             return self.snapshot["client"]
+        if self.client_name:
+            return self.client_name
         if self.kind == self.Kind.SERVICE and self.service_job:
             return self.service_job.client_display_name
         return self.contract.company.name if self.contract else ""
@@ -89,8 +95,8 @@ class WrittenReport(models.Model):
             raise ValidationError("Escreva pelo menos uma seção antes de emitir o relatório.")
         if self.kind == self.Kind.HOURS and not (self.contract and self.date_from and self.date_to):
             raise ValidationError("Escolha o cliente e o período do relatório de horas.")
-        if self.kind == self.Kind.SERVICE and not self.service_job:
-            raise ValidationError("Escolha o serviço do relatório.")
+        if self.kind == self.Kind.SERVICE and not self.service_job and not (self.client_name and self.service_name):
+            raise ValidationError("Informe o cliente e o serviço do relatório.")
         with transaction.atomic():
             list(WrittenReport.objects.select_for_update().filter(owner=self.owner).values_list("id", flat=True))
             current = WrittenReport.objects.select_for_update().get(pk=self.pk)

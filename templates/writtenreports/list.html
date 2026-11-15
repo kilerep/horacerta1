@@ -1,7 +1,7 @@
 {% extends "accounts/base.html" %}
 {% load hc_icons %}
 
-{% block title %}Relatórios escritos{% endblock %}
+{% block title %}Relatórios de serviço{% endblock %}
 {% block page_title %}Relatórios{% endblock %}
 {% block extra_head %}{% include "writtenreports/_styles.html" %}{% endblock %}
 
@@ -10,12 +10,11 @@
   {% include "writtenreports/_tabs.html" with active="written" %}
   <header class="wr-head">
     <div>
-      <h1>Relatórios escritos</h1>
-      <p>Documento formal para o cliente: você escreve o que foi feito e o sistema junta as horas ou os dados do serviço, com número, assinatura e PDF. Depois de emitido, fica travado.</p>
+      <h1>Relatórios de serviço</h1>
+      <p>Documento formal para a empresa que pediu: você escreve o serviço que fez e o sistema monta o relatório com número, assinatura e PDF. As horas vão no Fechamento de horas. Depois de emitido, fica travado.</p>
     </div>
     <div class="wr-new">
-      <a class="btn primary" href="{% url 'written_report_create' %}?tipo=hours">{% icon "clock" 18 %} Relatório de horas</a>
-      <a class="btn" href="{% url 'written_report_create' %}?tipo=service">{% icon "briefcase" 18 %} Relatório de serviço</a>
+      <a class="btn primary" href="{% url 'written_report_create' %}">{% icon "plus" 18 %} Novo relatório de serviço</a>
     </div>
   </header>
 
@@ -29,7 +28,7 @@
     {% for report in issued %}
       {% include "writtenreports/_card.html" %}
     {% empty %}
-      <div class="wr-empty">Nenhum relatório emitido ainda. Escolha <strong>Relatório de horas</strong> para um período de um cliente, ou <strong>Relatório de serviço</strong> para um trabalho avulso.</div>
+      <div class="wr-empty">Nenhum relatório emitido ainda. Toque em <strong>Novo relatório de serviço</strong>, informe o cliente e o serviço e escreva o que foi feito.</div>
     {% endfor %}
   </section>
 </div>

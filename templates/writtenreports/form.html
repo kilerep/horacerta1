@@ -1,6 +1,6 @@
 {% extends "accounts/base.html" %}
 
-{% block title %}{% if is_new %}Novo relatório escrito{% else %}Editar relatório{% endif %}{% endblock %}
+{% block title %}{% if is_new %}Novo relatório de serviço{% else %}Editar relatório{% endif %}{% endblock %}
 {% block page_title %}Relatórios{% endblock %}
 {% block extra_head %}{% include "writtenreports/_styles.html" %}{% endblock %}
 
@@ -9,8 +9,8 @@
   {% include "writtenreports/_tabs.html" with active="written" %}
   <header class="wr-head">
     <div>
-      <h1>{% if is_new %}Novo relatório escrito{% else %}Editar rascunho{% endif %}</h1>
-      <p>Escreva com as suas palavras. Seção que ficar vazia não aparece no documento. Horas, valores e dados do serviço entram sozinhos.</p>
+      <h1>{% if is_new %}Novo relatório de serviço{% else %}Editar rascunho{% endif %}</h1>
+      <p>Escreva com as suas palavras o serviço que fez. Seção que ficar vazia não aparece no documento.</p>
     </div>
   </header>
 
@@ -19,30 +19,16 @@
   <form class="wr-form" method="post">
     {% csrf_token %}
     <section class="wr-box" aria-labelledby="wr-about">
-      <h2 id="wr-about">Sobre o relatório</h2>
-      <div class="wr-kind" role="radiogroup" aria-label="Tipo">
-        <label><input type="radio" name="kind" value="HOURS" data-kind {% if report.kind == "HOURS" %}checked{% endif %}> Relatório de horas</label>
-        <label><input type="radio" name="kind" value="SERVICE" data-kind {% if report.kind == "SERVICE" %}checked{% endif %}> Relatório de serviço</label>
-      </div>
-      <div class="wr-field"><label for="wr-title">Título</label><input id="wr-title" name="title" value="{{ report.title }}" maxlength="140" placeholder="Ex.: Relatório de atividades de novembro" required></div>
-
-      <div class="wr-grid" data-kind-panel="HOURS" {% if report.kind != "HOURS" %}hidden{% endif %}>
-        <div class="wr-field" style="grid-column:1 / -1"><label for="wr-contract">Cliente</label>
-          <select id="wr-contract" name="contract">
-            <option value="">Escolha o cliente</option>
-            {% for c in contracts %}<option value="{{ c.id }}" {% if report.contract_id == c.id %}selected{% endif %}>{{ c.company.name }}</option>{% endfor %}
-          </select>
+      <h2 id="wr-about">Sobre o serviço</h2>
+      <div class="wr-field"><label for="wr-title">Título do relatório</label><input id="wr-title" name="title" value="{{ report.title }}" maxlength="140" placeholder="Ex.: Relatório de manutenção da prensa 3" required></div>
+      <div class="wr-grid">
+        <div class="wr-field"><label for="wr-client">Cliente / empresa</label>
+          <input id="wr-client" name="client_name" value="{{ report.client_name }}" maxlength="140" list="wr-client-list" placeholder="Para quem foi o serviço" required>
+          <datalist id="wr-client-list">{% for name in client_suggestions %}<option value="{{ name }}">{% endfor %}</datalist>
         </div>
-        <div class="wr-field"><label for="wr-from">De</label><input id="wr-from" type="date" name="date_from" value="{% if report.date_from %}{{ report.date_from|date:'Y-m-d' }}{% else %}{{ default_from }}{% endif %}"></div>
-        <div class="wr-field"><label for="wr-to">Até</label><input id="wr-to" type="date" name="date_to" value="{% if report.date_to %}{{ report.date_to|date:'Y-m-d' }}{% else %}{{ default_to }}{% endif %}"></div>
-      </div>
-
-      <div class="wr-field" data-kind-panel="SERVICE" {% if report.kind != "SERVICE" %}hidden{% endif %}>
-        <label for="wr-job">Serviço</label>
-        <select id="wr-job" name="service_job">
-          <option value="">Escolha o serviço</option>
-          {% for job in jobs %}<option value="{{ job.id }}" {% if report.service_job_id == job.id %}selected{% endif %}>{{ job.title }} · {{ job.client_display_name }}</option>{% empty %}<option value="" disabled>Nenhum serviço cadastrado ainda</option>{% endfor %}
-        </select>
+        <div class="wr-field"><label for="wr-service">Serviço realizado</label><input id="wr-service" name="service_name" value="{{ report.service_name }}" maxlength="160" placeholder="Ex.: Troca de rolamentos e alinhamento" required></div>
+        <div class="wr-field"><label for="wr-from">Data (início)</label><input id="wr-from" type="date" name="date_from" value="{% if report.date_from %}{{ report.date_from|date:'Y-m-d' }}{% else %}{{ today }}{% endif %}"></div>
+        <div class="wr-field"><label for="wr-to">Até (opcional)</label><input id="wr-to" type="date" name="date_to" value="{{ report.date_to|date:'Y-m-d' }}"></div>
       </div>
     </section>
 
@@ -59,14 +45,4 @@
     </div>
   </form>
 </div>
-<script>
-  (function () {
-    var radios = document.querySelectorAll("[data-kind]");
-    function sync() {
-      var kind = document.querySelector("[data-kind]:checked").value;
-      document.querySelectorAll("[data-kind-panel]").forEach(function (panel) { panel.hidden = panel.getAttribute("data-kind-panel") !== kind; });
-    }
-    radios.forEach(function (radio) { radio.addEventListener("change", sync); });
-  })();
-</script>
 {% endblock %}

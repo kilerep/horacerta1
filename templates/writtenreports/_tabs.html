@@ -1,4 +1,4 @@
 <nav class="wr-tabs" aria-label="Relatórios">
   <a class="wr-tab {% if active == 'hours' %}is-active{% endif %}" href="{% url 'mei_reports' %}" {% if active == 'hours' %}aria-current="page"{% endif %}>Fechamento de horas</a>
-  <a class="wr-tab {% if active == 'written' %}is-active{% endif %}" href="{% url 'written_report_list' %}" {% if active == 'written' %}aria-current="page"{% endif %}>Relatórios escritos</a>
+  <a class="wr-tab {% if active == 'written' %}is-active{% endif %}" href="{% url 'written_report_list' %}" {% if active == 'written' %}aria-current="page"{% endif %}>Relatórios de serviço</a>
 </nav>

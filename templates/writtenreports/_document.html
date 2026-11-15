@@ -1,9 +1,10 @@
 {# Corpo do relatorio (detalhe do dono): fatos, secoes escritas e a parte automatica. #}
 <div class="wr-facts">
   <div><span>Prestador</span><strong>{{ data.sender|default:"—" }}</strong></div>
-  <div><span>Cliente</span><strong>{{ report.client_name|default:"—" }}</strong></div>
+  <div><span>Cliente</span><strong>{{ report.client_label|default:"—" }}</strong></div>
   {% if report.kind == "HOURS" %}<div><span>Período</span><strong>{{ data.period|default:"—" }}</strong></div>
-  {% else %}<div><span>Serviço</span><strong>{{ data.service|default:"—" }}</strong></div>{% endif %}
+  {% else %}<div><span>Serviço</span><strong>{{ data.service|default:report.service_name|default:"—" }}</strong></div>
+  {% if data.period %}<div><span>Data</span><strong>{{ data.period }}</strong></div>{% endif %}{% endif %}
 </div>
 {% for label, text in report.sections %}
   <section class="wr-section"><h3>{{ label }}</h3><p>{{ text }}</p></section>
@@ -19,5 +20,5 @@
       {% for item in data.items %}<tr><td>{{ item.name }}</td><td class="num">{{ item.quantity }}</td><td class="num">{{ item.total }}</td></tr>{% endfor %}
     </tbody></table>
   {% endif %}
-  <div class="wr-total"><span>Horas {{ data.total_hours }}</span><span>Total do serviço {{ data.total_value }}</span></div>
+  {% if data.total_value %}<div class="wr-total"><span>Horas {{ data.total_hours }}</span><span>Total do serviço {{ data.total_value }}</span></div>{% endif %}
 {% endif %}

@@ -17,16 +17,15 @@ from .exports import build_pdf, pdf_filename
 from .models import SECTIONS, WrittenReport
 
 
-def _contracts(user):
+def _client_suggestions(user):
+    """Nomes de clientes ja cadastrados, so como sugestao no campo livre."""
     from accounts.mei_context import mei_contracts_for_user
 
-    return mei_contracts_for_user(user, include_inactive_contracts=True)
-
-
-def _jobs(user):
-    from services.views import _service_jobs_for_user
-
-    return _service_jobs_for_user(user).order_by("-created_at")[:60]
+    names = []
+    for contract in mei_contracts_for_user(user, include_inactive_contracts=True):
+        if contract.company.name not in names:
+            names.append(contract.company.name)
+    return names
 
 
 def _report_for(request, report_id):
@@ -44,35 +43,30 @@ def _read_form(request, report):
     """Preenche o rascunho com o POST; devolve a lista de erros (vazia = ok)."""
     post = request.POST
     errors = []
-    report.kind = post.get("kind") if post.get("kind") in WrittenReport.Kind.values else WrittenReport.Kind.HOURS
+    report.kind = WrittenReport.Kind.SERVICE
     report.title = (post.get("title") or "").strip()[:140]
+    report.client_name = (post.get("client_name") or "").strip()[:140]
+    report.service_name = (post.get("service_name") or "").strip()[:160]
+    report.date_from, report.date_to = _parse_date(post.get("date_from")), _parse_date(post.get("date_to"))
+    if report.date_from and report.date_to and report.date_from > report.date_to:
+        report.date_from, report.date_to = report.date_to, report.date_from
     for field, _label in SECTIONS:
         setattr(report, field, (post.get(field) or "").strip())
-    report.contract = report.service_job = None
-    report.date_from = report.date_to = None
-    if report.kind == WrittenReport.Kind.HOURS:
-        report.contract = _contracts(request.user).filter(id=post.get("contract") or 0).first()
-        report.date_from, report.date_to = _parse_date(post.get("date_from")), _parse_date(post.get("date_to"))
-        if not report.contract:
-            errors.append("Escolha o cliente.")
-        if not (report.date_from and report.date_to) or report.date_from > report.date_to:
-            errors.append("Informe um período válido (de / até).")
-    else:
-        job_id = post.get("service_job") or ""
-        report.service_job = next((j for j in _jobs(request.user) if str(j.id) == job_id), None)
-        if not report.service_job:
-            errors.append("Escolha o serviço.")
     if not report.title:
         errors.append("Dê um título ao relatório.")
+    if not report.client_name:
+        errors.append("Informe o cliente ou a empresa.")
+    if not report.service_name:
+        errors.append("Informe o serviço realizado.")
     return errors
 
 
 def _form(request, report, errors=()):
-    today = timezone.localdate()
     return render(request, "writtenreports/form.html", {
-        "report": report, "is_new": report._state.adding, "errors": errors, "sections": [(f, l, getattr(report, f)) for f, l in SECTIONS],
-        "contracts": _contracts(request.user), "jobs": _jobs(request.user),
-        "default_from": today.replace(day=1).isoformat(), "default_to": today.isoformat(),
+        "report": report, "is_new": report._state.adding, "errors": errors,
+        "sections": [(f, l, getattr(report, f)) for f, l in SECTIONS],
+        "client_suggestions": _client_suggestions(request.user),
+        "today": timezone.localdate().isoformat(),
     })
 
 
@@ -86,9 +80,7 @@ def report_list(request):
 
 @login_required
 def report_create(request):
-    report = WrittenReport(owner=request.user, kind=request.GET.get("tipo", "").upper() or WrittenReport.Kind.HOURS)
-    if report.kind not in WrittenReport.Kind.values:
-        report.kind = WrittenReport.Kind.HOURS
+    report = WrittenReport(owner=request.user, kind=WrittenReport.Kind.SERVICE)
     if request.method == "POST":
         errors = _read_form(request, report)
         if not errors:
