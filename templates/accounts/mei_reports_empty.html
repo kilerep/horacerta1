@@ -1,0 +1,23 @@
+{% extends "accounts/base.html" %}
+{% load hc_icons %}
+{% block title %}Relatórios{% endblock %}
+{% block page_title %}Relatórios{% endblock %}
+{% block extra_head %}{% include "writtenreports/_styles.html" %}{% endblock %}
+{% block content %}
+<div class="wr-page">
+  {% include "writtenreports/_tabs.html" with active="hours" %}
+  <header class="wr-head">
+    <div>
+      <h1>Fechamento de horas</h1>
+      <p>Aqui você gera o relatório das horas de um cliente no período e manda o link para ele conferir. Para isso, primeiro cadastre um cliente com o valor por hora.</p>
+    </div>
+  </header>
+  <div class="wr-empty">
+    <strong>Você ainda não tem clientes.</strong> Cadastre o primeiro e registre as horas: o fechamento fica pronto aqui. Se você só faz serviços avulsos, o relatório do serviço fica na tela do próprio serviço.
+    <div class="wr-new" style="margin-top:12px">
+      <a class="btn primary" href="{% url 'mei_client_create' %}">{% icon "plus" 18 %} Cadastrar cliente</a>
+      <a class="btn" href="{% url 'service_job_list' %}">Ir para Serviços</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

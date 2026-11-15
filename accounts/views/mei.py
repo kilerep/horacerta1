@@ -989,7 +989,8 @@ def mei_reports(request):
     contracts = mei_contracts_for_user(request.user, include_inactive_contracts=True)
     contracts_list = list(contracts)
     if not contracts_list:
-        return redirect("mei_panel")
+        # Conta nova: explica o que falta em vez de voltar para o painel sem aviso.
+        return render(request, "accounts/mei_reports_empty.html")
 
     selected_contract_id = (request.GET.get("contract") or request.POST.get("selected_contract") or "").strip()
     selected_contract = None

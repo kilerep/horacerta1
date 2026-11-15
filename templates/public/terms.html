@@ -22,7 +22,7 @@
     <article class="card">
       <h2>2. Cadastro e acesso</h2>
       <ul class="list">
-        <li>O acesso pode ocorrer por autocadastro de empresa/cliente ou por vínculo criado para o prestador (MEI/autônomo) que usa a plataforma para organizar sua rotina de trabalho.</li>
+        <li>O acesso é feito pelo próprio prestador (MEI/autônomo), que cria a conta e usa a plataforma para organizar horas, clientes e serviços. Os clientes do prestador consultam relatórios por link, sem precisar de conta.</li>
         <li>Credenciais de acesso são pessoais e intransferíveis; o usuário é responsável por manter a senha em sigilo.</li>
         <li>Cada prestador só visualiza e gerencia os próprios clientes, contratos, horários, serviços e relatórios.</li>
       </ul>
@@ -35,7 +35,7 @@
     <article class="card"><h2>5. Dados e privacidade</h2><p>O tratamento de dados segue a <a href="{% url 'privacy' %}">Política de Privacidade</a>, que detalha o que é coletado, para quê e como exercer seus direitos.</p></article>
     <article class="card"><h2>6. Limites de responsabilidade</h2><p>O HoraCerta é uma ferramenta de organização operacional. Não substitui orientação contábil, jurídica ou trabalhista — para questões fiscais, tributárias ou legais específicas do seu negócio, consulte um profissional qualificado.</p></article>
     <article class="card"><h2>7. Atualizações destes termos</h2><p>Estes termos podem ser atualizados para refletir a evolução do produto e requisitos legais. Mudanças relevantes serão indicadas nesta página.</p></article>
-    <article class="card"><h2>8. Contato</h2><p>Dúvidas sobre estes termos podem ser enviadas para <a href="mailto:kilerepp@gmail.com">kilerepp@gmail.com</a>.</p></article>
+    <article class="card"><h2>8. Contato</h2><p>Dúvidas sobre estes termos podem ser enviadas para <a href="mailto:{{ support.email }}">{{ support.email }}</a>{% if support.whatsapp_url %} ou pelo <a href="{{ support.whatsapp_url }}" target="_blank" rel="noopener">WhatsApp do suporte</a>{% endif %}.{% if support.cnpj %} HoraCerta é operado por {{ support.legal_name|default:"HoraCerta" }}, CNPJ {{ support.cnpj }}.{% endif %}</p></article>
   </section>
 </div>
 {% endblock %}

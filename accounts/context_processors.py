@@ -1,3 +1,4 @@
+from django.conf import settings
 from companies.models import Company
 from companies.feature_flags import (
     get_feature_required_plan_badge,
@@ -175,3 +176,19 @@ def header_profile_media(request):
         "header_user_theme": header_user_theme,
         "header_can_access_internal_dashboard": header_can_access_internal_dashboard,
     }
+
+
+def support_contact(request):
+    """Canal de suporte e dados da empresa para menu, Ajuda, Termos e rodape (vazio = nao mostra)."""
+    from urllib.parse import quote
+
+    whatsapp = settings.SUPPORT_WHATSAPP
+    if whatsapp and len(whatsapp) <= 11:
+        whatsapp = f"55{whatsapp}"
+    message = quote("Olá! Preciso de ajuda com o HoraCerta.", safe="")
+    return {"support": {
+        "email": settings.SUPPORT_EMAIL,
+        "whatsapp_url": f"https://wa.me/{whatsapp}?text={message}" if whatsapp else "",
+        "legal_name": settings.COMPANY_LEGAL_NAME,
+        "cnpj": settings.COMPANY_CNPJ,
+    }}

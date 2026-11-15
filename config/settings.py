@@ -40,6 +40,12 @@ _load_dotenv(BASE_DIR / ".env")
 
 DEBUG = _env_bool("DEBUG", False)
 APP_BASE_URL = os.getenv("APP_BASE_URL", "").strip()
+
+# Contato e identidade do HoraCerta mostrados nas paginas (suporte, termos, rodape).
+SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", "kilerepp@gmail.com").strip()
+SUPPORT_WHATSAPP = "".join(ch for ch in os.getenv("SUPPORT_WHATSAPP", "") if ch.isdigit())
+COMPANY_LEGAL_NAME = os.getenv("COMPANY_LEGAL_NAME", "").strip()
+COMPANY_CNPJ = os.getenv("COMPANY_CNPJ", "").strip()
 ALLOW_DEBUG_IN_REMOTE = _env_bool("ALLOW_DEBUG_IN_REMOTE", False)
 
 app_base_host = (urlparse(APP_BASE_URL).hostname or "").strip() if APP_BASE_URL else ""
@@ -122,6 +128,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "accounts.context_processors.header_profile_media",
+                "accounts.context_processors.support_contact",
             ],
         },
     },

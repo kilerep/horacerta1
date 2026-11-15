@@ -109,7 +109,7 @@
       <input type="hidden" name="action" value="create_report">
       <input type="hidden" name="status" value="DRAFT">
       <div class="reports-field full">
-        <span class="reports-sub">Ao gerar este relatório, os dias incluídos no período serão bloqueados para edição.</span>
+        <span class="reports-sub">Depois de gerar, os horários desse período ficam fechados para edição, assim o cliente confere exatamente o que você enviou.</span>
       </div>
       <div class="reports-field">
         {{ report_form.contract.label_tag }}
@@ -181,7 +181,7 @@
         </select>
       </div>
       <div class="reports-field">
-        <label for="filter-view">Visualizacao</label>
+        <label for="filter-view">Visualização</label>
         <select id="filter-view" name="view">
           <option value="all" {% if view_filter == "all" %}selected{% endif %}>Todos</option>
           <option value="unviewed" {% if view_filter == "unviewed" %}selected{% endif %}>Não visualizado</option>
@@ -226,7 +226,7 @@
   <section class="reports-panel">
     <div class="reports-head">
       <h2 class="reports-title">Relatórios gerados</h2>
-      <p class="reports-sub">Acesse, compartilhe, baixe PDF ou acompanhe visualizacao e recebimento interno.</p>
+      <p class="reports-sub">Acesse, compartilhe, baixe PDF ou acompanhe a visualização e o recebimento.</p>
     </div>
     <div class="reports-actions" style="margin-top:12px">
       <a class="btn" href="{{ csv_url }}">Exportar CSV</a>
@@ -331,11 +331,11 @@
         navigator.clipboard.writeText(value).then(function () {
           setStatus("Link copiado.");
         }).catch(function () {
-          setStatus("Nao foi possivel copiar automaticamente. Copie pelo detalhe do relatorio.");
+          setStatus("Não foi possível copiar automaticamente. Copie pelo detalhe do relatório.");
         });
         return;
       }
-      setStatus("Copie o link pelo detalhe do relatorio.");
+      setStatus("Copie o link pelo detalhe do relatório.");
     });
   })();
 </script>

@@ -119,6 +119,12 @@
             <span class="icon">{% icon "help" %}</span>
             <div><strong>Central de ajuda</strong></div>
           </a>
+          {% if support.whatsapp_url %}
+          <a class="item" href="{{ support.whatsapp_url }}" target="_blank" rel="noopener">
+            <span class="icon">{% icon "mail" %}</span>
+            <div><strong>Falar com o suporte</strong></div>
+          </a>
+          {% endif %}
           <a class="item" href="{% url 'terms' %}">
             <span class="icon">{% icon "scale" %}</span>
             <div><strong>Termos de uso</strong></div>

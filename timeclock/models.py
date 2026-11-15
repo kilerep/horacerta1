@@ -601,7 +601,7 @@ class ServiceReport(models.Model):
         SENT = "SENT", "Enviado"
         VIEWED = "VIEWED", "Visualizado"
         REVIEWED = "REVIEWED", "Conferido"
-        DIVERGENT = "DIVERGENT", "Com divergencia"
+        DIVERGENT = "DIVERGENT", "Com divergência"
         PAID = "PAID", "Pago"
         CANCELED = "CANCELED", "Cancelado"
 
@@ -609,7 +609,7 @@ class ServiceReport(models.Model):
         PENDING = "PENDING", "Aguardando conferencia"
         VIEWED = "VIEWED", "Visualizado"
         REVIEWED = "REVIEWED", "Conferido"
-        DIVERGENT = "DIVERGENT", "Com divergencia"
+        DIVERGENT = "DIVERGENT", "Com divergência"
         REVOKED = "REVOKED", "Link revogado"
         EXPIRED = "EXPIRED", "Link expirado"
 

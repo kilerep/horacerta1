@@ -36,7 +36,7 @@
         <li>Demais direitos previstos na Lei Geral de Proteção de Dados (LGPD).</li>
       </ul>
     </article>
-    <article class="card"><h2>6. Contato</h2><p>Para exercer seus direitos ou tirar dúvidas sobre esta política, escreva para <a href="mailto:kilerepp@gmail.com">kilerepp@gmail.com</a>.</p></article>
+    <article class="card"><h2>6. Contato</h2><p>Para exercer seus direitos ou tirar dúvidas sobre esta política, escreva para <a href="mailto:{{ support.email }}">{{ support.email }}</a>{% if support.whatsapp_url %} ou pelo <a href="{{ support.whatsapp_url }}" target="_blank" rel="noopener">WhatsApp do suporte</a>{% endif %}.{% if support.cnpj %} HoraCerta é operado por {{ support.legal_name|default:"HoraCerta" }}, CNPJ {{ support.cnpj }}.{% endif %}</p></article>
   </section>
 </div>
 {% endblock %}
