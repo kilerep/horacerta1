@@ -108,3 +108,44 @@ class FromEntriesTests(TestCase):
         draft = ShipmentNote.objects.get(owner=self.owner, status=ShipmentNote.Status.DRAFT)
 
         self.assertEqual(list(draft.items.values_list("drawing_number", "quantity")), [("-", 1), ("0128-208", 1)])
+
+
+@override_settings(**BASE)
+class SheetScreenTests(TestCase):
+    def setUp(self):
+        self.owner = make_user("tela-romaneio@example.com")
+        self.client.force_login(self.owner)
+        self.entry = make_entry(self.owner)
+
+    def _html(self):
+        return self.client.get(reverse("production_sheet_detail", args=[self.entry.sheet_id])).content.decode()
+
+    def test_sheet_detail_has_select_mode_and_drafts(self):
+        draft = ShipmentNote.objects.create(owner=self.owner, destination_company="Gbach")
+        html = self._html()
+
+        self.assertIn("data-select-toggle", html)
+        self.assertIn(reverse("shipment_from_entries", args=[self.entry.sheet_id]), html)
+        self.assertIn(f'value="{self.entry.id}"', html)
+        self.assertIn(f'value="{draft.id}"', html)
+        self.assertIn('name="production_order"', html)
+        self.assertIn("7542.1", html)
+
+    def test_entry_shows_sent_progress(self):
+        sent_note_with(self.entry, 30)
+        self.assertIn("30 de 49 enviadas", self._html())
+        sent_note_with(self.entry, 19)
+        self.assertIn("Enviado", self._html())
+
+    def test_exports_include_production_order(self):
+        from io import BytesIO
+
+        from openpyxl import load_workbook
+
+        from production.exports import build_xlsx
+
+        ws = load_workbook(BytesIO(build_xlsx(self.entry.sheet))).active
+        values = [c for row in ws.iter_rows(values_only=True) for c in row if c is not None]
+
+        self.assertIn("Ordem de produção", values)
+        self.assertIn("7542.1", values)

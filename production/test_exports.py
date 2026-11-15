@@ -93,7 +93,7 @@ class XlsxExportTests(ExportFixture):
         self.assertEqual(ws.cell(h, 1).font.name, "Arial")
         self.assertTrue(ws.cell(h, 1).font.bold)
         self.assertEqual(ws.freeze_panes, f"A{h + 1}")
-        self.assertEqual(ws.auto_filter.ref, f"A{h}:H{h + 5}")
+        self.assertEqual(ws.auto_filter.ref, f"A{h}:I{h + 5}")
         self.assertGreaterEqual(ws.column_dimensions["H"].width, 30)
 
     def test_totals_are_values_visible_without_recalculation(self):

@@ -2,6 +2,7 @@ import csv
 from urllib.parse import quote
 
 from django.contrib import messages
+from django.db.models import Sum
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -11,7 +12,7 @@ from django.views.decorators.http import require_POST
 
 from .exports import build_pdf, build_xlsx, safe_filename
 from .forms import ProductionEntryForm, ProductionSheetForm
-from .models import ProductionEntry, ProductionSheet, format_minutes, pending_note
+from .models import ProductionEntry, ProductionSheet, ShipmentItem, ShipmentNote, format_minutes, pending_note
 
 
 def _default_operator(user):
@@ -198,6 +199,16 @@ def _code_suggestions(user):
     return seen
 
 
+def _attach_shipped(entries):
+    """entry.shipped = pecas ja enviadas em romaneios (uma consulta so para a lista toda)."""
+    sums = dict(
+        ShipmentItem.objects.filter(source_entry__in=entries, note__status=ShipmentNote.Status.SENT)
+        .values_list("source_entry").annotate(total=Sum("quantity")).values_list("source_entry", "total")
+    )
+    for entry in entries:
+        entry.shipped = sums.get(entry.id, 0)
+
+
 @login_required
 def sheet_detail(request, sheet_id):
     sheet = _sheet_for(request, sheet_id)
@@ -218,9 +229,11 @@ def sheet_detail(request, sheet_id):
     else:
         form = ProductionEntryForm(initial={"work_date": timezone.localdate()})
     entries = list(sheet.entries.all())
+    _attach_shipped(entries)
     return render(request, "production/sheet_detail.html", {
         "sheet": sheet,
         "entries": entries,
+        "shipment_drafts": ShipmentNote.objects.filter(owner=request.user, status=ShipmentNote.Status.DRAFT),
         "form": form,
         "totals": _totals_display(sheet),
         "code_suggestions": _code_suggestions(request.user),

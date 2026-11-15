@@ -1,5 +1,10 @@
 {% if form.non_field_errors %}<div class="prod-errors">{{ form.non_field_errors }}</div>{% endif %}
-<div class="prod-grid">
+<div class="prod-grid prod-grid-3">
+  <div class="prod-field">
+    <label for="{{ form.production_order.id_for_label }}">Ordem de produção</label>
+    {{ form.production_order }}
+    {{ form.production_order.errors }}
+  </div>
   <div class="prod-field">
     <label for="{{ form.item_code.id_for_label }}">Código do item</label>
     <input type="text" name="{{ form.item_code.html_name }}" id="{{ form.item_code.id_for_label }}" value="{{ form.item_code.value|default_if_none:'' }}" list="code-suggestions" placeholder="Ex.: 0011-024" autocomplete="off">
