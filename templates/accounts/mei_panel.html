@@ -167,17 +167,6 @@
             <a class="btn" href="{% url 'mei_client_edit' contract.id %}">Definir valor/hora</a>
           </article>
         {% endfor %}
-        {% for item in pending_payment_alerts %}
-          <article class="attention-item attention-item--warn">
-            <span class="attention-item__dot" aria-hidden="true"></span>
-            <div>
-              <span class="attention-item__eyebrow">Recebimento pendente</span>
-              <strong class="attention-item__title">{{ item.company_name }}</strong>
-              <p class="attention-item__text">Relatório {{ item.viewed_label|lower }} pelo cliente, ainda sem pagamento marcado.</p>
-            </div>
-            <a class="btn" href="{% url 'mei_service_report_detail' item.report.id %}">Ver relatório</a>
-          </article>
-        {% endfor %}
         {% for req in pending_report_requests %}
           <article class="attention-item attention-item--warn">
             <span class="attention-item__dot" aria-hidden="true"></span>
@@ -243,7 +232,7 @@
             </div>
             <a class="btn" href="{% url 'mei_client_create' %}">Cadastrar cliente</a>
           </article>
-        {% elif not incomplete_alerts and not missing_rate_contracts and not pending_payment_alerts and not pending_report_requests and not unviewed_report_alerts and not paused_contracts and not new_service_requests_count and not important_notifications_count %}
+        {% elif not incomplete_alerts and not missing_rate_contracts and not pending_report_requests and not unviewed_report_alerts and not paused_contracts and not new_service_requests_count and not important_notifications_count %}
           <article class="attention-item attention-item--ok">
             <span class="attention-item__dot" aria-hidden="true"></span>
             <div>

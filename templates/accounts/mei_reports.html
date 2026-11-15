@@ -86,10 +86,6 @@
     <section class="feedback warn" role="status">Relatório gerado, mas não havia horários registrados no período selecionado.</section>
   {% elif request.GET.event == "link_created" %}
     <section class="feedback" role="status">Link de conferência gerado.</section>
-  {% elif request.GET.event == "report_received" %}
-    <section class="feedback" role="status">Relatório marcado como recebido.</section>
-  {% elif request.GET.event == "report_receive_pending" %}
-    <section class="feedback" role="status">Relatório voltou para pendente.</section>
   {% endif %}
 
   <section class="reports-panel">
@@ -147,7 +143,7 @@
   <details class="reports-panel reports-filter"{% if request.GET %} open{% endif %}>
     <summary class="reports-filter__summary">
       <span class="reports-title">Buscar e filtrar relatórios</span>
-      <span class="reports-sub">Por título, cliente, período, visualização e recebimento.</span>
+      <span class="reports-sub">Por título, cliente, período e visualização.</span>
     </summary>
     <form method="get" class="reports-form">
       <div class="reports-field">
@@ -188,14 +184,6 @@
           <option value="viewed" {% if view_filter == "viewed" %}selected{% endif %}>Visualizado</option>
         </select>
       </div>
-      <div class="reports-field">
-        <label for="filter-receive">Recebimento</label>
-        <select id="filter-receive" name="receive">
-          <option value="all" {% if receive_filter == "all" %}selected{% endif %}>Todos</option>
-          <option value="pending" {% if receive_filter == "pending" %}selected{% endif %}>Pendente</option>
-          <option value="received" {% if receive_filter == "received" %}selected{% endif %}>Recebido</option>
-        </select>
-      </div>
       <div class="reports-actions full">
         <button class="btn primary" type="submit">Filtrar</button>
         <a class="btn" href="{% url 'mei_reports' %}">Limpar filtros</a>
@@ -226,7 +214,7 @@
   <section class="reports-panel">
     <div class="reports-head">
       <h2 class="reports-title">Relatórios gerados</h2>
-      <p class="reports-sub">Acesse, compartilhe, baixe PDF ou acompanhe a visualização e o recebimento.</p>
+      <p class="reports-sub">Acesse, compartilhe, baixe PDF ou acompanhe a visualização.</p>
     </div>
     <div class="reports-actions" style="margin-top:12px">
       <a class="btn" href="{{ csv_url }}">Exportar CSV</a>
@@ -250,7 +238,6 @@
             </div>
             <div class="report-statuses">
               <span class="status-pill {{ row.view_tone }}">{{ row.view_label }}</span>
-              <span class="status-pill {{ row.received_tone }}">{{ row.received_label }}</span>
             </div>
             <div class="report-card__actions">
               <a class="btn" href="{{ row.detail_url }}">Ver</a>
@@ -266,25 +253,6 @@
                 </form>
               {% endif %}
               <a class="btn" href="{{ row.pdf_url }}">PDF</a>
-              {% if report.payment_status != "paid" %}
-                {% if report.status != "DRAFT" %}
-                <form method="post" data-submit-once="true">
-                  {% csrf_token %}
-                  <input type="hidden" name="action" value="set_payment_status">
-                  <input type="hidden" name="report_id" value="{{ report.id }}">
-                  <input type="hidden" name="payment_status" value="paid">
-                  <button class="btn" type="submit">Recebido</button>
-                </form>
-                {% endif %}
-              {% else %}
-                <form method="post" data-submit-once="true" onsubmit="return confirm('Voltar este relatorio para pendente?')">
-                  {% csrf_token %}
-                  <input type="hidden" name="action" value="set_payment_status">
-                  <input type="hidden" name="report_id" value="{{ report.id }}">
-                  <input type="hidden" name="payment_status" value="pending">
-                  <button class="btn" type="submit">Marcar pendente</button>
-                </form>
-              {% endif %}
             </div>
           </article>
         {% endwith %}

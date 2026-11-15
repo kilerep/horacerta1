@@ -791,7 +791,7 @@ class MeiMultiCompanyContextTests(TestCase):
         self.assertContains(response, "hidden")
         self.assertContains(response, "Últimos fechamentos")
         self.assertContains(response, "Não visualizado")
-        self.assertContains(response, "Pendente")
+        self.assertNotContains(response, "Marcar pendente")  # sem controle de recebimento (2026-11-15)
         self.assertContains(response, "Ver todos em Relatórios")
         self.assertNotContains(response, "Relatorio antigo 3")
 
@@ -1242,7 +1242,7 @@ class MeiMultiCompanyContextTests(TestCase):
         self.assertContains(reports_response, "Link")
         self.assertContains(reports_response, "Enviar WhatsApp")
         self.assertContains(reports_response, "PDF")
-        self.assertContains(reports_response, "Pendente")
+        self.assertNotContains(reports_response, "Marcar pendente")  # sem recebimento nas telas (2026-11-15)
 
         filter_response = self.client.get(
             reverse("mei_reports"),
@@ -1266,11 +1266,11 @@ class MeiMultiCompanyContextTests(TestCase):
         self.assertIsNotNone(report.paid_at)
         self.assertNotEqual(report.status, ServiceReport.Status.PAID)
 
+        # As telas nao mostram mais recebimento (2026-11-15); a acao antiga continua sem quebrar nada.
         paid_reports_response = self.client.get(reverse("mei_reports"), {"contract": str(self.contract_b.id)})
-        self.assertContains(paid_reports_response, "Recebido")
         self.assertNotContains(paid_reports_response, "Pagamento:")
-        self.assertNotContains(paid_reports_response, "Pago")
-        self.assertContains(paid_reports_response, "Marcar pendente")
+        self.assertNotContains(paid_reports_response, "Marcar pendente")
+        self.assertNotContains(paid_reports_response, 'name="receive"')
         received_filter_response = self.client.get(reverse("mei_reports"), {"receive": "received", "q": "sob demanda"})
         self.assertEqual([row["report"].id for row in received_filter_response.context["report_rows"]], [report.id])
 

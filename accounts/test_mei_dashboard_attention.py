@@ -108,7 +108,7 @@ class MeiDashboardAttentionTests(TestCase):
         self.assertContains(response, f"date_from={today.isoformat()}")
         self.assertContains(response, f"date_to={today.isoformat()}")
 
-    def test_attention_panel_shows_pending_payment_after_client_views_report(self):
+    def test_attention_panel_no_longer_nags_about_payment_after_client_views_report(self):
         today = timezone.localdate()
         viewed_report = ServiceReport.objects.create(
             company=self.company_a,
@@ -127,9 +127,9 @@ class MeiDashboardAttentionTests(TestCase):
         response = self.client.get(reverse("mei_panel"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Recebimento pendente")
-        self.assertContains(response, "Cliente com pendências")
-        self.assertContains(response, reverse("mei_service_report_detail", args=[viewed_report.id]))
+        # O HoraCerta organiza horas e servicos; cobrar pagamento nao e papel dele (2026-11-15).
+        self.assertNotContains(response, "Recebimento pendente")
+        self.assertNotContains(response, "ainda sem pagamento marcado")
 
     def test_attention_panel_hides_reports_not_yet_viewed_or_already_paid(self):
         today = timezone.localdate()
