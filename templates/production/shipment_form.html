@@ -26,7 +26,6 @@
       <h2 id="ship-dest">{% icon "truck" 18 %} Para onde vai</h2>
       <div class="ship-grid">
         <div class="ship-field"><label for="f-dest">Empresa de destino</label><input id="f-dest" name="destination_company" value="{{ data.destination_company }}" required maxlength="120"></div>
-        <div class="ship-field"><label for="f-departed">Data e hora de saída</label><input id="f-departed" type="datetime-local" name="departed_at" value="{{ data.departed_at_raw }}" required></div>
         <div class="ship-field"><label for="f-driver">Motorista (opcional)</label><input id="f-driver" name="driver_name" value="{{ data.driver_name }}" maxlength="80"></div>
         <div class="ship-field"><label for="f-plate">Placa do caminhão (opcional)</label><input id="f-plate" name="vehicle_plate" value="{{ data.vehicle_plate }}" maxlength="10" autocapitalize="characters"></div>
       </div>

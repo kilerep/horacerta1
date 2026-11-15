@@ -1,6 +1,5 @@
 """Romaneios de envio: telas do dono e link publico de cada pessoa que recebe a nota."""
 
-from datetime import datetime
 from urllib.parse import quote
 
 from django.contrib import messages
@@ -15,7 +14,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from .models import ShipmentItem, ShipmentNote, ShipmentRecipient
-from .shipment_exports import build_shipment_pdf, build_shipment_xlsx, shipment_filename
+from .shipment_exports import build_shipment_pdf, build_shipment_xlsx, delivery_term, shipment_filename
 
 XLSX_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
@@ -37,19 +36,12 @@ def _digits(value):
     return "".join(ch for ch in (value or "") if ch.isdigit())[:20]
 
 
-def _parse_departed(value):
-    try:
-        return timezone.make_aware(datetime.strptime(value, "%Y-%m-%dT%H:%M"))
-    except (TypeError, ValueError):
-        return None
-
-
 def _read_form(post):
     """Le o formulario (campos simples + linhas de itens em listas paralelas). Devolve (dados, erros)."""
     data = {
         "destination_company": post.get("destination_company", "").strip()[:120],
-        "departed_at_raw": post.get("departed_at", ""),
-        "departed_at": _parse_departed(post.get("departed_at", "")),
+        # O horario de carregamento e gravado no envio; o rascunho so guarda quando foi criado.
+        "departed_at": timezone.now(),
         "driver_name": post.get("driver_name", "").strip()[:80],
         "vehicle_plate": post.get("vehicle_plate", "").strip().upper()[:10],
         "notes": post.get("notes", "").strip(),
@@ -74,12 +66,10 @@ def _read_form(post):
                               "quantity": min(max(qty, 1), MAX_QUANTITY), "description": description[:120]})
     if not data["destination_company"]:
         errors.append("Informe a empresa de destino.")
-    if data["departed_at"] is None:
-        errors.append("Informe a data e a hora de saída.")
     return data, errors
 
 
-NOTE_FIELDS = ("destination_company", "departed_at", "driver_name", "vehicle_plate", "notes")
+NOTE_FIELDS = ("destination_company", "driver_name", "vehicle_plate", "notes")
 
 
 def _save_note(note, data):
@@ -116,7 +106,6 @@ def _form_context(note=None, data=None, errors=None, owner=None):
         recipients = {r.role: {"name": r.name, "whatsapp": r.whatsapp} for r in source.recipients.all()} if source else {}
         data = {
             "destination_company": source.destination_company if source else "",
-            "departed_at_raw": timezone.localtime(note.departed_at if note else timezone.now()).strftime("%Y-%m-%dT%H:%M"),
             "driver_name": note.driver_name if note else "",
             "vehicle_plate": note.vehicle_plate if note else "",
             "notes": note.notes if note else "",
@@ -208,7 +197,8 @@ def shipment_send(request, note_id):
     except ValidationError as error:
         messages.error(request, " ".join(error.messages))
     else:
-        messages.success(request, f"Romaneio nº {note.number_label} enviado e travado. Agora mande o link para cada um.")
+        messages.success(request, f"Carregamento confirmado: romaneio nº {note.number_label} enviado e travado. "
+                                  "Agora mande o link para cada um.")
     return redirect("shipment_detail", note_id=note.id)
 
 
@@ -252,8 +242,8 @@ def whatsapp_message(note, recipient, link):
     first_name = recipient.name.split()[0] if recipient.name else ""
     return (
         f"Olá{', ' + first_name if first_name else ''}! Segue o *romaneio de envio nº {note.number_label}*: "
-        f"{total} {pieces} para {note.destination_company}, saída em "
-        f"{timezone.localtime(note.departed_at):%d/%m às %H:%M}.\n"
+        f"{total} {pieces} para {note.destination_company}, carga conferida e carregada em "
+        f"{timezone.localtime(note.loaded_at or note.created_at):%d/%m às %H:%M}.\n"
         f"Confira e autorize por este link: {link}"
     )
 
@@ -312,6 +302,7 @@ def shipment_public(request, token):
         "recipients_count": len(recipients), "viewed_count": sum(1 for r in recipients if r.viewed_at),
         "authorized_count": authorized, "authorized_all": bool(recipients) and authorized == len(recipients),
         "owner_preview": _is_owner_preview(request, recipient),
+        "delivery_term": delivery_term(note),
     })
     response["X-Robots-Tag"] = "noindex, nofollow"
     return response

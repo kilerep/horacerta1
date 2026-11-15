@@ -3,7 +3,7 @@
   <span class="ship-body">
     <strong>{{ note.destination_company }}</strong>
     <span class="ship-meta">
-      <span>{{ note.departed_at|date:"d/m" }} às {{ note.departed_at|time:"H:i" }}</span>
+      <span>{% if note.loaded_at %}Carregado {{ note.loaded_at|date:"d/m" }} às {{ note.loaded_at|time:"H:i" }}{% else %}Criado {{ note.created_at|date:"d/m" }}{% endif %}</span>
       <span>{{ note.total_quantity }} {% if note.total_quantity == 1 %}peça{% else %}peças{% endif %}</span>
       {% if note.replaces %}<span>corrige nº {{ note.replaces.number_label }}</span>{% endif %}
     </span>

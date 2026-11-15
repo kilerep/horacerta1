@@ -172,3 +172,58 @@ class RomaneioNameTests(TestCase):
             self.assertNotRegex(html, r"\b[Nn]otas? de envio\b")
         self.assertEqual(shipment_filename(note, "pdf"), "romaneio-0001-gbach.pdf")
         self.assertTrue(build_shipment_pdf(note).startswith(b"%PDF"))
+
+
+@override_settings(**BASE)
+class LoadedConfirmationTests(TestCase):
+    """2026-11-15: o romaneio registra quando a carga foi conferida e carregada (automatico, travado),
+    nao a saida do caminhao, e traz o termo de entrega."""
+
+    def setUp(self):
+        self.owner = make_user("carregado@example.com")
+        self.client.force_login(self.owner)
+
+    def test_form_has_no_departure_input_and_send_button_confirms_loading(self):
+        create = self.client.get(reverse("shipment_create")).content.decode()
+        draft = ShipmentNote.objects.create(owner=self.owner, destination_company="Gbach")
+        detail = self.client.get(reverse("shipment_detail", args=[draft.id])).content.decode()
+
+        self.assertNotIn('name="departed_at"', create)
+        self.assertIn("Carga conferida e carregada", detail)
+
+    def test_send_records_loaded_time_automatically(self):
+        from datetime import datetime
+
+        from django.utils import timezone
+
+        note = sent_note_with(make_entry(self.owner), 3)
+        note.refresh_from_db()
+
+        self.assertEqual(note.loaded_at, note.sent_at)
+        self.assertEqual(note.departed_at, note.sent_at)
+        draft = ShipmentNote.objects.create(owner=self.owner, destination_company="X",
+                                            departed_at=timezone.make_aware(datetime(2020, 1, 1)))
+        self.assertIsNone(draft.loaded_at)
+
+    def test_delivery_term_in_public_page_and_files(self):
+        from io import BytesIO
+
+        from openpyxl import load_workbook
+
+        from production.shipment_exports import build_shipment_xlsx, delivery_term
+
+        note = sent_note_with(make_entry(self.owner), 3)
+        note.driver_name, note.vehicle_plate = "Carlos", "RTX4B21"
+        note.save()
+        term = delivery_term(note)
+        self.client.logout()
+        html = self.client.get(reverse("shipment_public", args=[note.recipients.first().token])).content.decode()
+        ws = load_workbook(BytesIO(build_shipment_xlsx(note))).active
+        cells = " ".join(str(c) for row in ws.iter_rows(values_only=True) for c in row if c)
+
+        self.assertIn("foram conferidas e carregadas em", term)
+        self.assertIn("sob responsabilidade de carregado", term)
+        self.assertIn("motorista Carlos (placa RTX4B21)", term)
+        self.assertIn("foram conferidas e carregadas em", html)
+        self.assertIn("foram conferidas e carregadas em", cells)
+        self.assertNotIn("Saída do caminhão", html)
