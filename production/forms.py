@@ -59,10 +59,13 @@ class ProductionEntryForm(forms.ModelForm):
 
     class Meta:
         model = ProductionEntry
-        fields = ["work_date", "item_code", "quantity", "destination", "start_time", "end_time", "note"]
+        fields = ["work_date", "production_order", "item_code", "quantity", "destination", "start_time", "end_time",
+                  "note"]
         widgets = {
             "work_date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
             "item_code": forms.TextInput(attrs={"placeholder": "Ex.: 0011-024", "autocomplete": "off"}),
+            "production_order": forms.TextInput(attrs={"placeholder": "Ex.: 7542.1", "autocomplete": "off",
+                                                       "inputmode": "decimal"}),
             "quantity": forms.NumberInput(attrs={"placeholder": "Ex.: 12", "min": "1", "inputmode": "numeric"}),
             "destination": forms.RadioSelect,
             "start_time": forms.TimeInput(attrs={"type": "time"}, format="%H:%M"),
@@ -77,6 +80,9 @@ class ProductionEntryForm(forms.ModelForm):
         if self.instance and self.instance.pk and self.instance.manual_minutes is not None and not self.is_bound:
             m = self.instance.manual_minutes
             self.initial["duration"] = f"{m // 60}:{m % 60:02d}"
+
+    def clean_production_order(self):
+        return (self.cleaned_data.get("production_order") or "").strip()
 
     def clean_item_code(self):
         return (self.cleaned_data.get("item_code") or "").strip()

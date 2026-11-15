@@ -103,6 +103,7 @@ class ProductionEntry(models.Model):
     sheet = models.ForeignKey(ProductionSheet, on_delete=models.CASCADE, related_name="entries")
     work_date = models.DateField("Data", default=timezone.localdate)
     item_code = models.CharField("Código do item", max_length=40, blank=True, default="")
+    production_order = models.CharField("Ordem de produção", max_length=40, blank=True, default="")
     quantity = models.PositiveIntegerField("Quantidade", null=True, blank=True)
     destination = models.CharField("Destino", max_length=12, choices=Destination.choices, blank=True, default="")
     start_time = models.TimeField("Início", null=True, blank=True)
@@ -118,6 +119,18 @@ class ProductionEntry(models.Model):
 
     def __str__(self):
         return f"{self.work_date:%d/%m} {self.item_code or '-'}"
+
+    def shipped_quantity(self):
+        """Pecas deste item que ja sairam em romaneios enviados (rascunho nao conta)."""
+        total = self.shipment_items.filter(note__status=ShipmentNote.Status.SENT).aggregate(
+            total=models.Sum("quantity"))["total"]
+        return total or 0
+
+    def remaining_quantity(self):
+        """O que falta enviar; None quando o item nao tem quantidade anotada."""
+        if not self.quantity:
+            return None
+        return max(self.quantity - self.shipped_quantity(), 0)
 
     @property
     def duration_minutes(self):
@@ -242,6 +255,9 @@ class ShipmentItem(models.Model):
     drawing_number = models.CharField("Nº do desenho", max_length=60)
     quantity = models.PositiveIntegerField("Quantidade", default=1)
     description = models.CharField("Descrição", max_length=120, blank=True, default="")
+    # Item de producao de onde a linha veio (para mostrar "30 de 49 enviadas"); a linha guarda copia dos dados.
+    source_entry = models.ForeignKey(ProductionEntry, null=True, blank=True, on_delete=models.SET_NULL,
+                                     related_name="shipment_items")
 
     class Meta:
         ordering = ["position", "id"]
