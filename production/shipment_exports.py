@@ -34,7 +34,7 @@ def info_pairs(note):
     if note.vehicle_plate:
         pairs.append(("Placa", note.vehicle_plate))
     if note.replaces:
-        pairs.append(("Substitui", f"Nota nº {note.replaces.number_label}"))
+        pairs.append(("Substitui", f"Romaneio nº {note.replaces.number_label}"))
     return pairs
 
 
@@ -44,7 +44,7 @@ def item_rows(note):
 
 def shipment_filename(note, ext):
     destination = slugify(note.destination_company)[:40] or "destino"
-    return f"nota-envio-{note.number_label}-{destination}.{ext}"
+    return f"romaneio-{note.number_label}-{destination}.{ext}"
 
 
 def build_shipment_pdf(note):
@@ -52,7 +52,7 @@ def build_shipment_pdf(note):
     from reportlab.lib.units import cm
     from reportlab.platypus import KeepTogether, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
-    title = f"Nota de envio nº {note.number_label}"
+    title = f"Romaneio de envio nº {note.number_label}"
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=1.6 * cm, rightMargin=1.6 * cm, topMargin=1.5 * cm,
                             bottomMargin=1.7 * cm, title=title, author="HoraCerta")
@@ -99,10 +99,10 @@ def build_shipment_pdf(note):
             ("LEFTPADDING", (0, 0), (-1, -1), 10), ("RIGHTPADDING", (0, 0), (-1, -1), 10),
             ("LINEBELOW", (0, 0), (-1, -1), 0.8, pt.rl_color(pt.INK)),
         ]))
-        sent = f"Nota registrada no HoraCerta em {_when(note.sent_at)}. " if note.sent_at else ""
+        sent = f"Romaneio registrado no HoraCerta em {_when(note.sent_at)}. " if note.sent_at else ""
         story.append(KeepTogether([
             table, Spacer(1, 6),
-            Paragraph(f"{sent}Depois de enviada, não pode ser alterada. Código de conferência "
+            Paragraph(f"{sent}Depois de enviado, não pode ser alterado. Código de conferência "
                       f"<b>{check_code(note)}</b>.", st["small"]),
         ]))
 
@@ -117,14 +117,14 @@ def build_shipment_xlsx(note):
 
     wb = Workbook()
     ws = wb.active
-    ws.title = f"Nota {note.number_label}"
+    ws.title = f"Romaneio {note.number_label}"
     ws.sheet_view.showGridLines = False
     columns = [("Ordem de produção", 22), ("Desenho", 24), ("Descrição", 40), ("Qtd.", 10)]
     for idx, (_title, width) in enumerate(columns, start=1):
         ws.column_dimensions[chr(64 + idx)].width = width
         ws.cell(row=1, column=idx).fill = PatternFill("solid", fgColor=pt.ACCENT)
     ws.row_dimensions[1].height = 5
-    ws["A2"] = f"Nota de envio nº {note.number_label}"
+    ws["A2"] = f"Romaneio de envio nº {note.number_label}"
     ws["A2"].font = Font(name="Georgia", size=18, bold=True, color=pt.INK)
     ws.merge_cells("A2:D2")
     ws.row_dimensions[2].height = 34
@@ -172,7 +172,7 @@ def build_shipment_xlsx(note):
         ws.cell(row=row, column=2, value=stamp(r)).font = Font(name="Arial", size=10, color=pt.INK_SOFT)
         row += 1
     row += 1
-    ws.cell(row=row, column=1, value=f"Código de conferência {check_code(note)}. Nota travada após o envio.").font = Font(
+    ws.cell(row=row, column=1, value=f"Código de conferência {check_code(note)}. Romaneio travado após o envio.").font = Font(
         name="Arial", size=9, italic=True, color=pt.MUTED)
 
     # Texto do usuario que comeca com = + - @ seria lido como formula ao abrir: grava sempre como texto.

@@ -157,7 +157,7 @@ class ProductionEntry(models.Model):
 
 
 class ShipmentNote(models.Model):
-    """Nota de envio: comprovante das pecas que saem no caminhao para outra empresa.
+    """Romaneio de envio: comprovante das pecas que saem no caminhao para outra empresa.
 
     Rascunho pode ser editado e apagado; ao enviar ganha numero sequencial do dono e fica
     travada para sempre (corrigir = nova nota que aponta a anterior em `replaces`).
@@ -186,7 +186,7 @@ class ShipmentNote(models.Model):
         constraints = [models.UniqueConstraint(fields=["owner", "number"], name="shipment_number_per_owner")]
 
     def __str__(self):
-        return f"Nota de envio {self.number_label}"
+        return f"Romaneio de envio {self.number_label}"
 
     @property
     def number_label(self):
@@ -218,10 +218,10 @@ class ShipmentNote(models.Model):
         viewed = sum(1 for r in recipients if r.viewed_at)
         total = len(recipients)
         if authorized:
-            return f"Autorizada {authorized} de {total}", "progress"
+            return f"Autorizado {authorized} de {total}", "progress"
         if viewed:
-            return f"Vista {viewed} de {total}", "warning"
-        return "Enviada", "planned"
+            return f"Visto {viewed} de {total}", "warning"
+        return "Enviado", "planned"
 
     def send(self):
         if self.is_locked:

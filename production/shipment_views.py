@@ -1,4 +1,4 @@
-"""Notas de envio: telas do dono e link publico de cada pessoa que recebe a nota."""
+"""Romaneios de envio: telas do dono e link publico de cada pessoa que recebe a nota."""
 
 from datetime import datetime
 from urllib.parse import quote
@@ -88,7 +88,7 @@ def _save_note(note, data):
         if not is_new and not ShipmentNote.objects.select_for_update().filter(
                 pk=note.pk, status=ShipmentNote.Status.DRAFT).exists():
             # Foi enviada enquanto o formulario estava aberto: nota travada nao muda.
-            raise ValidationError("Esta nota já foi enviada e está travada.")
+            raise ValidationError("Este romaneio já foi enviado e está travado.")
         for field in NOTE_FIELDS:
             setattr(note, field, data[field])
         if is_new:
@@ -161,7 +161,7 @@ def shipment_create(request):
         data, errors = _read_form(request.POST)
         if not errors:
             note = _save_note(ShipmentNote(owner=request.user), data)
-            messages.success(request, "Rascunho salvo. Confira e toque em Enviar nota.")
+            messages.success(request, "Rascunho salvo. Confira e toque em Enviar romaneio.")
             return redirect("shipment_detail", note_id=note.id)
         return render(request, "production/shipment_form.html", _form_context(data=data, errors=errors))
     return render(request, "production/shipment_form.html", _form_context(owner=request.user))
@@ -171,7 +171,7 @@ def shipment_create(request):
 def shipment_edit(request, note_id):
     note = _note_for(request, note_id)
     if note.is_locked:
-        messages.info(request, "Nota enviada fica travada. Para corrigir, crie uma nota de correção.")
+        messages.info(request, "Romaneio enviado fica travado. Para corrigir, crie um romaneio de correção.")
         return redirect("shipment_detail", note_id=note.id)
     if request.method == "POST":
         data, errors = _read_form(request.POST)
@@ -208,7 +208,7 @@ def shipment_send(request, note_id):
     except ValidationError as error:
         messages.error(request, " ".join(error.messages))
     else:
-        messages.success(request, f"Nota nº {note.number_label} enviada e travada. Agora mande o link para cada um.")
+        messages.success(request, f"Romaneio nº {note.number_label} enviado e travado. Agora mande o link para cada um.")
     return redirect("shipment_detail", note_id=note.id)
 
 
@@ -217,7 +217,7 @@ def shipment_send(request, note_id):
 def shipment_delete(request, note_id):
     note = _note_for(request, note_id)
     if note.is_locked:
-        messages.error(request, "Nota enviada não pode ser apagada: ela é o seu comprovante.")
+        messages.error(request, "Romaneio enviado não pode ser apagado: ele é o seu comprovante.")
         return redirect("shipment_detail", note_id=note.id)
     note.delete()
     messages.success(request, "Rascunho apagado.")
@@ -242,7 +242,7 @@ def shipment_replace(request, note_id):
         ShipmentRecipient.objects.bulk_create(
             ShipmentRecipient(note=copy, role=r.role, name=r.name, whatsapp=r.whatsapp) for r in original.recipients.all()
         )
-    messages.success(request, f"Nota de correção criada a partir da nº {original.number_label}. Ajuste e envie.")
+    messages.success(request, f"Romaneio de correção criado a partir do nº {original.number_label}. Ajuste e envie.")
     return redirect("shipment_edit", note_id=copy.id)
 
 
@@ -251,7 +251,7 @@ def whatsapp_message(note, recipient, link):
     pieces = "peça" if total == 1 else "peças"
     first_name = recipient.name.split()[0] if recipient.name else ""
     return (
-        f"Olá{', ' + first_name if first_name else ''}! Segue a *nota de envio nº {note.number_label}*: "
+        f"Olá{', ' + first_name if first_name else ''}! Segue o *romaneio de envio nº {note.number_label}*: "
         f"{total} {pieces} para {note.destination_company}, saída em "
         f"{timezone.localtime(note.departed_at):%d/%m às %H:%M}.\n"
         f"Confira e autorize por este link: {link}"
@@ -295,8 +295,8 @@ def _notify_owner(recipient, action):
     who = recipient.name or "Quem recebeu o link"
     create_internal_notification(
         notification_type=InternalNotification.NotificationType.SHIPMENT_NOTE,
-        title=f"Nota nº {note.number_label} {action} por {who}",
-        message=f"{who} {action} a nota de envio para {note.destination_company}.",
+        title=f"Romaneio nº {note.number_label} {action} por {who}",
+        message=f"{who} {action} o romaneio de envio para {note.destination_company}.",
         recipient_user=note.owner,
         target_url=reverse("shipment_detail", args=[note.id]),
     )
@@ -322,7 +322,7 @@ def shipment_public_seen(request, token):
     # Chamado pelo JavaScript da pagina: a previa de link do WhatsApp nao executa JS e nao conta como visto.
     recipient = _recipient_for(token)
     if not _is_owner_preview(request, recipient) and recipient.mark_viewed():
-        _notify_owner(recipient, "vista")
+        _notify_owner(recipient, "visto")
     return HttpResponse(status=204)
 
 
@@ -330,7 +330,7 @@ def shipment_public_seen(request, token):
 def shipment_public_authorize(request, token):
     recipient = _recipient_for(token)
     if not _is_owner_preview(request, recipient) and recipient.authorize():
-        _notify_owner(recipient, "autorizada")
+        _notify_owner(recipient, "autorizado")
     return redirect("shipment_public", token=token)
 
 

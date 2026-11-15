@@ -1,4 +1,4 @@
-"""Notas de envio: comprovante numerado e travado das pecas que saem no caminhao."""
+"""Romaneios de envio: comprovante numerado e travado das pecas que saem no caminhao."""
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
@@ -73,13 +73,13 @@ class ShipmentModelTests(TestCase):
         note = make_note(self.owner)
         self.assertEqual(note.situation[0], "Rascunho")
         note.send()
-        self.assertEqual(note.situation[0], "Enviada")
+        self.assertEqual(note.situation[0], "Enviado")
         boss, supervisor = note.recipients.order_by("role")
         boss.mark_viewed()
-        self.assertEqual(note.situation[0], "Vista 1 de 2")
+        self.assertEqual(note.situation[0], "Visto 1 de 2")
         boss.authorize()
         supervisor.authorize()
-        self.assertEqual(note.situation[0], "Autorizada 2 de 2")
+        self.assertEqual(note.situation[0], "Autorizado 2 de 2")
 
     def test_number_label(self):
         note = make_note(self.owner)
@@ -197,7 +197,7 @@ class ShipmentOwnerViewTests(TestCase):
         html = self.client.get(reverse("production_sheet_list")).content.decode()
 
         self.assertIn(reverse("shipment_list"), html)
-        self.assertIn("Notas de envio", html)
+        self.assertIn("Romaneios de envio", html)
 
 
 @override_settings(**BASE)
@@ -228,7 +228,7 @@ class ShipmentPublicTests(TestCase):
         self.assertIsNotNone(self.boss.viewed_at)
         notes = self.Notification.objects.filter(recipient_user=self.owner)
         self.assertEqual(notes.count(), 1)
-        self.assertIn("vista por João", notes.get().title)
+        self.assertIn("visto por João", notes.get().title)
 
     def test_authorize_is_idempotent(self):
         url = reverse("shipment_public_authorize", args=[self.boss.token])
@@ -275,7 +275,7 @@ class ShipmentExportTests(TestCase):
         data = build_shipment_pdf(self.note)
 
         self.assertTrue(data.startswith(b"%PDF"))
-        self.assertEqual(shipment_filename(self.note, "pdf"), f"nota-envio-{self.note.number_label}-ensimec.pdf")
+        self.assertEqual(shipment_filename(self.note, "pdf"), f"romaneio-{self.note.number_label}-ensimec.pdf")
         response = self.client.get(reverse("shipment_pdf", args=[self.note.id]))
         self.assertEqual(response["Content-Type"], "application/pdf")
 
@@ -288,7 +288,7 @@ class ShipmentExportTests(TestCase):
         ws = load_workbook(BytesIO(response.content)).active
         values = [cell for row in ws.iter_rows(values_only=True) for cell in row if cell is not None]
 
-        self.assertIn(f"Nota de envio nº {self.note.number_label}", values)
+        self.assertIn(f"Romaneio de envio nº {self.note.number_label}", values)
         self.assertIn("OP-100", values)
         self.assertIn("DES-1", values)
         self.assertIn(4, values)  # total de pecas gravado como valor, nao formula
@@ -444,7 +444,7 @@ class ShipmentAdjustmentsTests(TestCase):
         self.assertEqual(note.number, 1)
         self.assertEqual(list(note.recipients.values_list("role", flat=True)), [ShipmentRecipient.Role.ENCARREGADO])
         note.recipients.get().authorize()
-        self.assertEqual(note.situation[0], "Autorizada 1 de 1")
+        self.assertEqual(note.situation[0], "Autorizado 1 de 1")
 
     def test_send_needs_at_least_one_person(self):
         note = make_note(self.owner, names=("", ""))
@@ -480,7 +480,7 @@ class ShipmentOwnerPreviewTests(TestCase):
         self.assertIsNone(self.supervisor.viewed_at)
         self.assertIsNone(self.supervisor.authorized_at)
         self.assertIn("Você está vendo como remetente", html)
-        self.assertNotIn("Autorizar nota", html)
+        self.assertNotIn("Autorizar romaneio", html)
 
     def test_recipient_without_login_still_counts(self):
         self.client.logout()

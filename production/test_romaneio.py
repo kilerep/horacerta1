@@ -149,3 +149,26 @@ class SheetScreenTests(TestCase):
 
         self.assertIn("Ordem de produção", values)
         self.assertIn("7542.1", values)
+
+
+@override_settings(**BASE)
+class RomaneioNameTests(TestCase):
+    def test_visible_name_is_romaneio(self):
+        from production.shipment_exports import build_shipment_pdf, shipment_filename
+
+        owner = make_user("nome-romaneio@example.com")
+        self.client.force_login(owner)
+        note = sent_note_with(make_entry(owner), 5)
+        token = note.recipients.first().token
+        pages = [self.client.get(reverse(name, args=args)).content.decode() for name, args in (
+            ("shipment_list", []), ("shipment_detail", [note.id]), ("shipment_create", []),
+            ("production_sheet_list", []),
+        )]
+        self.client.logout()
+        pages.append(self.client.get(reverse("shipment_public", args=[token])).content.decode())
+
+        for html in pages:
+            self.assertIn("omaneio", html)
+            self.assertNotRegex(html, r"\b[Nn]otas? de envio\b")
+        self.assertEqual(shipment_filename(note, "pdf"), "romaneio-0001-gbach.pdf")
+        self.assertTrue(build_shipment_pdf(note).startswith(b"%PDF"))
