@@ -1244,9 +1244,9 @@ def mei_reports(request):
             "receive_filter": receive_filter,
             "date_from": date_from_raw,
             "date_to": date_to_raw,
+            # O HoraCerta nao controla pagamento: "Recebido/Pago" nao aparece como filtro.
             "status_choices": [
-                (value, "Recebido" if value == ServiceReport.Status.PAID else label)
-                for value, label in ServiceReport.Status.choices
+                (value, label) for value, label in ServiceReport.Status.choices if value != ServiceReport.Status.PAID
             ],
             "csv_url": csv_url,
             "client_comparison_rows": client_comparison_rows,

@@ -113,11 +113,6 @@
   </style>
 
   <div class="clients-page">
-    {% if request.GET.event == "report_received" %}
-      <section class="feedback" role="status">Relatório marcado como recebido.</section>
-    {% elif request.GET.event == "report_receive_pending" %}
-      <section class="feedback" role="status">Relatório voltou para pendente.</section>
-    {% endif %}
 
     <section class="clients-hero">
       <div class="clients-hero__top">
@@ -317,7 +312,6 @@
                             </div>
                             <div class="client-report-statuses">
                               <span class="mini-badge {{ report_row.view_tone }}">{{ report_row.view_label }}</span>
-                              <span class="mini-badge {{ report_row.received_tone }}">{{ report_row.received_label }}</span>
                             </div>
                             <div class="client-report-footer">
                               <div class="client-report-actions">
@@ -327,25 +321,6 @@
                                   <button class="btn" type="button" data-copy-text="{{ report_row.conference_url }}">Link</button>
                                 {% endif %}
                                 <a class="btn" href="{{ report_row.pdf_url }}">PDF</a>
-                              </div>
-                              <div class="client-report-actions">
-                                {% if report.payment_status != "paid" %}
-                                  <form method="post" data-submit-once="true">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="action" value="set_payment_status">
-                                    <input type="hidden" name="report_id" value="{{ report.id }}">
-                                    <input type="hidden" name="payment_status" value="paid">
-                                    <button class="btn" type="submit">Recebido</button>
-                                  </form>
-                                {% else %}
-                                  <form method="post" data-submit-once="true" onsubmit="return confirm('Voltar este relatório para pendente?')">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="action" value="set_payment_status">
-                                    <input type="hidden" name="report_id" value="{{ report.id }}">
-                                    <input type="hidden" name="payment_status" value="pending">
-                                    <button class="btn" type="submit">Marcar pendente</button>
-                                  </form>
-                                {% endif %}
                               </div>
                             </div>
                           </div>

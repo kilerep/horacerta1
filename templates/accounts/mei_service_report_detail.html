@@ -93,15 +93,6 @@
           {% if report.conference_first_viewed_at %} | Visto: {{ report.conference_first_viewed_at|date:"d/m/Y H:i" }}{% else %} | Não visualizado{% endif %}
           {% if report.whatsapp_sent_attempted_at %} | Envio WhatsApp iniciado em {{ report.whatsapp_sent_attempted_at|date:"d/m/Y H:i" }}{% endif %}
         </div>
-        <div class="detail-sub">
-          Recebimento:
-          {% if report.payment_status == "paid" %}
-            <strong>Recebido{% if report.paid_at %}: {{ report.paid_at|date:"d/m/Y H:i" }}{% endif %}</strong>
-          {% else %}
-            <strong>Pendente</strong>
-          {% endif %}
-          {% if report.paid_note %} | {{ report.paid_note }}{% endif %}
-        </div>
       </div>
     {% elif report.status != "CANCELED" %}
       <div class="link-box">
