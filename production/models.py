@@ -103,6 +103,7 @@ class ProductionEntry(models.Model):
     sheet = models.ForeignKey(ProductionSheet, on_delete=models.CASCADE, related_name="entries")
     work_date = models.DateField("Data", default=timezone.localdate)
     item_code = models.CharField("Código do item", max_length=40, blank=True, default="")
+    production_order = models.CharField("Ordem de produção", max_length=40, blank=True, default="")
     quantity = models.PositiveIntegerField("Quantidade", null=True, blank=True)
     destination = models.CharField("Destino", max_length=12, choices=Destination.choices, blank=True, default="")
     start_time = models.TimeField("Início", null=True, blank=True)
@@ -118,6 +119,18 @@ class ProductionEntry(models.Model):
 
     def __str__(self):
         return f"{self.work_date:%d/%m} {self.item_code or '-'}"
+
+    def shipped_quantity(self):
+        """Pecas deste item que ja sairam em romaneios enviados (rascunho nao conta)."""
+        total = self.shipment_items.filter(note__status=ShipmentNote.Status.SENT).aggregate(
+            total=models.Sum("quantity"))["total"]
+        return total or 0
+
+    def remaining_quantity(self):
+        """O que falta enviar; None quando o item nao tem quantidade anotada."""
+        if not self.quantity:
+            return None
+        return max(self.quantity - self.shipped_quantity(), 0)
 
     @property
     def duration_minutes(self):
@@ -144,7 +157,7 @@ class ProductionEntry(models.Model):
 
 
 class ShipmentNote(models.Model):
-    """Nota de envio: comprovante das pecas que saem no caminhao para outra empresa.
+    """Romaneio de envio: comprovante das pecas que saem no caminhao para outra empresa.
 
     Rascunho pode ser editado e apagado; ao enviar ganha numero sequencial do dono e fica
     travada para sempre (corrigir = nova nota que aponta a anterior em `replaces`).
@@ -173,7 +186,7 @@ class ShipmentNote(models.Model):
         constraints = [models.UniqueConstraint(fields=["owner", "number"], name="shipment_number_per_owner")]
 
     def __str__(self):
-        return f"Nota de envio {self.number_label}"
+        return f"Romaneio de envio {self.number_label}"
 
     @property
     def number_label(self):
@@ -205,10 +218,10 @@ class ShipmentNote(models.Model):
         viewed = sum(1 for r in recipients if r.viewed_at)
         total = len(recipients)
         if authorized:
-            return f"Autorizada {authorized} de {total}", "progress"
+            return f"Autorizado {authorized} de {total}", "progress"
         if viewed:
-            return f"Vista {viewed} de {total}", "warning"
-        return "Enviada", "planned"
+            return f"Visto {viewed} de {total}", "warning"
+        return "Enviado", "planned"
 
     def send(self):
         if self.is_locked:
@@ -242,6 +255,9 @@ class ShipmentItem(models.Model):
     drawing_number = models.CharField("Nº do desenho", max_length=60)
     quantity = models.PositiveIntegerField("Quantidade", default=1)
     description = models.CharField("Descrição", max_length=120, blank=True, default="")
+    # Item de producao de onde a linha veio (para mostrar "30 de 49 enviadas"); a linha guarda copia dos dados.
+    source_entry = models.ForeignKey(ProductionEntry, null=True, blank=True, on_delete=models.SET_NULL,
+                                     related_name="shipment_items")
 
     class Meta:
         ordering = ["position", "id"]

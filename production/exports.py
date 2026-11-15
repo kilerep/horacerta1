@@ -27,6 +27,7 @@ def sheet_rows(sheet):
         rows.append({
             "date": e.work_date,
             "code": e.item_code or "",
+            "order": e.production_order or "",
             "quantity": e.quantity,
             "destination": e.get_destination_display() if e.destination else "",
             "destination_key": e.destination,
@@ -82,7 +83,7 @@ def build_xlsx(sheet):
     border = Border(bottom=thin)
     head_border = Border(bottom=Side(style="medium", color=INK))
     columns = [("Data", 13), ("Código", 17), ("Qtd.", 8), ("Destino", 14), ("Início", 10), ("Fim", 14), ("Horas", 11),
-               ("Observação", 40)]
+               ("Observação", 40), ("Ordem de produção", 18)]
     last_col = get_column_letter(len(columns))
     ws.sheet_view.showGridLines = False  # visual de documento: so os filetes que desenhamos
 
@@ -129,7 +130,7 @@ def build_xlsx(sheet):
         values = [
             item["date"], item["code"], item["quantity"], item["destination"], item["start"],
             item["end"] if item["end"] else ("em andamento" if item["minutes"] is None else None),
-            item["minutes"] / 1440 if item["minutes"] is not None else None, item["note"],
+            item["minutes"] / 1440 if item["minutes"] is not None else None, item["note"], item["order"] or None,
         ]
         fill = None
         if item["minutes"] is None:
@@ -259,7 +260,7 @@ def build_pdf(sheet):
             cell_fills[(i, 3)] = GUINCHO_FILL if item["destination_key"] == ProductionEntry.Destination.GUINCHO else IMPLEMENTO_FILL
         rows.append([
             item["date"].strftime("%d/%m/%Y"),
-            item["code"] or "-",
+            (item["code"] or "-") + (f" · OP {item['order']}" if item["order"] else ""),
             str(item["quantity"]) if item["quantity"] else "",
             item["destination"] or "-",
             item["start"].strftime("%H:%M") if item["start"] else "",

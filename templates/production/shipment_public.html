@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
-  <title>Nota de envio nº {{ note.number_label }} — {{ note.destination_company }}</title>
+  <title>Romaneio de envio nº {{ note.number_label }} — {{ note.destination_company }}</title>
   {% include "services/_public_style.html" %}
   <style>
     .numline{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
@@ -64,20 +64,20 @@
       <div class="card preview" role="status"><strong>Você está vendo como remetente.</strong> Abrir este link com a sua conta não marca visto nem autoriza no lugar de {{ recipient.name }}. Só conta quando a própria pessoa abrir no celular dela.</div>
     {% endif %}
     <header class="card">
-      <div class="brandline"><span class="brand">HoraCerta</span><span class="kind">Nota de envio</span></div>
-      <div class="numline"><h1>nº {{ note.number_label }}</h1>{% with sit=note.situation %}<span class="seal {% if authorized_all %}ok{% else %}wait{% endif %}">{% if authorized_all %}✓ Autorizada{% else %}{{ sit.0 }}{% endif %}</span>{% endwith %}</div>
-      <p class="who">Enviada por <strong>{{ note.sender_name }}</strong> para <strong>{{ note.destination_company }}</strong></p>
+      <div class="brandline"><span class="brand">HoraCerta</span><span class="kind">Romaneio de envio</span></div>
+      <div class="numline"><h1>nº {{ note.number_label }}</h1>{% with sit=note.situation %}<span class="seal {% if authorized_all %}ok{% else %}wait{% endif %}">{% if authorized_all %}✓ Autorizado{% else %}{{ sit.0 }}{% endif %}</span>{% endwith %}</div>
+      <p class="who">Enviado por <strong>{{ note.sender_name }}</strong> para <strong>{{ note.destination_company }}</strong></p>
       <div class="facts">
         <div><span>Saída do caminhão</span><strong>{{ note.departed_at|date:"d/m/Y" }} às {{ note.departed_at|time:"H:i" }}</strong></div>
         <div><span>Total de peças</span><strong>{{ note.total_quantity }}</strong></div>
         {% if note.driver_name %}<div><span>Motorista</span><strong>{{ note.driver_name }}</strong></div>{% endif %}
         {% if note.vehicle_plate %}<div><span>Placa</span><strong>{{ note.vehicle_plate }}</strong></div>{% endif %}
-        {% if note.replaces %}<div><span>Corrige</span><strong>Nota nº {{ note.replaces.number_label }}</strong></div>{% endif %}
+        {% if note.replaces %}<div><span>Corrige</span><strong>Romaneio nº {{ note.replaces.number_label }}</strong></div>{% endif %}
       </div>
-      <ol class="steps" aria-label="Andamento da nota">
-        <li class="done"><span class="dot">1</span><strong>Enviada</strong><span>{{ note.sent_at|date:"d/m H:i" }}</span></li>
-        <li class="{% if viewed_count == recipients_count %}done{% elif viewed_count %}half{% endif %}"><span class="dot">2</span><strong>Vista</strong><span>{{ viewed_count }} de {{ recipients_count }}</span></li>
-        <li class="{% if authorized_all %}done{% elif authorized_count %}half{% endif %}"><span class="dot">3</span><strong>Autorizada</strong><span>{{ authorized_count }} de {{ recipients_count }}</span></li>
+      <ol class="steps" aria-label="Andamento do romaneio">
+        <li class="done"><span class="dot">1</span><strong>Enviado</strong><span>{{ note.sent_at|date:"d/m H:i" }}</span></li>
+        <li class="{% if viewed_count == recipients_count %}done{% elif viewed_count %}half{% endif %}"><span class="dot">2</span><strong>Visto</strong><span>{{ viewed_count }} de {{ recipients_count }}</span></li>
+        <li class="{% if authorized_all %}done{% elif authorized_count %}half{% endif %}"><span class="dot">3</span><strong>Autorizado</strong><span>{{ authorized_count }} de {{ recipients_count }}</span></li>
       </ol>
     </header>
 
@@ -101,11 +101,11 @@
       {% if recipient.authorized_at %}
         <p class="done-line">✓ Autorizado por você em {{ recipient.authorized_at|date:"d/m/Y" }} às {{ recipient.authorized_at|time:"H:i" }}.</p>
       {% else %}
-        <p>Ao autorizar, fica registrado que você conferiu esta nota, com seu nome, data e hora.</p>
-        <button type="button" class="big" data-authorize-open style="margin-top:12px">Autorizar nota</button>
+        <p>Ao autorizar, fica registrado que você conferiu este romaneio, com seu nome, data e hora.</p>
+        <button type="button" class="big" data-authorize-open style="margin-top:12px">Autorizar romaneio</button>
         <form class="confirm" method="post" action="{% url 'shipment_public_authorize' recipient.token %}" data-authorize-confirm hidden>
           {% csrf_token %}
-          <p><strong>Confirmar autorização da nota nº {{ note.number_label }}?</strong></p>
+          <p><strong>Confirmar autorização do romaneio nº {{ note.number_label }}?</strong></p>
           <button class="big" type="submit">Sim, autorizar</button>
           <button class="big ghost" type="button" data-authorize-cancel>Voltar</button>
         </form>
@@ -128,7 +128,7 @@
     </section>
 
     <section class="card" aria-labelledby="files-title">
-      <h2 id="files-title">Baixar a nota</h2>
+      <h2 id="files-title">Baixar o romaneio</h2>
       <div class="downloads">
         <a class="big ghost" href="{% url 'shipment_public_pdf' recipient.token %}" target="_blank" rel="noopener">PDF</a>
         <a class="big ghost" href="{% url 'shipment_public_xlsx' recipient.token %}">Excel</a>
@@ -136,10 +136,10 @@
     </section>
 
     {% if not recipient.authorized_at and not owner_preview %}
-      <div class="dock" data-dock><button type="button" class="big" data-authorize-open>Autorizar nota nº {{ note.number_label }}</button></div>
+      <div class="dock" data-dock><button type="button" class="big" data-authorize-open>Autorizar romaneio nº {{ note.number_label }}</button></div>
     {% endif %}
 
-    <p class="legal">Nota registrada no HoraCerta em {{ note.sent_at|date:"d/m/Y" }} às {{ note.sent_at|time:"H:i" }}. Depois de enviada, não pode ser alterada. Código de conferência {{ note.id|stringformat:"s"|slice:":8"|upper }}.</p>
+    <p class="legal">Romaneio registrado no HoraCerta em {{ note.sent_at|date:"d/m/Y" }} às {{ note.sent_at|time:"H:i" }}. Depois de enviado, não pode ser alterado. Código de conferência {{ note.id|stringformat:"s"|slice:":8"|upper }}.</p>
   </main>
   <script>
     (function () {

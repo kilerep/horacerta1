@@ -32,4 +32,5 @@ urlpatterns = [
     path("me/relatorios-producao/notas/<uuid:note_id>/excel/", sv.shipment_xlsx, name="shipment_xlsx"),
     path("nota-envio/<uuid:token>/pdf/", sv.shipment_public_pdf, name="shipment_public_pdf"),
     path("nota-envio/<uuid:token>/excel/", sv.shipment_public_xlsx, name="shipment_public_xlsx"),
+    path("me/relatorios-producao/<uuid:sheet_id>/romaneio/", sv.shipment_from_entries, name="shipment_from_entries"),
 ]

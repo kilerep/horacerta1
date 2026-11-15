@@ -1,7 +1,7 @@
 {% extends "accounts/base.html" %}
 {% load hc_icons %}
 
-{% block title %}Nota de envio {{ note.number_label }}{% endblock %}
+{% block title %}Romaneio de envio {{ note.number_label }}{% endblock %}
 {% block page_title %}Relatórios de produção{% endblock %}
 
 {% block extra_head %}{% include "production/_styles.html" %}{% include "production/_shipment_styles.html" %}{% endblock %}
@@ -9,16 +9,16 @@
 {% block content %}
 <div class="prod-page">
   {% include "production/_production_tabs.html" with active="notes" %}
-  <a class="link-back" href="{% url 'shipment_list' %}">{% icon "chevron" 18 %} Todas as notas</a>
+  <a class="link-back" href="{% url 'shipment_list' %}">{% icon "chevron" 18 %} Todos os romaneios</a>
 
   {% if not note.is_locked %}
-    <div class="ship-alert">{% icon "file" 20 %}<span><strong>Rascunho.</strong> Confira as peças. Ao tocar em <strong>Enviar nota</strong>, ela ganha número e fica travada: ninguém consegue alterar ou apagar.</span></div>
+    <div class="ship-alert">{% icon "file" 20 %}<span><strong>Rascunho.</strong> Confira as peças. Ao tocar em <strong>Enviar romaneio</strong>, ele ganha número e fica travado: ninguém consegue alterar ou apagar.</span></div>
   {% endif %}
 
-  <article class="ship-sheet" aria-label="Nota de envio">
+  <article class="ship-sheet" aria-label="Romaneio de envio">
     <div class="ship-sheet-top">
       <div>
-        <div class="doc">Nota de envio</div>
+        <div class="doc">Romaneio de envio</div>
         <h2>{% if note.number %}nº {{ note.number_label }}{% else %}Rascunho{% endif %}</h2>
       </div>
       <span class="ship-chip {{ situation.1 }}">{{ situation.0 }}</span>
@@ -27,9 +27,9 @@
 
     {% if note.is_locked %}
       <ol class="ship-steps" aria-label="Andamento">
-        <li class="ship-step done"><span class="mark">{% icon "check" 16 %}</span><strong>Enviada</strong><span>{{ note.sent_at|date:"d/m H:i" }}</span></li>
-        <li class="ship-step {% if viewed_count == recipients_count %}done{% elif viewed_count %}partial{% endif %}"><span class="mark">{% icon "eye" 16 %}</span><strong>Vista</strong><span>{{ viewed_count }} de {{ recipients_count }}</span></li>
-        <li class="ship-step {% if authorized_count == recipients_count %}done{% elif authorized_count %}partial{% endif %}"><span class="mark">{% icon "check" 16 %}</span><strong>Autorizada</strong><span>{{ authorized_count }} de {{ recipients_count }}</span></li>
+        <li class="ship-step done"><span class="mark">{% icon "check" 16 %}</span><strong>Enviado</strong><span>{{ note.sent_at|date:"d/m H:i" }}</span></li>
+        <li class="ship-step {% if viewed_count == recipients_count %}done{% elif viewed_count %}partial{% endif %}"><span class="mark">{% icon "eye" 16 %}</span><strong>Visto</strong><span>{{ viewed_count }} de {{ recipients_count }}</span></li>
+        <li class="ship-step {% if authorized_count == recipients_count %}done{% elif authorized_count %}partial{% endif %}"><span class="mark">{% icon "check" 16 %}</span><strong>Autorizado</strong><span>{{ authorized_count }} de {{ recipients_count }}</span></li>
       </ol>
     {% endif %}
 
@@ -37,7 +37,7 @@
       <div class="ship-facts">
         {% if note.driver_name %}<div class="ship-fact"><span>Motorista</span><strong>{{ note.driver_name }}</strong></div>{% endif %}
         {% if note.vehicle_plate %}<div class="ship-fact"><span>Placa</span><strong>{{ note.vehicle_plate }}</strong></div>{% endif %}
-        {% if note.replaces %}<div class="ship-fact"><span>Corrige</span><strong>Nota nº {{ note.replaces.number_label }}</strong></div>{% endif %}
+        {% if note.replaces %}<div class="ship-fact"><span>Corrige</span><strong>Romaneio nº {{ note.replaces.number_label }}</strong></div>{% endif %}
       </div>
     {% endif %}
 
@@ -74,9 +74,9 @@
     {% if note.is_locked %}
       <a class="btn" href="{% url 'shipment_pdf' note.id %}" target="_blank" rel="noopener">{% icon "download" 18 %} PDF</a>
       <a class="btn" href="{% url 'shipment_xlsx' note.id %}">{% icon "download" 18 %} Excel</a>
-      <form method="post" action="{% url 'shipment_replace' note.id %}">{% csrf_token %}<button class="btn" type="submit">Criar nota de correção</button></form>
+      <form method="post" action="{% url 'shipment_replace' note.id %}">{% csrf_token %}<button class="btn" type="submit">Criar romaneio de correção</button></form>
     {% else %}
-      <form method="post" action="{% url 'shipment_send' note.id %}">{% csrf_token %}<button class="btn primary" type="submit">{% icon "send" 18 %} Enviar nota</button></form>
+      <form method="post" action="{% url 'shipment_send' note.id %}">{% csrf_token %}<button class="btn primary" type="submit">{% icon "send" 18 %} Enviar romaneio</button></form>
       <a class="btn" href="{% url 'shipment_edit' note.id %}">Editar</a>
       <form method="post" action="{% url 'shipment_delete' note.id %}">{% csrf_token %}<button class="btn" type="submit">Apagar rascunho</button></form>
     {% endif %}
