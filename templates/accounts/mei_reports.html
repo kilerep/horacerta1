@@ -78,6 +78,8 @@
 </style>
 
 <div class="reports-page">
+  {% include "writtenreports/_styles.html" %}
+  {% include "writtenreports/_tabs.html" with active="hours" %}
   {% if request.GET.event == "report_created" %}
     <section class="feedback" role="status">Relatório gerado e pronto para envio.</section>
   {% elif request.GET.event == "report_created_empty" %}

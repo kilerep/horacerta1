@@ -88,6 +88,7 @@ INSTALLED_APPS = [
     "services",
     "timeclock",
     "production",
+    "writtenreports",
     "axes",
 ]
 

@@ -42,6 +42,7 @@ urlpatterns = [
     path("api/pwa/status/", pwa.status, name="pwa_status"),
     path("", include("timeclock.urls")),
     path("", include("production.urls")),
+    path("", include("writtenreports.urls")),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
