@@ -4,7 +4,7 @@
     <strong>{{ report.title }}</strong>
     <span class="wr-meta">
       <span>{{ report.get_kind_display }}</span>
-      <span>{{ report.client_name }}</span>
+      <span>{{ report.client_label }}</span>
       {% if report.issued_at %}<span>Emitido {{ report.issued_at|date:"d/m/Y" }}</span>{% endif %}
     </span>
   </span>

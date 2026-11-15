@@ -68,10 +68,23 @@ def service_snapshot(report):
     }
 
 
+def typed_snapshot(report):
+    """Relatorio de servico escrito do zero: cliente e servico digitados pelo prestador."""
+    return {"client": report.client_name, "service": report.service_name, "category": "", "logs": [], "items": [],
+            "total_hours": "", "total_value": ""}
+
+
 def build_snapshot(report):
-    data = hours_snapshot(report) if report.kind == report.Kind.HOURS else service_snapshot(report)
-    data["sender"] = sender_name(report.owner)
     if report.kind == report.Kind.HOURS:
+        data = hours_snapshot(report)
+    elif report.service_job_id:
+        data = service_snapshot(report)
+    else:
+        data = typed_snapshot(report)
+    data["sender"] = sender_name(report.owner)
+    if report.date_from and report.date_to and report.date_from != report.date_to:
         data["period"] = f"{report.date_from:%d/%m/%Y} a {report.date_to:%d/%m/%Y}"
+    elif report.date_from or report.date_to:
+        data["period"] = f"{(report.date_from or report.date_to):%d/%m/%Y}"
     data["issued"] = timezone.localtime().strftime("%d/%m/%Y às %H:%M")
     return data

@@ -8,7 +8,7 @@ from accounts import print_theme as pt
 
 
 def pdf_filename(report):
-    client = slugify(report.client_name)[:40] or "cliente"
+    client = slugify(report.client_label)[:40] or "cliente"
     return f"relatorio-{report.number_label.lower()}-{client}.pdf"
 
 
@@ -33,7 +33,9 @@ def build_pdf(report):
     if report.kind == report.Kind.HOURS:
         pairs += [("Período", data.get("period", "")), ("Valor/hora", data.get("rate", "") or "-")]
     else:
-        pairs += [("Serviço", data.get("service", "")), ("Categoria", data.get("category", "") or "-")]
+        pairs += [("Serviço", data.get("service", ""))]
+        if data.get("period"):
+            pairs.append(("Data", data["period"]))
     pairs.append(("Emitido em", data.get("issued", "") if report.is_locked else "Rascunho"))
     story.append(pt.info_grid(pairs, width, columns=3))
     story.append(Spacer(1, 14))
@@ -60,10 +62,11 @@ def build_pdf(report):
             story.append(pt.data_table(["Item / material", "Qtd.", "Total"],
                                        [[i["name"], i["quantity"], i["total"]] for i in data["items"]],
                                        [width * 0.6, width * 0.15, width * 0.25], numeric_cols=(1, 2)))
-        grand = ("Total do serviço", data.get("total_value", ""))
+        grand = ("Total do serviço", data["total_value"]) if data.get("total_value") else None
         lines = [("Horas trabalhadas", data.get("total_hours", ""))]
     story.append(Spacer(1, 10))
-    story.append(pt.totals_block(lines, grand, width * 0.4))
+    if grand:  # relatorio escrito do zero nao tem totais
+        story.append(pt.totals_block(lines, grand, width * 0.4))
     story.append(Spacer(1, 30))
 
     # duas linhas de assinatura separadas por uma coluna vazia no meio
