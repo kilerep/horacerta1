@@ -12,7 +12,7 @@
   <a class="link-back" href="{% url 'shipment_list' %}">{% icon "chevron" 18 %} Todos os romaneios</a>
 
   {% if not note.is_locked %}
-    <div class="ship-alert">{% icon "file" 20 %}<span><strong>Rascunho.</strong> Confira as peças. Ao tocar em <strong>Enviar romaneio</strong>, ele ganha número e fica travado: ninguém consegue alterar ou apagar.</span></div>
+    <div class="ship-alert">{% icon "file" 20 %}<span><strong>Rascunho.</strong> Confira as peças. Quando terminar de carregar, toque em <strong>Carga conferida e carregada</strong>: o sistema grava a data e a hora daquele momento, o romaneio ganha número e fica travado. Ninguém consegue alterar ou apagar.</span></div>
   {% endif %}
 
   <article class="ship-sheet" aria-label="Romaneio de envio">
@@ -22,7 +22,7 @@
         <h2>{% if note.number %}nº {{ note.number_label }}{% else %}Rascunho{% endif %}</h2>
       </div>
       <span class="ship-chip {{ situation.1 }}">{{ situation.0 }}</span>
-      <div class="route">{% icon "truck" 18 %}<span>Para <strong>{{ note.destination_company }}</strong> · saída {{ note.departed_at|date:"d/m/Y" }} às {{ note.departed_at|time:"H:i" }}</span></div>
+      <div class="route">{% icon "truck" 18 %}<span>Para <strong>{{ note.destination_company }}</strong> · {% if note.loaded_at %}carregado em {{ note.loaded_at|date:"d/m/Y" }} às {{ note.loaded_at|time:"H:i" }}{% else %}carga ainda não confirmada{% endif %}</span></div>
     </div>
 
     {% if note.is_locked %}
@@ -76,7 +76,7 @@
       <a class="btn" href="{% url 'shipment_xlsx' note.id %}">{% icon "download" 18 %} Excel</a>
       <form method="post" action="{% url 'shipment_replace' note.id %}">{% csrf_token %}<button class="btn" type="submit">Criar romaneio de correção</button></form>
     {% else %}
-      <form method="post" action="{% url 'shipment_send' note.id %}">{% csrf_token %}<button class="btn primary" type="submit">{% icon "send" 18 %} Enviar romaneio</button></form>
+      <form method="post" action="{% url 'shipment_send' note.id %}">{% csrf_token %}<button class="btn primary" type="submit">{% icon "check" 18 %} Carga conferida e carregada · enviar</button></form>
       <a class="btn" href="{% url 'shipment_edit' note.id %}">Editar</a>
       <form method="post" action="{% url 'shipment_delete' note.id %}">{% csrf_token %}<button class="btn" type="submit">Apagar rascunho</button></form>
     {% endif %}

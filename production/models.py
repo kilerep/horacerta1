@@ -197,6 +197,11 @@ class ShipmentNote(models.Model):
         return self.status == self.Status.SENT
 
     @property
+    def loaded_at(self):
+        """Quando a carga foi conferida e carregada: o proprio envio, gravado pelo sistema (nao editavel)."""
+        return self.sent_at if self.is_locked else None
+
+    @property
     def sender_name(self):
         """Nome de quem envia, como no topo do sistema: perfil > nome da conta > parte do e-mail antes do @."""
         from companies.models import Employee
@@ -244,7 +249,9 @@ class ShipmentNote(models.Model):
             self.number = last + 1
             self.status = self.Status.SENT
             self.sent_at = timezone.now()
-            self.save(update_fields=["number", "status", "sent_at", "updated_at"])
+            # O horario e o do toque em "carga conferida e carregada", nunca um digitado a mao.
+            self.departed_at = self.sent_at
+            self.save(update_fields=["number", "status", "sent_at", "departed_at", "updated_at"])
 
 
 class ShipmentItem(models.Model):

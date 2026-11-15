@@ -50,6 +50,7 @@
     .steps li.half .dot{border-color:#c48a1c;color:#8a5a0c}
     .steps strong{color:var(--ink);font-size:14px}
     .dock{display:none}
+    .term p{color:var(--ink);line-height:1.6}
     .preview{border-color:#ecd7a6;background:#fbf0d9;color:#5c3d08;line-height:1.5}
     @media (max-width:520px){
       .dock{position:fixed;left:0;right:0;bottom:0;z-index:20;display:block;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:rgba(255,253,249,.94);border-top:1px solid var(--line);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
@@ -68,7 +69,7 @@
       <div class="numline"><h1>nº {{ note.number_label }}</h1>{% with sit=note.situation %}<span class="seal {% if authorized_all %}ok{% else %}wait{% endif %}">{% if authorized_all %}✓ Autorizado{% else %}{{ sit.0 }}{% endif %}</span>{% endwith %}</div>
       <p class="who">Enviado por <strong>{{ note.sender_name }}</strong> para <strong>{{ note.destination_company }}</strong></p>
       <div class="facts">
-        <div><span>Saída do caminhão</span><strong>{{ note.departed_at|date:"d/m/Y" }} às {{ note.departed_at|time:"H:i" }}</strong></div>
+        <div><span>Carga conferida e carregada em</span><strong>{{ note.loaded_at|date:"d/m/Y" }} às {{ note.loaded_at|time:"H:i" }}</strong></div>
         <div><span>Total de peças</span><strong>{{ note.total_quantity }}</strong></div>
         {% if note.driver_name %}<div><span>Motorista</span><strong>{{ note.driver_name }}</strong></div>{% endif %}
         {% if note.vehicle_plate %}<div><span>Placa</span><strong>{{ note.vehicle_plate }}</strong></div>{% endif %}
@@ -125,6 +126,11 @@
           </div>
         {% endfor %}
       </div>
+    </section>
+
+    <section class="card term" aria-labelledby="term-title">
+      <h2 id="term-title">Termo de entrega</h2>
+      <p>{{ delivery_term }}</p>
     </section>
 
     <section class="card" aria-labelledby="files-title">

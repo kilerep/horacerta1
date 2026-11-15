@@ -23,12 +23,27 @@ def stamp(recipient):
     return "Aguardando"
 
 
+def delivery_term(note):
+    """Termo de entrega: deixa escrito onde termina a responsabilidade de quem carregou."""
+    if not note.loaded_at:
+        return "Rascunho: o termo de entrega aparece quando a carga for confirmada."
+    transport = "o transporte fica a cargo"
+    if note.driver_name:
+        plate = f" (placa {note.vehicle_plate})" if note.vehicle_plate else ""
+        transport += f" do motorista {note.driver_name}{plate}"
+    else:
+        transport += " de quem fizer o transporte"
+    return (f"Declaro que as peças acima foram conferidas e carregadas em {_when(note.loaded_at)}, "
+            f"sob responsabilidade de {note.sender_name}. A partir deste momento, {transport}.")
+
+
 def check_code(note):
     return str(note.id)[:8].upper()
 
 
 def info_pairs(note):
-    pairs = [("Remetente", note.sender_name), ("Destino", note.destination_company), ("Saída", _when(note.departed_at))]
+    pairs = [("Remetente", note.sender_name), ("Destino", note.destination_company),
+             ("Carregado em", _when(note.loaded_at) or "Ainda não confirmado")]
     if note.driver_name:
         pairs.append(("Motorista", note.driver_name))
     if note.vehicle_plate:
@@ -59,7 +74,8 @@ def build_shipment_pdf(note):
     width = A4[0] - doc.leftMargin - doc.rightMargin
     st = pt.styles()
 
-    story = pt.header_block(title, [f"{pt.esc(note.destination_company)} · saída {pt.esc(_when(note.departed_at))}"])
+    loaded = f"carregado em {_when(note.loaded_at)}" if note.loaded_at else "rascunho"
+    story = pt.header_block(title, [f"{pt.esc(note.destination_company)} · {pt.esc(loaded)}"])
     pairs = info_pairs(note)
     story.append(pt.info_grid(pairs, width, columns=3))
     story.append(Spacer(1, 10))
@@ -101,6 +117,7 @@ def build_shipment_pdf(note):
         ]))
         sent = f"Romaneio registrado no HoraCerta em {_when(note.sent_at)}. " if note.sent_at else ""
         story.append(KeepTogether([
+            Paragraph(f"<b>Termo de entrega.</b> {pt.esc(delivery_term(note))}", st["body"]), Spacer(1, 10),
             table, Spacer(1, 6),
             Paragraph(f"{sent}Depois de enviado, não pode ser alterado. Código de conferência "
                       f"<b>{check_code(note)}</b>.", st["small"]),
@@ -172,6 +189,12 @@ def build_shipment_xlsx(note):
         ws.cell(row=row, column=2, value=stamp(r)).font = Font(name="Arial", size=10, color=pt.INK_SOFT)
         row += 1
     row += 1
+    term = ws.cell(row=row, column=1, value=f"Termo de entrega. {delivery_term(note)}")
+    term.font = Font(name="Arial", size=10, color=pt.INK)
+    term.alignment = Alignment(wrap_text=True, vertical="top")
+    ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=4)
+    ws.row_dimensions[row].height = 48
+    row += 2
     ws.cell(row=row, column=1, value=f"Código de conferência {check_code(note)}. Romaneio travado após o envio.").font = Font(
         name="Arial", size=9, italic=True, color=pt.MUTED)
 
