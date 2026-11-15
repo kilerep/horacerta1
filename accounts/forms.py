@@ -323,7 +323,8 @@ class ServiceReportCreateForm(forms.ModelForm):
         self.fields["title"].required = True
         self.fields["description"].required = False
         self.fields["contract"].label_from_instance = (
-            lambda obj: f"{obj.company.name} | inicio {obj.start_date.strftime('%d/%m/%Y') if obj.start_date else '-'} | R$ {obj.hourly_rate}/h"
+            lambda obj: f"{obj.company.name} · desde {obj.start_date.strftime('%d/%m/%Y') if obj.start_date else '-'}"
+            + (f" · R$ {obj.hourly_rate:.2f}/h".replace(".", ",") if obj.hourly_rate else "")
         )
         if not self.is_bound:
             today = timezone.localdate()

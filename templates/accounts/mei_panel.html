@@ -233,7 +233,17 @@
             <a class="btn" href="{% url 'mei_notifications' %}">Abrir avisos</a>
           </article>
         {% endif %}
-        {% if not incomplete_alerts and not missing_rate_contracts and not pending_payment_alerts and not pending_report_requests and not unviewed_report_alerts and not paused_contracts and not new_service_requests_count and not important_notifications_count %}
+        {% if not client_summaries %}
+          <article class="attention-item">
+            <span class="attention-item__dot" aria-hidden="true"></span>
+            <div>
+              <span class="attention-item__eyebrow">Para começar</span>
+              <strong class="attention-item__title">Cadastre seu primeiro cliente</strong>
+              <p class="attention-item__text">Com um cliente cadastrado, o resumo passa a mostrar horas, valores e o que precisa da sua atenção. Faz só serviços avulsos? Use o Serviço rápido.</p>
+            </div>
+            <a class="btn" href="{% url 'mei_client_create' %}">Cadastrar cliente</a>
+          </article>
+        {% elif not incomplete_alerts and not missing_rate_contracts and not pending_payment_alerts and not pending_report_requests and not unviewed_report_alerts and not paused_contracts and not new_service_requests_count and not important_notifications_count %}
           <article class="attention-item attention-item--ok">
             <span class="attention-item__dot" aria-hidden="true"></span>
             <div>
