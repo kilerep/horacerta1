@@ -56,6 +56,7 @@
               {% if group.sent %}<span><strong>Enviado em {{ group.romaneios }} {% if group.romaneios == 1 %}romaneio{% else %}romaneios{% endif %}</strong> · {{ group.sent_pieces }} {% if group.sent_pieces == 1 %}peça{% else %}peças{% endif %}</span>{% endif %}
             </div>
           </div>
+          <a class="btn" href="{% url 'production_item_history_pdf' %}?q={{ group.code|urlencode }}" target="_blank" rel="noopener">{% icon "download" 18 %} Histórico em PDF</a>
         </div>
 
         {% if group.cuts %}

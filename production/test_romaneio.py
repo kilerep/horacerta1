@@ -278,3 +278,35 @@ class ItemSearchTests(TestCase):
         html = self.client.get(reverse("production_sheet_list")).content.decode()
 
         self.assertIn(reverse("production_item_search"), html)
+
+
+@override_settings(**BASE)
+class ItemHistoryPdfTests(TestCase):
+    """2026-11-17: historico do item em PDF para mandar quando alguem perguntar."""
+
+    def setUp(self):
+        self.owner = make_user("historico@example.com")
+        self.client.force_login(self.owner)
+        self.entry = make_entry(self.owner, code="8210-120", quantity=10, order="7542.1")
+        make_entry(self.owner, code="8210-1200", quantity=4, order="9")
+        sent_note_with(self.entry, 6)
+
+    def test_pdf_for_exact_item(self):
+        from production.item_history import build_item_history_pdf, item_groups
+
+        groups = item_groups(self.owner, "8210-120", exact=True)
+        self.assertEqual([g["code"] for g in groups], ["8210-120"])
+        self.assertEqual((len(groups[0]["cuts"]), groups[0]["sent_pieces"]), (1, 6))
+        self.assertTrue(build_item_history_pdf(self.owner, "8210-120", groups).startswith(b"%PDF"))
+
+        response = self.client.get(reverse("production_item_history_pdf"), {"q": "8210-120"})
+        self.assertEqual(response["Content-Type"], "application/pdf")
+        self.assertIn("historico-8210-120", response["Content-Disposition"])
+
+    def test_search_page_links_the_pdf_and_other_owner_gets_nothing(self):
+        html = self.client.get(reverse("production_item_search"), {"q": "8210"}).content.decode()
+        self.assertIn(reverse("production_item_history_pdf") + "?q=8210-120", html)
+
+        self.client.force_login(make_user("outro-historico@example.com"))
+        response = self.client.get(reverse("production_item_history_pdf"), {"q": "8210-120"})
+        self.assertEqual(response.status_code, 404)

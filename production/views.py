@@ -318,40 +318,22 @@ def sheet_csv(request, sheet_id):
 @login_required
 def item_search(request):
     """'Quando o 8210-120 foi cortado?': junta os cortes (relatorios de producao) e os envios (romaneios)."""
-    from django.db.models import Q
+    from .item_history import item_groups
 
     query = (request.GET.get("q") or "").strip()[:60]
-    groups = []
-    if len(query) >= 2:
-        entries = (
-            ProductionEntry.objects.filter(sheet__owner=request.user)
-            .filter(Q(item_code__icontains=query) | Q(production_order__icontains=query))
-            .select_related("sheet").order_by("-work_date", "-created_at")[:300]
-        )
-        shipped = (
-            ShipmentItem.objects.filter(note__owner=request.user, note__status=ShipmentNote.Status.SENT)
-            .filter(Q(drawing_number__icontains=query) | Q(production_order__icontains=query))
-            .select_related("note").prefetch_related("note__recipients").order_by("-note__sent_at")[:300]
-        )
-        by_code = {}
-        for entry in entries:
-            group = by_code.setdefault(entry.item_code or "Sem código", {"cuts": [], "sent": []})
-            group["cuts"].append(entry)
-        for item in shipped:
-            group = by_code.setdefault(item.drawing_number or "Sem código", {"cuts": [], "sent": []})
-            group["sent"].append(item)
-        for code, group in by_code.items():
-            cuts, sent = group["cuts"], group["sent"]
-            groups.append({
-                "code": code,
-                "cuts": cuts,
-                "sent": sent,
-                "cut_pieces": sum(e.quantity or 0 for e in cuts),
-                "sent_pieces": sum(i.quantity or 0 for i in sent),
-                "romaneios": len({i.note_id for i in sent}),
-                "first": min((e.work_date for e in cuts), default=None),
-                "last": max((e.work_date for e in cuts), default=None),
-            })
-        # codigo identico ao digitado primeiro, depois os que tem mais cortes
-        groups.sort(key=lambda g: (g["code"].lower() != query.lower(), -len(g["cuts"]), g["code"]))
-    return render(request, "production/item_search.html", {"query": query, "groups": groups})
+    return render(request, "production/item_search.html", {"query": query, "groups": item_groups(request.user, query)})
+
+
+@login_required
+def item_history_pdf(request):
+    """Historico de um codigo exato em PDF, para mandar quando alguem perguntar."""
+    from django.http import Http404
+
+    from .item_history import build_item_history_pdf, history_filename, item_groups
+
+    query = (request.GET.get("q") or "").strip()[:60]
+    groups = item_groups(request.user, query, exact=True)
+    if not groups:
+        raise Http404
+    return _file_response(build_item_history_pdf(request.user, query, groups), "application/pdf",
+                          history_filename(query), inline=True)
