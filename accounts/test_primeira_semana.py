@@ -68,3 +68,13 @@ class LeftoversAndContactTests(TestCase):
         self.client.force_login(user)
 
         self.assertNotIn("Falar com o suporte", self.client.get(reverse("mei_panel")).content.decode())
+
+
+@override_settings(**BASE)
+class ShortTermsTests(TestCase):
+    """2026-11-17: termos curtos, sem falar de contratos (o HoraCerta nao trabalha com contratos)."""
+
+    def test_terms_and_privacy_never_mention_contracts(self):
+        for name in ("terms", "privacy"):
+            html = self.client.get(reverse(name)).content.decode().lower()
+            self.assertNotIn("contrato", html, name)
