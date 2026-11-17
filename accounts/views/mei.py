@@ -85,6 +85,20 @@ def mei_panel(request):
         for punch in monthly_punches:
             monthly_punches_by_contract[punch.contract_id].append(punch)
 
+    # Comparacao justa: mes passado do dia 1 ate o mesmo dia de hoje (ou o ultimo dia dele, se for menor).
+    prev_month_last = month_start - timedelta(days=1)
+    prev_month_start = prev_month_last.replace(day=1)
+    prev_period_end = prev_month_start.replace(day=min(today.day, prev_month_last.day))
+    prev_punches_by_contract = defaultdict(list)
+    if contract_ids:
+        prev_punches = Punch.objects.filter(
+            contract_id__in=contract_ids,
+            timestamp__range=(timezone.make_aware(datetime.combine(prev_month_start, time.min)),
+                              timezone.make_aware(datetime.combine(prev_period_end, time.max))),
+        ).order_by("timestamp")
+        for punch in prev_punches:
+            prev_punches_by_contract[punch.contract_id].append(punch)
+
     client_summaries = []
     total_today_seconds = 0
     total_week_seconds = 0
@@ -124,11 +138,19 @@ def mei_panel(request):
         if hourly_rate <= Decimal("0"):
             missing_rate_contracts.append(contract)
 
+        prev_rows, _cols = build_daily_summary(prev_punches_by_contract.get(contract.id, []), min_punch_columns=4)
+        prev_seconds = sum(row["total_seconds"] for row in prev_rows)
+        delta_seconds = month_seconds - prev_seconds
         client_summaries.append(
             {
                 "contract": contract,
                 "status": status,
                 "total_hours_month": format_hhmm(month_seconds),
+                "prev_hours": format_hhmm(prev_seconds),
+                "has_prev": prev_seconds > 0,
+                "delta_label": ("+" if delta_seconds >= 0 else "-") + format_hhmm(abs(delta_seconds)),
+                "delta_tone": "up" if delta_seconds > 0 else ("down" if delta_seconds < 0 else "same"),
+                "prev_period_label": f"até dia {prev_period_end.day}",
                 "hourly_rate": hourly_rate,
                 "estimated_value_brl": _format_brl(estimated_value),
             }
