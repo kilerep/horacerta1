@@ -6,6 +6,7 @@ from . import views
 urlpatterns = [
     path("me/relatorios-producao/", views.sheet_list, name="production_sheet_list"),
     path("me/relatorios-producao/novo/", views.sheet_create, name="production_sheet_create"),
+    path("me/relatorios-producao/buscar/", views.item_search, name="production_item_search"),
     path("me/relatorios-producao/<uuid:sheet_id>/", views.sheet_detail, name="production_sheet_detail"),
     path("me/relatorios-producao/<uuid:sheet_id>/editar/", views.sheet_edit, name="production_sheet_edit"),
     path("me/relatorios-producao/<uuid:sheet_id>/whatsapp/", views.sheet_whatsapp, name="production_sheet_whatsapp"),

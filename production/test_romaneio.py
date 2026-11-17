@@ -227,3 +227,54 @@ class LoadedConfirmationTests(TestCase):
         self.assertIn("foram conferidas e carregadas em", html)
         self.assertIn("foram conferidas e carregadas em", cells)
         self.assertNotIn("Saída do caminhão", html)
+
+
+@override_settings(**BASE)
+class ItemSearchTests(TestCase):
+    """2026-11-17: 'quando o 8210-120 foi cortado?' - busca de item na producao e nos romaneios."""
+
+    def setUp(self):
+        self.owner = make_user("busca@example.com")
+        self.client.force_login(self.owner)
+        self.first = make_entry(self.owner, code="8210-120", quantity=10, order="7542.1")
+        self.second = make_entry(self.owner, code="8210-120", quantity=5, order="7600.2")
+        self.other = make_entry(self.owner, code="0128-208", quantity=3, order="1111.1")
+
+    def _search(self, q):
+        return self.client.get(reverse("production_item_search"), {"q": q}).content.decode()
+
+    def test_shows_how_many_times_and_pieces(self):
+        html = self._search("8210-120")
+
+        self.assertIn("Cortado 2 vezes", html)
+        self.assertIn("15 peças", html)
+        self.assertIn("7542.1", html)
+        self.assertIn("7600.2", html)
+        self.assertNotIn("0128-208", html)
+
+    def test_partial_code_and_production_order_match(self):
+        self.assertIn("8210-120", self._search("8210"))
+        self.assertIn("0128-208", self._search("1111"))
+
+    def test_shows_sent_romaneios_but_not_drafts(self):
+        sent = sent_note_with(self.first, 6)
+        draft = ShipmentNote.objects.create(owner=self.owner, destination_company="Rascunho Ltda")
+        ShipmentItem.objects.create(note=draft, drawing_number="8210-120", quantity=1, source_entry=self.first)
+
+        html = self._search("8210-120")
+
+        self.assertIn(f"nº {sent.number_label}", html)
+        self.assertIn("Gbach", html)
+        self.assertIn("Enviado em 1 romaneio", html)
+        self.assertNotIn("Rascunho Ltda", html)
+
+    def test_only_own_items_and_empty_states(self):
+        make_entry(make_user("alheio-busca@example.com"), code="9999-ALHEIO")
+
+        self.assertIn("Nenhum item encontrado", self._search("9999"))
+        self.assertIn("Digite o código", self._search(""))
+
+    def test_search_box_on_production_list(self):
+        html = self.client.get(reverse("production_sheet_list")).content.decode()
+
+        self.assertIn(reverse("production_item_search"), html)
