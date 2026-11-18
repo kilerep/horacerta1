@@ -414,6 +414,7 @@ class InternalNotification(models.Model):
         ADMIN_NOTE_ADDED = "admin_note_added", "Observacao administrativa adicionada"
         COMPANY_ACKNOWLEDGED = "company_acknowledged", "Ciencia da empresa registrada"
         SHIPMENT_NOTE = "shipment_note", "Nota de envio"
+        SERVICE_REMINDER = "service_reminder", "Lembrete de servico"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     recipient_user = models.ForeignKey(
@@ -750,3 +751,31 @@ class ServiceReport(models.Model):
 
     def __str__(self):
         return f"ServiceReport<{self.id}> {self.report_date:%d/%m/%Y} {self.title}"
+
+
+
+class DayOff(models.Model):
+    """Dia sem trabalho marcado pelo prestador (folga ou feriado): aparece no Historico e no fechamento,
+    para o cliente entender por que nao ha horas naquele dia. Vale para todos os clientes."""
+
+    class Kind(models.TextChoices):
+        FOLGA = "FOLGA", "Folga"
+        FERIADO = "FERIADO", "Feriado"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="days_off")
+    date = models.DateField("Dia")
+    kind = models.CharField(max_length=10, choices=Kind.choices, default=Kind.FOLGA)
+    note = models.CharField("Observação", max_length=80, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["date"]
+        constraints = [models.UniqueConstraint(fields=["owner", "date"], name="one_day_off_per_date")]
+
+    def __str__(self):
+        return f"{self.get_kind_display()} {self.date:%d/%m/%Y}"
+
+    @property
+    def label(self):
+        return f"{self.get_kind_display()}" + (f" · {self.note}" if self.note else "")

@@ -1,9 +1,10 @@
 from django.urls import path
 
-from . import event_proposal, quick, service_calendar, service_repeat, views
+from . import agenda, event_proposal, quick, service_calendar, service_repeat, views
 
 urlpatterns = [
     path("me/servicos/", views.service_job_list, name="service_job_list"),
+    path("me/servicos/agenda/", agenda.service_agenda, name="service_agenda"),
     path("me/servicos/propostas-evento/", event_proposal.service_event_proposal_list, name="service_event_proposal_list"),
     path("me/servicos/pedidos/", views.service_request_list, name="service_request_list"),
     path("me/servicos/pedidos/novo/", views.service_request_create, name="service_request_create"),

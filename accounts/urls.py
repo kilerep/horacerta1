@@ -70,6 +70,7 @@ urlpatterns = [
     path("me/tour/dispensar/", views.mei_dismiss_tour, name="mei_dismiss_tour"),
     path("me/profile/", views.mei_profile, name="mei_profile"),
     path("me/historico/", views.mei_history, name="mei_history"),
+    path("me/folgas/", views.mei_day_off, name="mei_day_off"),
     path("me/editar-horarios-hoje/", views.mei_edit_today_punches, name="mei_edit_today_punches"),
     path("me/reportar-problema-horario/", views.mei_punch_correction_request, name="mei_punch_correction_request"),
     re_path(r"^me/reportar-problema-ponto/$", RedirectView.as_view(pattern_name="mei_punch_correction_request", permanent=True)),

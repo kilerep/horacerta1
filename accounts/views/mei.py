@@ -18,6 +18,13 @@ def dashboard_employee(request):
     return redirect("employee_dashboard")
 
 
+def _today_service_jobs(user):
+    """Servicos de hoje; tambem cria (uma vez por dia) o aviso no sininho."""
+    from services.agenda import ensure_today_reminder
+
+    return ensure_today_reminder(user)
+
+
 @login_required
 def mei_panel(request):
     denied = _redirect_if_not_mei(request)
@@ -240,6 +247,7 @@ def mei_panel(request):
         "new_service_requests_count": new_service_requests_count,
         "important_notifications_count": important_notifications_count,
         "pending_report_requests": pending_report_requests,
+        "today_service_jobs": _today_service_jobs(request.user),
         "client_summaries": client_summaries,
         "incomplete_alerts": incomplete_alerts,
         "paused_contracts": paused_contracts,
@@ -380,11 +388,18 @@ def mei_history(request):
 
     hourly_rate = getattr(selected_contract, "hourly_rate", None) or Decimal("0")
     history_rows = sorted(history_rows, key=lambda row: row["date"], reverse=True)
+    from timeclock.models import DayOff
+
+    days_off = {d.date: d for d in DayOff.objects.filter(owner=request.user)}
     for row in history_rows:
+        row["day_off"] = days_off.get(row["date"])
         estimated_value = ((Decimal(row["total_seconds"]) / Decimal("3600")) * hourly_rate).quantize(Decimal("0.01"))
         row["estimated_value"] = estimated_value
         row["estimated_value_brl"] = _format_brl(estimated_value)
-        if row["punches_count"] == 0:
+        if row["punches_count"] == 0 and row["day_off"]:
+            row["status_label"] = row["day_off"].get_kind_display()
+            row["status_kind"] = "dayoff"
+        elif row["punches_count"] == 0:
             row["status_label"] = "Sem registros"
             row["status_kind"] = "empty"
         elif row["is_incomplete"]:
@@ -415,6 +430,8 @@ def mei_history(request):
         "date_to": date_to_raw,
         "period_label": period_label,
         "history_rows": history_rows,
+        "period_days_off": [row["day_off"] for row in history_rows if row.get("day_off")],
+        "today_iso": timezone.localdate().isoformat(),
         "history_punch_columns": range(1, max_punches + 1),
         "summary_total_days_with_records": total_days_with_records,
         "summary_total_punches": total_punches,
@@ -1537,4 +1554,36 @@ def mei_service_report_request_detail(request, request_id):
 # with a leading underscore, which default `import *` would
 # otherwise skip) so `accounts/views/__init__.py` can re-export it
 # with a plain `from .this_module import *`.
+
+
+
+@login_required
+@require_POST
+def mei_day_off(request):
+    """Marca ou desmarca folga/feriado (vale para todos os clientes) e volta para o Historico."""
+    from timeclock.models import DayOff
+
+    denied = _redirect_if_not_mei(request)
+    if denied:
+        return denied
+    back = request.POST.get("next") or reverse("mei_history")
+    if not back.startswith("/") or back.startswith("//"):
+        back = reverse("mei_history")
+    try:
+        day = datetime.strptime((request.POST.get("date") or "").strip(), "%Y-%m-%d").date()
+    except ValueError:
+        messages.error(request, "Escolha o dia da folga ou do feriado.")
+        return redirect(back)
+    if request.POST.get("action") == "remove":
+        DayOff.objects.filter(owner=request.user, date=day).delete()
+        messages.success(request, f"{day:%d/%m/%Y} voltou a ser um dia normal.")
+        return redirect(back)
+    kind = request.POST.get("kind")
+    kind = kind if kind in DayOff.Kind.values else DayOff.Kind.FOLGA
+    note = (request.POST.get("note") or "").strip()[:80]
+    DayOff.objects.update_or_create(owner=request.user, date=day, defaults={"kind": kind, "note": note})
+    messages.success(request, f"{day:%d/%m/%Y} marcado como {DayOff.Kind(kind).label.lower()}.")
+    return redirect(back)
+
+
 __all__ = [_name for _name in list(globals()) if not _name.startswith("__")]
