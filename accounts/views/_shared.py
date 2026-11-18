@@ -833,6 +833,10 @@ def _build_service_report_payload(contract, date_from, date_to):
     punches_by_day = defaultdict(list)
     for punch in punches:
         punches_by_day[timezone.localtime(punch.timestamp, tz).date()].append(punch)
+    from timeclock.models import DayOff
+
+    days_off = {d.date: d.label for d in DayOff.objects.filter(
+        owner_id=contract.employee.user_id, date__range=(date_from, date_to))}
 
     days = []
     total_seconds = 0
@@ -871,6 +875,7 @@ def _build_service_report_payload(contract, date_from, date_to):
                 "manual_count": day_manual_count,
                 "location_count": day_location_count,
                 "notes": day_notes,
+                "day_off": days_off.get(current_day, ""),
             }
         )
         current_day += timedelta(days=1)
@@ -1418,13 +1423,16 @@ def _service_report_pdf_response(report):
     rows, fills = [], {}
     for index, day in enumerate(payload.get("days") or []):
         incomplete = bool(day.get("is_incomplete"))
+        day_off = day.get("day_off") or ""
         if incomplete:
             fills[index] = pt.WARN_SOFT
+        elif day_off:
+            fills[index] = pt.SAGE
         rows.append([
             day.get("date_label") or "-",
             ", ".join(day.get("punch_times") or []) or "-",
             "; ".join(day.get("notes") or []) or "",
-            "Incompleto" if incomplete else "OK",
+            "Incompleto" if incomplete else (day_off.split(" · ")[0] if day_off and not day.get("punch_times") else "OK"),
             day.get("total_hours") or "-",
         ])
     story.append(pt.data_table(

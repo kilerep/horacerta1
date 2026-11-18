@@ -12,6 +12,7 @@
   </style>
   <a class="sn-item {% if active == 'requests' %}is-active{% endif %}" href="{% url 'service_request_list' %}"{% if active == 'requests' %} aria-current="page"{% endif %}>Pedidos{% if open_requests %}<span class="sn-badge" aria-label="{{ open_requests }} pedido{{ open_requests|pluralize }} para atender">{{ open_requests }}</span>{% endif %}</a>
   <a class="sn-item {% if active == 'jobs' %}is-active{% endif %}" href="{% url 'service_job_list' %}"{% if active == 'jobs' %} aria-current="page"{% endif %}>Serviços</a>
+  <a class="sn-item {% if active == 'agenda' %}is-active{% endif %}" href="{% url 'service_agenda' %}"{% if active == 'agenda' %} aria-current="page"{% endif %}>Agenda</a>
   <details class="sn-more{% if active == 'more' %} is-active{% endif %}">
     <summary class="sn-item">Mais</summary>
     <div class="sn-more-list">

@@ -159,6 +159,20 @@
       background:rgba(250,204,21,.12);
       border-color:rgba(250,204,21,.25);
     }
+    .status-dayoff{
+      color:var(--success-text);
+      background:var(--success-bg);
+      border-color:var(--success-border);
+    }
+    .hx-off{display:grid;gap:10px}
+    .hx-off form{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:end}
+    .hx-off .kinds{display:flex;gap:6px;flex-wrap:wrap}
+    .hx-off .kinds label{display:flex;align-items:center;gap:6px;min-height:44px;padding:0 12px;border:1px solid var(--color-border);border-radius:999px;font-weight:800;cursor:pointer}
+    .hx-off .kinds label:has(input:checked){border-color:var(--color-primary);background:var(--color-primary-soft)}
+    .hx-off ul{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+    .hx-off li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--color-border);border-radius:10px}
+    .hx-off li form{display:block}
+    @media (max-width:640px){.hx-off form{grid-template-columns:1fr}}
     .status-empty{
       color:#d7e4ff;
       background:rgba(255,255,255,.08);
@@ -357,6 +371,31 @@
       </div>
     </section>
 
+    <section class="mei-history__panel hx-off" aria-labelledby="hx-off-title">
+      <h2 class="mei-history__title" id="hx-off-title">Folgas e feriados</h2>
+      <p class="mei-history__sub">Marque os dias em que você não trabalhou. Eles aparecem aqui e no fechamento de horas, para o cliente entender por que não há horas.</p>
+      <form method="post" action="{% url 'mei_day_off' %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <div class="field"><label for="off-date">Dia</label><input id="off-date" type="date" name="date" value="{{ today_iso }}" required></div>
+        <div class="kinds" role="radiogroup" aria-label="Tipo">
+          <label><input type="radio" name="kind" value="FOLGA" checked> Folga</label>
+          <label><input type="radio" name="kind" value="FERIADO"> Feriado</label>
+        </div>
+        <button class="btn primary" type="submit">Marcar</button>
+        <div class="field" style="grid-column:1 / -1"><label for="off-note">Observação (opcional)</label><input id="off-note" name="note" maxlength="80" placeholder="Ex.: Proclamação da República"></div>
+      </form>
+      {% if period_days_off %}
+        <ul>
+          {% for off in period_days_off %}
+            <li><span><strong>{{ off.date|date:"d/m/Y" }}</strong> · {{ off.label }}</span>
+              <form method="post" action="{% url 'mei_day_off' %}">{% csrf_token %}<input type="hidden" name="date" value="{{ off.date|date:'Y-m-d' }}"><input type="hidden" name="action" value="remove"><input type="hidden" name="next" value="{{ request.get_full_path }}"><button class="btn" type="submit">Desmarcar</button></form>
+            </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    </section>
+
     <section class="mei-history__panel">
       <h2 class="mei-history__title">Histórico diário</h2>
       <p class="mei-history__sub">Visão por dia para leitura rápida: horários, total e status.</p>
@@ -406,7 +445,7 @@
           {% endif %}{% endfor %}
           <details class="hx-empty-days">
             <summary>Dias sem registro no período</summary>
-            <p>{% for row in history_rows %}{% if not row.punches_count %}<span>{{ row.date|date:"d/m" }}</span>{% endif %}{% endfor %}</p>
+            <p>{% for row in history_rows %}{% if not row.punches_count %}<span>{{ row.date|date:"d/m" }}{% if row.day_off %} ({{ row.day_off.get_kind_display }}){% endif %}</span>{% endif %}{% endfor %}</p>
           </details>
         </div>
       {% else %}

@@ -171,6 +171,17 @@
             <a class="btn" href="{% url 'mei_client_edit' contract.id %}">Definir valor/hora</a>
           </article>
         {% endfor %}
+        {% if today_service_jobs %}
+          <article class="attention-item">
+            <span class="attention-item__dot" aria-hidden="true"></span>
+            <div>
+              <span class="attention-item__eyebrow">Agenda de hoje</span>
+              <strong class="attention-item__title">Hoje você tem {{ today_service_jobs|length }} {% if today_service_jobs|length == 1 %}serviço{% else %}serviços{% endif %}</strong>
+              <p class="attention-item__text">{% for job in today_service_jobs|slice:":3" %}{% if job.planned_start_time %}{{ job.planned_start_time|time:"H:i" }} {% endif %}{{ job.title }}{% if not forloop.last %} · {% endif %}{% endfor %}</p>
+            </div>
+            <a class="btn" href="{% url 'service_agenda' %}">Ver agenda</a>
+          </article>
+        {% endif %}
         {% for req in pending_report_requests %}
           <article class="attention-item attention-item--warn">
             <span class="attention-item__dot" aria-hidden="true"></span>
@@ -236,7 +247,7 @@
             </div>
             <a class="btn" href="{% url 'mei_client_create' %}">Cadastrar cliente</a>
           </article>
-        {% elif not incomplete_alerts and not missing_rate_contracts and not pending_report_requests and not unviewed_report_alerts and not paused_contracts and not new_service_requests_count and not important_notifications_count %}
+        {% elif not incomplete_alerts and not missing_rate_contracts and not pending_report_requests and not unviewed_report_alerts and not paused_contracts and not new_service_requests_count and not important_notifications_count and not today_service_jobs %}
           <article class="attention-item attention-item--ok">
             <span class="attention-item__dot" aria-hidden="true"></span>
             <div>
