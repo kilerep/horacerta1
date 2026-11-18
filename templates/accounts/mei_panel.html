@@ -88,7 +88,11 @@
       .attention-item{grid-template-columns:auto minmax(0,1fr)}
       .attention-item .btn{grid-column:1 / -1;width:100%;justify-content:center}
     }
-  </style>
+    .client-compare{grid-column:1 / -1;margin:2px 0 0;font-size:13px;color:var(--color-text-muted);line-height:1.4}
+  .client-compare strong{font-variant-numeric:tabular-nums}
+  .client-compare.up strong{color:var(--success-text)}
+  .client-compare.down strong{color:var(--warning-text)}
+</style>
 
   <div class="rs-page">
     <header class="rs-head">
@@ -268,6 +272,10 @@
                 <div class="client-cell"><span>Valor/hora</span><strong>R$ {{ row.hourly_rate }}</strong></div>
                 <div class="client-cell"><span>Estimado</span><strong>{{ row.estimated_value_brl }}</strong></div>
               </div>
+              <p class="client-compare {{ row.delta_tone }}">
+                {% if row.has_prev %}<strong>{{ row.delta_label }}</strong> {% if row.delta_tone == "down" %}a menos{% elif row.delta_tone == "up" %}a mais{% else %}igual{% endif %} que no mesmo período do mês passado ({{ row.prev_hours }} {{ row.prev_period_label }}).
+                {% else %}Sem horas no mesmo período do mês passado.{% endif %}
+              </p>
             </article>
           {% endfor %}
         </div>
