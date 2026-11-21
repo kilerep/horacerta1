@@ -3,7 +3,6 @@ from . import views
 
 urlpatterns = [
     path("me/", views.employee_dashboard, name="employee_dashboard"),
-    path("me/qr-presencial/<str:token>/", views.qr_presence_checkin, name="qr_presence_checkin"),
     path("me/manual-punches/", views.create_manual_punches, name="create_manual_punches"),
     path("me/export/", views.export_default, name="export_default"),
     path("me/export/csv/", views.export_csv, name="export_csv"),

@@ -238,8 +238,8 @@ def evaluate_punch_confidence(contract):
 
     GPS desativado em 2026-11: o sistema nao coleta nem confere mais a
     localizacao do aparelho. Politicas antigas no modo GEOLOCATION (ou com
-    require_location) passam a ser tratadas como livres; o QR presencial
-    continua funcionando porque nao depende de coordenadas.
+    require_location) passam a ser tratadas como livres. O QR presencial tambem
+    foi removido (2026-11): politicas antigas em PRESENTIAL_QR contam como livres.
     """
     policy = CompanyAttendancePolicy.objects.filter(company=contract.company).first()
     validation_mode = policy.validation_mode if policy else CompanyAttendancePolicy.ValidationMode.FREE
@@ -248,6 +248,4 @@ def evaluate_punch_confidence(contract):
         "validation_method": "FREE_POLICY",
         "confidence_status": "FREE",
     }
-    if validation_mode == CompanyAttendancePolicy.ValidationMode.PRESENTIAL_QR:
-        result["validation_method"] = "PRESENTIAL_QR_PENDING"
     return result

@@ -2,8 +2,8 @@
 
 O GPS foi desativado em 2026-11 a pedido do dono do produto. Os campos antigos
 continuam no banco (legado, para nao apagar dados), mas nenhuma tela, script ou
-formulario pode voltar a pedir ou exibir localizacao. O QR presencial segue
-funcionando porque e um QR code, nao GPS.
+formulario pode voltar a pedir ou exibir localizacao. O QR presencial tambem foi
+removido (2026-11-21).
 """
 
 from datetime import date

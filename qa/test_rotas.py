@@ -67,8 +67,6 @@ class AllRoutesNoServerErrorTests(TestCase):
             values["token"] = w["sheet"].share_token
         elif route.startswith("servicos/") and w["job"]:
             values["token"] = w["job"].public_token
-        elif route.startswith("me/qr-presencial/"):
-            values["token"] = w["location"].qr_token
         kwargs = {}
         for name in params:
             if values.get(name) is None:
