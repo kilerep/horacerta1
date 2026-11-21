@@ -61,7 +61,7 @@ def mei_panel(request):
             "cta_url": reverse("mei_client_create"),
         },
         {
-            "label": "Defina o valor por hora do contrato",
+            "label": "Defina o valor por hora do cliente",
             "done": has_rate_defined,
             "cta_label": "Meus clientes",
             "cta_url": reverse("mei_contract"),
@@ -253,7 +253,7 @@ def mei_panel(request):
         "paused_contracts": paused_contracts,
         "missing_rate_contracts": missing_rate_contracts,
         "context_warning": (
-            "O vinculo selecionado anteriormente não esta mais disponível. Exibindo o vinculo atual."
+            "O cliente selecionado anteriormente não está mais disponível. Exibindo o cliente atual."
             if (mei_context.invalid_requested_contract or mei_context.invalid_session_contract)
             else ""
         ),
@@ -482,7 +482,7 @@ def mei_edit_today_punches(request):
 
         posted_contract = next((item for item in contracts if str(item.id) == selected_contract_id), None)
         if not posted_contract:
-            errors.append("Selecione um cliente/contrato ativo da sua conta.")
+            errors.append("Selecione um cliente ativo da sua conta.")
         else:
             selected_contract = posted_contract
 
@@ -1135,7 +1135,7 @@ def mei_reports(request):
                 }
                 for contract, totals in comparison_totals
             ),
-            # Desempate por id do contrato para manter ordem estavel quando
+            # Desempate por id do cliente para manter ordem estavel quando
             # dois clientes tem o mesmo total no periodo.
             key=lambda row: (-row["bar_percent"], row["contract"].id),
         )

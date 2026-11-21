@@ -55,7 +55,7 @@
     {% if contracts %}
       <form method="get" class="row" style="margin-top:10px;">
         <div class="field">
-          <label>Empresa e contrato</label>
+          <label>Cliente</label>
           <select name="contract" onchange="this.form.submit()">
             {% for c in contracts %}
               <option value="{{ c.id }}" {% if selected_contract and c.id == selected_contract.id %}selected{% endif %}>
@@ -71,7 +71,7 @@
         <div class="profile-scope-note profile-scope-note--empty">
           <strong>Atenção:</strong> nome, CPF, telefone, endereço e foto sao cadastrados
           <strong>separadamente para cada cliente</strong> acima - não existe um perfil
-          único compartilhado entre eles. Este vinculo (<strong>{{ selected_contract.company.name }}</strong>)
+          único compartilhado entre eles. Este cliente (<strong>{{ selected_contract.company.name }}</strong>)
           ainda não tem nome cadastrado; confira se e realmente o cliente que você quer
           editar antes de preencher os dados.
         </div>

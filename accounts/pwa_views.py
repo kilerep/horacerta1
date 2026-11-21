@@ -95,7 +95,7 @@ def manifest(request):
             {
                 "name": "Meus Clientes",
                 "short_name": "Clientes",
-                "description": "Veja seus clientes e contratos",
+                "description": "Veja seus clientes, horas e valores",
                 "url": "/app/clientes/",
                 "icons": [
                     {

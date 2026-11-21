@@ -71,7 +71,7 @@
         </div>
 
         <div class="today-edit__field">
-          <label for="contract">Cliente/contrato</label>
+          <label for="contract">Cliente</label>
           <select id="contract" name="contract" {% if is_locked %}disabled{% endif %} required>
             {% for contract in contracts %}
               <option value="{{ contract.id }}" {% if selected_contract and contract.id == selected_contract.id %}selected{% endif %}>

@@ -118,7 +118,7 @@
       <div class="clients-hero__top">
         <div>
           <h1 class="clients-title">Meus clientes</h1>
-          <p class="clients-subtitle">Contratos, horas e valores de cada cliente no mês atual.</p>
+          <p class="clients-subtitle">Horas e valores de cada cliente no mês atual.</p>
         </div>
         <div class="clients-actions">
           <a class="btn primary" href="{% url 'mei_client_create' %}">Adicionar cliente</a>
@@ -139,7 +139,7 @@
         <div class="clients-section-head">
           <div>
             <h2>Clientes vinculados</h2>
-            <p><span data-client-result-count>{{ client_rows|length }}</span> <span data-client-result-word>{% if client_rows|length == 1 %}contrato visível{% else %}contratos visíveis{% endif %}</span> para sua conta.</p>
+            <p><span data-client-result-count>{{ client_rows|length }}</span> <span data-client-result-word>{% if client_rows|length == 1 %}cliente{% else %}clientes{% endif %}</span> na sua conta.</p>
           </div>
         </div>
 
@@ -194,7 +194,7 @@
                 {% if not row.contract.hourly_rate %}
                   <p class="client-next-action"><strong>Próximo passo:</strong> defina o valor por hora.</p>
                 {% elif row.status.tone == "warn" %}
-                  <p class="client-next-action"><strong>Contrato inativo:</strong> veja os detalhes antes de registrar horas.</p>
+                  <p class="client-next-action"><strong>Cliente inativo:</strong> veja os detalhes antes de registrar horas.</p>
                 {% elif row.quick_closure.is_custom %}
                   <p class="client-next-action"><strong>Fechamento personalizado:</strong> revise as datas.</p>
                 {% else %}
@@ -271,7 +271,7 @@
                   </article>
 
                   <div class="client-actions client-actions--detail">
-                    <a class="btn" href="{{ row.edit_url }}">Editar cliente/contrato</a>
+                    <a class="btn" href="{{ row.edit_url }}">Editar cliente</a>
                     <a class="btn" href="{{ row.history_url }}">Ver histórico</a>
                     <a class="btn" href="{{ row.services_url }}">Ver serviços deste cliente</a>
                     <a class="btn" href="{{ row.new_service_url }}">Novo serviço para este cliente</a>
@@ -436,7 +436,7 @@
 
         if (resultCount) resultCount.textContent = String(visibleCount);
         var resultWord = document.querySelector("[data-client-result-word]");
-        if (resultWord) resultWord.textContent = visibleCount === 1 ? "contrato visível" : "contratos visíveis";
+        if (resultWord) resultWord.textContent = visibleCount === 1 ? "cliente" : "clientes";
         if (emptyState) emptyState.hidden = visibleCount !== 0;
         if (feedback) {
           feedback.textContent = visibleCount === cards.length

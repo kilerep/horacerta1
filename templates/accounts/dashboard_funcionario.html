@@ -20,11 +20,11 @@
       </section>
     {% elif request.GET.event == "contract_required" %}
       <section class="hc-feedback hc-feedback--warn" role="status" aria-live="polite">
-        Selecione cliente e contrato antes de registrar horário.
+        Selecione o cliente antes de registrar horário.
       </section>
     {% elif request.GET.event == "invalid_contract" %}
       <section class="hc-feedback hc-feedback--warn" role="status" aria-live="polite">
-        O contrato selecionado esta inativo, encerrado ou não pertence a sua conta.
+        O cliente selecionado está inativo, encerrado ou não pertence à sua conta.
       </section>
     {% elif request.GET.event == "report_sent" %}
       <section class="hc-feedback hc-feedback--ok" role="status" aria-live="polite">
@@ -93,12 +93,12 @@
         <h2 class="hc-section-title">Cadastro confirmado, aguardando liberacao operacional</h2>
         <p class="hc-muted" style="margin:0 0 8px;">
           Seu cadastro no HoraCerta esta ativo{% if employee_company_name %} para <strong>{{ employee_company_name }}</strong>{% endif %},
-          mas ainda não existe contrato operacional vigente para registrar horários.
+          mas ainda não existe cliente ativo para registrar horários.
         </p>
         {% if state_context %}
           <p class="hc-muted" style="margin:0;"><strong>Estado atual:</strong> {{ state_context.label }} - {{ state_context.hint }}</p>
         {% endif %}
-        <p class="hc-muted" style="margin:8px 0 0;">Solicite ao cliente a criacao ou ativacao do contrato no painel.</p>
+        <p class="hc-muted" style="margin:8px 0 0;">Cadastre ou reative um cliente em Meus clientes.</p>
         <div style="margin-top:12px;">
           <a class="btn primary" href="{% url 'mei_contract' %}">Adicionar cliente</a>
         </div>
@@ -138,7 +138,7 @@
             <div class="hc-client-details" aria-live="polite">
               <span><strong>R$ {{ selected_contract.hourly_rate }}/h</strong></span>
               <span>desde {{ selected_contract.start_date|date:"d/m/Y" }}{% if selected_contract.end_date %} até {{ selected_contract.end_date|date:"d/m/Y" }}{% endif %}</span>
-              <span>contrato ativo</span>
+              <span>cliente ativo</span>
             </div>
           </div>
         </section>

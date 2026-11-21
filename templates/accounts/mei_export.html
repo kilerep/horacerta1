@@ -36,7 +36,7 @@
     {% if contracts %}
       <form method="get" class="row" style="margin-top:12px;" data-submit-once="true">
         <div class="field">
-          <label>Cliente e contrato</label>
+          <label>Cliente</label>
           <select name="contract" required>
             {% for c in contracts %}
               <option value="{{ c.id }}">{{ c.company.name }} - R$ {{ c.hourly_rate }}/h</option>

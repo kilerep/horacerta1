@@ -319,7 +319,7 @@
       </div>
       <form method="get" class="mei-history__filters" data-submit-once="true">
         <div class="mei-history__field">
-          <label>Cliente e contrato</label>
+          <label>Cliente</label>
           <select name="contract" onchange="this.form.submit()">
             {% for c in contracts %}
               <option value="{{ c.id }}" {% if selected_contract and c.id == selected_contract.id %}selected{% endif %}>

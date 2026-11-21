@@ -79,7 +79,7 @@ def _resolve_contract_for_secure_action(request):
     """
     mei_context = resolve_mei_context(request, operational_only=True)
     if mei_context.requested_contract_id and mei_context.invalid_requested_contract:
-        return None, "Vinculo informado invalido ou indisponivel."
+        return None, "Cliente informado inválido ou indisponível."
     return mei_context.selected_contract, None
 
 
@@ -170,7 +170,7 @@ def employee_dashboard(request):
                 "employee_company_name": employee_company_name,
                 "pending_report_requests": pending_report_requests,
                 "context_warning": (
-                    "O vinculo selecionado anteriormente nao esta mais disponivel. Selecione um vinculo ativo."
+                    "O cliente selecionado anteriormente não está mais disponível. Selecione um cliente ativo."
                     if (mei_context.invalid_requested_contract or mei_context.invalid_session_contract)
                     else ""
                 ),
@@ -328,7 +328,7 @@ def employee_dashboard(request):
         "state_context": employee_lifecycle_summary(selected_contract.employee, contracts),
         "pending_report_requests": pending_report_requests,
         "context_warning": (
-            "O vinculo selecionado anteriormente nao esta mais disponivel. Exibindo o vinculo ativo atual."
+            "O cliente selecionado anteriormente não está mais disponível. Exibindo o cliente ativo atual."
             if (mei_context.invalid_requested_contract or mei_context.invalid_session_contract)
             else ""
         ),
@@ -349,7 +349,7 @@ def create_manual_punches(request):
 
     errors = []
     if not contract_id:
-        errors.append("Selecione cliente e contrato.")
+        errors.append("Selecione o cliente.")
     if not manual_date_raw:
         errors.append("Informe a data do lancamento.")
 
@@ -393,7 +393,7 @@ def create_manual_punches(request):
 
     contract = _active_contracts_for_employee_user(request.user).filter(id=contract_id).first()
     if not contract:
-        return JsonResponse({"ok": False, "errors": ["Vinculo invalido ou inativo."]}, status=400)
+        return JsonResponse({"ok": False, "errors": ["Cliente inválido ou inativo."]}, status=400)
 
     # Horario manual so no dia de hoje (2026-11-21): dias anteriores ficam bloqueados e
     # o dia seguinte tambem - nao da para lancar horas antes de trabalhar.
@@ -450,7 +450,7 @@ def create_manual_punches(request):
             {
                 "ok": False,
                 "errors": [
-                    "Ja existe horario para este vinculo/data nos horarios: %s." % ", ".join(duplicated_existing)
+                    "Já existe horário para este cliente nesta data: %s." % ", ".join(duplicated_existing)
                 ],
             },
             status=400,
@@ -506,7 +506,7 @@ def export_csv(request):
 
     contract, error_message = _resolve_contract_for_secure_action(request)
     if not contract:
-        return HttpResponse(error_message or "Vinculo invalido para exportacao.", status=400)
+        return HttpResponse(error_message or "Cliente inválido para exportação.", status=400)
 
     base_punches = Punch.objects.filter(contract=contract).order_by("timestamp")
     punches, _start, _end = filter_punches_by_period(
@@ -552,7 +552,7 @@ def export_xlsx(request):
 
     contract, error_message = _resolve_contract_for_secure_action(request)
     if not contract:
-        return HttpResponse(error_message or "Vinculo invalido para exportacao.", status=400)
+        return HttpResponse(error_message or "Cliente inválido para exportação.", status=400)
 
     base_punches = Punch.objects.filter(contract=contract).order_by("timestamp")
     punches, start_date, end_date = filter_punches_by_period(
@@ -621,7 +621,7 @@ def export_pdf(request):
 
     contract, error_message = _resolve_contract_for_secure_action(request)
     if not contract:
-        return HttpResponse(error_message or "Vinculo invalido para exportacao.", status=400)
+        return HttpResponse(error_message or "Cliente inválido para exportação.", status=400)
 
     base_punches = Punch.objects.filter(contract=contract).order_by("timestamp")
     punches, start_date, end_date = filter_punches_by_period(

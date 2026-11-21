@@ -102,7 +102,7 @@ def manifest(request):
             {
                 "name": "Meus clientes",
                 "short_name": "Clientes",
-                "description": "Veja clientes e contratos",
+                "description": "Veja seus clientes, horas e valores",
                 "url": reverse("mei_contract"),
                 "icons": [{"src": static("pwa/shortcut-clients-96.png"), "sizes": "96x96", "type": "image/png"}],
             },
