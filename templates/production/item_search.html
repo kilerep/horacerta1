@@ -1,0 +1,105 @@
+{% extends "accounts/base.html" %}
+{% load hc_icons %}
+
+{% block title %}Buscar item{% endblock %}
+{% block page_title %}Relatórios de produção{% endblock %}
+
+{% block extra_head %}{% include "production/_styles.html" %}{% include "production/_shipment_styles.html" %}
+<style>
+  .is-form{display:flex;gap:8px}
+  .is-form input{flex:1;min-width:0;min-height:48px;border-radius:12px;font-size:17px}
+  .is-group{display:grid;gap:0;border:1px solid var(--color-border);border-radius:14px;background:var(--color-card);box-shadow:var(--shadow-xs);overflow:hidden}
+  .is-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;padding:16px 18px;border-bottom:1px solid var(--color-border)}
+  .is-top h2{margin:0;font-size:22px;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+  .is-sum{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:6px;color:var(--color-text-muted);font-size:14px}
+  .is-sum strong{color:var(--color-text)}
+  .is-block{padding:12px 18px}
+  .is-block + .is-block{border-top:1px solid var(--color-border)}
+  .is-block h3{display:flex;align-items:center;gap:8px;margin:0 0 8px;font-size:13px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;color:var(--color-text-muted)}
+  .is-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:10px 0;border-top:1px solid var(--color-border);color:var(--color-text);text-decoration:none}
+  .is-row:first-of-type{border-top:0}
+  .is-row:hover strong{color:var(--color-primary)}
+  .is-row .meta{display:flex;flex-wrap:wrap;gap:2px 10px;color:var(--color-text-muted);font-size:13.5px}
+  .is-row .qty{font-weight:900;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .is-none{color:var(--color-text-muted);font-size:14px}
+  @media (max-width:640px){.is-top,.is-block{padding-left:14px;padding-right:14px}.is-top h2{font-size:20px}}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="prod-page">
+  {% include "production/_production_tabs.html" with active="sheets" %}
+  <header class="ship-head">
+    <div>
+      <h1>Buscar item</h1>
+      <p>Digite o código do desenho ou a ordem de produção para ver quando foi cortado, quantas vezes e para onde foi enviado.</p>
+    </div>
+  </header>
+
+  <form class="is-form" method="get" role="search">
+    <label class="sr-only" for="is-q">Código ou ordem de produção</label>
+    <input id="is-q" type="search" name="q" value="{{ query }}" placeholder="Ex.: 8210-120 ou 7542.1" autofocus autocomplete="off">
+    <button class="btn primary" type="submit">{% icon "list" 18 %} Buscar</button>
+  </form>
+
+  {% if not query or query|length < 2 %}
+    <div class="prod-empty">Digite o código do desenho (pelo menos 2 caracteres) ou o número da ordem de produção. Pode ser só uma parte, por exemplo <strong>8210</strong>.</div>
+  {% else %}
+    {% for group in groups %}
+      <article class="is-group" aria-label="Item {{ group.code }}">
+        <div class="is-top">
+          <div>
+            <h2>{{ group.code }}</h2>
+            <div class="is-sum">
+              {% if group.cuts %}<span><strong>Cortado {{ group.cuts|length }} {% if group.cuts|length == 1 %}vez{% else %}vezes{% endif %}</strong> · {{ group.cut_pieces }} {% if group.cut_pieces == 1 %}peça{% else %}peças{% endif %}</span>
+              <span>{% if group.first == group.last %}em {{ group.first|date:"d/m/Y" }}{% else %}de {{ group.first|date:"d/m/Y" }} a {{ group.last|date:"d/m/Y" }}{% endif %}</span>{% endif %}
+              {% if group.sent %}<span><strong>Enviado em {{ group.romaneios }} {% if group.romaneios == 1 %}romaneio{% else %}romaneios{% endif %}</strong> · {{ group.sent_pieces }} {% if group.sent_pieces == 1 %}peça{% else %}peças{% endif %}</span>{% endif %}
+            </div>
+          </div>
+          <a class="btn" href="{% url 'production_item_history_pdf' %}?q={{ group.code|urlencode }}" target="_blank" rel="noopener">{% icon "download" 18 %} Histórico em PDF</a>
+        </div>
+
+        {% if group.cuts %}
+          <section class="is-block">
+            <h3>{% icon "clock" 16 %} Cortes</h3>
+            {% for entry in group.cuts %}
+              <a class="is-row" href="{% url 'production_entry_edit' entry.sheet_id entry.id %}">
+                <span>
+                  <strong>{{ entry.work_date|date:"d/m/Y" }} · {{ entry.sheet.equipment }}</strong>
+                  <span class="meta">
+                    {% if entry.production_order %}<span>OP {{ entry.production_order }}</span>{% endif %}
+                    {% if entry.start_time %}<span>{{ entry.start_time|time:"H:i" }}{% if entry.end_time %} às {{ entry.end_time|time:"H:i" }}{% endif %}</span>{% endif %}
+                    {% if entry.destination %}<span>{{ entry.get_destination_display }}</span>{% endif %}
+                  </span>
+                </span>
+                <span class="qty">{% if entry.quantity %}{{ entry.quantity }} un.{% else %}—{% endif %}</span>
+              </a>
+            {% endfor %}
+          </section>
+        {% endif %}
+
+        <section class="is-block">
+          <h3>{% icon "truck" 16 %} Envios</h3>
+          {% for item in group.sent %}
+            <a class="is-row" href="{% url 'shipment_detail' item.note_id %}">
+              <span>
+                <strong>Romaneio nº {{ item.note.number_label }} · {{ item.note.destination_company }}</strong>
+                <span class="meta">
+                  <span>Carregado {{ item.note.loaded_at|date:"d/m/Y" }} às {{ item.note.loaded_at|time:"H:i" }}</span>
+                  {% if item.production_order %}<span>OP {{ item.production_order }}</span>{% endif %}
+                  <span>{{ item.note.situation.0 }}</span>
+                </span>
+              </span>
+              <span class="qty">{{ item.quantity }} un.</span>
+            </a>
+          {% empty %}
+            <p class="is-none">Ainda não saiu em nenhum romaneio enviado.</p>
+          {% endfor %}
+        </section>
+      </article>
+    {% empty %}
+      <div class="prod-empty">Nenhum item encontrado para “{{ query }}”. Confira o código ou tente só uma parte dele.</div>
+    {% endfor %}
+  {% endif %}
+</div>
+{% endblock %}

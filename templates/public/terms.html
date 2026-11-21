@@ -5,7 +5,7 @@
   .wrap{display:grid;gap:12px}
   .hero,.card{border:1px solid var(--line);border-radius:16px;padding:16px;background:color-mix(in oklab, var(--color-card) 86%, transparent)}
   .hero h1{margin:0;font-size:2rem;letter-spacing:-.03em}
-  .hero p,.card p,.card li{color:var(--muted)}
+  .hero p,.card p,.card li{color:var(--muted);line-height:1.55}
   .grid{display:grid;gap:10px}
   .card h2{margin:0;font-size:1.05rem}
   .list{margin:8px 0 0;padding-left:18px;display:grid;gap:6px}
@@ -13,15 +13,30 @@
 <div class="container wrap">
   <section class="hero">
     <h1>Termos de Uso</h1>
-    <p>Condicoes gerais de uso do HoraCerta como software de controle de horas, clientes e relatorios para profissionais e MEIs.</p>
+    <p>O HoraCerta é uma ferramenta para o prestador (MEI/autônomo) organizar as próprias horas, clientes, serviços e relatórios. Ele não cria vínculo entre você e seus clientes nem substitui acordos que vocês façam entre si.</p>
   </section>
   <section class="grid">
-    <article class="card"><h2>1. Objeto</h2><p>O HoraCerta oferece recursos para cadastro, registro de horarios, acompanhamento e historico operacional.</p></article>
-    <article class="card"><h2>2. Cadastro e acesso</h2><ul class="list"><li>A empresa e responsavel pelo cadastro de profissionais.</li><li>Credenciais sao pessoais e intransferiveis.</li><li>O usuario deve manter senha sob sigilo.</li></ul></article>
-    <article class="card"><h2>3. Uso adequado</h2><ul class="list"><li>Uso profissional e licito da plataforma.</li><li>Proibido uso fraudulento ou que comprometa integridade dos dados.</li></ul></article>
-    <article class="card"><h2>4. Disponibilidade e evolucao</h2><p>A plataforma pode receber manutencoes e melhorias sem prejuizo da operacao regular.</p></article>
-    <article class="card"><h2>5. Dados e privacidade</h2><p>O tratamento de dados segue a politica de <a href="{% url 'privacy' %}">Privacidade</a> e finalidades operacionais da plataforma.</p></article>
-    <article class="card"><h2>6. Atualizacoes</h2><p>Estes termos podem ser atualizados para refletir evolucao do produto e requisitos legais.</p></article>
+    <article class="card">
+      <h2>Como funciona</h2>
+      <ul class="list">
+        <li>Você cria a sua conta e é o único que vê e gerencia os seus dados.</li>
+        <li>Seus clientes só veem o que você compartilha com eles por link, sem precisar de conta.</li>
+        <li>A senha é pessoal: não compartilhe com ninguém.</li>
+      </ul>
+    </article>
+    <article class="card">
+      <h2>Fase de testes</h2>
+      <p>O HoraCerta está em fase de testes e pode mudar, ficar fora do ar por alguns momentos ou ganhar e perder funções. Não garantimos disponibilidade ininterrupta.</p>
+    </article>
+    <article class="card">
+      <h2>Seus dados</h2>
+      <p>Os dados que você registra são seus. A <a href="{% url 'privacy' %}">Política de Privacidade</a> explica o que é guardado e como pedir cópia ou exclusão.</p>
+    </article>
+    <article class="card">
+      <h2>Uso correto</h2>
+      <p>Use o sistema de forma honesta. Não é permitido tentar acessar dados de outra pessoa ou atrapalhar o funcionamento. O HoraCerta organiza informações; para questões fiscais ou legais do seu negócio, procure um profissional.</p>
+    </article>
+    <article class="card"><h2>Contato</h2><p>Dúvidas podem ser enviadas para <a href="mailto:{{ support.email }}">{{ support.email }}</a>{% if support.whatsapp_url %} ou pelo <a href="{{ support.whatsapp_url }}" target="_blank" rel="noopener">WhatsApp do suporte</a>{% endif %}.{% if support.cnpj %} HoraCerta é operado por {{ support.legal_name|default:"HoraCerta" }}, CNPJ {{ support.cnpj }}.{% endif %}</p></article>
   </section>
 </div>
 {% endblock %}

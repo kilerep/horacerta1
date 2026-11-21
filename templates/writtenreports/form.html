@@ -1,0 +1,48 @@
+{% extends "accounts/base.html" %}
+
+{% block title %}{% if is_new %}Novo relatório de serviço{% else %}Editar relatório{% endif %}{% endblock %}
+{% block page_title %}Relatórios{% endblock %}
+{% block extra_head %}{% include "writtenreports/_styles.html" %}{% endblock %}
+
+{% block content %}
+<div class="wr-page">
+  {% include "writtenreports/_tabs.html" with active="written" %}
+  <header class="wr-head">
+    <div>
+      <h1>{% if is_new %}Novo relatório de serviço{% else %}Editar rascunho{% endif %}</h1>
+      <p>Escreva com as suas palavras o serviço que fez. Seção que ficar vazia não aparece no documento.</p>
+    </div>
+  </header>
+
+  {% if errors %}<div class="wr-errors" role="alert">{% for e in errors %}<div>{{ e }}</div>{% endfor %}</div>{% endif %}
+
+  <form class="wr-form" method="post">
+    {% csrf_token %}
+    <section class="wr-box" aria-labelledby="wr-about">
+      <h2 id="wr-about">Sobre o serviço</h2>
+      <div class="wr-field"><label for="wr-title">Título do relatório</label><input id="wr-title" name="title" value="{{ report.title }}" maxlength="140" placeholder="Ex.: Relatório de manutenção da prensa 3" required></div>
+      <div class="wr-grid">
+        <div class="wr-field"><label for="wr-client">Cliente / empresa</label>
+          <input id="wr-client" name="client_name" value="{{ report.client_name }}" maxlength="140" list="wr-client-list" placeholder="Para quem foi o serviço" required>
+          <datalist id="wr-client-list">{% for name in client_suggestions %}<option value="{{ name }}">{% endfor %}</datalist>
+        </div>
+        <div class="wr-field"><label for="wr-service">Serviço realizado</label><input id="wr-service" name="service_name" value="{{ report.service_name }}" maxlength="160" placeholder="Ex.: Troca de rolamentos e alinhamento" required></div>
+        <div class="wr-field"><label for="wr-from">Data (início)</label><input id="wr-from" type="date" name="date_from" value="{% if report.date_from %}{{ report.date_from|date:'Y-m-d' }}{% else %}{{ today }}{% endif %}"></div>
+        <div class="wr-field"><label for="wr-to">Até (opcional)</label><input id="wr-to" type="date" name="date_to" value="{{ report.date_to|date:'Y-m-d' }}"></div>
+      </div>
+    </section>
+
+    <section class="wr-box" aria-labelledby="wr-text">
+      <h2 id="wr-text">Texto do relatório</h2>
+      {% for field, label, value in sections %}
+        <div class="wr-field"><label for="wr-{{ field }}">{{ label }}</label><textarea id="wr-{{ field }}" name="{{ field }}" rows="4">{{ value }}</textarea></div>
+      {% endfor %}
+    </section>
+
+    <div class="wr-submit">
+      <button class="btn primary" type="submit">Salvar rascunho</button>
+      <a class="btn" href="{% if is_new %}{% url 'written_report_list' %}{% else %}{% url 'written_report_detail' report.id %}{% endif %}">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

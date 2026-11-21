@@ -1,0 +1,50 @@
+{% extends "accounts/base.html" %}
+{% load hc_icons %}
+
+{% block title %}Romaneios de envio{% endblock %}
+{% block page_title %}Relatórios de produção{% endblock %}
+
+{% block extra_head %}{% include "production/_styles.html" %}{% include "production/_shipment_styles.html" %}{% endblock %}
+
+{% block content %}
+<div class="prod-page">
+  {% include "production/_production_tabs.html" with active="notes" %}
+  <header class="ship-head">
+    <div>
+      <h1>Romaneios de envio</h1>
+      <p>Comprovante das peças que saem no caminhão. Depois de enviado, o romaneio fica travado e guardado aqui com número, data e quem viu e autorizou.</p>
+    </div>
+    <a class="btn primary" href="{% url 'shipment_create' %}">{% icon "plus" 18 %} Novo romaneio</a>
+  </header>
+
+  {% if sent and not query %}
+    <div class="ship-tally" aria-label="Resumo dos romaneios">
+      <span><strong>{{ sent|length }}</strong> {% if sent|length == 1 %}romaneio enviado{% else %}romaneios enviados{% endif %}</span>
+      {% if waiting %}<span class="is-waiting"><strong>{{ waiting }}</strong> {% if waiting == 1 %}aguardando autorização{% else %}aguardando autorização{% endif %}</span>{% else %}<span>Todos autorizados</span>{% endif %}
+    </div>
+  {% endif %}
+
+  <form class="ship-search" method="get" role="search">
+    <label class="sr-only" for="ship-q">Buscar romaneio</label>
+    <input id="ship-q" type="search" name="q" value="{{ query }}" placeholder="Nº do romaneio, ordem de produção, desenho ou empresa">
+    <button class="btn" type="submit">Buscar</button>
+    {% if query %}<a class="btn" href="{% url 'shipment_list' %}">Limpar</a>{% endif %}
+  </form>
+
+  {% if drafts %}
+    <h2 class="ship-section-title">Rascunhos</h2>
+    <section class="prod-list" aria-label="Rascunhos">
+      {% for note in drafts %}{% include "production/_shipment_card.html" %}{% endfor %}
+    </section>
+  {% endif %}
+
+  <h2 class="ship-section-title">{% if query %}Resultado da busca{% else %}Romaneios enviados{% endif %}</h2>
+  <section class="prod-list" aria-label="Romaneios enviados">
+    {% for note in sent %}
+      {% include "production/_shipment_card.html" %}
+    {% empty %}
+      <div class="prod-empty">{% if query %}Nenhum romaneio encontrado para “{{ query }}”.{% else %}Nenhum romaneio enviado ainda. Toque em <strong>Novo romaneio</strong>, anote a ordem de produção, o desenho e a quantidade de cada peça e envie para quem precisa conferir.{% endif %}</div>
+    {% endfor %}
+  </section>
+</div>
+{% endblock %}

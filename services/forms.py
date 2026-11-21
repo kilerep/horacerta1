@@ -54,42 +54,42 @@ class ServiceJobForm(forms.ModelForm):
             "manual_client_email": "E-mail",
             "service_zip_code": "CEP",
             "service_street": "Rua",
-            "service_number": "Numero",
+            "service_number": "Número",
             "service_complement": "Complemento",
             "service_district": "Bairro",
             "service_city": "Cidade",
             "service_state": "UF",
-            "service_reference": "Ponto de referencia",
+            "service_reference": "Ponto de referência",
             "category": "Categoria",
-            "title": "Titulo do servico",
-            "description": "O que sera feito",
+            "title": "Título do serviço",
+            "description": "O que será feito",
             "start_date": "Data prevista",
             "planned_start_time": "Hora inicial prevista",
             "planned_end_time": "Hora final prevista",
-            "billing_mode": "Modo de cobranca",
+            "billing_mode": "Modo de cobrança",
             "hourly_rate_snapshot": "Valor por hora",
-            "fixed_labor_value": "Valor fixo da mao de obra",
-            "notes": "Observacoes finais do prestador",
+            "fixed_labor_value": "Valor fixo da mão de obra",
+            "notes": "Observações finais do prestador",
         }
         widgets = {
             "manual_client_whatsapp": forms.TextInput(attrs={"placeholder": "Opcional"}),
             "manual_client_email": forms.EmailInput(attrs={"placeholder": "Opcional"}),
             "service_zip_code": forms.TextInput(attrs={"placeholder": "00000-000", "inputmode": "numeric"}),
             "service_street": forms.TextInput(attrs={"placeholder": "Rua, avenida ou estrada"}),
-            "service_number": forms.TextInput(attrs={"placeholder": "Numero"}),
+            "service_number": forms.TextInput(attrs={"placeholder": "Número"}),
             "service_complement": forms.TextInput(attrs={"placeholder": "Casa, bloco, sala..."}),
             "service_district": forms.TextInput(attrs={"placeholder": "Bairro"}),
             "service_city": forms.TextInput(attrs={"placeholder": "Cidade"}),
             "service_state": forms.TextInput(attrs={"placeholder": "UF", "maxlength": "2"}),
-            "service_reference": forms.TextInput(attrs={"placeholder": "Ponto de referencia, opcional"}),
-            "title": forms.TextInput(attrs={"placeholder": "Ex.: Revisao eletrica residencial"}),
+            "service_reference": forms.TextInput(attrs={"placeholder": "Ponto de referência, opcional"}),
+            "title": forms.TextInput(attrs={"placeholder": "Ex.: Revisão elétrica residencial"}),
             "description": forms.Textarea(
                 attrs={
                     "rows": 4,
                     "placeholder": "Ex.: Troca de disjuntores, revisão de tomadas e teste do quadro elétrico.",
                 }
             ),
-            "notes": forms.Textarea(attrs={"rows": 3, "placeholder": "Observacoes finais, combinados ou pendencias do atendimento."}),
+            "notes": forms.Textarea(attrs={"rows": 3, "placeholder": "Observações finais, combinados ou pendências do atendimento."}),
             "start_date": forms.DateInput(attrs={"type": "date"}),
             "planned_start_time": forms.TimeInput(attrs={"type": "time"}),
             "planned_end_time": forms.TimeInput(attrs={"type": "time"}),
@@ -116,8 +116,8 @@ class ServiceJobForm(forms.ModelForm):
         )
         self.fields["contract"].label_from_instance = self._contract_label
         self.fields["category"].queryset = ServiceCategory.objects.filter(is_active=True)
-        self.fields["manual_client_name"].help_text = "Use quando o cliente nao estiver cadastrado no HoraCerta."
-        self.fields["start_date"].help_text = "Use a previsao para organizar o atendimento. As horas realizadas serão registradas dentro do serviço."
+        self.fields["manual_client_name"].help_text = "Use quando o cliente não estiver cadastrado no HoraCerta."
+        self.fields["start_date"].help_text = "Use a previsão para organizar o atendimento. As horas realizadas serão registradas dentro do serviço."
         for field in self.fields.values():
             field.widget.attrs.setdefault("class", "hc-input")
 
@@ -186,9 +186,9 @@ class ServiceJobForm(forms.ModelForm):
             self.add_error("manual_client_name", "Informe o nome do cliente avulso.")
         billing_mode = data.get("billing_mode")
         if billing_mode == ServiceJob.BillingMode.HOURLY and not data.get("hourly_rate_snapshot") and not contract:
-            self.add_error("hourly_rate_snapshot", "Informe o valor/hora ou escolha outro modo de cobranca.")
+            self.add_error("hourly_rate_snapshot", "Informe o valor/hora ou escolha outro modo de cobrança.")
         if billing_mode == ServiceJob.BillingMode.FIXED and data.get("fixed_labor_value") in (None, ""):
-            self.add_error("fixed_labor_value", "Informe o valor fixo ou escolha outro modo de cobranca.")
+            self.add_error("fixed_labor_value", "Informe o valor fixo ou escolha outro modo de cobrança.")
         return data
 
     def save(self, commit=True, status=None):
@@ -259,15 +259,15 @@ class ServiceRequestForm(forms.ModelForm):
             "client_whatsapp": "WhatsApp",
             "client_email": "E-mail",
             "category": "Categoria",
-            "title": "Titulo curto",
-            "description": "Descricao do que o cliente pediu",
+            "title": "Título curto",
+            "description": "Descrição do que o cliente pediu",
             "urgency": "Urgencia",
             "source": "Origem",
         }
         widgets = {
             "client_whatsapp": forms.TextInput(attrs={"placeholder": "Ex.: 11999999999"}),
             "client_email": forms.EmailInput(attrs={"placeholder": "Opcional"}),
-            "title": forms.TextInput(attrs={"placeholder": "Ex.: Revisao eletrica residencial"}),
+            "title": forms.TextInput(attrs={"placeholder": "Ex.: Revisão elétrica residencial"}),
             "description": forms.Textarea(attrs={"rows": 4, "placeholder": "Descreva o que o cliente pediu."}),
         }
 
@@ -284,7 +284,7 @@ class ServiceRequestForm(forms.ModelForm):
         self.fields["contract"].label_from_instance = self._contract_label
         self.fields["category"].queryset = ServiceCategory.objects.filter(is_active=True)
         self.fields["client_name"].required = False
-        self.fields["client_name"].help_text = "Use quando o cliente ainda nao estiver cadastrado."
+        self.fields["client_name"].help_text = "Use quando o cliente ainda não estiver cadastrado."
         for field in self.fields.values():
             field.widget.attrs.setdefault("class", "hc-input")
 
@@ -375,7 +375,7 @@ class ServiceRequestForm(forms.ModelForm):
             hourly_rate=0,
             start_date=timezone.localdate(),
             is_active=True,
-            notes="Criado a partir de pedido de servico.",
+            notes="Criado a partir de pedido de serviço.",
         )
 
 
@@ -386,7 +386,7 @@ class ServiceRequestItemForm(forms.ModelForm):
         labels = {
             "name": "Nome do item",
             "quantity": "Quantidade",
-            "note": "Observacao",
+            "note": "Observação",
             "estimated_unit_value": "Valor estimado",
         }
         widgets = {
@@ -397,11 +397,35 @@ class ServiceRequestItemForm(forms.ModelForm):
         }
 
     def __init__(self, *args, service_request=None, **kwargs):
+        # Precisa ser calculado ANTES do super().__init__(): o model usa
+        # id = UUIDField(default=uuid.uuid4), entao uma instancia nova ja nasce
+        # com pk preenchido (self.instance.pk nunca e None/falsy aqui) - o unico
+        # jeito confiavel de saber se e uma linha nova (vs. edicao) e checar se
+        # um "instance" foi passado explicitamente para o form.
+        is_new_item = kwargs.get("instance") is None
         super().__init__(*args, **kwargs)
         self.service_request = service_request
         self.fields["name"].required = False
         self.fields["note"].required = False
         self.fields["estimated_unit_value"].required = False
+        self.fields["quantity"].required = False
+        if is_new_item:
+            # Nao usar o valor padrao do modelo (1.00) como initial numa linha de
+            # item nova/vazia: isso fazia o campo "Quantidade" chegar pre-preenchido
+            # na tela de "Novo pedido" e, por causa disso, has_item_data()/clean()
+            # tratavam a secao opcional "Itens rapidos" como preenchida mesmo sem o
+            # usuario tocar nela - exigindo "Nome do item" e bloqueando o envio do
+            # pedido (tanto "Salvar pedido" quanto "Salvar e transformar em
+            # servico"). Ao editar um item existente (instance= passado), o
+            # initial continua vindo do proprio valor salvo (nao e afetado).
+            #
+            # Duas fontes de initial precisam ser limpas: ModelForm.__init__ ja
+            # capturou o default do model field em self.initial (via
+            # model_to_dict de uma instancia nova, que aplica os defaults do
+            # model assim que e construida) - so mexer em field.initial nao e
+            # suficiente, porque BoundField.value() prioriza self.initial.
+            self.initial["quantity"] = None
+            self.fields["quantity"].initial = None
         for field in self.fields.values():
             field.widget.attrs.setdefault("class", "hc-input")
 
@@ -446,7 +470,7 @@ class ServiceWorkLogForm(forms.ModelForm):
         fields = ["work_date", "start_time", "end_time", "description"]
         labels = {
             "work_date": "Data",
-            "start_time": "Inicio",
+            "start_time": "Início",
             "end_time": "Fim",
             "description": "Atividade realizada",
         }
@@ -487,7 +511,7 @@ class ServiceItemExpenseForm(forms.ModelForm):
     )
     update_catalog_price = forms.BooleanField(
         required=False,
-        label="Atualizar preco estimado com este valor",
+        label="Atualizar preço estimado com este valor",
     )
 
     class Meta:
@@ -508,18 +532,18 @@ class ServiceItemExpenseForm(forms.ModelForm):
         labels = {
             "type": "Tipo",
             "name": "Nome",
-            "description": "Observacao",
+            "description": "Observação",
             "unit": "Unidade",
             "quantity": "Quantidade",
-            "unit_value": "Valor unitario",
+            "unit_value": "Valor unitário",
             "usage_status": "Status de uso",
-            "receipt_note": "Observacao",
+            "receipt_note": "Observação",
         }
         widgets = {
             "description": forms.Textarea(attrs={"rows": 2}),
             "quantity": forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
             "unit_value": forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
-            "receipt_note": forms.TextInput(attrs={"placeholder": "Ex.: cupom, NF ou observacao"}),
+            "receipt_note": forms.TextInput(attrs={"placeholder": "Ex.: cupom, NF ou observação"}),
         }
 
     def __init__(self, *args, service_job=None, **kwargs):
@@ -622,7 +646,7 @@ class PlannedServiceItemForm(ServiceItemExpenseForm):
         labels = {
             "type": "Tipo",
             "name": "Nome do item",
-            "description": "Observacao",
+            "description": "Observação",
             "unit": "Unidade",
             "quantity": "Quantidade",
             "unit_value": "Valor estimado/unidade",
@@ -653,14 +677,14 @@ class ServiceItemCatalogForm(forms.ModelForm):
             "is_active",
         ]
         labels = {
-            "internal_code": "Codigo interno",
+            "internal_code": "Código interno",
             "category": "Categoria",
             "item_type": "Tipo",
             "name": "Nome",
-            "description": "Descricao",
+            "description": "Descrição",
             "unit": "Unidade",
             "estimated_unit_value": "Valor estimado/unidade",
-            "default_quantity": "Quantidade padrao",
+            "default_quantity": "Quantidade padrão",
             "favorite": "Favorito",
             "is_active": "Ativo",
         }

@@ -94,7 +94,7 @@
                 </td>
                 <td data-label="Cliente">
                   <a class="strong-link" href="{% url 'internal_company_detail' log.company.id %}">{{ log.company.name }}</a>
-                  <div class="muted">Contrato {{ log.contract.id }}</div>
+                  <div class="muted">Cadastro nº {{ log.contract.id }}</div>
                 </td>
                 <td data-label="Data alterada">{{ log.edited_date|date:"d/m/Y" }}</td>
                 <td data-label="Tipo"><span class="pill pending">{{ log.get_change_type_display }}</span></td>

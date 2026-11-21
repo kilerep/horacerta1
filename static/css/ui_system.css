@@ -37,7 +37,7 @@ a {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 42px;
+  min-height: 44px;
   padding: 0 14px;
   border-radius: 12px;
   border: 1px solid var(--btn-border);
@@ -91,7 +91,7 @@ textarea {
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  min-height: 42px;
+  min-height: 44px;
   padding: 10px 12px;
   border-radius: 12px;
   border: 1px solid var(--field-border);
@@ -332,7 +332,7 @@ label,
 }
 
 .theme-switch__premium-note {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--warning-text);
   border: 1px solid var(--warning-border);
@@ -354,7 +354,7 @@ label,
   background: var(--badge-bg);
   color: var(--badge-text);
   padding: 3px 9px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.01em;
 }

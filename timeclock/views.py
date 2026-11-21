@@ -1,30 +1,35 @@
 import csv
 from datetime import datetime, time, timedelta
-from decimal import Decimal, InvalidOperation
 from io import BytesIO
 
 from django.contrib.auth.decorators import login_required
+
+from accounts.analytics import PUNCH_RECORDED, WORK_PERIOD_COMPLETED, track
 from django.db import transaction
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 from openpyxl import Workbook
 from openpyxl.styles import Font
-from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.units import mm
-from reportlab.platypus import SimpleDocTemplate, Spacer, Table, TableStyle, Paragraph
-from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import SimpleDocTemplate, Spacer
 
 from accounts.models import User
 from accounts.mei_context import resolve_mei_context
-from companies.models import CompanyAttendancePolicy, CompanyAuthorizedLocation
-from .models import ActivityReportRequest, Contract, Punch
-from .services import build_daily_summary, evaluate_punch_confidence, filter_punches_by_period, format_hhmm
+from companies.models import CompanyAttendancePolicy, CompanyAuthorizedLocation, Employee
+from .models import ActivityReportRequest, Contract, Punch, ServiceReport
+from .services import (
+    build_daily_summary,
+    evaluate_punch_confidence,
+    filter_punches_by_period,
+    format_hhmm,
+    locked_report_for_day,
+)
 from .state import contract_operational_q, employee_lifecycle_summary
 
-QR_PRESENCE_SESSION_KEY = "hc_qr_presence_claims"
 
 
 def _only_employee(user):
@@ -74,7 +79,7 @@ def _resolve_contract_for_secure_action(request):
     """
     mei_context = resolve_mei_context(request, operational_only=True)
     if mei_context.requested_contract_id and mei_context.invalid_requested_contract:
-        return None, "Vinculo informado invalido ou indisponivel."
+        return None, "Cliente informado inválido ou indisponível."
     return mei_context.selected_contract, None
 
 
@@ -88,114 +93,21 @@ def _resolve_selected_contract(contracts_qs, contract_id):
     return contracts_qs.first()
 
 
-def _parse_geo_decimal(raw_value, min_value=None, max_value=None):
-    value = (raw_value or "").strip()
-    if not value:
-        return None
-    try:
-        parsed = Decimal(value)
-    except (InvalidOperation, TypeError):
-        return None
-    if min_value is not None and parsed < Decimal(str(min_value)):
-        return None
-    if max_value is not None and parsed > Decimal(str(max_value)):
-        return None
-    return parsed
-
-
-def _load_qr_claims(session):
-    claims = session.get(QR_PRESENCE_SESSION_KEY)
-    if isinstance(claims, dict):
-        return claims
-    return {}
-
-
-def _save_qr_claims(session, claims):
-    session[QR_PRESENCE_SESSION_KEY] = claims
-    session.modified = True
-
-
-def _resolve_qr_requirement(contract, now_local):
-    policy = CompanyAttendancePolicy.objects.filter(company=contract.company).first()
-    if not policy:
-        return {"required": False, "reason": "not_qr_mode"}
-    qr_enabled = bool(policy.require_qr) or policy.validation_mode == CompanyAttendancePolicy.ValidationMode.PRESENTIAL_QR
-    if not qr_enabled:
-        return {"required": False, "reason": "not_qr_mode"}
-    if policy.qr_requirement == CompanyAttendancePolicy.QrRequirement.NONE:
-        return {"required": False, "reason": "qr_not_required"}
-
-    today = now_local.date()
-    day_start = timezone.make_aware(datetime.combine(today, time.min))
-    day_end = timezone.make_aware(datetime.combine(today, time.max))
-    punches_count_today = Punch.objects.filter(contract=contract, timestamp__range=(day_start, day_end)).count()
-
-    if policy.qr_requirement == CompanyAttendancePolicy.QrRequirement.FIRST_PUNCH:
-        return {"required": punches_count_today == 0, "reason": "first_punch", "punches_count_today": punches_count_today}
-
-    # V1: primeira marcacao + fechamento esperado no fim do expediente.
-    is_first_punch = punches_count_today == 0
-    is_evening_closure = punches_count_today >= 1 and (punches_count_today % 2 == 1) and now_local.hour >= 17
-    return {
-        "required": is_first_punch or is_evening_closure,
-        "reason": "first_and_last",
-        "punches_count_today": punches_count_today,
-    }
-
-
 def _policy_audit_snapshot(contract):
     policy = CompanyAttendancePolicy.objects.filter(company=contract.company).first()
     if not policy:
         return {
             "policy_mode": CompanyAttendancePolicy.ValidationMode.FREE,
-            "require_location": False,
             "require_qr": False,
             "qr_requirement": CompanyAttendancePolicy.QrRequirement.NONE,
-            "default_allowed_radius_m": 120,
             "default_location_id": "",
         }
     return {
         "policy_mode": policy.validation_mode,
-        "require_location": bool(policy.require_location),
         "require_qr": bool(policy.require_qr),
         "qr_requirement": policy.qr_requirement,
-        "default_allowed_radius_m": int(policy.default_allowed_radius_m or 120),
         "default_location_id": str(policy.default_location_id or ""),
     }
-
-
-def _consume_valid_qr_claim(request, contract):
-    claims = _load_qr_claims(request.session)
-    claim = claims.get(str(contract.id))
-    if not isinstance(claim, dict):
-        return None
-
-    location_id = (claim.get("location_id") or "").strip()
-    claimed_at_raw = (claim.get("claimed_at") or "").strip()
-    if not location_id or not claimed_at_raw:
-        return None
-
-    try:
-        claimed_at = datetime.fromisoformat(claimed_at_raw)
-    except ValueError:
-        return None
-    if timezone.is_naive(claimed_at):
-        claimed_at = timezone.make_aware(claimed_at, timezone.get_current_timezone())
-
-    if timezone.now() - claimed_at > timedelta(minutes=12):
-        return None
-
-    location = CompanyAuthorizedLocation.objects.filter(
-        id=location_id,
-        company=contract.company,
-        is_active=True,
-    ).first()
-    if not location:
-        return None
-
-    claims.pop(str(contract.id), None)
-    _save_qr_claims(request.session, claims)
-    return location
 
 
 @login_required
@@ -217,17 +129,6 @@ def employee_dashboard(request):
             company=selected_contract.company,
         )
     pending_report_requests = pending_report_requests_qs[:20]
-    selected_policy = CompanyAttendancePolicy.objects.filter(company=selected_contract.company).first() if selected_contract else None
-    location_required_for_selected_contract = bool(
-        selected_policy
-        and (
-            selected_policy.require_location
-            or selected_policy.validation_mode in {
-                CompanyAttendancePolicy.ValidationMode.GEOLOCATION,
-                CompanyAttendancePolicy.ValidationMode.PRESENTIAL_QR,
-            }
-        )
-    )
 
     if request.method == "POST" and request.POST.get("action") == "respond_activity_request":
         request_id = (request.POST.get("request_id") or "").strip()
@@ -261,12 +162,15 @@ def employee_dashboard(request):
             "accounts/dashboard_funcionario.html",
             {
                 "no_contracts": True,
+                # Prestador recem-cadastrado (autocadastro): ainda nao tem nenhum
+                # vinculo. Nao e "aguardando liberacao" - falta cadastrar o 1o cliente.
+                "is_new_mei": not Employee.objects.filter(user=request.user).exists(),
                 "contracts": [],
                 "state_context": state_context,
                 "employee_company_name": employee_company_name,
                 "pending_report_requests": pending_report_requests,
                 "context_warning": (
-                    "O vinculo selecionado anteriormente nao esta mais disponivel. Selecione um vinculo ativo."
+                    "O cliente selecionado anteriormente não está mais disponível. Selecione um cliente ativo."
                     if (mei_context.invalid_requested_contract or mei_context.invalid_session_contract)
                     else ""
                 ),
@@ -281,40 +185,20 @@ def employee_dashboard(request):
         if not selected_contract or (posted_contract_id and mei_context.invalid_requested_contract):
             return redirect(f"{request.path}?event=invalid_contract")
 
-        geo_latitude = _parse_geo_decimal(request.POST.get("geo_latitude"), min_value=-90, max_value=90)
-        geo_longitude = _parse_geo_decimal(request.POST.get("geo_longitude"), min_value=-180, max_value=180)
-        geo_accuracy_m = _parse_geo_decimal(request.POST.get("geo_accuracy_m"), min_value=0, max_value=10000)
+        # GPS desativado em 2026-11: campos geo_* enviados por paginas antigas
+        # em cache sao ignorados de proposito.
         punch_note = (request.POST.get("note") or "").strip()[:1000]
         now_local = timezone.localtime()
         policy_snapshot = _policy_audit_snapshot(selected_contract)
-        qr_requirement = _resolve_qr_requirement(selected_contract, now_local)
-        qr_required = bool(qr_requirement.get("required"))
-        qr_location = _consume_valid_qr_claim(request, selected_contract) if qr_required else None
-        qr_status = (
-            Punch.QrConfirmationStatus.CONFIRMED
-            if qr_location
-            else (Punch.QrConfirmationStatus.REQUIRED_MISSING if qr_required else Punch.QrConfirmationStatus.NOT_REQUIRED)
-        )
-        confidence = evaluate_punch_confidence(
-            selected_contract,
-            latitude=geo_latitude,
-            longitude=geo_longitude,
-            accuracy_m=geo_accuracy_m,
-        )
+        # QR presencial removido em 2026-11: nenhum registro exige confirmacao por QR.
+        confidence = evaluate_punch_confidence(selected_contract)
         Punch.objects.create(
             contract=selected_contract,
             timestamp=timezone.now(),
             note=punch_note,
-            geo_latitude=geo_latitude,
-            geo_longitude=geo_longitude,
-            geo_accuracy_m=geo_accuracy_m,
-            validated_location=confidence.get("validated_location"),
-            distance_to_location_m=confidence.get("distance_to_location_m"),
             validation_method=confidence.get("validation_method") or Punch.ValidationMethod.FREE_POLICY,
             confidence_status=confidence.get("confidence_status") or Punch.ConfidenceStatus.FREE,
-            qr_confirmation_status=qr_status,
-            qr_confirmed_location=qr_location,
-            qr_confirmed_at=timezone.now() if qr_location else None,
+            qr_confirmation_status=Punch.QrConfirmationStatus.NOT_REQUIRED,
             audit_payload={
                 "source": "WEB_PROFESSIONAL_DASHBOARD",
                 "origin": "automatic",
@@ -327,15 +211,16 @@ def employee_dashboard(request):
                 "local_date": now_local.date().isoformat(),
                 "local_time": now_local.strftime("%H:%M:%S"),
                 "policy": policy_snapshot,
-                "qr_required_for_punch": qr_required,
-                "qr_requirement_reason": qr_requirement.get("reason") or "",
-                "geolocation_collected": bool(geo_latitude is not None and geo_longitude is not None),
-                "geolocation_accuracy_m": float(geo_accuracy_m) if geo_accuracy_m is not None else None,
                 "request_user_agent": (request.META.get("HTTP_USER_AGENT") or "")[:180],
             },
         )
-        if qr_required and not qr_location:
-            return redirect(f"{request.path}?event=punch_saved_qr_missing&contract={selected_contract.id}")
+        track(request.user, PUNCH_RECORDED)
+        punches_recorded_today = Punch.objects.filter(
+            contract=selected_contract, timestamp__date=timezone.localdate()
+        ).count()
+        if punches_recorded_today % 2 == 0:
+            # A saida fechou um periodo (entrada + saida do mesmo dia).
+            track(request.user, WORK_PERIOD_COMPLETED)
         return redirect(f"{request.path}?event=punch_saved&contract={selected_contract.id}")
 
     date_from_raw = request.GET.get("date_from") or request.GET.get("start")
@@ -372,26 +257,33 @@ def employee_dashboard(request):
     else:
         greeting = "Boa noite"
     day_status_label = "Dia fechado" if total_punches_today % 2 == 0 else "Dia em andamento"
+    # Linguagem do prestador: o proximo toque e sempre "entrada" ou "saida" (o
+    # backend continua decidindo pela quantidade de registros do dia).
+    next_punch_kind = "saida" if total_punches_today % 2 == 1 else "entrada"
+    punch_button_label = "Registrar saída" if next_punch_kind == "saida" else "Registrar entrada"
     if total_punches_today == 0:
         journey_status_key = "no_records"
         journey_status_label = "Sem registros hoje"
         journey_status_tone = "neutral"
-        journey_next_action = "Registre o primeiro horario do dia para iniciar a jornada."
+        journey_next_action = "Toque em “Registrar entrada” quando começar a trabalhar."
     elif total_punches_today % 2 == 1 and current_hour >= 20:
         journey_status_key = "incomplete"
         journey_status_label = "Dia incompleto"
         journey_status_tone = "warn"
-        journey_next_action = "Dia encerrado com horario pendente. Ajustes operacionais devem ser tratados com o encarregado."
+        journey_next_action = (
+            f"Você registrou entrada às {last_punch_today_label} e ainda não registrou a saída. "
+            "Toque em “Registrar saída” ou use “Editar horários de hoje” para informar o horário correto."
+        )
     elif total_punches_today % 2 == 1:
         journey_status_key = "in_progress"
-        journey_status_label = "Jornada em andamento"
+        journey_status_label = f"Trabalhando desde {last_punch_today_label}"
         journey_status_tone = "progress"
-        journey_next_action = "Registre o proximo horario ao concluir a etapa atual da jornada."
+        journey_next_action = "Quando terminar, toque em “Registrar saída”."
     else:
         journey_status_key = "finished"
-        journey_status_label = "Dia finalizado"
+        journey_status_label = f"Saída registrada às {last_punch_today_label}"
         journey_status_tone = "ok"
-        journey_next_action = "Jornada do dia fechada. Acompanhe o historico e os totais para conferencia."
+        journey_next_action = "Se voltar a trabalhar hoje, toque em “Registrar entrada”. Veja abaixo os totais do dia."
 
     history_filtered = list(qs_filtered.order_by("timestamp"))
     history_days, history_punch_columns = build_daily_summary(history_filtered, min_punch_columns=4)
@@ -410,6 +302,16 @@ def employee_dashboard(request):
         "day_status_label": day_status_label,
         "journey_status_key": journey_status_key,
         "journey_status_label": journey_status_label,
+        "next_punch_kind": next_punch_kind,
+        # Primeiro periodo fechado e nenhum relatorio ainda: proximo passo do onboarding.
+        "show_first_report_cta": (
+            total_punches_today >= 2
+            and total_punches_today % 2 == 0
+            and not ServiceReport.objects.filter(employee__user=request.user)
+            .exclude(status=ServiceReport.Status.CANCELED)
+            .exists()
+        ),
+        "punch_button_label": punch_button_label,
         "journey_status_tone": journey_status_tone,
         "journey_next_action": journey_next_action,
         "today_total_partial_hhmm": today_total_partial_hhmm,
@@ -425,41 +327,13 @@ def employee_dashboard(request):
         "no_contracts": False,
         "state_context": employee_lifecycle_summary(selected_contract.employee, contracts),
         "pending_report_requests": pending_report_requests,
-        "location_required_for_selected_contract": location_required_for_selected_contract,
         "context_warning": (
-            "O vinculo selecionado anteriormente nao esta mais disponivel. Exibindo o vinculo ativo atual."
+            "O cliente selecionado anteriormente não está mais disponível. Exibindo o cliente ativo atual."
             if (mei_context.invalid_requested_contract or mei_context.invalid_session_contract)
             else ""
         ),
     }
     return render(request, "accounts/dashboard_funcionario.html", context)
-
-
-@login_required
-def qr_presence_checkin(request, token):
-    if not _only_employee(request.user):
-        return redirect("dashboard")
-
-    location = CompanyAuthorizedLocation.objects.filter(qr_token=token, is_active=True).select_related("company").first()
-    if not location:
-        return redirect(f"{reverse('employee_dashboard')}?event=qr_invalid")
-
-    contract = (
-        _active_contracts_for_employee_user(request.user)
-        .filter(company=location.company)
-        .select_related("company", "employee", "employee__user")
-        .first()
-    )
-    if not contract:
-        return redirect(f"{reverse('employee_dashboard')}?event=qr_contract_missing")
-
-    claims = _load_qr_claims(request.session)
-    claims[str(contract.id)] = {
-        "location_id": str(location.id),
-        "claimed_at": timezone.now().isoformat(),
-    }
-    _save_qr_claims(request.session, claims)
-    return redirect(f"{reverse('employee_dashboard')}?event=qr_confirmed&contract={contract.id}")
 
 
 @login_required
@@ -475,7 +349,7 @@ def create_manual_punches(request):
 
     errors = []
     if not contract_id:
-        errors.append("Selecione cliente e contrato.")
+        errors.append("Selecione o cliente.")
     if not manual_date_raw:
         errors.append("Informe a data do lancamento.")
 
@@ -519,7 +393,44 @@ def create_manual_punches(request):
 
     contract = _active_contracts_for_employee_user(request.user).filter(id=contract_id).first()
     if not contract:
-        return JsonResponse({"ok": False, "errors": ["Vinculo invalido ou inativo."]}, status=400)
+        return JsonResponse({"ok": False, "errors": ["Cliente inválido ou inativo."]}, status=400)
+
+    # Horario manual so no dia de hoje (2026-11-21): dias anteriores ficam bloqueados e
+    # o dia seguinte tambem - nao da para lancar horas antes de trabalhar.
+    if launch_date != timezone.localdate():
+        return JsonResponse(
+            {"ok": False, "errors": [
+                "O horário manual só pode ser lançado no dia de hoje. Outros dias ficam bloqueados."]},
+            status=400,
+        )
+
+    # O sistema promete (na tela de Historico e ao gerar um relatorio) que dias
+    # ja incluidos num relatorio de horas ficam bloqueados para edicao, "para
+    # preservar a seguranca dos relatorios" - e "editar horarios de hoje" ja
+    # aplicava essa regra (ver accounts.views.mei_edit_today_punches). O
+    # registro manual, porem, nao verificava isso e aceitava novos horarios em
+    # qualquer data passada - inclusive dias de relatorios ja enviados/
+    # visualizados/recebidos pelo cliente, quebrando totais que o cliente ja
+    # havia confirmado. Bug encontrado na auditoria de 12/09/2026.
+    locked_report = locked_report_for_day(launch_date, contract=contract)
+    if locked_report:
+        return JsonResponse(
+            {
+                "ok": False,
+                "errors": [
+                    "Este dia (%s) ja faz parte do relatorio \"%s\" (periodo %s a %s) e esta bloqueado "
+                    "para novos lancamentos. Fale com o suporte se precisar corrigir um horario "
+                    "desse periodo."
+                    % (
+                        launch_date.strftime("%d/%m/%Y"),
+                        locked_report.title,
+                        locked_report.date_from.strftime("%d/%m/%Y"),
+                        locked_report.date_to.strftime("%d/%m/%Y"),
+                    )
+                ],
+            },
+            status=400,
+        )
 
     tz = timezone.get_current_timezone()
     day_start = timezone.make_aware(datetime.combine(launch_date, time.min), tz)
@@ -539,7 +450,7 @@ def create_manual_punches(request):
             {
                 "ok": False,
                 "errors": [
-                    "Ja existe horario para este vinculo/data nos horarios: %s." % ", ".join(duplicated_existing)
+                    "Já existe horário para este cliente nesta data: %s." % ", ".join(duplicated_existing)
                 ],
             },
             status=400,
@@ -547,7 +458,7 @@ def create_manual_punches(request):
 
     ordered_hm = sorted(requested_hm)
     policy_snapshot = _policy_audit_snapshot(contract)
-    confidence = evaluate_punch_confidence(contract, latitude=None, longitude=None, accuracy_m=None)
+    confidence = evaluate_punch_confidence(contract)
     with transaction.atomic():
         for hour, minute in ordered_hm:
             manual_timestamp = timezone.make_aware(
@@ -575,7 +486,6 @@ def create_manual_punches(request):
                     "policy": policy_snapshot,
                     "qr_required_for_punch": False,
                     "qr_requirement_reason": "manual_entry",
-                    "geolocation_collected": False,
                     "request_user_agent": (request.META.get("HTTP_USER_AGENT") or "")[:180],
                 },
             )
@@ -596,7 +506,7 @@ def export_csv(request):
 
     contract, error_message = _resolve_contract_for_secure_action(request)
     if not contract:
-        return HttpResponse(error_message or "Vinculo invalido para exportacao.", status=400)
+        return HttpResponse(error_message or "Cliente inválido para exportação.", status=400)
 
     base_punches = Punch.objects.filter(contract=contract).order_by("timestamp")
     punches, _start, _end = filter_punches_by_period(
@@ -642,7 +552,7 @@ def export_xlsx(request):
 
     contract, error_message = _resolve_contract_for_secure_action(request)
     if not contract:
-        return HttpResponse(error_message or "Vinculo invalido para exportacao.", status=400)
+        return HttpResponse(error_message or "Cliente inválido para exportação.", status=400)
 
     base_punches = Punch.objects.filter(contract=contract).order_by("timestamp")
     punches, start_date, end_date = filter_punches_by_period(
@@ -684,7 +594,7 @@ def export_xlsx(request):
     ws.append(["Resumo", "", "", ""])
     ws[f"A{ws.max_row}"].font = Font(bold=True)
     period_label = (
-        f"{start_date.strftime('%d/%m/%Y')} ate {end_date.strftime('%d/%m/%Y')}"
+        f"{start_date.strftime('%d/%m/%Y')} até {end_date.strftime('%d/%m/%Y')}"
         if start_date and end_date
         else "Periodo completo"
     )
@@ -711,7 +621,7 @@ def export_pdf(request):
 
     contract, error_message = _resolve_contract_for_secure_action(request)
     if not contract:
-        return HttpResponse(error_message or "Vinculo invalido para exportacao.", status=400)
+        return HttpResponse(error_message or "Cliente inválido para exportação.", status=400)
 
     base_punches = Punch.objects.filter(contract=contract).order_by("timestamp")
     punches, start_date, end_date = filter_punches_by_period(
@@ -723,7 +633,7 @@ def export_pdf(request):
 
     employee_name = _contract_employee_label(contract)
     period_label = (
-        f"{start_date.strftime('%d/%m/%Y')} ate {end_date.strftime('%d/%m/%Y')}"
+        f"{start_date.strftime('%d/%m/%Y')} até {end_date.strftime('%d/%m/%Y')}"
         if start_date and end_date
         else "Periodo completo"
     )
@@ -736,64 +646,46 @@ def export_pdf(request):
     doc = SimpleDocTemplate(
         buffer,
         pagesize=landscape(A4),
-        leftMargin=8 * mm,
-        rightMargin=8 * mm,
-        topMargin=10 * mm,
-        bottomMargin=10 * mm,
+        leftMargin=14 * mm,
+        rightMargin=14 * mm,
+        topMargin=14 * mm,
+        bottomMargin=16 * mm,
     )
-    styles = getSampleStyleSheet()
-    story = []
+    from accounts import print_theme as pt
 
-    story.append(Paragraph("HoraCerta - Resumo de horários", styles["Title"]))
-    story.append(Spacer(1, 6))
-    story.append(Paragraph(f"<b>Funcionario:</b> {employee_name}", styles["Normal"]))
-    story.append(Paragraph(f"<b>Empresa:</b> {contract.company.name}", styles["Normal"]))
-    story.append(Paragraph(f"<b>Periodo:</b> {period_label}", styles["Normal"]))
-    story.append(Paragraph(f"<b>Total de horas:</b> {total_hours_hhmm}", styles["Normal"]))
-    story.append(Paragraph(f"<b>Total de horários:</b> {len(punches)}", styles["Normal"]))
-    story.append(Spacer(1, 10))
+    width = landscape(A4)[0] - doc.leftMargin - doc.rightMargin
+    story = pt.header_block("Resumo de horários", [
+        f"{pt.esc(employee_name)} para <b>{pt.esc(contract.company.name)}</b>",
+        f"Período {pt.esc(period_label.replace(' ate ', ' até '))}",
+    ])
+    story.append(pt.info_grid([
+        ("Profissional", employee_name), ("Cliente", contract.company.name),
+        ("Total de horas", total_hours_hhmm), ("Horários registrados", str(len(punches))),
+    ], width, columns=4))
+    story.append(Spacer(1, 12))
 
-    table_headers = ["Data"] + [f"horário {idx}" for idx in range(1, max_punches + 1)] + ["Total do dia", "Status"]
-    table_data = [table_headers]
-    for row in daily_rows:
-        status_label = "Incompleto" if row["is_incomplete"] else "OK"
-        table_data.append(
-            [
-                row["date"].strftime("%d/%m/%Y"),
-                *row["punch_columns"],
-                row["total_hours_hhmm"],
-                status_label,
-            ]
-        )
+    headers = ["Data"] + [f"Horário {idx}" for idx in range(1, max_punches + 1)] + ["Situação", "Total do dia"]
+    rows, fills = [], {}
+    for index, row in enumerate(daily_rows):
+        if row["is_incomplete"]:
+            fills[index] = pt.WARN_SOFT
+        rows.append([
+            row["date"].strftime("%d/%m/%Y"),
+            *row["punch_columns"],
+            "Incompleto" if row["is_incomplete"] else "OK",
+            row["total_hours_hhmm"],
+        ])
 
-    if len(table_data) == 1:
-        table_data.append(["-"] + ["-"] * max_punches + ["00:00", "OK"])
-
-    date_width = 24 * mm
+    date_width = 26 * mm
     total_width = 26 * mm
-    status_width = 24 * mm
-    usable_width = (landscape(A4)[0] - doc.leftMargin - doc.rightMargin) - (
-        date_width + total_width + status_width
-    )
+    status_width = 26 * mm
+    usable_width = width - (date_width + total_width + status_width)
     each_punch_width = max(16 * mm, usable_width / max(1, max_punches))
-    col_widths = [date_width] + [each_punch_width] * max_punches + [total_width, status_width]
-
-    table = Table(table_data, colWidths=col_widths, repeatRows=1)
-    table.setStyle(
-        TableStyle(
-            [
-                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#20396b")),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#8ea6d1")),
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("FONTSIZE", (0, 0), (-1, -1), 8),
-                ("ALIGN", (1, 1), (max_punches + 2, -1), "CENTER"),
-            ]
-        )
-    )
-    story.append(table)
-    doc.build(story)
+    col_widths = [date_width] + [each_punch_width] * max_punches + [status_width, total_width]
+    story.append(pt.data_table(headers, rows, col_widths, numeric_cols=(len(headers) - 1,),
+                               empty_text="Sem horários no período.", row_fills=fills))
+    decorate = pt.page_decorator("Resumo de horários")
+    doc.build(story, onFirstPage=decorate, onLaterPages=decorate)
     buffer.seek(0)
 
     response = HttpResponse(buffer.getvalue(), content_type="application/pdf")

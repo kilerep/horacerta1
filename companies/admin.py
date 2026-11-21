@@ -74,21 +74,32 @@ class CompanyAttendancePolicyAdmin(admin.ModelAdmin):
     list_display = (
         "company",
         "validation_mode",
-        "require_location",
         "require_qr",
         "qr_requirement",
-        "default_allowed_radius_m",
         "updated_by",
         "updated_at",
     )
     search_fields = ("company__name",)
-    list_filter = ("validation_mode", "require_location", "require_qr", "qr_requirement")
+    list_filter = ("validation_mode", "require_qr", "qr_requirement")
     ordering = ("company__name",)
+    # legado: GPS desativado em 2026-11 - campos de localizacao fora do formulario.
+    exclude = ("require_location", "default_allowed_radius_m")
+
+    def formfield_for_choice_field(self, db_field, request, **kwargs):
+        if db_field.name == "validation_mode":
+            kwargs["choices"] = [
+                choice
+                for choice in CompanyAttendancePolicy.ValidationMode.choices
+                if choice[0] != CompanyAttendancePolicy.ValidationMode.GEOLOCATION
+            ]
+        return super().formfield_for_choice_field(db_field, request, **kwargs)
 
 
 @admin.register(CompanyAuthorizedLocation)
 class CompanyAuthorizedLocationAdmin(admin.ModelAdmin):
-    list_display = ("name", "company", "allowed_radius_m", "is_active", "qr_token", "updated_at")
+    list_display = ("name", "company", "is_active", "qr_token", "updated_at")
+    # legado: GPS desativado em 2026-11 - o local serve so ao QR presencial.
+    exclude = ("latitude", "longitude", "allowed_radius_m")
     search_fields = ("name", "company__name", "address_or_description")
     list_filter = ("company", "is_active")
     ordering = ("company__name", "name")

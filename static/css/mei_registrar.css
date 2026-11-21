@@ -35,7 +35,7 @@ main,
 .hc-section-title{
   margin:0 0 10px;
   font-size:18px;
-  font-weight:800;
+  font-weight:700;
 }
 
 .hc-muted{
@@ -210,7 +210,7 @@ main,
 .hc-client-current__title{
   margin:0;
   font-size:14px;
-  font-weight:900;
+  font-weight:700;
   letter-spacing:0;
 }
 
@@ -229,7 +229,7 @@ main,
 .hc-client-select-wrap label{
   color:var(--color-text-strong);
   font-size:12px;
-  font-weight:900;
+  font-weight:600;
 }
 
 .hc-client-select{
@@ -330,7 +330,7 @@ main,
   border:1px solid var(--border);
   padding:6px 14px;
   font-size:12px;
-  font-weight:900;
+  font-weight:700;
   letter-spacing:.02em;
   background:rgba(255,255,255,.06);
 }
@@ -402,7 +402,7 @@ main,
 .hc-journey-today-title{
   margin:0 0 8px;
   font-size:14px;
-  font-weight:800;
+  font-weight:700;
 }
 
 .hc-action-stack{
@@ -421,7 +421,7 @@ main,
   border:none;
   border-radius:14px;
   background:var(--gradient-button);
-  color:#fff;
+  color:var(--text-inverse);
   font-size:16px;
   font-weight:900;
   letter-spacing:.6px;
@@ -456,7 +456,7 @@ main,
   border:1px solid var(--border-brand);
   background:var(--color-primary-soft);
   color:var(--menu-active-text);
-  font-weight:800;
+  font-weight:700;
   letter-spacing:.4px;
 }
 
@@ -469,8 +469,8 @@ main,
   width:15px;
   height:15px;
   border-radius:999px;
-  border:2px solid rgba(255,255,255,.35);
-  border-top-color:#fff;
+  border:2px solid color-mix(in oklab, var(--text-inverse) 35%, transparent);
+  border-top-color:var(--text-inverse);
   display:none;
   animation:hc-spin .7s linear infinite;
 }
@@ -513,7 +513,7 @@ main,
 .hc-today-title{
   margin:0 0 8px;
   font-size:14px;
-  font-weight:800;
+  font-weight:700;
 }
 
 .hc-chip-list{
@@ -698,7 +698,12 @@ body.hc-modal-open{
   }
 
   .hc-journey-summary{
-    grid-template-columns:1fr;
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    gap:6px;
+  }
+
+  .hc-journey-card{
+    padding:8px 10px;
   }
 
 }
@@ -835,4 +840,40 @@ body.hc-modal-open{
   }
 
   /* a tabela NUNCA pode empurrar a tela */
+}
+
+/* ---- Lote C (2026-10): cliente sem caixa dentro de caixa, resumo do dia em 3 colunas ---- */
+.hc-client-current{
+  border:0;
+  padding:0;
+  background:none;
+}
+.hc-client-details{
+  display:flex;
+  flex-wrap:wrap;
+  gap:4px 12px;
+  border:0;
+  padding:2px 2px 0;
+  background:none;
+  font-size:13px;
+}
+.hc-secondary-actions{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+}
+.hc-secondary-actions .btn{
+  width:100%;
+  justify-content:center;
+  min-height:44px;
+}
+.hc-journey-summary,
+.hc-journey-summary[aria-label]{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+}
+.hc-journey-card{
+  background:var(--surface-soft);
+}
+@media (max-width:380px){
+  .hc-secondary-actions{grid-template-columns:1fr}
 }

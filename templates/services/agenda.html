@@ -1,0 +1,88 @@
+{% extends "accounts/base.html" %}
+{% load service_format %}
+{% load hc_icons %}
+
+{% block title %}Agenda{% endblock %}
+{% block page_title %}Serviços{% endblock %}
+
+{% block extra_head %}
+<style>
+  .ag-page{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;max-width:980px;min-width:0}
+  .ag-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+  .ag-head h1{margin:0;font-size:28px;line-height:1.1;letter-spacing:-.01em}
+  .ag-head p{margin:6px 0 0;color:var(--color-text-muted)}
+  .ag-nav{display:flex;gap:6px;flex-wrap:wrap}
+  .ag-nav .btn{min-height:44px}
+  .ag-days{display:grid;gap:10px}
+  .ag-day{display:grid;grid-template-columns:96px minmax(0,1fr);gap:12px;padding:12px 14px;border:1px solid var(--color-border);border-radius:14px;background:var(--color-card)}
+  .ag-day.is-today{border-color:var(--border-brand);box-shadow:0 0 0 2px var(--color-primary-soft)}
+  .ag-day.is-empty{background:transparent;border-style:dashed}
+  .ag-date{display:grid;align-content:start;gap:2px}
+  .ag-date strong{font-size:15px}
+  .ag-date span{font-size:13px;color:var(--color-text-muted);font-variant-numeric:tabular-nums}
+  .ag-date .today{display:inline-flex;width:max-content;margin-top:4px;padding:2px 8px;border-radius:999px;background:var(--color-primary-soft);color:var(--menu-active-text);font-size:11.5px;font-weight:900}
+  .ag-jobs{display:grid;gap:8px;min-width:0}
+  .ag-job{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 10px;border-radius:10px;background:var(--surface-subtle);border:1px solid var(--color-border);color:var(--color-text);text-decoration:none;min-height:44px}
+  .ag-job:hover{border-color:var(--border-brand)}
+  .ag-time{font-weight:900;font-variant-numeric:tabular-nums}
+  .ag-job strong{display:block;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ag-job small{display:block;color:var(--color-text-muted);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ag-chip{display:inline-flex;align-items:center;min-height:24px;padding:0 9px;border-radius:999px;border:1px solid var(--badge-border);background:var(--badge-bg);color:var(--badge-text);font-size:11.5px;font-weight:900;white-space:nowrap}
+  .ag-chip.progress,.ag-chip.report{background:var(--success-bg);border-color:var(--success-border);color:var(--success-text)}
+  .ag-chip.draft{background:var(--warning-bg);border-color:var(--warning-border);color:var(--warning-text)}
+  .ag-chip.planned{background:var(--color-primary-soft);border-color:var(--border-brand);color:var(--menu-active-text)}
+  .ag-free{color:var(--color-text-muted);font-size:14px;align-self:center}
+  .ag-note{color:var(--color-text-muted);font-size:14px}
+  @media (max-width:640px){
+    .ag-head h1{font-size:24px}
+    .ag-day{grid-template-columns:1fr;gap:8px}
+    .ag-date{grid-auto-flow:column;justify-content:start;align-items:baseline;gap:8px}
+    .ag-job{grid-template-columns:48px minmax(0,1fr)}.ag-job .ag-chip{grid-column:2;justify-self:start}
+    .ag-nav{width:100%}.ag-nav .btn{flex:1;justify-content:center}
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ag-page">
+  {% services_nav "agenda" %}
+  <header class="ag-head">
+    <div>
+      <h1>Agenda da semana</h1>
+      <p>{{ start|date:"d/m" }} a {{ end|date:"d/m/Y" }} · {{ total }} {% if total == 1 %}serviço marcado{% else %}serviços marcados{% endif %}</p>
+    </div>
+    <nav class="ag-nav" aria-label="Trocar de semana">
+      <a class="btn" href="?semana={{ prev }}">‹ Anterior</a>
+      {% if not is_current_week %}<a class="btn" href="{% url 'service_agenda' %}">Esta semana</a>{% endif %}
+      <a class="btn" href="?semana={{ next }}">Próxima ›</a>
+    </nav>
+  </header>
+
+  <section class="ag-days" aria-label="Dias da semana">
+    {% for day in days %}
+      <article class="ag-day {% if day.is_today %}is-today{% endif %} {% if not day.jobs %}is-empty{% endif %}">
+        <div class="ag-date">
+          <strong>{{ day.weekday }}</strong>
+          <span>{{ day.date|date:"d/m" }}</span>
+          {% if day.is_today %}<span class="today">Hoje</span>{% endif %}
+        </div>
+        <div class="ag-jobs">
+          {% for job in day.jobs %}
+            <a class="ag-job" href="{% url 'service_job_detail' job.id %}">
+              <span class="ag-time">{% if job.planned_start_time %}{{ job.planned_start_time|time:"H:i" }}{% else %}—{% endif %}</span>
+              <span><strong>{{ job.title }}</strong><small>{{ job.client_display_name }}</small></span>
+              <span class="ag-chip {{ job.status_tone }}">{{ job.status_label }}</span>
+            </a>
+          {% empty %}
+            <span class="ag-free">Livre</span>
+          {% endfor %}
+        </div>
+      </article>
+    {% endfor %}
+  </section>
+
+  {% if undated %}
+    <p class="ag-note">{{ undated }} {% if undated == 1 %}serviço ainda sem data{% else %}serviços ainda sem data{% endif %}: defina a data na tela do serviço para ele aparecer aqui.</p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}HoraCerta - Cadastro indisponível{% endblock %}
+{% block subtitle %}Cadastro indisponível{% endblock %}
+
+{% block content %}
+  <div style="max-width:560px;margin:32px auto;padding:0 4px;line-height:1.5">
+    {% if busy %}
+    <h1 style="font-size:1.5rem;margin:0 0 10px">Muitos cadastros agora</h1>
+    <p>Recebemos muitos pedidos de cadastro em pouco tempo. Aguarde alguns minutos e tente de novo. Se você já tem conta, <a href="{% url 'login' %}">entre aqui</a>.</p>
+    {% else %}
+    <h1 style="font-size:1.5rem;margin:0 0 10px">Cadastro temporariamente fechado</h1>
+    <p>No momento não estamos aceitando novas contas. Se você já tem conta, <a href="{% url 'login' %}">entre aqui</a>.</p>
+    {% endif %}
+  </div>
+{% endblock %}

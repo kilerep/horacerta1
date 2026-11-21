@@ -4,24 +4,24 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Relatorio de horas | HoraCerta</title>
+  <title>Relatório de horas | HoraCerta</title>
   <meta name="description" content="Relatorio publico de horas HoraCerta.">
   <link rel="icon" type="image/png" sizes="32x32" href="{% static 'pwa/favicon-32.png' %}">
   <style>
     :root{
       color-scheme:light;
-      --bg:#f4f7fb;
-      --card:#ffffff;
-      --card-soft:#f8fafc;
-      --text:#132033;
-      --muted:#64748b;
-      --line:#dbe4ef;
-      --brand:#2563eb;
-      --brand-strong:#1d4ed8;
-      --accent:#12b981;
+      --bg:#f5f2eb;
+      --card:#fffdf9;
+      --card-soft:#faf8f3;
+      --text:#1f1e1d;
+      --muted:#6b675f;
+      --line:#e5e0d5;
+      --brand:#b5553a;
+      --brand-strong:#8f3f28;
+      --accent:#2f7d5b;
       --warn:#b45309;
       --danger:#b42318;
-      --shadow:0 18px 45px rgba(15,23,42,.08);
+      --shadow:0 10px 30px rgba(60,45,30,.07);
     }
     *{box-sizing:border-box}
     html,body{margin:0;padding:0;min-width:0}
@@ -50,7 +50,7 @@
       gap:18px;
       padding:20px;
       border-bottom:1px solid var(--line);
-      background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%);
+      background:var(--card);
     }
     .brand-row{
       display:flex;
@@ -74,12 +74,12 @@
       flex:0 0 auto;
       color:#fff;
       font-weight:800;
-      background:linear-gradient(135deg,var(--brand),var(--accent));
+      background:var(--text);
     }
-    .brand-name{font-size:18px;font-weight:800;letter-spacing:0}
+    .brand-name{font-family:Georgia,"Times New Roman",serif;font-size:19px;font-weight:700;letter-spacing:0}
     .issued{color:var(--muted);font-size:13px}
     .title-block{display:grid;gap:6px}
-    h1{margin:0;font-size:28px;line-height:1.12;letter-spacing:0}
+    h1{margin:0;font-family:Georgia,"Iowan Old Style","Times New Roman",serif;font-size:30px;line-height:1.12;letter-spacing:-.01em}
     .subtitle{margin:0;color:var(--muted)}
     .actions{
       display:grid;
@@ -100,7 +100,7 @@
       padding:10px 14px;
     }
     .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
-    .btn:focus-visible{outline:3px solid rgba(37,99,235,.25);outline-offset:2px}
+    .btn:focus-visible{outline:3px solid rgba(181,85,58,.3);outline-offset:2px}
     .content{display:grid;gap:18px;padding:18px}
     .section{display:grid;gap:12px}
     .section-head{
@@ -110,7 +110,7 @@
       gap:10px;
       flex-wrap:wrap;
     }
-    h2{margin:0;font-size:18px;line-height:1.25;letter-spacing:0}
+    h2{margin:0;font-family:Georgia,"Iowan Old Style","Times New Roman",serif;font-size:19px;line-height:1.25;letter-spacing:0}
     .summary-grid{
       display:grid;
       grid-template-columns:1fr;
@@ -224,7 +224,19 @@
       .page{width:100%;padding:0}
       .report-shell{border:0;box-shadow:none;border-radius:0}
       .actions{display:none}
+      #resposta-cliente{display:none}
     }
+    .resp-help{margin:0 0 10px;color:#475569;line-height:1.45}
+    .resp-error{margin:0 0 10px;padding:8px 10px;border:1px solid #fca5a5;background:#fef2f2;color:#991b1b;border-radius:8px}
+    .resp-confirm{margin:0 0 12px}
+    .resp-contest{border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px}
+    .resp-contest summary{cursor:pointer;font-weight:700;min-height:32px;display:flex;align-items:center}
+    .resp-contest fieldset{border:0;padding:0;margin:10px 0}
+    .resp-contest legend{font-weight:700;margin-bottom:6px}
+    .resp-radio{display:inline-flex;align-items:center;gap:6px;margin:0 12px 6px 0}
+    .resp-label{display:block;font-weight:700;margin:8px 0 4px}
+    #resp-message{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;margin-bottom:10px;box-sizing:border-box}
+    .resp-safe{margin:10px 0 0;color:#64748b;font-size:13px}
   </style>
 </head>
 <body>
@@ -238,7 +250,7 @@
             <span class="brand-name">HoraCerta</span>
           </div>
           <div class="title-block">
-            <h1>Relatorio indisponivel</h1>
+            <h1>Relatório indisponivel</h1>
             <p class="subtitle">{{ unavailable_reason }}</p>
           </div>
         </section>
@@ -252,10 +264,10 @@
             <span class="issued">Emitido em {{ report.created_at|date:"d/m/Y H:i" }}</span>
           </div>
           <div class="title-block">
-            <h1>Relatorio de horas</h1>
+            <h1>Relatório de horas</h1>
             <p class="subtitle">{{ payload.professional|default:report.employee.full_name }} para {{ payload.company|default:report.company.name }}</p>
           </div>
-          <nav class="actions" aria-label="Exportacoes do relatorio">
+          <nav class="actions" aria-label="Exportacoes do relatório">
             <a class="btn primary" href="{{ pdf_url }}">Imprimir PDF</a>
             <a class="btn" href="{{ xlsx_url }}">Baixar Excel</a>
           </nav>
@@ -269,7 +281,7 @@
             <div class="summary-grid">
               <article class="metric"><span>Profissional</span><strong>{{ payload.professional|default:report.employee.full_name }}</strong></article>
               <article class="metric"><span>Cliente</span><strong>{{ payload.company|default:report.company.name }}</strong></article>
-              <article class="metric"><span>Periodo</span><strong>{% if payload.period.label %}{{ payload.period.label }}{% else %}{{ report.date_from|date:"d/m/Y" }} a {{ report.date_to|date:"d/m/Y" }}{% endif %}</strong></article>
+              <article class="metric"><span>Período</span><strong>{% if payload.period.label %}{{ payload.period.label }}{% else %}{{ report.date_from|date:"d/m/Y" }} a {{ report.date_to|date:"d/m/Y" }}{% endif %}</strong></article>
               <article class="metric"><span>Total de horas</span><strong>{{ payload.total_hours|default:"-" }}</strong></article>
               <article class="metric"><span>Valor estimado</span><strong>{{ payload.estimated_value_brl|default:"-" }}</strong></article>
             </div>
@@ -296,7 +308,7 @@
                   </div>
                   <div class="day-info">
                     <div>
-                      <span class="label">Horarios</span>
+                      <span class="label">Horários</span>
                       <div class="value">{{ day.punch_times|join:", "|default:"-" }}</div>
                     </div>
                     <div>
@@ -304,15 +316,51 @@
                       <div class="value">{{ day.total_hours|default:"-" }}</div>
                     </div>
                     <div class="full">
-                      <span class="label">Observacao</span>
+                      <span class="label">Observação</span>
                       <p class="note">{{ day.notes|join:"; "|default:"-" }}</p>
                     </div>
                   </div>
                 </article>
               {% empty %}
-                <div class="empty">Sem registros no periodo.</div>
+                <div class="empty">Sem registros no período.</div>
               {% endfor %}
             </div>
+          </section>
+
+          <section class="section" id="resposta-cliente" aria-labelledby="resposta-title">
+            <h2 id="resposta-title">Sua resposta</h2>
+            {% if already_responded %}
+              {% if report.conference_final_status == "REVIEWED" %}
+                <div class="empty">Recebimento confirmado em {{ report.conference_reviewed_at|date:"d/m/Y H:i" }}. Isso registra que o relatório foi recebido e conferido; não é aprovação de pagamento.</div>
+              {% else %}
+                <div class="empty">Divergência registrada em {{ report.conference_reviewed_at|date:"d/m/Y H:i" }}: {{ report.conference_comment }}<br>O prestador foi avisado e vai entrar em contato.</div>
+              {% endif %}
+            {% else %}
+              <p class="resp-help">Não precisa criar conta. Confirme que recebeu e conferiu, ou informe o que está diferente.</p>
+              {% if contest_error %}<div class="resp-error" role="alert">Escolha o motivo e escreva uma mensagem curta para registrar a divergência.</div>{% endif %}
+              <form method="post" action="{{ respond_url }}" class="resp-confirm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="confirm">
+                <button class="btn primary" type="submit">Confirmar recebimento</button>
+              </form>
+              <details class="resp-contest"{% if contest_error %} open{% endif %}>
+                <summary>Algo está diferente? Contestar</summary>
+                <form method="post" action="{{ respond_url }}">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="contest">
+                  <fieldset>
+                    <legend>Qual é a divergência?</legend>
+                    {% for key, label in contest_reasons.items %}
+                      <label class="resp-radio"><input type="radio" name="reason" value="{{ key }}" required> {{ label }}</label>
+                    {% endfor %}
+                  </fieldset>
+                  <label class="resp-label" for="resp-message">Explique em poucas palavras</label>
+                  <textarea id="resp-message" name="message" rows="3" maxlength="1000" required></textarea>
+                  <button class="btn" type="submit">Enviar contestação</button>
+                </form>
+              </details>
+              <p class="resp-safe">O HoraCerta nunca pede senha, dados bancários ou pagamento para ver este relatório.</p>
+            {% endif %}
           </section>
 
           <section class="section" aria-labelledby="obs-title">
@@ -322,7 +370,7 @@
         </div>
       {% endif %}
     </div>
-    <div class="footer-note">HoraCerta - relatorio publico por token seguro.</div>
+    <div class="footer-note">HoraCerta - relatório público por token seguro.</div>
   </main>
 </body>
 </html>

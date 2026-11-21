@@ -73,7 +73,7 @@ class Contract(models.Model):
             id=self.employee_id,
             company_id=self.company_id,
         ).exists():
-            errors["employee"] = "Employee do contrato precisa pertencer a empresa do contrato."
+            errors["employee"] = "O profissional precisa pertencer ao cliente informado."
         if errors:
             raise ValidationError(errors)
 
@@ -102,9 +102,11 @@ class ActivePunchManager(models.Manager):
 class Punch(models.Model):
     class ValidationMethod(models.TextChoices):
         FREE_POLICY = "FREE_POLICY", "Politica livre"
-        GEOLOCATION = "GEOLOCATION", "Geolocalizacao"
+        GEOLOCATION = "GEOLOCATION", "Geolocalizacao"  # legado: GPS desativado em 2026-11
         PRESENTIAL_QR_PENDING = "PRESENTIAL_QR_PENDING", "Presencial com QR (pendente)"
 
+    # legado: GPS desativado em 2026-11. Novos registros sempre usam FREE;
+    # os demais valores ficam so para ler registros antigos.
     class ConfidenceStatus(models.TextChoices):
         FREE = "FREE", "Livre"
         ON_SITE = "ON_SITE", "No local"
@@ -129,9 +131,11 @@ class Punch(models.Model):
     timestamp = models.DateTimeField(default=timezone.now, editable=False)
     note = models.TextField(blank=True, default="")
     is_manual = models.BooleanField(default=False)
+    # legado: GPS desativado em 2026-11 (campos mantidos so para nao apagar dados antigos)
     geo_latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     geo_longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     geo_accuracy_m = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    # legado: GPS desativado em 2026-11
     validated_location = models.ForeignKey(
         CompanyAuthorizedLocation,
         on_delete=models.SET_NULL,
@@ -139,6 +143,7 @@ class Punch(models.Model):
         null=True,
         blank=True,
     )
+    # legado: GPS desativado em 2026-11
     distance_to_location_m = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     validation_method = models.CharField(
         max_length=30,
@@ -210,16 +215,6 @@ class Punch(models.Model):
         super().save(*args, **kwargs)
 
     @property
-    def confidence_tone(self):
-        if self.confidence_status == self.ConfidenceStatus.ON_SITE:
-            return "success"
-        if self.confidence_status in {self.ConfidenceStatus.OUT_OF_RADIUS, self.ConfidenceStatus.NO_LOCATION}:
-            return "warn"
-        if self.confidence_status == self.ConfidenceStatus.IMPRECISE:
-            return "pending"
-        return "neutral"
-
-    @property
     def qr_tone(self):
         if self.qr_confirmation_status == self.QrConfirmationStatus.CONFIRMED:
             return "success"
@@ -231,8 +226,6 @@ class Punch(models.Model):
     def audit_method_label(self):
         if self.qr_confirmation_status == self.QrConfirmationStatus.CONFIRMED:
             return "QR presencial"
-        if self.validation_method == self.ValidationMethod.GEOLOCATION:
-            return "Localizacao"
         if self.validation_method == self.ValidationMethod.PRESENTIAL_QR_PENDING:
             return "QR presencial (pendente)"
         return "Livre"
@@ -329,7 +322,7 @@ class WorkdayChangeLog(models.Model):
 class PunchCorrectionRequest(models.Model):
     class ProblemType(models.TextChoices):
         EXTRA_PUNCH = "extra_punch", "Registro a mais"
-        MISSED_PUNCH = "missed_punch", "Esqueci uma batida"
+        MISSED_PUNCH = "missed_punch", "Esqueci de registrar um horário"
         WRONG_TIME = "wrong_time", "Horario errado"
         DUPLICATED_PUNCH = "duplicated_punch", "Registro duplicado"
         OTHER = "other", "Outro"
@@ -413,6 +406,8 @@ class InternalNotification(models.Model):
         PUNCH_RESTORED = "punch_restored", "Registro restaurado"
         ADMIN_NOTE_ADDED = "admin_note_added", "Observacao administrativa adicionada"
         COMPANY_ACKNOWLEDGED = "company_acknowledged", "Ciencia da empresa registrada"
+        SHIPMENT_NOTE = "shipment_note", "Nota de envio"
+        SERVICE_REMINDER = "service_reminder", "Lembrete de servico"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     recipient_user = models.ForeignKey(
@@ -554,12 +549,12 @@ class ActivityReportRequest(models.Model):
         if self.contract_id:
             contract = Contract.objects.select_related("employee", "company").filter(id=self.contract_id).first()
             if not contract:
-                errors["contract"] = "Vinculo informado nao existe."
+                errors["contract"] = "Cliente informado não existe."
             else:
                 if self.company_id and contract.company_id != self.company_id:
-                    errors["company"] = "Empresa da solicitacao difere da empresa do vinculo."
+                    errors["company"] = "Empresa da solicitação difere da empresa do cliente."
                 if self.employee_id and contract.employee_id != self.employee_id:
-                    errors["employee"] = "Profissional da solicitacao difere do profissional do vinculo."
+                    errors["employee"] = "Profissional da solicitação difere do profissional do cliente."
         if self.date_from and self.date_to and self.date_from > self.date_to:
             errors["date_to"] = "Data final nao pode ser anterior a data inicial."
         if self.status in {self.Status.RESPONDED, self.Status.REVIEWED} and not self.response_report_id:
@@ -600,7 +595,7 @@ class ServiceReport(models.Model):
         SENT = "SENT", "Enviado"
         VIEWED = "VIEWED", "Visualizado"
         REVIEWED = "REVIEWED", "Conferido"
-        DIVERGENT = "DIVERGENT", "Com divergencia"
+        DIVERGENT = "DIVERGENT", "Com divergência"
         PAID = "PAID", "Pago"
         CANCELED = "CANCELED", "Cancelado"
 
@@ -608,7 +603,7 @@ class ServiceReport(models.Model):
         PENDING = "PENDING", "Aguardando conferencia"
         VIEWED = "VIEWED", "Visualizado"
         REVIEWED = "REVIEWED", "Conferido"
-        DIVERGENT = "DIVERGENT", "Com divergencia"
+        DIVERGENT = "DIVERGENT", "Com divergência"
         REVOKED = "REVOKED", "Link revogado"
         EXPIRED = "EXPIRED", "Link expirado"
 
@@ -655,6 +650,10 @@ class ServiceReport(models.Model):
     payment_status = models.CharField(max_length=20, choices=PaymentStatus.choices, default=PaymentStatus.PENDING)
     paid_at = models.DateTimeField(null=True, blank=True)
     paid_note = models.TextField(blank=True, default="")
+    # Cancelamento pelo prestador (ex.: cliente contestou): libera os dias do
+    # periodo para edicao. O relatorio nao e apagado - fica no historico.
+    canceled_at = models.DateTimeField(null=True, blank=True)
+    cancel_reason = models.CharField(max_length=255, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -675,17 +674,17 @@ class ServiceReport(models.Model):
         if not self.employee_id:
             errors["employee"] = "Relatorio precisa de um profissional valido."
         if not self.contract_id:
-            errors["contract"] = "Relatorio precisa de um vinculo valido."
+            errors["contract"] = "Relatório precisa de um cliente válido."
 
         if self.contract_id:
             contract = Contract.objects.select_related("employee", "company").filter(id=self.contract_id).first()
             if not contract:
-                errors["contract"] = "Vinculo informado nao existe."
+                errors["contract"] = "Cliente informado não existe."
             else:
                 if self.company_id and contract.company_id != self.company_id:
-                    errors["company"] = "Empresa do relatorio difere da empresa do vinculo."
+                    errors["company"] = "Empresa do relatório difere da empresa do cliente."
                 if self.employee_id and contract.employee_id != self.employee_id:
-                    errors["employee"] = "Profissional do relatorio difere do profissional do vinculo."
+                    errors["employee"] = "Profissional do relatório difere do profissional do cliente."
                 if self.company_id and self.employee_id and contract.employee.company_id != self.company_id:
                     errors["employee"] = "Profissional informado nao pertence a empresa."
 
@@ -723,9 +722,53 @@ class ServiceReport(models.Model):
         if self.status == self.Status.DRAFT:
             self.status = self.Status.SENT
 
+    @property
+    def can_be_canceled(self):
+        return self.status != self.Status.CANCELED and self.status != self.Status.PAID and (
+            self.payment_status != self.PaymentStatus.PAID
+        )
+
+    def cancel(self, reason=""):
+        """Cancela o relatorio: libera os dias e desativa o link publico."""
+        now = timezone.now()
+        self.status = self.Status.CANCELED
+        self.canceled_at = now
+        self.cancel_reason = (reason or "").strip()[:255]
+        if self.conference_token and not self.conference_revoked_at:
+            self.conference_revoked_at = now
+            self.conference_final_status = self.ConferenceStatus.REVOKED
+
     def revoke_conference_link(self):
         self.conference_revoked_at = timezone.now()
         self.conference_final_status = self.ConferenceStatus.REVOKED
 
     def __str__(self):
         return f"ServiceReport<{self.id}> {self.report_date:%d/%m/%Y} {self.title}"
+
+
+
+class DayOff(models.Model):
+    """Dia sem trabalho marcado pelo prestador (folga ou feriado): aparece no Historico e no fechamento,
+    para o cliente entender por que nao ha horas naquele dia. Vale para todos os clientes."""
+
+    class Kind(models.TextChoices):
+        FOLGA = "FOLGA", "Folga"
+        FERIADO = "FERIADO", "Feriado"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="days_off")
+    date = models.DateField("Dia")
+    kind = models.CharField(max_length=10, choices=Kind.choices, default=Kind.FOLGA)
+    note = models.CharField("Observação", max_length=80, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["date"]
+        constraints = [models.UniqueConstraint(fields=["owner", "date"], name="one_day_off_per_date")]
+
+    def __str__(self):
+        return f"{self.get_kind_display()} {self.date:%d/%m/%Y}"
+
+    @property
+    def label(self):
+        return f"{self.get_kind_display()}" + (f" · {self.note}" if self.note else "")

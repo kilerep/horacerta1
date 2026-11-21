@@ -48,7 +48,7 @@
           <tr>
             <th>Nome/username</th>
             <th>E-mail</th>
-            <th>Cliente/contrato principal</th>
+            <th>Cliente principal</th>
             <th>Status</th>
             <th>Último registro</th>
             <th>Registros</th>
@@ -59,7 +59,7 @@
             <tr>
               <td data-label="Nome/username"><a class="strong-link" href="{% url 'internal_employee_detail' row.employee.id %}">{{ row.employee.full_name|default:row.employee.user.username }}</a></td>
               <td data-label="E-mail">{{ row.employee.user.email|default:"-" }}</td>
-              <td data-label="Cliente/contrato principal"><a class="strong-link" href="{% url 'internal_company_detail' row.employee.company.id %}">{{ row.employee.company.name }}</a></td>
+              <td data-label="Cliente principal"><a class="strong-link" href="{% url 'internal_company_detail' row.employee.company.id %}">{{ row.employee.company.name }}</a></td>
               <td data-label="Status"><span class="pill {{ row.status.tone }}">{{ row.status.label }}</span></td>
               <td data-label="Último registro">{% if row.last_punch_at %}{{ row.last_punch_at|date:"d/m/Y H:i" }}{% else %}<span class="muted">Sem registros</span>{% endif %}</td>
               <td data-label="Registros">{{ row.punch_count }}</td>

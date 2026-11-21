@@ -1,0 +1,45 @@
+{% extends "accounts/base.html" %}
+{% load hc_icons %}
+
+{% block title %}{{ report.title }}{% endblock %}
+{% block page_title %}Relatórios{% endblock %}
+{% block extra_head %}{% include "writtenreports/_styles.html" %}{% endblock %}
+
+{% block content %}
+<div class="wr-page">
+  {% include "writtenreports/_tabs.html" with active="written" %}
+  <a class="btn" href="{% url 'written_report_list' %}" style="width:max-content">Todos os relatórios escritos</a>
+
+  {% if not report.is_locked %}
+    <div class="wr-alert"><strong>Rascunho.</strong> Os números abaixo são os de agora. Ao tocar em <strong>Emitir relatório</strong>, ele ganha número, os dados ficam congelados e o documento trava.</div>
+  {% endif %}
+
+  <article class="wr-doc" aria-label="Relatório">
+    <div class="wr-doc-top">
+      <div>
+        <div class="kind">{{ report.get_kind_display }}{% if report.number %} · nº {{ report.number_label }}{% endif %}</div>
+        <h2>{{ report.title }}</h2>
+      </div>
+      {% if report.is_locked %}<span class="wr-chip {% if report.viewed_at %}ok{% endif %}">{% if report.viewed_at %}Cliente abriu {{ report.viewed_at|date:"d/m H:i" }}{% else %}Emitido {{ report.issued_at|date:"d/m/Y" }}{% endif %}</span>{% else %}<span class="wr-chip">Rascunho</span>{% endif %}
+    </div>
+    {% include "writtenreports/_document.html" %}
+  </article>
+
+  <div class="wr-actions">
+    {% if report.is_locked %}
+      <a class="btn primary" href="{% url 'written_report_whatsapp' report.id %}" target="_blank" rel="noopener">{% icon "send" 18 %} Enviar pelo WhatsApp</a>
+      <a class="btn" href="{% url 'written_report_pdf' report.id %}" target="_blank" rel="noopener">{% icon "download" 18 %} PDF</a>
+    {% else %}
+      <form method="post" action="{% url 'written_report_issue' report.id %}">{% csrf_token %}<button class="btn primary" type="submit">{% icon "check" 18 %} Emitir relatório</button></form>
+      <a class="btn" href="{% url 'written_report_edit' report.id %}">Editar</a>
+      <a class="btn" href="{% url 'written_report_pdf' report.id %}" target="_blank" rel="noopener">Ver PDF</a>
+    {% endif %}
+  </div>
+
+  <details class="wr-danger">
+    <summary>{% if report.is_locked %}Excluir relatório{% else %}Apagar rascunho{% endif %}</summary>
+    <p>{% if report.is_locked %}O link enviado ao cliente deixa de funcionar. Para corrigir, depois faça um novo relatório.{% else %}O rascunho será apagado.{% endif %}</p>
+    <form method="post" action="{% url 'written_report_delete' report.id %}">{% csrf_token %}<button class="btn" type="submit">Sim, excluir</button></form>
+  </details>
+</div>
+{% endblock %}

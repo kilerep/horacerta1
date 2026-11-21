@@ -1,0 +1,35 @@
+{% extends "accounts/base.html" %}
+{% load hc_icons %}
+
+{% block title %}Relatórios de serviço{% endblock %}
+{% block page_title %}Relatórios{% endblock %}
+{% block extra_head %}{% include "writtenreports/_styles.html" %}{% endblock %}
+
+{% block content %}
+<div class="wr-page">
+  {% include "writtenreports/_tabs.html" with active="written" %}
+  <header class="wr-head">
+    <div>
+      <h1>Relatórios de serviço</h1>
+      <p>Documento formal para a empresa que pediu: você escreve o serviço que fez e o sistema monta o relatório com número, assinatura e PDF. As horas vão no Fechamento de horas. Depois de emitido, fica travado.</p>
+    </div>
+    <div class="wr-new">
+      <a class="btn primary" href="{% url 'written_report_create' %}">{% icon "plus" 18 %} Novo relatório de serviço</a>
+    </div>
+  </header>
+
+  {% if drafts %}
+    <h2 class="wr-title">Rascunhos</h2>
+    <section class="wr-list">{% for report in drafts %}{% include "writtenreports/_card.html" %}{% endfor %}</section>
+  {% endif %}
+
+  <h2 class="wr-title">Emitidos</h2>
+  <section class="wr-list">
+    {% for report in issued %}
+      {% include "writtenreports/_card.html" %}
+    {% empty %}
+      <div class="wr-empty">Nenhum relatório emitido ainda. Toque em <strong>Novo relatório de serviço</strong>, informe o cliente e o serviço e escreva o que foi feito.</div>
+    {% endfor %}
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends "accounts/base.html" %}
+
+{% block title %}{% if sheet %}Editar relatório{% else %}Novo relatório de produção{% endif %}{% endblock %}
+{% block page_title %}Relatórios de produção{% endblock %}
+
+{% block extra_head %}{% include "production/_styles.html" %}{% endblock %}
+
+{% block content %}
+<div class="prod-page">
+  <header class="prod-head">
+    <div>
+      <h1>{% if sheet %}Editar relatório{% else %}Novo relatório{% endif %}</h1>
+      <p>{% if sheet %}Ajuste os dados da folha. Os itens anotados não mudam.{% else %}Informe a máquina. Depois é só anotar os itens.{% endif %}</p>
+    </div>
+    <a class="btn" href="{% if sheet %}{% url 'production_sheet_detail' sheet.id %}{% else %}{% url 'production_sheet_list' %}{% endif %}">Voltar</a>
+  </header>
+
+  <form class="card prod-form" method="post" novalidate data-submit-once="true">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="prod-errors">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="prod-field">
+      <label for="{{ form.equipment.id_for_label }}">Máquina / equipamento</label>
+      {{ form.equipment }}
+      <datalist id="equipment-suggestions">{% for name in equipment_suggestions %}<option value="{{ name }}">{% endfor %}</datalist>
+      {{ form.equipment.errors }}
+    </div>
+    <div class="prod-grid">
+      <div class="prod-field">
+        <label for="{{ form.company_name.id_for_label }}">Empresa (opcional)</label>
+        {{ form.company_name }}
+      </div>
+      <div class="prod-field">
+        <label for="{{ form.operator_name.id_for_label }}">Operador</label>
+        {{ form.operator_name }}
+      </div>
+    </div>
+    <div class="prod-grid">
+      <div class="prod-field">
+        <label for="{{ form.supervisor_name.id_for_label }}">Encarregado (opcional)</label>
+        {{ form.supervisor_name }}
+      </div>
+      <div class="prod-field">
+        <label for="{{ form.supervisor_whatsapp.id_for_label }}">WhatsApp do encarregado (opcional)</label>
+        {{ form.supervisor_whatsapp }}
+        {{ form.supervisor_whatsapp.errors }}
+      </div>
+    </div>
+    <p class="prod-hint">Com o WhatsApp do encarregado, o botão “Enviar pelo WhatsApp” já abre a conversa com ele.</p>
+    <div class="prod-field">
+      <label for="{{ form.notes.id_for_label }}">Observações (opcional)</label>
+      {{ form.notes }}
+    </div>
+    <div class="prod-actions">
+      <button class="btn primary" type="submit" data-loading-text="Salvando...">{% if sheet %}Salvar alterações{% else %}Criar relatório{% endif %}</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
