@@ -102,9 +102,11 @@ class ActivePunchManager(models.Manager):
 class Punch(models.Model):
     class ValidationMethod(models.TextChoices):
         FREE_POLICY = "FREE_POLICY", "Politica livre"
-        GEOLOCATION = "GEOLOCATION", "Geolocalizacao"
+        GEOLOCATION = "GEOLOCATION", "Geolocalizacao"  # legado: GPS desativado em 2026-11
         PRESENTIAL_QR_PENDING = "PRESENTIAL_QR_PENDING", "Presencial com QR (pendente)"
 
+    # legado: GPS desativado em 2026-11. Novos registros sempre usam FREE;
+    # os demais valores ficam so para ler registros antigos.
     class ConfidenceStatus(models.TextChoices):
         FREE = "FREE", "Livre"
         ON_SITE = "ON_SITE", "No local"
@@ -129,9 +131,11 @@ class Punch(models.Model):
     timestamp = models.DateTimeField(default=timezone.now, editable=False)
     note = models.TextField(blank=True, default="")
     is_manual = models.BooleanField(default=False)
+    # legado: GPS desativado em 2026-11 (campos mantidos so para nao apagar dados antigos)
     geo_latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     geo_longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     geo_accuracy_m = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    # legado: GPS desativado em 2026-11
     validated_location = models.ForeignKey(
         CompanyAuthorizedLocation,
         on_delete=models.SET_NULL,
@@ -139,6 +143,7 @@ class Punch(models.Model):
         null=True,
         blank=True,
     )
+    # legado: GPS desativado em 2026-11
     distance_to_location_m = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     validation_method = models.CharField(
         max_length=30,
@@ -210,16 +215,6 @@ class Punch(models.Model):
         super().save(*args, **kwargs)
 
     @property
-    def confidence_tone(self):
-        if self.confidence_status == self.ConfidenceStatus.ON_SITE:
-            return "success"
-        if self.confidence_status in {self.ConfidenceStatus.OUT_OF_RADIUS, self.ConfidenceStatus.NO_LOCATION}:
-            return "warn"
-        if self.confidence_status == self.ConfidenceStatus.IMPRECISE:
-            return "pending"
-        return "neutral"
-
-    @property
     def qr_tone(self):
         if self.qr_confirmation_status == self.QrConfirmationStatus.CONFIRMED:
             return "success"
@@ -231,8 +226,6 @@ class Punch(models.Model):
     def audit_method_label(self):
         if self.qr_confirmation_status == self.QrConfirmationStatus.CONFIRMED:
             return "QR presencial"
-        if self.validation_method == self.ValidationMethod.GEOLOCATION:
-            return "Localizacao"
         if self.validation_method == self.ValidationMethod.PRESENTIAL_QR_PENDING:
             return "QR presencial (pendente)"
         return "Livre"

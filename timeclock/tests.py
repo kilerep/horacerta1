@@ -122,28 +122,30 @@ class PunchCorrectionServicesTests(TestCase):
 
 
 class PunchConfidenceServicesTests(TestCase):
+    """GPS desativado em 2026-11: a politica nunca mais confere localizacao."""
+
     def setUp(self):
         self.owner = User.objects.create_user(
-            username="owner.geo@example.com",
-            email="owner.geo@example.com",
+            username="owner.policy@example.com",
+            email="owner.policy@example.com",
             password="Teste@12345",
             role=User.Role.EMPRESA,
         )
         self.company = Company.objects.create(
-            name="Empresa Geo",
+            name="Empresa Politica",
             owner=self.owner,
-            email="empresa.geo@example.com",
+            email="empresa.policy@example.com",
         )
         self.mei_user = User.objects.create_user(
-            username="mei.geo@example.com",
-            email="mei.geo@example.com",
+            username="mei.policy@example.com",
+            email="mei.policy@example.com",
             password="Teste@12345",
             role=User.Role.FUNCIONARIO,
         )
         self.employee = Employee.objects.create(
             user=self.mei_user,
             company=self.company,
-            full_name="MEI GEO",
+            full_name="MEI Politica",
             is_active=True,
         )
         self.contract = Contract.objects.create(
@@ -153,83 +155,40 @@ class PunchConfidenceServicesTests(TestCase):
             start_date=timezone.localdate(),
             is_active=True,
         )
-        self.location = CompanyAuthorizedLocation.objects.create(
-            company=self.company,
-            name="Matriz",
-            address_or_description="Rua A",
-            latitude="-23.550520",
-            longitude="-46.633308",
-            allowed_radius_m=120,
-            is_active=True,
-        )
 
-    def test_geolocation_policy_without_coordinates_classifies_no_location(self):
+    def test_without_policy_is_free(self):
+        result = evaluate_punch_confidence(self.contract)
+
+        self.assertEqual(result["validation_method"], Punch.ValidationMethod.FREE_POLICY)
+        self.assertEqual(result["confidence_status"], Punch.ConfidenceStatus.FREE)
+
+    def test_legacy_geolocation_policy_is_treated_as_free(self):
         CompanyAttendancePolicy.objects.create(
             company=self.company,
             validation_mode=CompanyAttendancePolicy.ValidationMode.GEOLOCATION,
             require_location=True,
-            default_allowed_radius_m=120,
         )
 
-        result = evaluate_punch_confidence(self.contract, latitude=None, longitude=None, accuracy_m=None)
+        result = evaluate_punch_confidence(self.contract)
 
-        self.assertEqual(result["validation_method"], "GEOLOCATION")
-        self.assertEqual(result["confidence_status"], Punch.ConfidenceStatus.NO_LOCATION)
+        self.assertEqual(result["validation_method"], Punch.ValidationMethod.FREE_POLICY)
+        self.assertEqual(result["confidence_status"], Punch.ConfidenceStatus.FREE)
+        self.assertNotIn("validated_location", result)
+        self.assertNotIn("distance_to_location_m", result)
 
-    def test_geolocation_policy_classifies_on_site_when_within_radius(self):
+    def test_presential_qr_policy_keeps_qr_pending_without_location(self):
         CompanyAttendancePolicy.objects.create(
             company=self.company,
-            validation_mode=CompanyAttendancePolicy.ValidationMode.GEOLOCATION,
+            validation_mode=CompanyAttendancePolicy.ValidationMode.PRESENTIAL_QR,
+            require_qr=True,
+            qr_requirement=CompanyAttendancePolicy.QrRequirement.FIRST_PUNCH,
             require_location=True,
-            default_allowed_radius_m=120,
         )
 
-        result = evaluate_punch_confidence(
-            self.contract,
-            latitude="-23.550520",
-            longitude="-46.633308",
-            accuracy_m="15",
-        )
+        result = evaluate_punch_confidence(self.contract)
 
-        self.assertEqual(result["validation_method"], "GEOLOCATION")
-        self.assertEqual(result["confidence_status"], Punch.ConfidenceStatus.ON_SITE)
-        self.assertIsNotNone(result["distance_to_location_m"])
-
-    def test_geolocation_policy_classifies_out_of_radius_for_far_point(self):
-        CompanyAttendancePolicy.objects.create(
-            company=self.company,
-            validation_mode=CompanyAttendancePolicy.ValidationMode.GEOLOCATION,
-            require_location=True,
-            default_allowed_radius_m=120,
-        )
-
-        result = evaluate_punch_confidence(
-            self.contract,
-            latitude="-23.500000",
-            longitude="-46.600000",
-            accuracy_m="20",
-        )
-
-        self.assertEqual(result["validation_method"], "GEOLOCATION")
-        self.assertEqual(result["confidence_status"], Punch.ConfidenceStatus.OUT_OF_RADIUS)
-
-    def test_geolocation_policy_classifies_imprecise_when_accuracy_is_high(self):
-        CompanyAttendancePolicy.objects.create(
-            company=self.company,
-            validation_mode=CompanyAttendancePolicy.ValidationMode.GEOLOCATION,
-            require_location=True,
-            default_allowed_radius_m=120,
-        )
-
-        result = evaluate_punch_confidence(
-            self.contract,
-            latitude="-23.550520",
-            longitude="-46.633308",
-            accuracy_m="350",
-        )
-
-        self.assertEqual(result["validation_method"], "GEOLOCATION")
-        self.assertEqual(result["confidence_status"], Punch.ConfidenceStatus.IMPRECISE)
+        self.assertEqual(result["validation_method"], Punch.ValidationMethod.PRESENTIAL_QR_PENDING)
+        self.assertEqual(result["confidence_status"], Punch.ConfidenceStatus.FREE)
 
 
 @override_settings(
@@ -239,19 +198,19 @@ class PunchConfidenceServicesTests(TestCase):
 class EmployeeDashboardPunchFlowTests(TestCase):
     def setUp(self):
         self.owner = User.objects.create_user(
-            username="owner.dashboard.geo@example.com",
-            email="owner.dashboard.geo@example.com",
+            username="owner.dashboard.flow@example.com",
+            email="owner.dashboard.flow@example.com",
             password="Teste@12345",
             role=User.Role.EMPRESA,
         )
         self.company = Company.objects.create(
-            name="Empresa Dashboard Geo",
+            name="Empresa Dashboard",
             owner=self.owner,
-            email="empresa.dashboard.geo@example.com",
+            email="empresa.dashboard.flow@example.com",
         )
         self.mei_user = User.objects.create_user(
-            username="mei.dashboard.geo@example.com",
-            email="mei.dashboard.geo@example.com",
+            username="mei.dashboard.flow@example.com",
+            email="mei.dashboard.flow@example.com",
             password="Teste@12345",
             role=User.Role.FUNCIONARIO,
         )
@@ -268,23 +227,20 @@ class EmployeeDashboardPunchFlowTests(TestCase):
             start_date=timezone.localdate(),
             is_active=True,
         )
+        # Local so para o QR presencial: sem latitude, longitude ou raio.
         self.location = CompanyAuthorizedLocation.objects.create(
             company=self.company,
             name="Sede",
             address_or_description="Av Principal",
-            latitude="-23.550520",
-            longitude="-46.633308",
-            allowed_radius_m=120,
             is_active=True,
         )
         self.client.force_login(self.mei_user)
 
-    def test_post_punch_persists_geolocation_and_confidence_fields(self):
+    def test_post_punch_ignores_geo_fields_sent_by_old_pages(self):
         CompanyAttendancePolicy.objects.create(
             company=self.company,
             validation_mode=CompanyAttendancePolicy.ValidationMode.GEOLOCATION,
             require_location=True,
-            default_allowed_radius_m=120,
             default_location=self.location,
         )
 
@@ -300,39 +256,41 @@ class EmployeeDashboardPunchFlowTests(TestCase):
 
         self.assertEqual(response.status_code, 302)
         punch = Punch.objects.get(contract=self.contract)
-        self.assertEqual(punch.validation_method, Punch.ValidationMethod.GEOLOCATION)
-        self.assertEqual(punch.confidence_status, Punch.ConfidenceStatus.ON_SITE)
-        self.assertIsNotNone(punch.geo_latitude)
-        self.assertIsNotNone(punch.geo_longitude)
-        self.assertIsNotNone(punch.geo_accuracy_m)
-        self.assertIsNotNone(punch.distance_to_location_m)
-        self.assertIsNotNone(punch.confidence_checked_at)
-
-    def test_post_punch_ignores_invalid_geo_range_and_classifies_no_location(self):
-        CompanyAttendancePolicy.objects.create(
-            company=self.company,
-            validation_mode=CompanyAttendancePolicy.ValidationMode.GEOLOCATION,
-            require_location=True,
-            default_allowed_radius_m=120,
-        )
-
-        response = self.client.post(
-            f"{reverse('employee_dashboard')}?contract={self.contract.id}",
-            {
-                "action": "punch",
-                "geo_latitude": "123.999",
-                "geo_longitude": "-190",
-                "geo_accuracy_m": "-5",
-            },
-        )
-
-        self.assertEqual(response.status_code, 302)
-        punch = Punch.objects.get(contract=self.contract)
         self.assertIsNone(punch.geo_latitude)
         self.assertIsNone(punch.geo_longitude)
         self.assertIsNone(punch.geo_accuracy_m)
-        self.assertEqual(punch.validation_method, Punch.ValidationMethod.GEOLOCATION)
-        self.assertEqual(punch.confidence_status, Punch.ConfidenceStatus.NO_LOCATION)
+        self.assertIsNone(punch.validated_location_id)
+        self.assertIsNone(punch.distance_to_location_m)
+        self.assertEqual(punch.validation_method, Punch.ValidationMethod.FREE_POLICY)
+        self.assertEqual(punch.confidence_status, Punch.ConfidenceStatus.FREE)
+        self.assertNotIn("geolocation_collected", punch.audit_payload)
+        self.assertNotIn("require_location", punch.audit_payload["policy"])
+        self.assertIsNotNone(punch.confidence_checked_at)
+
+    def test_qr_presence_still_confirms_punch_without_gps(self):
+        CompanyAttendancePolicy.objects.create(
+            company=self.company,
+            validation_mode=CompanyAttendancePolicy.ValidationMode.PRESENTIAL_QR,
+            require_qr=True,
+            qr_requirement=CompanyAttendancePolicy.QrRequirement.FIRST_PUNCH,
+        )
+
+        checkin = self.client.get(reverse("qr_presence_checkin", args=[self.location.qr_token]))
+        self.assertEqual(checkin.status_code, 302)
+        self.assertIn("event=qr_confirmed", checkin["Location"])
+
+        response = self.client.post(
+            f"{reverse('employee_dashboard')}?contract={self.contract.id}",
+            {"action": "punch"},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("event=punch_saved&", response["Location"])
+        punch = Punch.objects.get(contract=self.contract)
+        self.assertEqual(punch.qr_confirmation_status, Punch.QrConfirmationStatus.CONFIRMED)
+        self.assertEqual(punch.qr_confirmed_location_id, self.location.id)
+        self.assertEqual(punch.validation_method, Punch.ValidationMethod.PRESENTIAL_QR_PENDING)
+        self.assertIsNone(punch.geo_latitude)
 
 
 @override_settings(SECURE_SSL_REDIRECT=False)
@@ -509,26 +467,32 @@ class ManualPunchReportLockTests(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertFalse(response.json()["ok"])
 
-    def test_manual_punch_still_allowed_for_day_outside_any_report(self):
+    def test_manual_punch_still_allowed_today_outside_any_report(self):
+        today = timezone.localdate()
         ServiceReport.objects.create(
             company=self.company,
             employee=self.employee,
             contract=self.contract,
-            report_date=date(2026, 6, 4),
-            date_from=date(2026, 6, 1),
-            date_to=date(2026, 6, 4),
+            report_date=today - timedelta(days=10),
+            date_from=today - timedelta(days=14),
+            date_to=today - timedelta(days=10),
             title="horas da semana",
         )
 
-        response = self._post_manual_punch(date(2026, 6, 10))
+        response = self._post_manual_punch(today, times=("00:01", "00:02"))
 
         self.assertEqual(response.status_code, 200)
-        payload = response.json()
-        self.assertTrue(payload["ok"])
-        self.assertEqual(
-            Punch.objects.filter(contract=self.contract, timestamp__date=date(2026, 6, 10)).count(),
-            2,
-        )
+        self.assertTrue(response.json()["ok"])
+        self.assertEqual(Punch.objects.filter(contract=self.contract).count(), 2)
+
+    def test_manual_punch_only_today(self):
+        """2026-11-21: horario manual so no dia de hoje - nem dias anteriores nem o dia seguinte."""
+        today = timezone.localdate()
+        for day in (today + timedelta(days=1), today - timedelta(days=1), today + timedelta(days=30)):
+            response = self._post_manual_punch(day)
+            self.assertEqual(response.status_code, 400, day)
+            self.assertTrue(any("só pode ser lançado no dia de hoje" in msg for msg in response.json()["errors"]))
+        self.assertFalse(Punch.objects.filter(contract=self.contract).exists())
 
     def test_manual_punch_allowed_again_after_report_is_canceled(self):
         report = ServiceReport.objects.create(
@@ -542,7 +506,11 @@ class ManualPunchReportLockTests(TestCase):
             status=ServiceReport.Status.CANCELED,
         )
 
-        response = self._post_manual_punch(date(2026, 6, 2))
+        # relatorio cancelado que cobria hoje nao bloqueia mais o lancamento de hoje
+        today = timezone.localdate()
+        report.date_from, report.date_to = today - timedelta(days=1), today
+        report.save()
+        response = self._post_manual_punch(today, times=("00:03", "00:04"))
 
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.json()["ok"])

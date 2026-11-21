@@ -7,7 +7,6 @@ um administrador interno. Os testes de rotas e as jornadas por persona usam isto
 """
 
 from datetime import timedelta
-from decimal import Decimal
 from io import StringIO
 
 from django.core.management import call_command
@@ -69,8 +68,7 @@ def build_world():
         title="Aviso empresa QA", message="Mensagem de teste.",
     )
     location = CompanyAuthorizedLocation.objects.create(
-        company=company, name="Obra QA", latitude=Decimal("-23.550520"), longitude=Decimal("-46.633308"),
-        qr_token="qa-token-local-1",
+        company=company, name="Obra QA", qr_token="qa-token-local-1",
     )
     staff = User.objects.create_superuser(username="qa.admin@horacerta.test", email="qa.admin@horacerta.test",
                                           password=PASSWORD)

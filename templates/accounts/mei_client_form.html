@@ -100,7 +100,7 @@
           </div>
         </div>
 
-        <details class="client-form-more"{% if form.cnpj.errors or form.contact_name.errors or form.whatsapp.errors or form.email.errors or form.require_location.errors or form.notes.errors or form.instance %} open{% endif %}>
+        <details class="client-form-more"{% if form.cnpj.errors or form.contact_name.errors or form.whatsapp.errors or form.email.errors or form.notes.errors or form.instance %} open{% endif %}>
           <summary>Mais informações do cliente (opcional)</summary>
           <div class="client-form-grid">
             <div class="client-form-field">
@@ -122,13 +122,6 @@
               {{ form.email.label_tag }}
               {{ form.email }}
               {% for error in form.email.errors %}<span class="client-form-error">{{ error }}</span>{% endfor %}
-            </div>
-            <div class="client-form-field full">
-              <label class="client-form-check">
-                {{ form.require_location }}
-                <span>Exigir localização no registro</span>
-              </label>
-              {% for error in form.require_location.errors %}<span class="client-form-error">{{ error }}</span>{% endfor %}
             </div>
             <div class="client-form-field full">
               {{ form.notes.label_tag }}
