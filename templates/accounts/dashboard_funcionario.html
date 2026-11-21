@@ -266,7 +266,8 @@
 
             <div class="hc-field">
               <label for="hcManualDate">Data</label>
-              <input id="hcManualDate" name="manual_date" type="date" value="{{ today_date|date:'Y-m-d' }}" required>
+              <input id="hcManualDate" name="manual_date" type="date" value="{{ today_date|date:'Y-m-d' }}" min="{{ today_date|date:'Y-m-d' }}" max="{{ today_date|date:'Y-m-d' }}" required readonly aria-describedby="hcManualDateHint">
+              <small id="hcManualDateHint" class="hc-help">Horário manual só para hoje.</small>
             </div>
 
             <div class="hc-field">

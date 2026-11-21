@@ -509,26 +509,32 @@ class ManualPunchReportLockTests(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertFalse(response.json()["ok"])
 
-    def test_manual_punch_still_allowed_for_day_outside_any_report(self):
+    def test_manual_punch_still_allowed_today_outside_any_report(self):
+        today = timezone.localdate()
         ServiceReport.objects.create(
             company=self.company,
             employee=self.employee,
             contract=self.contract,
-            report_date=date(2026, 6, 4),
-            date_from=date(2026, 6, 1),
-            date_to=date(2026, 6, 4),
+            report_date=today - timedelta(days=10),
+            date_from=today - timedelta(days=14),
+            date_to=today - timedelta(days=10),
             title="horas da semana",
         )
 
-        response = self._post_manual_punch(date(2026, 6, 10))
+        response = self._post_manual_punch(today, times=("00:01", "00:02"))
 
         self.assertEqual(response.status_code, 200)
-        payload = response.json()
-        self.assertTrue(payload["ok"])
-        self.assertEqual(
-            Punch.objects.filter(contract=self.contract, timestamp__date=date(2026, 6, 10)).count(),
-            2,
-        )
+        self.assertTrue(response.json()["ok"])
+        self.assertEqual(Punch.objects.filter(contract=self.contract).count(), 2)
+
+    def test_manual_punch_only_today(self):
+        """2026-11-21: horario manual so no dia de hoje - nem dias anteriores nem o dia seguinte."""
+        today = timezone.localdate()
+        for day in (today + timedelta(days=1), today - timedelta(days=1), today + timedelta(days=30)):
+            response = self._post_manual_punch(day)
+            self.assertEqual(response.status_code, 400, day)
+            self.assertTrue(any("só pode ser lançado no dia de hoje" in msg for msg in response.json()["errors"]))
+        self.assertFalse(Punch.objects.filter(contract=self.contract).exists())
 
     def test_manual_punch_allowed_again_after_report_is_canceled(self):
         report = ServiceReport.objects.create(
@@ -542,7 +548,11 @@ class ManualPunchReportLockTests(TestCase):
             status=ServiceReport.Status.CANCELED,
         )
 
-        response = self._post_manual_punch(date(2026, 6, 2))
+        # relatorio cancelado que cobria hoje nao bloqueia mais o lancamento de hoje
+        today = timezone.localdate()
+        report.date_from, report.date_to = today - timedelta(days=1), today
+        report.save()
+        response = self._post_manual_punch(today, times=("00:03", "00:04"))
 
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.json()["ok"])

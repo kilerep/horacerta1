@@ -555,6 +555,15 @@ def create_manual_punches(request):
     if not contract:
         return JsonResponse({"ok": False, "errors": ["Vinculo invalido ou inativo."]}, status=400)
 
+    # Horario manual so no dia de hoje (2026-11-21): dias anteriores ficam bloqueados e
+    # o dia seguinte tambem - nao da para lancar horas antes de trabalhar.
+    if launch_date != timezone.localdate():
+        return JsonResponse(
+            {"ok": False, "errors": [
+                "O horário manual só pode ser lançado no dia de hoje. Outros dias ficam bloqueados."]},
+            status=400,
+        )
+
     # O sistema promete (na tela de Historico e ao gerar um relatorio) que dias
     # ja incluidos num relatorio de horas ficam bloqueados para edicao, "para
     # preservar a seguranca dos relatorios" - e "editar horarios de hoje" ja
