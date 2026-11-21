@@ -11,7 +11,7 @@ class PublicHelpPageTests(SimpleTestCase):
         self.assertContains(response, "Cadastre o primeiro cliente")
         self.assertContains(response, "Pedidos e serviços")
         self.assertContains(response, "O cliente precisa de conta?")
-        self.assertContains(response, "O HoraCerta usa GPS?")
+        self.assertNotContains(response, "GPS")
         self.assertContains(response, "Meu Perfil → Segurança da conta")
 
     def test_help_page_does_not_keep_outdated_company_first_message(self):

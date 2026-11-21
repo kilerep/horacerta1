@@ -1,6 +1,5 @@
 import csv
 from datetime import datetime, time, timedelta
-from decimal import Decimal, InvalidOperation
 from io import BytesIO
 
 from django.contrib.auth.decorators import login_required
@@ -95,21 +94,6 @@ def _resolve_selected_contract(contracts_qs, contract_id):
     return contracts_qs.first()
 
 
-def _parse_geo_decimal(raw_value, min_value=None, max_value=None):
-    value = (raw_value or "").strip()
-    if not value:
-        return None
-    try:
-        parsed = Decimal(value)
-    except (InvalidOperation, TypeError):
-        return None
-    if min_value is not None and parsed < Decimal(str(min_value)):
-        return None
-    if max_value is not None and parsed > Decimal(str(max_value)):
-        return None
-    return parsed
-
-
 def _load_qr_claims(session):
     claims = session.get(QR_PRESENCE_SESSION_KEY)
     if isinstance(claims, dict):
@@ -155,18 +139,14 @@ def _policy_audit_snapshot(contract):
     if not policy:
         return {
             "policy_mode": CompanyAttendancePolicy.ValidationMode.FREE,
-            "require_location": False,
             "require_qr": False,
             "qr_requirement": CompanyAttendancePolicy.QrRequirement.NONE,
-            "default_allowed_radius_m": 120,
             "default_location_id": "",
         }
     return {
         "policy_mode": policy.validation_mode,
-        "require_location": bool(policy.require_location),
         "require_qr": bool(policy.require_qr),
         "qr_requirement": policy.qr_requirement,
-        "default_allowed_radius_m": int(policy.default_allowed_radius_m or 120),
         "default_location_id": str(policy.default_location_id or ""),
     }
 
@@ -224,17 +204,6 @@ def employee_dashboard(request):
             company=selected_contract.company,
         )
     pending_report_requests = pending_report_requests_qs[:20]
-    selected_policy = CompanyAttendancePolicy.objects.filter(company=selected_contract.company).first() if selected_contract else None
-    location_required_for_selected_contract = bool(
-        selected_policy
-        and (
-            selected_policy.require_location
-            or selected_policy.validation_mode in {
-                CompanyAttendancePolicy.ValidationMode.GEOLOCATION,
-                CompanyAttendancePolicy.ValidationMode.PRESENTIAL_QR,
-            }
-        )
-    )
 
     if request.method == "POST" and request.POST.get("action") == "respond_activity_request":
         request_id = (request.POST.get("request_id") or "").strip()
@@ -291,9 +260,8 @@ def employee_dashboard(request):
         if not selected_contract or (posted_contract_id and mei_context.invalid_requested_contract):
             return redirect(f"{request.path}?event=invalid_contract")
 
-        geo_latitude = _parse_geo_decimal(request.POST.get("geo_latitude"), min_value=-90, max_value=90)
-        geo_longitude = _parse_geo_decimal(request.POST.get("geo_longitude"), min_value=-180, max_value=180)
-        geo_accuracy_m = _parse_geo_decimal(request.POST.get("geo_accuracy_m"), min_value=0, max_value=10000)
+        # GPS desativado em 2026-11: campos geo_* enviados por paginas antigas
+        # em cache sao ignorados de proposito.
         punch_note = (request.POST.get("note") or "").strip()[:1000]
         now_local = timezone.localtime()
         policy_snapshot = _policy_audit_snapshot(selected_contract)
@@ -305,21 +273,11 @@ def employee_dashboard(request):
             if qr_location
             else (Punch.QrConfirmationStatus.REQUIRED_MISSING if qr_required else Punch.QrConfirmationStatus.NOT_REQUIRED)
         )
-        confidence = evaluate_punch_confidence(
-            selected_contract,
-            latitude=geo_latitude,
-            longitude=geo_longitude,
-            accuracy_m=geo_accuracy_m,
-        )
+        confidence = evaluate_punch_confidence(selected_contract)
         Punch.objects.create(
             contract=selected_contract,
             timestamp=timezone.now(),
             note=punch_note,
-            geo_latitude=geo_latitude,
-            geo_longitude=geo_longitude,
-            geo_accuracy_m=geo_accuracy_m,
-            validated_location=confidence.get("validated_location"),
-            distance_to_location_m=confidence.get("distance_to_location_m"),
             validation_method=confidence.get("validation_method") or Punch.ValidationMethod.FREE_POLICY,
             confidence_status=confidence.get("confidence_status") or Punch.ConfidenceStatus.FREE,
             qr_confirmation_status=qr_status,
@@ -339,8 +297,6 @@ def employee_dashboard(request):
                 "policy": policy_snapshot,
                 "qr_required_for_punch": qr_required,
                 "qr_requirement_reason": qr_requirement.get("reason") or "",
-                "geolocation_collected": bool(geo_latitude is not None and geo_longitude is not None),
-                "geolocation_accuracy_m": float(geo_accuracy_m) if geo_accuracy_m is not None else None,
                 "request_user_agent": (request.META.get("HTTP_USER_AGENT") or "")[:180],
             },
         )
@@ -459,7 +415,6 @@ def employee_dashboard(request):
         "no_contracts": False,
         "state_context": employee_lifecycle_summary(selected_contract.employee, contracts),
         "pending_report_requests": pending_report_requests,
-        "location_required_for_selected_contract": location_required_for_selected_contract,
         "context_warning": (
             "O vinculo selecionado anteriormente nao esta mais disponivel. Exibindo o vinculo ativo atual."
             if (mei_context.invalid_requested_contract or mei_context.invalid_session_contract)
@@ -618,7 +573,7 @@ def create_manual_punches(request):
 
     ordered_hm = sorted(requested_hm)
     policy_snapshot = _policy_audit_snapshot(contract)
-    confidence = evaluate_punch_confidence(contract, latitude=None, longitude=None, accuracy_m=None)
+    confidence = evaluate_punch_confidence(contract)
     with transaction.atomic():
         for hour, minute in ordered_hm:
             manual_timestamp = timezone.make_aware(
@@ -646,7 +601,6 @@ def create_manual_punches(request):
                     "policy": policy_snapshot,
                     "qr_required_for_punch": False,
                     "qr_requirement_reason": "manual_entry",
-                    "geolocation_collected": False,
                     "request_user_agent": (request.META.get("HTTP_USER_AGENT") or "")[:180],
                 },
             )
