@@ -116,11 +116,6 @@ from ..mei_context import mei_contracts_for_user, resolve_mei_context
 from ..permissions import can_access_internal_dashboard
 
 User = get_user_model()
-REVIEW_CONFIDENCE_STATUSES = {
-    Punch.ConfidenceStatus.OUT_OF_RADIUS,
-    Punch.ConfidenceStatus.NO_LOCATION,
-    Punch.ConfidenceStatus.IMPRECISE,
-}
 
 
 class RenderAwarePasswordResetView(auth_views.PasswordResetView):
@@ -761,30 +756,6 @@ def _compute_report_metrics(punches):
     }
 
 
-def _is_pending_review_punch(punch):
-    return (
-        punch.confidence_status in REVIEW_CONFIDENCE_STATUSES
-        or punch.qr_confirmation_status == Punch.QrConfirmationStatus.REQUIRED_MISSING
-    )
-
-
-def _compute_validation_quality_metrics(punches):
-    total_punches = len(punches)
-    validated_on_site = sum(1 for punch in punches if punch.confidence_status == Punch.ConfidenceStatus.ON_SITE)
-    qr_confirmed = sum(1 for punch in punches if punch.qr_confirmation_status == Punch.QrConfirmationStatus.CONFIRMED)
-    out_of_radius = sum(1 for punch in punches if punch.confidence_status == Punch.ConfidenceStatus.OUT_OF_RADIUS)
-    no_location = sum(1 for punch in punches if punch.confidence_status == Punch.ConfidenceStatus.NO_LOCATION)
-    pending_review = sum(1 for punch in punches if _is_pending_review_punch(punch))
-    return {
-        "total_punches": total_punches,
-        "validated_on_site": validated_on_site,
-        "qr_confirmed": qr_confirmed,
-        "out_of_radius": out_of_radius,
-        "no_location": no_location,
-        "pending_review": pending_review,
-    }
-
-
 def _month_label_ptbr(date_obj):
     month_names = [
         "janeiro",
@@ -827,7 +798,6 @@ def _build_service_report_payload(contract, date_from, date_to):
     end_dt = timezone.make_aware(datetime.combine(date_to, time.max), tz)
     punches = list(
         Punch.objects.filter(contract=contract, timestamp__range=(start_dt, end_dt))
-        .select_related("validated_location", "qr_confirmed_location")
         .order_by("timestamp")
     )
     punches_by_day = defaultdict(list)
@@ -841,7 +811,6 @@ def _build_service_report_payload(contract, date_from, date_to):
     days = []
     total_seconds = 0
     manual_count = 0
-    located_count = 0
     incomplete_days = 0
     observations = []
     current_day = date_from
@@ -850,17 +819,8 @@ def _build_service_report_payload(contract, date_from, date_to):
         local_datetimes = [timezone.localtime(item.timestamp, tz) for item in day_punches]
         day_seconds, is_incomplete = compute_day_total(local_datetimes)
         day_manual_count = sum(1 for item in day_punches if item.is_manual)
-        day_location_count = sum(
-            1
-            for item in day_punches
-            if item.geo_latitude is not None
-            or item.geo_longitude is not None
-            or item.validated_location_id
-            or item.qr_confirmed_location_id
-        )
         day_notes = [item.note for item in day_punches if (item.note or "").strip()]
         manual_count += day_manual_count
-        located_count += day_location_count
         total_seconds += day_seconds
         if is_incomplete:
             incomplete_days += 1
@@ -873,7 +833,6 @@ def _build_service_report_payload(contract, date_from, date_to):
                 "total_hours": format_hhmm(day_seconds),
                 "is_incomplete": is_incomplete,
                 "manual_count": day_manual_count,
-                "location_count": day_location_count,
                 "notes": day_notes,
                 "day_off": days_off.get(current_day, ""),
             }
@@ -900,7 +859,6 @@ def _build_service_report_payload(contract, date_from, date_to):
         "estimated_value": str(estimated_value),
         "estimated_value_brl": _format_brl(estimated_value),
         "manual_count": manual_count,
-        "location_count": located_count,
         "incomplete_days": incomplete_days,
         "observations": observations,
     }

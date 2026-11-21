@@ -531,7 +531,6 @@ def internal_punch_detail(request, punch_id):
             "contract__company",
             "contract__employee",
             "contract__employee__user",
-            "validated_location",
             "qr_confirmed_location",
         ),
         id=punch_id,
