@@ -14,10 +14,6 @@
       <section class="hc-feedback hc-feedback--ok" role="status" aria-live="polite">
         Horário registrado com sucesso.
       </section>
-    {% elif request.GET.event == "punch_saved_qr_missing" %}
-      <section class="hc-feedback hc-feedback--warn" role="status" aria-live="polite">
-        Horário registrado, mas sem confirmação QR exigida para este momento.
-      </section>
     {% elif request.GET.event == "manual_saved" %}
       <section class="hc-feedback hc-feedback--ok" role="status" aria-live="polite">
         Registro manual salvo com sucesso{% if request.GET.created %} ({{ request.GET.created }} horário{% if request.GET.created != "1" %}s{% endif %}){% endif %}.
@@ -29,18 +25,6 @@
     {% elif request.GET.event == "invalid_contract" %}
       <section class="hc-feedback hc-feedback--warn" role="status" aria-live="polite">
         O contrato selecionado esta inativo, encerrado ou não pertence a sua conta.
-      </section>
-    {% elif request.GET.event == "qr_confirmed" %}
-      <section class="hc-feedback hc-feedback--ok" role="status" aria-live="polite">
-        Presença confirmada por QR. Registre seu horário normalmente.
-      </section>
-    {% elif request.GET.event == "qr_invalid" %}
-      <section class="hc-feedback hc-feedback--warn" role="status" aria-live="polite">
-        QR inválido ou inativo para confirmação presencial.
-      </section>
-    {% elif request.GET.event == "qr_contract_missing" %}
-      <section class="hc-feedback hc-feedback--warn" role="status" aria-live="polite">
-        Seu perfil não possui contrato operacional ativo para este local QR.
       </section>
     {% elif request.GET.event == "report_sent" %}
       <section class="hc-feedback hc-feedback--ok" role="status" aria-live="polite">

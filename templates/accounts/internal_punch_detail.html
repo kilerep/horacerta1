@@ -37,7 +37,6 @@
       <div class="detail-item"><div class="k">Cancelado por</div><div class="v">{{ punch.cancelled_by.email|default:"-" }}</div></div>
       <div class="detail-item"><div class="k">Manual</div><div class="v">{% if punch.is_manual %}Sim{% else %}Não{% endif %}</div></div>
       <div class="detail-item"><div class="k">Método</div><div class="v">{{ punch.audit_method_label }}</div></div>
-      <div class="detail-item"><div class="k">QR presencial</div><div class="v">{{ punch.get_qr_confirmation_status_display }}</div></div>
       <div class="detail-item"><div class="k">Observação</div><div class="v">{{ punch.note|default:"-" }}</div></div>
       <div class="detail-item"><div class="k">Observação administrativa</div><div class="v">{{ punch.admin_note|default:"-" }}</div></div>    </div>
   </section>

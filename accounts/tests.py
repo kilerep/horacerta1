@@ -25,7 +25,6 @@ from timeclock.models import (
     WorkdayChangeLog,
 )
 from accounts.mei_context import MEI_SELECTED_CONTRACT_SESSION_KEY
-from .forms import CompanyAttendancePolicyForm, CompanyAuthorizedLocationForm
 from .services import MeiLinkError, create_or_link_mei_by_email
 
 User = get_user_model()
@@ -1528,62 +1527,3 @@ class MeiMultiCompanyContextTests(TestCase):
                 is_read=False,
             ).exists()
         )
-
-class CompanyAttendanceReliabilityFormUxTests(TestCase):
-    def setUp(self):
-        self.owner = User.objects.create_user(
-            username="reliability-forms-owner@example.com",
-            email="reliability-forms-owner@example.com",
-            password="Teste@12345",
-            role=User.Role.EMPRESA,
-        )
-        self.company = Company.objects.create(
-            name="Empresa Form UX",
-            owner=self.owner,
-            email="empresa-form-ux@example.com",
-        )
-
-    def test_location_form_has_no_gps_fields_and_saves_for_qr(self):
-        form = CompanyAuthorizedLocationForm(
-            data={
-                "name": "Unidade Centro",
-                "address_or_description": "Rua 1",
-                "latitude": "-23.550520",
-                "longitude": "-46.633308",
-                "allowed_radius_m": "5",
-                "is_active": "on",
-            },
-            instance=CompanyAuthorizedLocation(company=self.company),
-        )
-
-        self.assertTrue(form.is_valid(), form.errors.as_json())
-        for gps_field in ("latitude", "longitude", "allowed_radius_m"):
-            self.assertNotIn(gps_field, form.fields)
-        location = form.save()
-        self.assertTrue(location.qr_token)
-        self.assertEqual(location.latitude, 0)
-        self.assertEqual(location.longitude, 0)
-
-    def test_policy_form_presential_qr_enforces_qr_without_location(self):
-        policy = CompanyAttendancePolicy(company=self.company)
-        form = CompanyAttendancePolicyForm(
-            data={
-                "validation_mode": CompanyAttendancePolicy.ValidationMode.PRESENTIAL_QR,
-                "default_location": "",
-                "qr_requirement": CompanyAttendancePolicy.QrRequirement.FIRST_PUNCH,
-            },
-            instance=policy,
-            company=self.company,
-        )
-
-        self.assertTrue(form.is_valid(), form.errors.as_json())
-        self.assertTrue(form.cleaned_data["require_qr"])
-        self.assertNotIn("require_location", form.fields)
-        self.assertNotIn("default_allowed_radius_m", form.fields)
-
-    def test_policy_form_no_longer_offers_geolocation_mode(self):
-        form = CompanyAttendancePolicyForm(company=self.company)
-        modes = [value for value, _label in form.fields["validation_mode"].choices]
-
-        self.assertNotIn(CompanyAttendancePolicy.ValidationMode.GEOLOCATION, modes)
-        self.assertIn(CompanyAttendancePolicy.ValidationMode.PRESENTIAL_QR, modes)

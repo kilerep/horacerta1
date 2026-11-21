@@ -94,8 +94,6 @@ from timeclock.state import (
 from services.models import ServiceJob, ServiceRequest
 
 from ..forms import (
-    CompanyAttendancePolicyForm,
-    CompanyAuthorizedLocationForm,
     CompanyActivityReportRequestForm,
     CompanyContractForm,
     CompanyMEICreateForm,

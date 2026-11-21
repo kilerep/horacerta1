@@ -176,7 +176,8 @@ class PunchConfidenceServicesTests(TestCase):
         self.assertNotIn("validated_location", result)
         self.assertNotIn("distance_to_location_m", result)
 
-    def test_presential_qr_policy_keeps_qr_pending_without_location(self):
+    def test_old_presential_qr_policy_now_counts_as_free(self):
+        """QR presencial removido em 2026-11: politica antiga em modo QR vira registro livre."""
         CompanyAttendancePolicy.objects.create(
             company=self.company,
             validation_mode=CompanyAttendancePolicy.ValidationMode.PRESENTIAL_QR,
@@ -187,7 +188,7 @@ class PunchConfidenceServicesTests(TestCase):
 
         result = evaluate_punch_confidence(self.contract)
 
-        self.assertEqual(result["validation_method"], Punch.ValidationMethod.PRESENTIAL_QR_PENDING)
+        self.assertEqual(result["validation_method"], "FREE_POLICY")
         self.assertEqual(result["confidence_status"], Punch.ConfidenceStatus.FREE)
 
 
@@ -267,7 +268,8 @@ class EmployeeDashboardPunchFlowTests(TestCase):
         self.assertNotIn("require_location", punch.audit_payload["policy"])
         self.assertIsNotNone(punch.confidence_checked_at)
 
-    def test_qr_presence_still_confirms_punch_without_gps(self):
+    def test_qr_presence_removed_and_punch_never_requires_qr(self):
+        """QR presencial removido em 2026-11: a rota sumiu e o registro nunca pede QR."""
         CompanyAttendancePolicy.objects.create(
             company=self.company,
             validation_mode=CompanyAttendancePolicy.ValidationMode.PRESENTIAL_QR,
@@ -275,10 +277,7 @@ class EmployeeDashboardPunchFlowTests(TestCase):
             qr_requirement=CompanyAttendancePolicy.QrRequirement.FIRST_PUNCH,
         )
 
-        checkin = self.client.get(reverse("qr_presence_checkin", args=[self.location.qr_token]))
-        self.assertEqual(checkin.status_code, 302)
-        self.assertIn("event=qr_confirmed", checkin["Location"])
-
+        self.assertEqual(self.client.get(f"/me/qr-presencial/{self.location.qr_token}/").status_code, 404)
         response = self.client.post(
             f"{reverse('employee_dashboard')}?contract={self.contract.id}",
             {"action": "punch"},
@@ -287,10 +286,9 @@ class EmployeeDashboardPunchFlowTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn("event=punch_saved&", response["Location"])
         punch = Punch.objects.get(contract=self.contract)
-        self.assertEqual(punch.qr_confirmation_status, Punch.QrConfirmationStatus.CONFIRMED)
-        self.assertEqual(punch.qr_confirmed_location_id, self.location.id)
-        self.assertEqual(punch.validation_method, Punch.ValidationMethod.PRESENTIAL_QR_PENDING)
-        self.assertIsNone(punch.geo_latitude)
+        self.assertEqual(punch.qr_confirmation_status, Punch.QrConfirmationStatus.NOT_REQUIRED)
+        self.assertIsNone(punch.qr_confirmed_location_id)
+        self.assertNotIn("qr_required_for_punch", punch.audit_payload)
 
 
 @override_settings(SECURE_SSL_REDIRECT=False)
