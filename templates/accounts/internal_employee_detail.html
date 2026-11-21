@@ -3,7 +3,7 @@
 {% block page_title %}Detalhe do profissional{% endblock %}
 {% block internal_breadcrumb %}<span class="internal-breadcrumb__sep">></span><a href="{% url 'internal_employees' %}">Profissionais</a><span class="internal-breadcrumb__sep">></span><span>{{ employee.full_name }}</span>{% endblock %}
 {% block internal_title %}{{ employee.full_name }}{% endblock %}
-{% block internal_subtitle %}Perfil, acesso, contratos, registros e ações administrativas.{% endblock %}
+{% block internal_subtitle %}Perfil, acesso, clientes, registros e ações administrativas.{% endblock %}
 
 {% block internal_content %}
   <section class="internal-panel">
@@ -87,7 +87,7 @@
   </section>
 
   <section class="internal-panel">
-    <h3>Contratos com clientes</h3>
+    <h3>Clientes</h3>
     <div class="table-wrap">
       <table class="internal-table">
         <thead><tr><th>Empresa</th><th>Status</th><th>Registros</th><th>Último registro</th><th>Encerramento</th><th>Ação</th></tr></thead>
@@ -113,7 +113,7 @@
                     <input type="hidden" name="action" value="end_relationship">
                     <input type="hidden" name="relationship_id" value="{{ row.employee.id }}">
                     <input name="description" required placeholder="Motivo obrigatório">
-                    <button class="btn danger" type="submit" onclick="return confirm('Encerrar somente este contrato com o cliente?')">Encerrar contrato</button>
+                    <button class="btn danger" type="submit" onclick="return confirm('Encerrar somente o atendimento a este cliente?')">Encerrar atendimento</button>
                   </form>
                 {% else %}
                   <span class="pill warn">sem ação</span>
@@ -121,7 +121,7 @@
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="6"><div class="empty-state">Nenhum contrato encontrado.</div></td></tr>
+            <tr><td colspan="6"><div class="empty-state">Nenhum cliente encontrado.</div></td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -129,7 +129,7 @@
   </section>
 
   <section class="internal-panel">
-    <h3>Clientes e contratos</h3>
+    <h3>Clientes e valores</h3>
     <div class="table-wrap">
       <table class="internal-table">
         <thead><tr><th>Empresa</th><th>Valor/h</th><th>Início</th><th>Fim</th><th>Status</th><th>Observações</th></tr></thead>
@@ -144,7 +144,7 @@
               <td>{{ contract.notes|default:"-" }}</td>
             </tr>
           {% empty %}
-            <tr><td colspan="6"><div class="empty-state">Nenhum contrato encontrado.</div></td></tr>
+            <tr><td colspan="6"><div class="empty-state">Nenhum cliente encontrado.</div></td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -180,7 +180,7 @@
     <h3>Últimos registros de horário</h3>
     <div class="table-wrap">
       <table class="internal-table">
-        <thead><tr><th>Data/hora</th><th>Empresa</th><th>Contrato</th><th>Status</th><th>Observação</th></tr></thead>
+        <thead><tr><th>Data/hora</th><th>Empresa</th><th>Valor/h</th><th>Status</th><th>Observação</th></tr></thead>
         <tbody>
           {% for punch in recent_punches %}
             <tr>

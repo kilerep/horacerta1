@@ -29,7 +29,7 @@
     <div class="detail-grid">
       <div class="detail-item"><div class="k">Profissional</div><div class="v">{{ punch.contract.employee.full_name }}</div></div>
       <div class="detail-item"><div class="k">Empresa</div><div class="v">{{ punch.contract.company.name }}</div></div>
-      <div class="detail-item"><div class="k">Contrato</div><div class="v">R$ {{ punch.contract.hourly_rate }}/h</div></div>
+      <div class="detail-item"><div class="k">Valor/hora</div><div class="v">R$ {{ punch.contract.hourly_rate }}/h</div></div>
       <div class="detail-item"><div class="k">Data/hora</div><div class="v">{{ punch.timestamp|date:"d/m/Y H:i:s" }}</div></div>
       <div class="detail-item"><div class="k">Criado em</div><div class="v">{{ punch.created_at|date:"d/m/Y H:i:s" }}</div></div>
       <div class="detail-item"><div class="k">Status</div><div class="v"><span class="pill {{ punch_status.tone }}">{{ punch_status.label }}</span></div></div>

@@ -456,9 +456,9 @@ class ServiceJob(models.Model):
         errors = {}
         if self.contract_id:
             if self.contract.employee.user_id != self.professional_id:
-                errors["contract"] = "Selecione um contrato da sua conta."
+                errors["contract"] = "Selecione um cliente da sua conta."
             if self.client_id and self.contract.company_id != self.client_id:
-                errors["client"] = "Cliente e contrato precisam corresponder."
+                errors["client"] = "O cliente selecionado não confere."
         if self.client_id and self.client.owner_id != self.professional_id:
             contract_matches = (
                 self.contract_id

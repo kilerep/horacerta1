@@ -76,7 +76,7 @@ class WrittenReport(models.Model):
 
     @property
     def client_label(self):
-        """Nome do cliente para exibir: o congelado na emissao, o digitado ou o do contrato/servico antigo."""
+        """Nome do cliente para exibir: o congelado na emissao, o digitado ou o do cliente/servico antigo."""
         if self.snapshot.get("client"):
             return self.snapshot["client"]
         if self.client_name:

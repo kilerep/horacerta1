@@ -214,9 +214,9 @@ def internal_company_detail(request, company_id):
             relationship_id = (request.POST.get("relationship_id") or "").strip()
             relationship = Employee.objects.select_related("company", "user").filter(id=relationship_id, company=company).first()
             if not relationship:
-                messages.error(request, "Contrato invalido para este cliente.")
+                messages.error(request, "Profissional inválido para este cliente.")
             elif not relationship.is_active and relationship.ended_at:
-                messages.error(request, "Este contrato ja esta encerrado.")
+                messages.error(request, "Este atendimento já está encerrado.")
             else:
                 try:
                     _end_employee_company_relationship(
@@ -224,7 +224,7 @@ def internal_company_detail(request, company_id):
                         admin_user=request.user,
                         reason=description,
                     )
-                    messages.success(request, "Contrato encerrado sem apagar login ou historico.")
+                    messages.success(request, "Atendimento encerrado sem apagar login ou histórico.")
                 except ValueError as exc:
                     messages.error(request, str(exc))
         else:
@@ -360,9 +360,9 @@ def internal_employee_detail(request, employee_id):
                 .first()
             )
             if not relationship:
-                messages.error(request, "Contrato invalido para este prestador.")
+                messages.error(request, "Cliente inválido para este prestador.")
             elif not relationship.is_active and relationship.ended_at:
-                messages.error(request, "Este contrato ja esta encerrado.")
+                messages.error(request, "Este atendimento já está encerrado.")
             else:
                 try:
                     _end_employee_company_relationship(
@@ -370,7 +370,7 @@ def internal_employee_detail(request, employee_id):
                         admin_user=request.user,
                         reason=description,
                     )
-                    messages.success(request, "Contrato encerrado sem apagar login ou historico.")
+                    messages.success(request, "Atendimento encerrado sem apagar login ou histórico.")
                 except ValueError as exc:
                     messages.error(request, str(exc))
         elif action == "activate_user":
@@ -818,8 +818,8 @@ def internal_audit(request):
                     action_type=log.action_type,
                     company=log.company,
                     employee=log.employee,
-                    old_value="Contrato ativo",
-                    new_value="Contrato encerrado",
+                    old_value="Atendimento ativo",
+                    new_value="Atendimento encerrado",
                     reason=log.reason,
                     target_url=reverse("internal_employee_detail", args=[log.employee_id]),
                 )

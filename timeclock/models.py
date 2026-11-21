@@ -73,7 +73,7 @@ class Contract(models.Model):
             id=self.employee_id,
             company_id=self.company_id,
         ).exists():
-            errors["employee"] = "Employee do contrato precisa pertencer a empresa do contrato."
+            errors["employee"] = "O profissional precisa pertencer ao cliente informado."
         if errors:
             raise ValidationError(errors)
 
@@ -549,12 +549,12 @@ class ActivityReportRequest(models.Model):
         if self.contract_id:
             contract = Contract.objects.select_related("employee", "company").filter(id=self.contract_id).first()
             if not contract:
-                errors["contract"] = "Vinculo informado nao existe."
+                errors["contract"] = "Cliente informado não existe."
             else:
                 if self.company_id and contract.company_id != self.company_id:
-                    errors["company"] = "Empresa da solicitacao difere da empresa do vinculo."
+                    errors["company"] = "Empresa da solicitação difere da empresa do cliente."
                 if self.employee_id and contract.employee_id != self.employee_id:
-                    errors["employee"] = "Profissional da solicitacao difere do profissional do vinculo."
+                    errors["employee"] = "Profissional da solicitação difere do profissional do cliente."
         if self.date_from and self.date_to and self.date_from > self.date_to:
             errors["date_to"] = "Data final nao pode ser anterior a data inicial."
         if self.status in {self.Status.RESPONDED, self.Status.REVIEWED} and not self.response_report_id:
@@ -674,17 +674,17 @@ class ServiceReport(models.Model):
         if not self.employee_id:
             errors["employee"] = "Relatorio precisa de um profissional valido."
         if not self.contract_id:
-            errors["contract"] = "Relatorio precisa de um vinculo valido."
+            errors["contract"] = "Relatório precisa de um cliente válido."
 
         if self.contract_id:
             contract = Contract.objects.select_related("employee", "company").filter(id=self.contract_id).first()
             if not contract:
-                errors["contract"] = "Vinculo informado nao existe."
+                errors["contract"] = "Cliente informado não existe."
             else:
                 if self.company_id and contract.company_id != self.company_id:
-                    errors["company"] = "Empresa do relatorio difere da empresa do vinculo."
+                    errors["company"] = "Empresa do relatório difere da empresa do cliente."
                 if self.employee_id and contract.employee_id != self.employee_id:
-                    errors["employee"] = "Profissional do relatorio difere do profissional do vinculo."
+                    errors["employee"] = "Profissional do relatório difere do profissional do cliente."
                 if self.company_id and self.employee_id and contract.employee.company_id != self.company_id:
                     errors["employee"] = "Profissional informado nao pertence a empresa."
 

@@ -290,7 +290,7 @@
       }
 
       var clientErrors = [];
-      if (!selectedContract) clientErrors.push("Selecione cliente e contrato.");
+      if (!selectedContract) clientErrors.push("Selecione o cliente.");
       if (!selectedDate) clientErrors.push("Informe a data do registro.");
       if (!times.length) clientErrors.push("Informe pelo menos 1 horario.");
 

@@ -66,7 +66,7 @@ class MeiOnboardingChecklistTests(TestCase):
         self.assertContains(response, "Primeiros passos")
         self.assertContains(response, "Cadastre seu primeiro cliente")
         self.assertContains(response, reverse("mei_client_create"))
-        self.assertContains(response, "Defina o valor por hora do contrato")
+        self.assertContains(response, "Defina o valor por hora do cliente")
         self.assertContains(response, "Registre seu primeiro horário")
         self.assertContains(response, "Gere seu primeiro relatório")
 

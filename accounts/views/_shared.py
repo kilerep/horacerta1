@@ -359,7 +359,7 @@ AUDIT_ACTION_CHOICES = [
     ("cancelled", "Cancelamento de registro"),
     ("restored", "Restauracao de registro"),
     ("admin_note_added", "Observação administrativa"),
-    ("relationship_ended", "Encerramento de contrato"),
+    ("relationship_ended", "Encerramento de atendimento"),
     ("deactivate_company", "Desativacao de empresa"),
     ("activate_company", "Reativacao de empresa"),
     ("deactivate_user", "Desativacao de usuário"),
@@ -428,7 +428,7 @@ def _log_internal_admin_action(*, admin_user, action, target_type, target_id, de
 def _end_employee_company_relationship(*, employee, admin_user, reason):
     clean_reason = (reason or "").strip()
     if not clean_reason:
-        raise ValueError("Informe o motivo para encerrar o contrato.")
+        raise ValueError("Informe o motivo para encerrar o atendimento.")
     now = timezone.now()
     today = timezone.localdate()
     with transaction.atomic():
@@ -453,14 +453,14 @@ def _end_employee_company_relationship(*, employee, admin_user, reason):
             action="relationship_ended",
             target_type="employee",
             target_id=employee.id,
-            description=f"Contrato encerrado com {employee.company.name}. Motivo: {clean_reason}",
+            description=f"Atendimento encerrado com {employee.company.name}. Motivo: {clean_reason}",
         )
         _log_internal_admin_action(
             admin_user=admin_user,
             action="relationship_ended",
             target_type="company",
             target_id=employee.company_id,
-            description=f"Contrato encerrado com {employee.full_name}. Motivo: {clean_reason}",
+            description=f"Atendimento encerrado com {employee.full_name}. Motivo: {clean_reason}",
         )
 
 
@@ -553,7 +553,7 @@ def _commercial_plan_snapshot(subscription):
         "monthly_price": "R$ 79,00",
         "active_provider_limit": 10,
         "description": (
-            "Sua empresa possui acesso aos recursos essenciais para acompanhar prestadores, contratos, "
+            "Sua empresa possui acesso aos recursos essenciais para acompanhar prestadores, clientes, "
             "registros de horário, histórico, conferência, notificações e relatórios."
         ),
     }

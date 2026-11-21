@@ -147,7 +147,7 @@ SERVICE_PLAYBOOKS = {
         "scope_title": "Escopo de beleza ou bem-estar",
         "client_focus": "Conferir procedimento, horário, duração, produtos e observações do atendimento.",
         "checklist": [
-            "Definir procedimento ou pacote contratado.",
+            "Definir procedimento ou pacote combinado.",
             "Registrar local, horário e duração estimada.",
             "Listar produtos, materiais descartáveis e recursos necessários.",
             "Registrar observações importantes do atendimento.",

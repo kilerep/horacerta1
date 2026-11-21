@@ -818,12 +818,12 @@ class MeiMultiCompanyContextTests(TestCase):
         self.assertEqual(response.context["selected_client_row"]["reports_count"], 1)
         self.assertContains(response, "Ver detalhes")
         self.assertContains(response, "Detalhes do cliente")
-        self.assertContains(response, "Editar cliente/contrato")
+        self.assertContains(response, "Editar cliente")
         self.assertContains(response, "Ver histórico")
         self.assertContains(response, "Ver fechamentos")
         self.assertNotContains(response, "Gerar relatório de serviço")
         self.assertNotContains(response, "Pausar cliente")
-        self.assertNotContains(response, "Encerrar contrato")
+        self.assertNotContains(response, "Encerrar atendimento")
         self.assertNotContains(response, "Editar dados")
 
     def test_mei_service_report_prepare_page_is_future_ready(self):
@@ -1193,7 +1193,7 @@ class MeiMultiCompanyContextTests(TestCase):
             },
         )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Selecione um cliente/contrato ativo da sua conta")
+        self.assertContains(response, "Selecione um cliente ativo da sua conta")
         punch.refresh_from_db()
         self.assertEqual(timezone.localtime(punch.timestamp).strftime("%H:%M"), "08:00")
 
