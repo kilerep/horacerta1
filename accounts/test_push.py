@@ -110,6 +110,20 @@ class SubscribeTests(PushBase):
         self.assertEqual(response.json()["sent"], 1)
         self.assertEqual(self.sent_payloads()[0]["title"], "HoraCerta")
 
+    def test_only_the_right_button_shows(self):
+        """[hidden] precisa valer mesmo com o estilo .btn (antes os 3 botoes apareciam sempre)."""
+        html = self.client.get(reverse("mei_profile")).content.decode()
+        self.assertIn("[data-push-panel] [hidden]{display:none!important}", html)
+        self.assertRegex(html, r"data-push-try hidden")
+
+    def test_client_error_is_logged(self):
+        with self.assertLogs("accounts.pwa", level="WARNING") as logs:
+            response = self.client.post(reverse("push_client_error"),
+                                        data=json.dumps({"stage": "ativar", "error": "AbortError: push service error"}),
+                                        content_type="application/json")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("AbortError: push service error", logs.output[0])
+
     @override_settings(VAPID_PUBLIC_KEY="", VAPID_PRIVATE_KEY="")
     def test_without_keys_feature_is_off(self):
         response = self.client.post(reverse("register_push"), data=json.dumps(SUB), content_type="application/json")

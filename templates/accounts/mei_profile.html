@@ -160,6 +160,7 @@
       <p class="muted" style="margin:8px 0 0;" data-push-status role="status">
         {% if push_device_count %}Avisos ativos em {{ push_device_count }} aparelho{{ push_device_count|pluralize }}.{% else %}Avisos desligados neste aparelho.{% endif %}
       </p>
+      <style>[data-push-panel] [hidden]{display:none!important}</style>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
         <button class="btn primary" type="button" data-push-on>Ativar avisos neste aparelho</button>
         <button class="btn" type="button" data-push-off hidden>Desligar avisos neste aparelho</button>

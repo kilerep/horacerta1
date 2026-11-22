@@ -43,6 +43,7 @@ urlpatterns = [
     path("api/push/subscribe/", pwa.register_push_subscription, name="register_push"),
     path("api/push/unsubscribe/", pwa.unregister_push_subscription, name="unregister_push"),
     path("api/push/teste/", pwa.push_test, name="push_test"),
+    path("api/push/erro/", pwa.push_client_error, name="push_client_error"),
     path("api/pwa/status/", pwa.status, name="pwa_status"),
     path("", include("timeclock.urls")),
     path("", include("production.urls")),
