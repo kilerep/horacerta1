@@ -9,6 +9,7 @@ from django.urls import include, path
 from accounts import pwa
 from accounts import views as account_views
 from timeclock import offline as timeclock_offline
+from timeclock import offline_mirror
 
 # Caminho do admin do Django configurável por env var. Deixar em "/admin/" (o
 # padrão) funciona, mas é o primeiro caminho que qualquer bot de varredura
@@ -25,6 +26,7 @@ urlpatterns = [
     path("ping/", pwa.ping, name="pwa_ping"),
     path("me/offline/sincronizar/", timeclock_offline.offline_sync, name="offline_sync"),
     path("me/offline/perfil/", timeclock_offline.offline_profile_view, name="offline_profile"),
+    path("me/offline/copia/", offline_mirror.offline_mirror_view, name="offline_mirror"),
     path(ADMIN_URL_PATH, admin.site.urls),
     path(
         "password-change/",
