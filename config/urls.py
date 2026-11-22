@@ -41,6 +41,8 @@ urlpatterns = [
     path("", include("accounts.urls")),
     path("", include("services.urls")),
     path("api/push/subscribe/", pwa.register_push_subscription, name="register_push"),
+    path("api/push/unsubscribe/", pwa.unregister_push_subscription, name="unregister_push"),
+    path("api/push/teste/", pwa.push_test, name="push_test"),
     path("api/pwa/status/", pwa.status, name="pwa_status"),
     path("", include("timeclock.urls")),
     path("", include("production.urls")),

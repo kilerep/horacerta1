@@ -42,7 +42,7 @@ def ensure_today_reminder(user):
         create_internal_notification(
             notification_type=InternalNotification.NotificationType.SERVICE_REMINDER,
             title=title, message=f"Agenda de hoje: {names}.", recipient_user=user,
-            target_url=reverse("service_agenda"),
+            target_url=reverse("service_agenda"), push=True,
         )
     return jobs
 

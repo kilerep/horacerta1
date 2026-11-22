@@ -992,7 +992,7 @@ def _persistent_notification_exists(*, user, title, target_url):
     ).exists()
 
 
-def _create_mei_report_notification(*, report, title, message, target_url):
+def _create_mei_report_notification(*, report, title, message, target_url, push=False):
     user = getattr(getattr(report, "employee", None), "user", None)
     if not user or _persistent_notification_exists(user=user, title=title, target_url=target_url):
         return None
@@ -1003,6 +1003,7 @@ def _create_mei_report_notification(*, report, title, message, target_url):
         title=title,
         message=message,
         target_url=target_url,
+        push=push,
     )
 
 
@@ -1033,6 +1034,7 @@ def _notify_service_report_viewed(report, viewed_at=None):
         title="Relatório visualizado",
         message=f"O relatório da {company_name} foi aberto pelo cliente em {local_viewed_at}.",
         target_url=reverse("mei_service_report_detail", args=[report.id]),
+        push=True,
     )
 
 
@@ -1049,6 +1051,7 @@ def _notify_service_report_client_response(report, *, contested):
         title=title,
         message=message,
         target_url=reverse("mei_service_report_detail", args=[report.id]),
+        push=True,
     )
 
 

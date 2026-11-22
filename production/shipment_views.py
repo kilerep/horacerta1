@@ -289,6 +289,7 @@ def _notify_owner(recipient, action):
         message=f"{who} {action} o romaneio de envio para {note.destination_company}.",
         recipient_user=note.owner,
         target_url=reverse("shipment_detail", args=[note.id]),
+        push=True,
     )
 
 

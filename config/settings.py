@@ -46,6 +46,12 @@ SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", "kilerepp@gmail.com").strip()
 SUPPORT_WHATSAPP = "".join(ch for ch in os.getenv("SUPPORT_WHATSAPP", "") if ch.isdigit())
 COMPANY_LEGAL_NAME = os.getenv("COMPANY_LEGAL_NAME", "").strip()
 COMPANY_CNPJ = os.getenv("COMPANY_CNPJ", "").strip()
+
+# Avisos no celular (notificacao push). Sem as duas chaves o recurso fica desligado.
+# Gerar com: python manage.py push_gerar_chaves
+VAPID_PUBLIC_KEY = os.getenv("VAPID_PUBLIC_KEY", "").strip()
+VAPID_PRIVATE_KEY = os.getenv("VAPID_PRIVATE_KEY", "").strip()
+VAPID_SUBJECT = os.getenv("VAPID_SUBJECT", "https://horacertagestao.com.br").strip()
 ALLOW_DEBUG_IN_REMOTE = _env_bool("ALLOW_DEBUG_IN_REMOTE", False)
 
 app_base_host = (urlparse(APP_BASE_URL).hostname or "").strip() if APP_BASE_URL else ""
