@@ -57,6 +57,11 @@
   });
   trySync();
   window.addEventListener("online", trySync);
+  window.addEventListener("hc:back-online", function () {
+    trySync().then(function () {
+      if (window.HoraCertaMirror) window.HoraCertaMirror.refresh(userId, true);
+    });
+  });
   window.addEventListener("offline", function () { refreshBanner(); });
   setInterval(function () { api.pending(userId).then(function (items) { if (items.length && navigator.onLine) trySync(); }); }, 60000);
 
@@ -94,6 +99,18 @@
 
   // Sair da conta: apaga a lista guardada para a proxima pessoa nao ver.
   document.querySelectorAll('a[href$="/logout/"]').forEach(function (link) {
-    link.addEventListener("click", function () { api.clearProfile(); });
+    link.addEventListener("click", function (event) {
+      api.pending(userId).then(function (items) {
+        var waiting = items.length;
+        if (waiting && !window.confirm(
+          "Você tem " + regs(waiting) + " que ainda não " + (waiting === 1 ? "foi enviado" : "foram enviados") +
+          ". Eles continuam guardados e serão enviados quando você entrar de novo neste aparelho com internet. Sair mesmo assim?"
+        )) return;
+        api.clearProfile();
+        var wipe = window.HoraCertaMirror ? window.HoraCertaMirror.wipeAll() : Promise.resolve();
+        wipe.then(function () { window.location.href = link.href; });
+      });
+      event.preventDefault();
+    });
   });
 })();
