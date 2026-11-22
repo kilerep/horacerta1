@@ -211,6 +211,7 @@
   <p class="foot">Seus dados ficam guardados neste aparelho de forma criptografada e só saem dele para a sua conta.</p>
 </main>
 
+<script>window.HC_OFFLINE_PATHS = {clientes: "{% url 'mei_contract' %}", resumo: "{% url 'mei_panel' %}", historico: "{% url 'mei_history' %}", agenda: "{% url 'service_agenda' %}", producao: "{% url 'production_sheet_list' %}", romaneios: "{% url 'shipment_list' %}"};</script>
 <script>{{ offline_store_js|safe }}</script>
 <script>{{ offline_mirror_js|safe }}</script>
 <script>{{ offline_app_js|safe }}</script>

@@ -19,10 +19,11 @@
   var PING_URL = "/ping/";
 
   var VIEWS = ["registrar", "resumo", "historico", "clientes", "agenda", "producao", "romaneios"];
-  var PATHS = {
-    registrar: "/me/", resumo: "/me/painel/", historico: "/me/historico/", clientes: "/me/contrato/",
+  // enderecos reais das telas vem do servidor (pagina /offline/, via {% url %})
+  var PATHS = Object.assign({
+    registrar: "/me/", resumo: "/me/painel/", historico: "/me/historico/", clientes: "/me/clientes/",
     agenda: "/me/servicos/agenda/", producao: "/me/relatorios-producao/", romaneios: "/me/relatorios-producao/notas/",
-  };
+  }, window.HC_OFFLINE_PATHS || {});
 
   var state = { profile: null, data: null, pending: [], online: false, view: "registrar", sheet: null };
 
@@ -51,7 +52,7 @@
     if (/^\/me\/relatorios-producao\/notas\//.test(path)) return "romaneios";
     if (/^\/me\/relatorios-producao\//.test(path)) return "producao";
     if (/^\/me\/servicos\//.test(path)) return "agenda";
-    if (/^\/me\/(contrato|clientes)\//.test(path)) return "clientes";
+    if (path.indexOf(PATHS.clientes) === 0 || /^\/me\/clientes\//.test(path)) return "clientes";
     if (/^\/me\/historico\//.test(path)) return "historico";
     if (/^\/me\/painel\//.test(path)) return "resumo";
     return "registrar";
