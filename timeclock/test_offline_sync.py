@@ -129,6 +129,19 @@ class OfflineSyncTests(TestCase):
         self.assertIn("Registrar agora", html)
         self.assertNotIn("Condomínio Aurora", html)
 
+    def test_offline_page_is_the_full_offline_app(self):
+        """Offline 2.0 etapa 2: as telas de consulta rodam na pagina offline, lendo a copia cifrada."""
+        html = self.client.get(reverse("offline")).content.decode()
+
+        self.assertIn("root.HoraCertaMirror", html)          # copia criptografada embutida
+        self.assertIn("window.HoraCertaOfflineApp", html)    # telas offline embutidas
+        for tab in ("registrar", "resumo", "historico", "clientes", "agenda", "producao", "romaneios"):
+            self.assertIn(f'data-tab="{tab}"', html)
+        self.assertIn('[data-theme="indigo-horacerta"]', html)  # cores do tema escolhido
+        self.assertIn('"oceano-noturno"', html)                 # lista de temas validos
+        self.assertNotIn(str(self.contract.id), html)          # nenhum dado pessoal no HTML
+        self.assertNotIn("Condomínio Aurora", html)
+
     def test_logged_pages_load_the_offline_bridge(self):
         html = self.client.get(reverse("employee_dashboard")).content.decode()
 

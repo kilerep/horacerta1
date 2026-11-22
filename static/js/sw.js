@@ -20,9 +20,14 @@
  * (nenhum dado pessoal no HTML) e lê do aparelho a lista mínima de clientes e a fila
  * de registros (IndexedDB, ver static/js/offline_store.js). O envio da fila é feito
  * pela página, com sessão e CSRF, nunca por este service worker.
+ *
+ * v6 (nov/2026, Offline 2.0): /offline/ virou o app sem internet completo (Registrar,
+ * Resumo, Histórico, Clientes, Agenda, Produção, Romaneios). Continua genérica: os dados
+ * vêm da cópia CRIPTOGRAFADA do aparelho (offline_mirror.js), nunca de HTML guardado.
+ * Ao cair a rede em qualquer tela, esta página abre no mesmo endereço e mostra a aba certa.
  */
 
-const SW_VERSION = "hc-sw-v5";
+const SW_VERSION = "hc-sw-v6";
 const OFFLINE_CACHE = `hc-offline-${SW_VERSION}`;
 const PUBLIC_CACHE = `hc-public-${SW_VERSION}`;
 const OFFLINE_PAGE = "/offline/";
