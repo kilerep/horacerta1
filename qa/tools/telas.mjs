@@ -55,7 +55,7 @@ for (const p of paths) {
     await loaded;
     await sleep(700);
     // esconde o tour automatico para ver a tela de verdade
-    await send("Runtime.evaluate", { expression: "document.getElementById('hc-tour-overlay')?.remove(); document.querySelectorAll('.hc-tour-bubble,[class*=tour-bubble]').forEach(e=>e.remove())" });
+    await send("Runtime.evaluate", { expression: "document.getElementById('hc-tour-overlay')?.remove(); document.querySelectorAll('.hc-tour-bubble,[class*=tour-bubble]').forEach(e=>e.remove()); document.querySelectorAll('.hc-tour-highlight').forEach(e=>e.classList.remove('hc-tour-highlight'))" });
     const metrics = await send("Page.getLayoutMetrics");
     const h = Math.min(Math.ceil(metrics.result.cssContentSize.height), 4000);
     const shot = await send("Page.captureScreenshot", { format: "png", captureBeyondViewport: true, clip: { x: 0, y: 0, width: d.width, height: h, scale: d.mobile ? 0.5 : 0.6 } });
