@@ -22,10 +22,23 @@ def offline(request):
     O JS da fila vai embutido para a pagina funcionar inteira a partir do cache."""
     from django.contrib.staticfiles import finders
 
-    path = finders.find("js/offline_store.js")
-    with open(path, encoding="utf-8") as handle:
-        offline_store_js = handle.read()
-    return render(request, "offline.html", {"offline_store_js": offline_store_js})
+    from accounts.models import User
+
+    def read_static(name):
+        with open(finders.find(name), encoding="utf-8") as handle:
+            return handle.read()
+
+    return render(
+        request,
+        "offline.html",
+        {
+            "offline_store_js": read_static("js/offline_store.js"),
+            "offline_mirror_js": read_static("js/offline_mirror.js"),
+            "offline_app_js": read_static("js/offline_app.js"),
+            "tokens_css": read_static("css/design_tokens.css"),
+            "theme_names_json": json.dumps([value for value, _label in User.VisualTheme.choices]),
+        },
+    )
 
 
 @require_GET
