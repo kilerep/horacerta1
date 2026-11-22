@@ -26,6 +26,17 @@
       body: JSON.stringify(body || {}),
     }).then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || "Falha"); return j; }); });
   }
+  // erro ao ativar vai para o registro do servidor (para o suporte enxergar a causa)
+  function report(stage, err) {
+    try {
+      post("/api/push/erro/", {
+        stage: stage,
+        error: String((err && (err.name + ": " + err.message)) || err).slice(0, 300),
+        permission: window.Notification ? Notification.permission : "",
+        standalone: !!(window.matchMedia && window.matchMedia("(display-mode: standalone)").matches),
+      }).catch(function () {});
+    } catch (e) {}
+  }
   function keyBytes(base64) {
     var pad = "=".repeat((4 - (base64.length % 4)) % 4);
     var raw = atob((base64 + pad).replace(/-/g, "+").replace(/_/g, "/"));
@@ -95,7 +106,8 @@
       show(true);
       say("Avisos ativos neste aparelho.");
     }).catch(function (err) {
-      say(err.message || "Não foi possível ativar os avisos.");
+      report("ativar", err);
+      say("Não foi possível ativar: " + (err.message || "erro desconhecido") + ". Já avisamos o suporte.");
     }).then(function () { btnOn.disabled = false; });
   });
 

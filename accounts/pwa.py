@@ -206,6 +206,23 @@ def unregister_push_subscription(request):
 
 @login_required
 @require_POST
+def push_client_error(request):
+    """O celular conta por que nao conseguiu ativar os avisos (fica so no registro do servidor)."""
+    payload = _json_body(request) or {}
+    logger.warning(
+        "Avisos no celular: falha ao ativar (usuario %s, etapa %s, permissao %s, app instalado %s): %s | %s",
+        request.user.id,
+        str(payload.get("stage") or "")[:20],
+        str(payload.get("permission") or "")[:12],
+        bool(payload.get("standalone")),
+        str(payload.get("error") or "")[:300],
+        (request.META.get("HTTP_USER_AGENT") or "")[:120],
+    )
+    return JsonResponse({"ok": True})
+
+
+@login_required
+@require_POST
 def push_test(request):
     """Manda um aviso de teste para os aparelhos do proprio usuario."""
     from accounts.push import send_push_to_user
