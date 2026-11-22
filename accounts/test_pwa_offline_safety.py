@@ -47,7 +47,7 @@ class ServiceWorkerPrivacyTests(SimpleTestCase):
     def test_service_worker_is_v5_and_never_caches_private_pages(self):
         body = self._sw()
 
-        self.assertIn('const SW_VERSION = "hc-sw-v6";', body)
+        self.assertIn('const SW_VERSION = "hc-sw-v7";', body)
         # allowlist explicita de paginas publicas; "/" fica de fora (redireciona logado)
         self.assertIn('new Set(["/help/", "/terms/", "/privacy/"])', body)
         self.assertNotIn("ESSENTIAL_ASSETS", body)

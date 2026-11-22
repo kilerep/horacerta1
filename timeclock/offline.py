@@ -22,7 +22,8 @@ from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.views.decorators.http import require_POST
 
-from .models import Contract, Punch
+from .models import Contract, OfflineReceipt, Punch
+from .offline_actions import apply_action
 from .services import report_locks_day
 
 OFFLINE_MAX_AGE_DAYS = 7
@@ -70,11 +71,16 @@ def _accept_punch(user, item, now):
     if occurred < now - timedelta(days=OFFLINE_MAX_AGE_DAYS):
         return {"status": "erro", "motivo": f"Registro com mais de {OFFLINE_MAX_AGE_DAYS} dias: lance pelo horário manual."}
 
+    contract_id = item.get("contract_id")
+    if not contract_id and item.get("client_from_ref"):
+        # entrada/saida de um cliente criado sem internet na mesma fila
+        receipt = OfflineReceipt.objects.filter(client_ref=item["client_from_ref"], owner=user, kind="client_new").first()
+        contract_id = receipt.object_id if receipt else None
     contract = (
-        Contract.objects.filter(id=item.get("contract_id"), employee__user=user, is_active=True)
+        Contract.objects.filter(id=contract_id, employee__user=user, is_active=True)
         .select_related("employee")
         .first()
-    )
+    ) if contract_id else None
     if contract is None:
         return {"status": "erro", "motivo": "Cliente não encontrado ou inativo na sua conta."}
 
@@ -158,7 +164,7 @@ def offline_sync(request):
         elif kind == "production_entry":
             outcome = _accept_production_entry(request.user, item)
         else:
-            outcome = {"status": "erro", "motivo": "Tipo de registro desconhecido."}
+            outcome = apply_action(request.user, item, now) or {"status": "erro", "motivo": "Tipo de registro desconhecido."}
         results.append({"client_ref": item.get("client_ref"), **outcome})
     return JsonResponse({"resultados": results, "perfil": offline_profile(request.user)})
 

@@ -124,6 +124,13 @@
     .link{min-height:40px;padding:0;border:0;background:transparent;color:var(--accent)}
     .btn{min-height:44px}
     .reopen{min-height:36px;padding:0 12px;font-size:13px;border-radius:999px}
+    .stack{display:grid;gap:12px}
+    .row4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+    .items{display:grid;gap:6px}
+    textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--field);color:var(--text);font:inherit;font-size:16px}
+    details.card summary{cursor:pointer;list-style:none;min-height:28px;display:flex;align-items:center}
+    details.card summary::-webkit-details-marker{display:none}
+    .mini{min-height:36px;padding:0 12px;font-size:13px;border-radius:10px}
     [hidden]{display:none!important}
     a{color:var(--accent)}
   </style>
@@ -148,6 +155,7 @@
   </nav>
 
   <p class="copy-info" id="copyInfo" role="note" hidden></p>
+  <p class="msg" id="appMsg" role="status" hidden></p>
   <div id="viewOther" hidden></div>
 
   <div id="viewRegistrar" style="display:grid;gap:14px">
@@ -206,6 +214,7 @@
     <button type="button" id="syncBtn">Enviar agora</button>
   </section>
 
+    <div id="registrarExtras" style="display:grid;gap:14px"></div>
   </div>
 
   <p class="foot">Seus dados ficam guardados neste aparelho de forma criptografada e só saem dele para a sua conta.</p>
@@ -214,6 +223,7 @@
 <script>window.HC_OFFLINE_PATHS = {clientes: "{% url 'mei_contract' %}", resumo: "{% url 'mei_panel' %}", historico: "{% url 'mei_history' %}", agenda: "{% url 'service_agenda' %}", producao: "{% url 'production_sheet_list' %}", romaneios: "{% url 'shipment_list' %}"};</script>
 <script>{{ offline_store_js|safe }}</script>
 <script>{{ offline_mirror_js|safe }}</script>
+<script>{{ offline_forms_js|safe }}</script>
 <script>{{ offline_app_js|safe }}</script>
 <script>
 (function () {
@@ -250,9 +260,9 @@
       $("queueCount").textContent = items.length;
       $("syncBtn").disabled = !online;
       $("queue").innerHTML = items.map(function (i) {
-        var title = i.kind === "punch"
-          ? "Horário " + hhmm(i.occurred_at) + " · " + nameOf(profile.contracts, i.contract_id)
-          : "Item " + (i.fields.item_code || "sem código") + " · " + nameOf(profile.sheets, i.sheet_id);
+        var title = window.HoraCertaOfflineApp ? window.HoraCertaOfflineApp.describe(i)
+          : (i.kind === "punch" ? "Horário " + hhmm(i.occurred_at) + " · " + nameOf(profile.contracts, i.contract_id)
+          : "Registro guardado");
         var detail = i.last_error ? "Não aceito: " + i.last_error : "Feito em " + dayLabel(i.occurred_at) + " às " + hhmm(i.occurred_at);
         return '<li class="' + (i.last_error ? "err" : "") + '"><span>' + title.replace(/</g, "&lt;") + "<small>" + detail.replace(/</g, "&lt;") +
           '</small></span><button class="del" type="button" data-del="' + i.client_ref + '">Apagar</button></li>';
