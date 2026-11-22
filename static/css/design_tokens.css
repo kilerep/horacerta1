@@ -614,6 +614,102 @@
   --shadow-md: var(--shadow-strong);
 }
 
+[data-theme="indigo-horacerta"] {
+  color-scheme: dark;
+
+  --color-primary: #38bdf8;
+  --color-primary-hover: #67e8f9;
+  --color-secondary: #818cf8;
+  --color-bg: #0e0c2a;
+  --color-bg-soft: #141135;
+  --bg-1: #08061c;
+  --bg-2: #0c0a24;
+  --bg-3: #12103a;
+  --color-surface: #15123a;
+  --color-surface-2: #1b1747;
+  --color-card: #1b1747;
+  --color-card-strong: #231e58;
+  --color-text-strong: #ffffff;
+  --color-text: #ecebff;
+  --color-text-muted: #aeabdb;
+  --color-clock-main: #e0f7ff;
+  --color-border: rgba(165, 160, 236, 0.28);
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --color-primary-strong: #a5f3fc;
+  --color-primary-soft: rgba(56, 189, 248, 0.18);
+  --color-accent: #a5f3fc;
+  --shadow-color: rgba(4, 3, 20, 0.5);
+  --gradient-page: radial-gradient(1100px 560px at 100% -10%, rgba(67, 56, 202, 0.38), transparent 62%), var(--color-bg);
+  --gradient-card: radial-gradient(circle at 12% 0, rgba(56, 189, 248, 0.12), transparent 44%), linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.02));
+  --gradient-hero: radial-gradient(900px 420px at 6% -20%, rgba(67, 56, 202, 0.45), transparent 62%), linear-gradient(180deg, var(--surface-raised), var(--surface-subtle));
+  --gradient-panel: var(--gradient-card);
+  --gradient-button: linear-gradient(135deg, var(--color-primary-strong), var(--color-primary));
+
+  --surface-raised: #1b1747;
+  --surface-subtle: #15123a;
+  --surface-soft: #231e58;
+  --surface-brand-soft: rgba(56, 189, 248, 0.16);
+  --surface-brand-strong: var(--gradient-button);
+
+  --text-inverse: #0b1030;
+
+  --border-strong: rgba(165, 160, 236, 0.42);
+  --color-border-strong: var(--border-strong);
+  --border-brand: rgba(56, 189, 248, 0.55);
+
+  --icon-bg: rgba(56, 189, 248, 0.16);
+  --icon-border: rgba(103, 232, 249, 0.4);
+  --icon-fg: #a5f3fc;
+
+  --menu-hover-bg: #241f5c;
+  --menu-active-bg: linear-gradient(90deg, rgba(56, 189, 248, 0.24), rgba(99, 102, 241, 0.12));
+  --menu-active-border: rgba(103, 232, 249, 0.5);
+  --menu-active-text: #e0f7ff;
+
+  --btn-bg: #1b1747;
+  --btn-border: rgba(165, 160, 236, 0.36);
+  --btn-text: #ecebff;
+  --btn-hover-bg: #241f5c;
+  --btn-hover-border: rgba(165, 160, 236, 0.55);
+  --btn-primary-shadow: 0 10px 22px rgba(56, 189, 248, 0.32);
+
+  --field-bg: #15123a;
+  --field-border: rgba(165, 160, 236, 0.36);
+  --field-placeholder: #aeabdb;
+  --select-arrow: #cfcdf0;
+  --file-btn-bg: rgba(56, 189, 248, 0.16);
+  --file-btn-border: rgba(103, 232, 249, 0.45);
+  --file-btn-text: #cffafe;
+
+  --table-row-hover: #262063;
+
+  --badge-bg: #241f5c;
+  --badge-border: rgba(165, 160, 236, 0.36);
+  --badge-text: #dcdaf7;
+  --badge-solid-bg: #38bdf8;
+  --badge-solid-text: #0b1030;
+
+  --success-bg: rgba(34, 197, 94, 0.14);
+  --success-border: rgba(34, 197, 94, 0.42);
+  --success-text: #bbf7d0;
+  --warning-bg: rgba(245, 158, 11, 0.14);
+  --warning-border: rgba(245, 158, 11, 0.46);
+  --warning-text: #fde68a;
+  --danger-bg: rgba(239, 68, 68, 0.15);
+  --danger-border: rgba(239, 68, 68, 0.45);
+  --danger-text: #fecaca;
+
+  --overlay-bg: rgba(4, 3, 20, 0.7);
+
+  --shadow-xs: 0 1px 2px rgba(4, 3, 20, 0.4);
+  --shadow-soft: 0 8px 20px rgba(4, 3, 20, 0.38);
+  --shadow-strong: 0 18px 36px var(--shadow-color);
+  --shadow-sm: var(--shadow-soft);
+  --shadow-md: var(--shadow-strong);
+}
+
 [data-theme] {
   --primary: var(--color-primary);
   --border: var(--color-border);
@@ -628,4 +724,33 @@
   --radius-lg: 18px;
   --radius-xl: 24px;
   --focus-ring: 0 0 0 3px var(--color-primary-soft);
+}
+
+/* Indigo HoraCerta (2026-11-22): tema do icone novo. Os numeros principais (relogio do dia e
+   numeros do Meu resumo) ganham brilho ciano para ficarem em destaque. */
+[data-theme="indigo-horacerta"] body {
+  background: var(--gradient-page);
+  background-attachment: fixed;
+}
+[data-theme="indigo-horacerta"] .hc-clock {
+  color: var(--color-clock-main);
+  background: linear-gradient(180deg, #ffffff 10%, #67e8f9 95%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(0 8px 22px rgba(56, 189, 248, 0.35));
+}
+[data-theme="indigo-horacerta"] .rs-numbers {
+  background: var(--gradient-card), var(--color-card);
+  border-color: var(--border-brand);
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.08), 0 14px 30px rgba(4, 3, 20, 0.45);
+}
+[data-theme="indigo-horacerta"] .rs-number strong {
+  color: #ffffff;
+  text-shadow: 0 0 18px rgba(56, 189, 248, 0.35);
+}
+[data-theme="indigo-horacerta"] .rs-number:first-child strong,
+[data-theme="indigo-horacerta"] .rs-number--money strong {
+  color: #67e8f9;
 }

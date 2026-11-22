@@ -15,6 +15,7 @@ class User(AbstractUser):
         CLARO = "claro-operacional", "Claro Operacional"
         AREIA = "areia-terracota", "Areia Terracota"
         OCEANO = "oceano-noturno", "Oceano Noturno"
+        INDIGO = "indigo-horacerta", "Índigo HoraCerta"
 
     role = models.CharField(
         max_length=20,

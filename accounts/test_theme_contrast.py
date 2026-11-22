@@ -10,7 +10,8 @@ class ThemeContrastTests(SimpleTestCase):
         themes = parse_themes()
 
         for name in ("graphite-premium", "professional-neutral", "brazil-corporate",
-                     "claro-operacional", "rubro-professional", "areia-terracota", "oceano-noturno"):
+                     "claro-operacional", "rubro-professional", "areia-terracota", "oceano-noturno",
+                     "indigo-horacerta"):
             self.assertIn(name, themes)
             self.assertIn("--color-primary", themes[name])
 
