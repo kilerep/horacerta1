@@ -40,14 +40,40 @@
     return;
   }
 
+  function sameKey(sub) {
+    var k = sub && sub.options && sub.options.applicationServerKey;
+    if (!k) return false;
+    var a = new Uint8Array(k), b = keyBytes(key);
+    if (a.length !== b.length) return false;
+    for (var i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+    return true;
+  }
+
+  // Inscricao valida = feita com a chave atual do servidor. Uma antiga (de versao
+  // anterior do app ou de outra chave) e descartada: o servidor nao consegue usa-la.
   function current() {
-    return navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); });
+    return navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); })
+      .then(function (sub) {
+        if (sub && !sameKey(sub)) return sub.unsubscribe().then(function () { return null; }, function () { return null; });
+        return sub;
+      });
   }
 
   current().then(function (sub) {
-    show(!!sub);
-    if (sub) say("Avisos ativos neste aparelho.");
-    else if (Notification.permission === "denied") say("Os avisos estão bloqueados neste aparelho. Libere nas configurações do navegador para o HoraCerta.");
+    if (!sub) {
+      show(false);
+      if (Notification.permission === "denied") say("Os avisos estão bloqueados neste aparelho. Libere nas configurações do navegador para o HoraCerta.");
+      else say("Avisos desligados neste aparelho.");
+      return;
+    }
+    // o aparelho ja aceitou: garante que o servidor conhece este aparelho (reenviar e seguro)
+    return post(panel.getAttribute("data-push-subscribe"), sub.toJSON()).then(function () {
+      show(true);
+      say("Avisos ativos neste aparelho.");
+    }, function () {
+      show(false);
+      say("Não foi possível confirmar os avisos com o servidor. Toque em Ativar de novo.");
+    });
   });
 
   btnOn.addEventListener("click", function () {
@@ -56,8 +82,13 @@
     Notification.requestPermission().then(function (perm) {
       if (perm !== "granted") throw new Error("Permissão não concedida. Libere as notificações do HoraCerta nas configurações do navegador.");
       return navigator.serviceWorker.ready;
-    }).then(function (reg) {
-      return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(key) });
+    }).then(function () {
+      return current().then(function (old) {
+        if (old) return old;
+        return navigator.serviceWorker.ready.then(function (reg) {
+          return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(key) });
+        });
+      });
     }).then(function (sub) {
       return post(panel.getAttribute("data-push-subscribe"), sub.toJSON());
     }).then(function () {
@@ -85,7 +116,9 @@
   btnTry.addEventListener("click", function () {
     btnTry.disabled = true;
     post(panel.getAttribute("data-push-test")).then(function (j) {
-      say(j.sent ? "Aviso de teste enviado. Ele deve aparecer em alguns segundos." : "Nenhum aparelho recebeu. Desligue e ative os avisos de novo.");
+      if (j.sent) { say("Aviso de teste enviado. Ele deve aparecer em alguns segundos."); return; }
+      show(false);
+      say("Este aparelho não está ligado no servidor. Toque em Ativar avisos neste aparelho.");
     }).catch(function () {
       say("Não foi possível enviar o aviso de teste.");
     }).then(function () { btnTry.disabled = false; });
