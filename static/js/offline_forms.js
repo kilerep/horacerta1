@@ -80,7 +80,7 @@
 
   function clientForm() {
     return '<details class="card"><summary><b>+ Novo cliente</b></summary><form data-offline-form="client_new" class="stack">' +
-      field("Nome do cliente", '<input name="name" required maxlength="120" placeholder="Ex.: Condomínio Aurora">') +
+      field("Nome do cliente", '<input name="name" required maxlength="120" placeholder="Ex.: Padaria Central">') +
       '<div class="row">' + field("Valor por hora (R$)", '<input name="hourly_rate" inputmode="decimal" placeholder="Ex.: 85,00">') +
       field("WhatsApp", '<input name="whatsapp" inputmode="tel" placeholder="Opcional">') + "</div>" +
       '<button type="submit">Guardar cliente</button></form></details>';
