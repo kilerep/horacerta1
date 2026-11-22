@@ -15,7 +15,9 @@ def create_internal_notification(
     recipient_company=None,
     target_url="",
     audience=None,
+    push=False,
 ):
+    """Cria o aviso do sininho. Com push=True tambem avisa no celular (se o usuario ativou)."""
     if not recipient_user and not recipient_company:
         return None
     if audience is None:
@@ -25,7 +27,7 @@ def create_internal_notification(
             audience = InternalNotification.Audience.INTERNAL_ADMIN
         else:
             audience = InternalNotification.Audience.MEI
-    return InternalNotification.objects.create(
+    notification = InternalNotification.objects.create(
         recipient_user=recipient_user,
         recipient_company=recipient_company,
         actor_user=actor_user,
@@ -35,6 +37,14 @@ def create_internal_notification(
         message=message,
         target_url=target_url or "",
     )
+    if push and recipient_user:
+        from accounts.push import send_push_after_commit
+
+        send_push_after_commit(
+            recipient_user, title=title, body=message, url=target_url or "/",
+            tag=f"hc-{notification_type}",
+        )
+    return notification
 
 
 def notify_internal_staff(*, notification_type, title, message, actor_user=None, target_url=""):

@@ -1,4 +1,5 @@
 {% extends "accounts/base.html" %}
+{% load static %}
 {% block title %}Meu Perfil{% endblock %}
 {% block page_title %}Meu Perfil{% endblock %}
 
@@ -149,6 +150,27 @@
       </div>
     </div>
   </section>
+
+  <section class="panel" style="margin-top:14px;" id="avisos-celular" data-push-panel
+           data-push-key="{{ push_public_key }}" data-push-subscribe="{% url 'register_push' %}"
+           data-push-unsubscribe="{% url 'unregister_push' %}" data-push-test="{% url 'push_test' %}">
+    <h2 style="margin:0;">Avisos no celular</h2>
+    <p class="muted" style="margin:8px 0 0;">Receba na tela do celular, mesmo com o app fechado: cliente abriu o orçamento, romaneio visto ou autorizado, serviços do dia (7h), lembrete de saída aberta (19h) e relatório aberto ou conferido pelo cliente.</p>
+    {% if push_public_key %}
+      <p class="muted" style="margin:8px 0 0;" data-push-status role="status">
+        {% if push_device_count %}Avisos ativos em {{ push_device_count }} aparelho{{ push_device_count|pluralize }}.{% else %}Avisos desligados neste aparelho.{% endif %}
+      </p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+        <button class="btn primary" type="button" data-push-on>Ativar avisos neste aparelho</button>
+        <button class="btn" type="button" data-push-off hidden>Desligar avisos neste aparelho</button>
+        <button class="btn" type="button" data-push-try hidden>Enviar aviso de teste</button>
+      </div>
+      <p class="muted" style="margin:8px 0 0;font-size:13px;">No iPhone, os avisos só funcionam com o HoraCerta instalado na tela de início (Compartilhar → Adicionar à Tela de Início).</p>
+    {% else %}
+      <p class="muted" style="margin:8px 0 0;">Os avisos no celular ainda não estão ligados no servidor.</p>
+    {% endif %}
+  </section>
+  {% if push_public_key %}<script src="{% static 'js/push.js' %}" defer></script>{% endif %}
 
   <section class="panel" style="margin-top:14px;">
     <h2 style="margin:0;">Aparência</h2>

@@ -140,43 +140,85 @@ def service_worker(request):
     return response
 
 
-@login_required
-@require_POST
-def register_push_subscription(request):
-    """Recebe a tentativa de inscrição e informa o estado real do recurso.
-
-    O produto ainda não persiste subscriptions nem possui provedor de envio. Em vez
-    de afirmar que notificações push foram ativadas, devolvemos uma resposta clara
-    para o front-end tratar como recurso indisponível.
-    """
+def _json_body(request):
     try:
         payload = json.loads(request.body or "{}")
     except json.JSONDecodeError:
-        return JsonResponse({"error": "JSON inválido."}, status=400)
+        return None
+    return payload if isinstance(payload, dict) else None
 
-    if not isinstance(payload, dict):
+
+@login_required
+@require_POST
+def register_push_subscription(request):
+    """Guarda o aparelho que aceitou receber avisos (endpoint + chaves do navegador)."""
+    from accounts.models import PushSubscription
+    from accounts.push import push_enabled
+
+    if not push_enabled():
+        return JsonResponse({"enabled": False, "error": "Avisos no celular ainda não estão ligados no servidor."}, status=501)
+    payload = _json_body(request)
+    if payload is None:
         return JsonResponse({"error": "Formato de inscrição inválido."}, status=400)
-
-    logger.info("Tentativa de ativar push recebida para usuário autenticado; persistência ainda não configurada.")
-    return JsonResponse(
-        {
-            "enabled": False,
-            "message": "Notificações push ainda não estão disponíveis neste ambiente.",
+    endpoint = str(payload.get("endpoint") or "").strip()
+    keys = payload.get("keys") if isinstance(payload.get("keys"), dict) else {}
+    p256dh = str(keys.get("p256dh") or "").strip()
+    auth = str(keys.get("auth") or "").strip()
+    if not endpoint.startswith("https://") or len(endpoint) > 2000 or not p256dh or not auth \
+            or len(p256dh) > 255 or len(auth) > 255:
+        return JsonResponse({"error": "Inscrição incompleta."}, status=400)
+    PushSubscription.objects.update_or_create(
+        endpoint=endpoint,
+        defaults={
+            "user": request.user,
+            "p256dh": p256dh,
+            "auth": auth,
+            "user_agent": (request.META.get("HTTP_USER_AGENT") or "")[:300],
         },
-        status=501,
     )
+    return JsonResponse({"enabled": True, "devices": request.user.push_subscriptions.count()})
+
+
+@login_required
+@require_POST
+def unregister_push_subscription(request):
+    """Desliga os avisos do aparelho (so apaga inscricao do proprio usuario)."""
+    from accounts.models import PushSubscription
+
+    payload = _json_body(request) or {}
+    endpoint = str(payload.get("endpoint") or "").strip()
+    deleted, _ = PushSubscription.objects.filter(user=request.user, endpoint=endpoint).delete() if endpoint else (0, None)
+    return JsonResponse({"enabled": False, "removed": deleted})
+
+
+@login_required
+@require_POST
+def push_test(request):
+    """Manda um aviso de teste para os aparelhos do proprio usuario."""
+    from accounts.push import send_push_to_user
+
+    sent = send_push_to_user(
+        request.user,
+        title="HoraCerta",
+        body="Pronto! Os avisos estão chegando neste aparelho.",
+        url=reverse("mei_profile"),
+        tag="hc-teste",
+    )
+    return JsonResponse({"sent": sent})
 
 
 @login_required
 @require_GET
 def status(request):
     """Expõe somente capacidades verificáveis pelo servidor."""
+    from accounts.push import push_enabled
+
     return JsonResponse(
         {
             "pwa_available": True,
             "service_worker_url": reverse("pwa_service_worker"),
             "offline_fallback_url": reverse("offline"),
-            "push_notifications_available": False,
+            "push_notifications_available": push_enabled(),
             "user_role": request.user.role,
         }
     )

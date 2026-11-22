@@ -2,6 +2,7 @@
 # docs/EMPRESA_HORACERTA_ORGANIZACAO.md. Helpers/imports come from
 # ._shared; this file only holds the views for its own audience.
 from ._shared import *  # noqa: F401,F403
+from accounts.push import push_enabled
 
 # Grace period before nudging the MEI about a report the client hasn't
 # opened yet - avoids a false-urgency alert right after sending it.
@@ -333,6 +334,8 @@ def mei_profile(request):
             "employee": employee,
             "contracts": contracts,
             "selected_contract": selected_contract,
+            "push_public_key": settings.VAPID_PUBLIC_KEY if push_enabled() else "",
+            "push_device_count": request.user.push_subscriptions.count(),
         },
     )
 
