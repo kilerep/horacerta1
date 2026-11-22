@@ -1553,13 +1553,31 @@ def public_service_job_preview(request, token):
         public_token=token,
         preview_generated_at__isnull=False,
     )
-    if not job.preview_first_viewed_at:
+    is_owner = request.user.is_authenticated and request.user.pk == job.professional_id
+    if not job.preview_first_viewed_at and not is_owner:
         job.preview_first_viewed_at = timezone.now()
         job.save(update_fields=["preview_first_viewed_at", "updated_at"])
+        _notify_preview_opened(job)
     return render(
         request,
         "services/public_service_job_report.html",
         {**_service_report_context(job, request=request), "is_preview": True},
+    )
+
+
+def _notify_preview_opened(job):
+    """Avisa o prestador (sininho e celular) que o cliente abriu o orcamento pela primeira vez."""
+    from timeclock.models import InternalNotification
+    from timeclock.notifications import create_internal_notification
+
+    who = (job.client.name if job.client_id else job.manual_client_name) or "O cliente"
+    create_internal_notification(
+        notification_type=InternalNotification.NotificationType.SERVICE_REMINDER,
+        title=f"{who} abriu o orçamento",
+        message=f"{who} abriu o orçamento de \"{job.title}\".",
+        recipient_user=job.professional,
+        target_url=reverse("service_job_detail", args=[job.id]),
+        push=True,
     )
 
 

@@ -117,3 +117,22 @@ class ProductEvent(models.Model):
 
     def __str__(self):
         return f"{self.event} ({self.user_id})"
+
+
+class PushSubscription(models.Model):
+    """Celular/navegador que aceitou receber avisos do HoraCerta (notificacao push)."""
+
+    user = models.ForeignKey("accounts.User", on_delete=models.CASCADE, related_name="push_subscriptions")
+    endpoint = models.TextField(unique=True)
+    p256dh = models.CharField(max_length=255)
+    auth = models.CharField(max_length=255)
+    user_agent = models.CharField(max_length=300, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_success_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Aviso no celular"
+        verbose_name_plural = "Avisos no celular"
+
+    def __str__(self):
+        return f"push {self.user_id}"
