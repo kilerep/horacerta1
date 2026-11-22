@@ -35,6 +35,7 @@ def offline(request):
             "offline_store_js": read_static("js/offline_store.js"),
             "offline_mirror_js": read_static("js/offline_mirror.js"),
             "offline_app_js": read_static("js/offline_app.js"),
+            "offline_forms_js": read_static("js/offline_forms.js"),
             "tokens_css": read_static("css/design_tokens.css"),
             "theme_names_json": json.dumps([value for value, _label in User.VisualTheme.choices]),
         },

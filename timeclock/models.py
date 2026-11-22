@@ -772,3 +772,25 @@ class DayOff(models.Model):
     @property
     def label(self):
         return f"{self.get_kind_display()}" + (f" · {self.note}" if self.note else "")
+
+
+class OfflineReceipt(models.Model):
+    """Recibo de cada acao feita sem internet e ja aplicada (Offline 2.0, etapa 3).
+
+    O aparelho manda cada acao com um client_ref unico. Se a mesma acao chegar de novo
+    (internet caiu no meio do envio), o recibo mostra que ja foi feita e nada duplica.
+    object_id guarda o que foi criado (ex.: cliente novo) para outras acoes da fila
+    apontarem para ele antes mesmo de existir no servidor.
+    """
+
+    client_ref = models.UUIDField(primary_key=True)
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="offline_receipts")
+    kind = models.CharField(max_length=30)
+    object_id = models.CharField(max_length=64, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["owner", "kind"])]
+
+    def __str__(self):
+        return f"{self.kind} {self.client_ref}"

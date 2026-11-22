@@ -27,7 +27,7 @@
  * Ao cair a rede em qualquer tela, esta página abre no mesmo endereço e mostra a aba certa.
  */
 
-const SW_VERSION = "hc-sw-v6";
+const SW_VERSION = "hc-sw-v7";
 const OFFLINE_CACHE = `hc-offline-${SW_VERSION}`;
 const PUBLIC_CACHE = `hc-public-${SW_VERSION}`;
 const OFFLINE_PAGE = "/offline/";

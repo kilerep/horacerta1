@@ -44,7 +44,7 @@ def _month_start(day):
 
 def build_mirror(user):
     from production.models import ProductionEntry, ProductionSheet, ShipmentNote
-    from services.models import ServiceJob
+    from services.models import ServiceCategory, ServiceJob
 
     from .models import Contract, DayOff, Punch
 
@@ -98,6 +98,10 @@ def build_mirror(user):
         "ttl_days": MIRROR_TTL_DAYS,
         "today": today.isoformat(),
         "since": since_month.isoformat(),
+        "categories": [
+            {"id": str(c.id), "name": c.name}
+            for c in ServiceCategory.objects.filter(is_active=True).order_by("sort_order", "name")
+        ],
         "clients": [
             {
                 "id": str(c.id),

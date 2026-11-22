@@ -26,6 +26,7 @@
   }, window.HC_OFFLINE_PATHS || {});
 
   var state = { profile: null, data: null, pending: [], online: false, view: "registrar", sheet: null };
+  var F = window.HoraCertaOfflineForms || null;  // etapa 3: formularios para salvar sem internet
 
   // ---------- utilidades ----------
   function esc(text) {
@@ -186,13 +187,16 @@
         "<small>" + money.format(parseFloat(c.hourly_rate || 0)) + "/h · desde " + (c.start_date ? dayTitle(c.start_date) : "-") + "</small></div>" +
         '<div class="right"><b>' + fmtSeconds(pc.month) + "</b><small>" + money.format(pc.value || 0) + " no mês</small></div></li>";
     }).join("");
+    var fresh = F ? F.pendingClientsRows(state) : "";
     return '<h1 class="title">Meus clientes</h1><p class="sub">Horas e valores de cada cliente no mês atual.</p>' +
-      '<section class="card"><ul class="rows">' + (items || "<li><div>Nenhum cliente.</div></li>") + "</ul></section>";
+      (F ? F.clientForm() : "") +
+      '<section class="card"><ul class="rows">' + (fresh + items || "<li><div>Nenhum cliente.</div></li>") + "</ul></section>";
   }
 
   function jobRow(j) {
+    var right = F ? F.jobActions(state, j) : '<span class="tag">' + esc(j.status_label) + "</span>";
     return '<li><div><b>' + (j.start ? j.start + " · " : "") + esc(j.title) + "</b><small>" + esc(j.client) +
-      (j.location ? " · " + esc(j.location) : "") + '</small></div><div class="right"><span class="tag">' + esc(j.status_label) + "</span></div></li>";
+      (j.location ? " · " + esc(j.location) : "") + '</small></div><div class="right">' + right + "</div></li>";
   }
 
   function renderAgenda() {
@@ -203,11 +207,13 @@
     var today = ymd(new Date());
     var html = days.map(function (iso) {
       var jobs = (state.data.jobs || []).filter(function (j) { return j.date === iso; });
-      if (!jobs.length && iso < today) return "";
+      var fresh = F ? F.pendingJobsFor(state, iso) : "";
+      if (!jobs.length && !fresh && iso < today) return "";
       return '<section class="card day' + (iso === today ? " is-today" : "") + '"><h2>' + (iso === today ? "Hoje · " : "") + dayTitle(iso) +
-        "</h2>" + (jobs.length ? '<ul class="rows">' + jobs.map(jobRow).join("") + "</ul>" : '<p class="sub">Nenhum serviço.</p>') + "</section>";
+        "</h2>" + (jobs.length || fresh ? '<ul class="rows">' + fresh + jobs.map(jobRow).join("") + "</ul>" : '<p class="sub">Nenhum serviço.</p>') + "</section>";
     }).join("");
-    return '<h1 class="title">Agenda</h1><p class="sub">Esta semana e a próxima.</p>' + html;
+    return '<h1 class="title">Agenda</h1><p class="sub">Esta semana e a próxima.</p>' +
+      (F ? F.serviceForm(state) + F.reportForm() : "") + html;
   }
 
   function renderProducao() {
@@ -253,8 +259,9 @@
       return '<li><div><b>Nº ' + esc(n.number || "-") + " · " + esc(n.destination) + "</b>" + items + '</div><div class="right"><span class="tag">' +
         situation + "</span></div></li>";
     }).join("");
-    return '<h1 class="title">Romaneios</h1><p class="sub">Últimos 60 dias.</p><section class="card"><ul class="rows">' +
-      (list || "<li><div>Nenhum romaneio.</div></li>") + "</ul></section>";
+    var fresh = F ? F.pendingShipments(state) : "";
+    return '<h1 class="title">Romaneios</h1><p class="sub">Últimos 60 dias.</p>' + (F ? F.shipmentForm() : "") +
+      '<section class="card"><ul class="rows">' + (fresh + list || "<li><div>Nenhum romaneio.</div></li>") + "</ul></section>";
   }
 
   var RENDER = { resumo: renderResumo, historico: renderHistorico, clientes: renderClientes, agenda: renderAgenda,
@@ -278,6 +285,7 @@
       if (on) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
     });
     $("viewRegistrar").hidden = view !== "registrar";
+    if (view === "registrar" && F && $("registrarExtras")) $("registrarExtras").innerHTML = F.registrarExtras(state);
     var other = $("viewOther");
     other.hidden = view === "registrar";
     if (view !== "registrar") other.innerHTML = RENDER[view]();
@@ -301,6 +309,21 @@
     }
   });
 
+  function editing() {
+    var el = document.activeElement;
+    return !!(el && el.closest && el.closest("[data-offline-form]") && el.form && Array.prototype.some.call(el.form.elements,
+      function (x) { return x.value && x.type !== "submit" && x.type !== "button" && x.tagName !== "SELECT" && x.type !== "date"; }));
+  }
+
+  function notify(text, kind) {
+    var m = $("appMsg");
+    if (!m) return;
+    m.textContent = text || "";
+    m.className = "msg" + (kind ? " " + kind : "");
+    m.hidden = !text;
+    if (text) setTimeout(function () { if (m.textContent === text) m.hidden = true; }, 6000);
+  }
+
   function reload() {
     var uid = state.profile && state.profile.user_id;
     return Promise.all([
@@ -309,6 +332,7 @@
     ]).then(function (res) {
       state.data = res[0];
       state.pending = res[1] || [];
+      if (editing()) return;  // nao apaga o que a pessoa esta digitando
       show(state.view, false);
     });
   }
@@ -320,9 +344,11 @@
       state.sheet = sheetFromPath(location.pathname);
       $("tabs").hidden = !profile;
       api.onChange(reload);
+      if (F) F.attach(function () { return state; }, notify);
       return reload();
     },
     reload: reload,
     setOnline: function (on) { state.online = on; },
+    describe: function (item) { return F ? F.describe(item, state) : item.kind; },
   };
 })();
