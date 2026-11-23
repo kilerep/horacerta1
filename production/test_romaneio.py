@@ -84,6 +84,32 @@ class FromEntriesTests(TestCase):
         self.assertEqual(draft.items.count(), 2)
         self.assertEqual(draft.items.last().drawing_number, "0128-208")
 
+    def test_items_from_two_machines_go_to_the_same_draft_by_default(self):
+        """2026-11-23: selecionar na Chenlong, depois na Lippel, e tudo cair no MESMO romaneio."""
+        lippel = ProductionSheet.objects.create(owner=self.owner, equipment="Lippel")
+        other = ProductionEntry.objects.create(sheet=lippel, item_code="0128-208", quantity=10, production_order="7542.1",
+                                               manual_minutes=30)
+        self.client.post(self.url, {"entry": [self.entry.id], "target": "new"})
+        draft = ShipmentNote.objects.get(owner=self.owner, status=ShipmentNote.Status.DRAFT)
+
+        html = self.client.get(reverse("production_sheet_detail", args=[lippel.id])).content.decode()
+        self.assertIn("Romaneio em montagem", html)
+        self.assertIn(f'<option value="{draft.id}" selected>Continuar romaneio', html)
+        self.assertLess(html.index(f'value="{draft.id}"'), html.index('value="new"'))  # "Novo" deixa de ser o padrao
+
+        self.client.post(reverse("shipment_from_entries", args=[lippel.id]), {"entry": [other.id], "target": str(draft.id)})
+        self.assertEqual(ShipmentNote.objects.filter(owner=self.owner, status=ShipmentNote.Status.DRAFT).count(), 1)
+        self.assertEqual(draft.items.count(), 2)
+
+    def test_most_recently_used_draft_is_the_default(self):
+        old = ShipmentNote.objects.create(owner=self.owner, destination_company="Antigo")
+        recent = ShipmentNote.objects.create(owner=self.owner, destination_company="Recente")
+        self.client.post(self.url, {"entry": [self.entry.id], "target": str(old.id)})  # usar o antigo o torna o atual
+
+        html = self.client.get(reverse("production_sheet_detail", args=[self.entry.sheet_id])).content.decode()
+        self.assertIn(f'<option value="{old.id}" selected>', html)
+        self.assertNotIn(f'<option value="{recent.id}" selected>', html)
+
     def test_sent_target_creates_new_draft(self):
         sent = sent_note_with(make_entry(self.owner, code="Z"), 1)
 

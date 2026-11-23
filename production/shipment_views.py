@@ -397,6 +397,7 @@ def shipment_from_entries(request, sheet_id):
             )
             for i, e in enumerate(entries)
         )
+        draft.save(update_fields=["updated_at"])  # vira o "romaneio em montagem" das proximas selecoes
     count = len(entries)
     messages.success(request, f"{count} {'item adicionado' if count == 1 else 'itens adicionados'} ao romaneio. "
                               "Ajuste as quantidades se só parte for no caminhão.")
