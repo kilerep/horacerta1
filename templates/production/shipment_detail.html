@@ -45,7 +45,7 @@
       <thead><tr><th>Ordem de produção</th><th>Desenho</th><th class="qty">Qtd</th></tr></thead>
       <tbody>
         {% for item in items %}
-          <tr><td class="op">{{ item.production_order|default:"—" }}</td><td><strong>{{ item.drawing_number }}</strong>{% if item.description %}<small>{{ item.description }}</small>{% endif %}</td><td class="qty">{{ item.quantity }}</td></tr>
+          <tr><td class="op">{{ item.production_order|default:"—" }}</td><td><strong>{{ item.drawing_number }}</strong>{% if item.description %}<small>{{ item.description }}</small>{% endif %}{% if item.machines_label %}<small class="ship-from">{{ item.machines_label }}</small>{% endif %}</td><td class="qty">{{ item.quantity }}</td></tr>
         {% empty %}
           <tr><td colspan="3">Nenhuma peça anotada ainda.</td></tr>
         {% endfor %}

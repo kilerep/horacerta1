@@ -178,6 +178,10 @@ class ShipmentNote(models.Model):
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.DRAFT)
     sent_at = models.DateTimeField(null=True, blank=True)
     replaces = models.ForeignKey("self", null=True, blank=True, on_delete=models.SET_NULL, related_name="replaced_by")
+
+    def grouped_items(self):
+        """Linhas do documento: itens iguais juntos (ver group_shipment_items)."""
+        return group_shipment_items(self.items.select_related("source_entry__sheet"))
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -252,6 +256,39 @@ class ShipmentNote(models.Model):
             # O horario e o do toque em "carga conferida e carregada", nunca um digitado a mao.
             self.departed_at = self.sent_at
             self.save(update_fields=["number", "status", "sent_at", "departed_at", "updated_at"])
+
+
+def group_shipment_items(items):
+    """Junta as linhas com a mesma OP e o mesmo desenho (ex.: o mesmo item cortado em 2 maquinas).
+
+    So muda o que o documento mostra: no banco cada linha continua ligada ao seu item de producao,
+    entao o "quanto falta enviar" de cada maquina segue certo. Devolve, na ordem do romaneio,
+    dicts com a soma e de onde veio cada parte (machines_label: "Lippel 10 + Chenlong 5").
+    """
+    groups, order = {}, []
+    for item in items:
+        key = ((item.production_order or "").strip().upper(), (item.drawing_number or "").strip().upper())
+        if key not in groups:
+            groups[key] = {"production_order": item.production_order, "drawing_number": item.drawing_number,
+                           "description": item.description, "quantity": 0, "parts": []}
+            order.append(key)
+        group = groups[key]
+        group["quantity"] += item.quantity or 0
+        if not group["description"] and item.description:
+            group["description"] = item.description
+        machine = item.source_entry.sheet.equipment if item.source_entry_id else "avulso"
+        group["parts"].append((machine, item.quantity or 0))
+    result = []
+    for key in order:
+        group = groups[key]
+        merged = {}
+        for machine, quantity in group["parts"]:
+            merged[machine] = merged.get(machine, 0) + quantity
+        group["machines"] = list(merged.items())
+        # so explica a origem quando a linha juntou partes de mais de uma maquina
+        group["machines_label"] = " + ".join(f"{name} {qty}" for name, qty in merged.items()) if len(merged) > 1 else ""
+        result.append(group)
+    return result
 
 
 class ShipmentItem(models.Model):

@@ -52,7 +52,10 @@ def _read_form(post):
     }
     errors = []
     columns = [post.getlist(name) for name in ("item_order", "item_drawing", "item_quantity", "item_description")]
-    for index, (order, drawing, quantity, description) in enumerate(zip(*columns), start=1):
+    # de qual item da producao a linha veio (campo escondido); linha nova/digitada fica sem
+    sources = post.getlist("item_source")
+    sources += [""] * (len(columns[0]) - len(sources))
+    for index, (order, drawing, quantity, description, source) in enumerate(zip(*columns, sources), start=1):
         order, drawing, quantity, description = (v.strip() for v in (order, drawing, quantity, description))
         if not (order or drawing or description):
             continue  # linha em branco
@@ -63,7 +66,8 @@ def _read_form(post):
         if not drawing or not 1 <= qty <= MAX_QUANTITY:
             errors.append(f"Linha {index}: informe o nº do desenho e uma quantidade entre 1 e {MAX_QUANTITY}.")
         data["items"].append({"production_order": order[:40], "drawing_number": drawing[:60],
-                              "quantity": min(max(qty, 1), MAX_QUANTITY), "description": description[:120]})
+                              "quantity": min(max(qty, 1), MAX_QUANTITY), "description": description[:120],
+                              "source_entry_id": (source or "").strip()})
     if not data["destination_company"]:
         errors.append("Informe a empresa de destino.")
     return data, errors
@@ -86,8 +90,18 @@ def _save_note(note, data):
         else:  # nunca regrava status/numero/envio a partir de um objeto possivelmente antigo
             note.save(update_fields=[*NOTE_FIELDS, "updated_at"])
         note.items.all().delete()
+        # so aceita vinculo com item de producao do proprio dono do romaneio
+        from .models import ProductionEntry
+
+        wanted = _valid_uuids([item.get("source_entry_id") for item in data["items"]])
+        owned = {str(pk) for pk in ProductionEntry.objects.filter(id__in=wanted, sheet__owner=note.owner)
+                 .values_list("id", flat=True)}
         ShipmentItem.objects.bulk_create(
-            ShipmentItem(note=note, position=i, **item) for i, item in enumerate(data["items"])
+            ShipmentItem(note=note, position=i, production_order=item["production_order"],
+                         drawing_number=item["drawing_number"], quantity=item["quantity"],
+                         description=item["description"],
+                         source_entry_id=item.get("source_entry_id") if item.get("source_entry_id") in owned else None)
+            for i, item in enumerate(data["items"])
         )
         for role, values in data["recipients"].items():
             if values["name"]:
@@ -110,9 +124,14 @@ def _form_context(note=None, data=None, errors=None, owner=None):
             "vehicle_plate": note.vehicle_plate if note else "",
             "notes": note.notes if note else "",
             "recipients": recipients,
-            "items": list(note.items.values("production_order", "drawing_number", "quantity", "description")) if note else [],
+            "items": [
+                {"production_order": i.production_order, "drawing_number": i.drawing_number, "quantity": i.quantity,
+                 "description": i.description, "source_entry_id": str(i.source_entry_id or ""),
+                 "machine": i.source_entry.sheet.equipment if i.source_entry_id else ""}
+                for i in note.items.select_related("source_entry__sheet")
+            ] if note else [],
         }
-    blank = {"production_order": "", "drawing_number": "", "quantity": "", "description": ""}
+    blank = {"production_order": "", "drawing_number": "", "quantity": "", "description": "", "source_entry_id": "", "machine": ""}
     rows = data["items"] + [blank] * max(3 - len(data["items"]), 1)
     empty = {"name": "", "whatsapp": ""}
     return {
@@ -181,7 +200,7 @@ def shipment_detail(request, note_id):
     note = _note_for(request, note_id)
     recipients = list(note.recipients.all())
     return render(request, "production/shipment_detail.html", {
-        "note": note, "items": note.items.all(), "recipients": recipients, "situation": note.situation,
+        "note": note, "items": note.grouped_items(), "recipients": recipients, "situation": note.situation,
         "recipients_count": len(recipients),
         "viewed_count": sum(1 for r in recipients if r.viewed_at),
         "authorized_count": sum(1 for r in recipients if r.authorized_at),
@@ -299,7 +318,7 @@ def shipment_public(request, token):
     recipients = list(note.recipients.all())
     authorized = sum(1 for r in recipients if r.authorized_at)
     response = render(request, "production/shipment_public.html", {
-        "note": note, "recipient": recipient, "items": note.items.all(), "recipients": recipients,
+        "note": note, "recipient": recipient, "items": note.grouped_items(), "recipients": recipients,
         "recipients_count": len(recipients), "viewed_count": sum(1 for r in recipients if r.viewed_at),
         "authorized_count": authorized, "authorized_all": bool(recipients) and authorized == len(recipients),
         "owner_preview": _is_owner_preview(request, recipient),

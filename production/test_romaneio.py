@@ -336,3 +336,73 @@ class ItemHistoryPdfTests(TestCase):
         self.client.force_login(make_user("outro-historico@example.com"))
         response = self.client.get(reverse("production_item_history_pdf"), {"q": "8210-120"})
         self.assertEqual(response.status_code, 404)
+
+
+@override_settings(**BASE)
+class SameItemTwoMachinesTests(TestCase):
+    """2026-11-23: o mesmo item cortado na Lippel e na Chenlong vira 1 linha no romaneio."""
+
+    def setUp(self):
+        self.owner = make_user("duas-maquinas@example.com")
+        self.client.force_login(self.owner)
+        self.chen = make_entry(self.owner, code="0128-208", quantity=5, order="7542.1")
+        lippel = ProductionSheet.objects.create(owner=self.owner, equipment="Lippel")
+        self.lip = ProductionEntry.objects.create(sheet=lippel, item_code="0128-208", quantity=10,
+                                                  production_order="7542.1", manual_minutes=30)
+        self.other = make_entry(self.owner, code="9999-1", quantity=2, order="1.1")
+        self.client.post(reverse("shipment_from_entries", args=[lippel.id]), {"entry": [self.lip.id], "target": "new"})
+        self.note = ShipmentNote.objects.get(owner=self.owner, status=ShipmentNote.Status.DRAFT)
+        self.client.post(reverse("shipment_from_entries", args=[self.chen.sheet_id]),
+                         {"entry": [self.chen.id, self.other.id], "target": str(self.note.id)})
+
+    def test_grouped_line_with_both_machines(self):
+        groups = self.note.grouped_items()
+        self.assertEqual(len(groups), 2)
+        self.assertEqual(groups[0]["quantity"], 15)
+        self.assertEqual(groups[0]["machines_label"], "Lippel 10 + Chenlong 5")
+        self.assertEqual(groups[1]["machines_label"], "")  # item de uma maquina so nao ganha explicacao
+
+    def test_documents_show_the_grouped_line(self):
+        from production.shipment_exports import item_rows
+
+        rows = item_rows(self.note)
+        self.assertEqual(rows[0], ("7542.1", "0128-208", "Lippel 10 + Chenlong 5", 15))
+        html = self.client.get(reverse("shipment_detail", args=[self.note.id])).content.decode()
+        self.assertIn("Lippel 10 + Chenlong 5", html)
+
+    def test_each_machine_still_tracks_what_was_shipped(self):
+        self.assertEqual(self.note.items.count(), 3)  # no banco continuam separados
+        self.assertEqual(set(self.note.items.values_list("source_entry", flat=True)), {self.chen.id, self.lip.id, self.other.id})
+
+    def test_editing_the_draft_keeps_the_machine_link(self):
+        edit = reverse("shipment_edit", args=[self.note.id])
+        html = self.client.get(edit).content.decode()
+        self.assertIn("Cortado na Lippel", html)
+        items = list(self.note.items.order_by("position"))
+        self.client.post(edit, {
+            "destination_company": "Gbach",
+            "item_order": [i.production_order for i in items],
+            "item_drawing": [i.drawing_number for i in items],
+            "item_quantity": ["8", "5", "2"],  # ajustou a quantidade da Lippel
+            "item_description": ["", "", ""],
+            "item_source": [str(i.source_entry_id) for i in items],
+        })
+        self.assertEqual(set(self.note.items.values_list("source_entry", flat=True)), {self.chen.id, self.lip.id, self.other.id})
+        self.assertEqual(self.note.grouped_items()[0]["machines_label"], "Lippel 8 + Chenlong 5")
+
+    def test_cannot_link_line_to_someone_elses_entry(self):
+        intruder = make_entry(make_user("intruso-maquina@example.com"), code="ALHEIO")
+        self.client.post(reverse("shipment_edit", args=[self.note.id]), {
+            "destination_company": "Gbach", "item_order": ["1"], "item_drawing": ["X"], "item_quantity": ["1"],
+            "item_description": [""], "item_source": [str(intruder.id)],
+        })
+        self.assertIsNone(self.note.items.get().source_entry_id)
+
+    def test_search_shows_both_machines_and_where_each_shipment_came_from(self):
+        ShipmentRecipient.objects.create(note=self.note, role=ShipmentRecipient.Role.ENCARREGADO, name="João")
+        self.note.send()
+        html = self.client.get(reverse("production_item_search"), {"q": "0128-208"}).content.decode()
+        self.assertIn("Lippel", html)
+        self.assertIn("Chenlong", html)
+        self.assertIn("Cortado na Lippel", html)
+        self.assertIn("Cortado na Chenlong", html)

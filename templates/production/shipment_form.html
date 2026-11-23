@@ -41,6 +41,8 @@
             <input name="item_drawing" value="{{ row.drawing_number }}" placeholder="Nº do desenho" aria-label="Nº do desenho" maxlength="60">
             <input name="item_quantity" value="{{ row.quantity }}" type="number" min="1" inputmode="numeric" placeholder="Qtd" aria-label="Quantidade">
             <input name="item_description" value="{{ row.description }}" placeholder="Descrição" aria-label="Descrição" maxlength="120">
+            <input type="hidden" name="item_source" value="{{ row.source_entry_id|default:'' }}">
+            {% if row.machine %}<small class="ship-machine" data-ship-machine>Cortado na {{ row.machine }}</small>{% endif %}
           </div>
         {% endfor %}
       </div>
@@ -79,6 +81,7 @@
       var all = rows.querySelectorAll("[data-ship-row]");
       var copy = all[all.length - 1].cloneNode(true);
       copy.querySelectorAll("input").forEach(function (input) { input.value = ""; });
+      copy.querySelectorAll("[data-ship-machine]").forEach(function (tag) { tag.remove(); });
       rows.appendChild(copy);
       copy.querySelector("input").focus();
     });

@@ -28,7 +28,8 @@ def item_groups(user, query, exact=False):
     entries = (ProductionEntry.objects.filter(sheet__owner=user).filter(cut_filter)
                .select_related("sheet").order_by("-work_date", "-created_at")[:300])
     shipped = (ShipmentItem.objects.filter(note__owner=user, note__status=ShipmentNote.Status.SENT).filter(sent_filter)
-               .select_related("note").prefetch_related("note__recipients").order_by("-note__sent_at")[:300])
+               .select_related("note", "source_entry__sheet").prefetch_related("note__recipients")
+               .order_by("-note__sent_at")[:300])
     by_code = {}
     for entry in entries:
         by_code.setdefault(entry.item_code or "Sem código", {"cuts": [], "sent": []})["cuts"].append(entry)
@@ -93,10 +94,12 @@ def build_item_history_pdf(user, query, groups):
         story.append(Paragraph("Envios", st["label"]))
         if sent:
             rows = [[f"nº {i.note.number_label}", i.note.destination_company,
+                     i.source_entry.sheet.equipment if i.source_entry_id else "-",
                      timezone.localtime(i.note.loaded_at).strftime("%d/%m/%Y %H:%M") if i.note.loaded_at else "-",
                      i.note.situation[0], str(i.quantity)] for i in sent]
-            story.append(pt.data_table(["Romaneio", "Destino", "Carregado em", "Situação", "Qtd."], rows,
-                                       [2.4 * cm, width - 13.4 * cm, 3.6 * cm, 5.4 * cm, 2.0 * cm], numeric_cols=(4,)))
+            story.append(pt.data_table(["Romaneio", "Destino", "Máquina", "Carregado em", "Situação", "Qtd."], rows,
+                                       [2.4 * cm, width - 16.4 * cm, 3.0 * cm, 3.6 * cm, 5.4 * cm, 2.0 * cm],
+                                       numeric_cols=(5,)))
         else:
             story.append(Paragraph("Ainda não saiu em nenhum romaneio enviado.", st["small"]))
         story.append(Spacer(1, 18))
