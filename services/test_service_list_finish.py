@@ -91,7 +91,7 @@ class FinishingTouchesTests(SimpleTestCase):
 
 @override_settings(ALLOWED_HOSTS=["testserver", "localhost"], SECURE_SSL_REDIRECT=False)
 class ServiceListAttentionTests(ServiceListShowsEachJobOnceTests):
-    """Redesign da lista: 'Precisa de voce' com contadores tocaveis e atrasados marcados."""
+    """Redesign da lista: 'Precisa de voce' com contadores tocaveis e serviços fora do prazo marcados."""
 
     def test_attention_counts_only_what_needs_action(self):
         from datetime import timedelta
@@ -102,10 +102,10 @@ class ServiceListAttentionTests(ServiceListShowsEachJobOnceTests):
         html = self.client.get(reverse("service_job_list")).content.decode()
         attention = section(html, 'id="services-attention"', "</section>")
 
-        self.assertIn("Atrasados", attention)
+        self.assertIn("Fora do prazo", attention)
         self.assertIn("Relatório a enviar", attention)
         self.assertNotIn("Em execução", attention)
-        self.assertIn('<span class="status-chip danger">Atrasado</span>', html)
+        self.assertIn('<span class="status-chip danger">Fora do prazo</span>', html)
 
     def test_all_good_when_nothing_waits(self):
         html = self.client.get(reverse("service_job_list")).content.decode()

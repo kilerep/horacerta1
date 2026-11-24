@@ -493,7 +493,7 @@ def service_job_list(request):
     # "Precisa de voce": so o que pede acao agora, do mais urgente ao menos; contadores zerados somem.
     attention = [
         item for item in (
-            ("Atrasados", overdue_count, f"{list_url}?status={ServiceJob.Status.PLANNED}", "danger"),
+            ("Fora do prazo", overdue_count, f"{list_url}?status={ServiceJob.Status.PLANNED}", "danger"),
             ("Pedidos para responder", requests_open, reverse("service_request_list"), "warning"),
             ("Em execução", status_counts["in_progress"], f"{list_url}?status={ServiceJob.Status.IN_PROGRESS}", "progress"),
             ("Relatório a enviar", status_counts["finished"], f"{list_url}?status={ServiceJob.Status.FINISHED}", "finished"),
