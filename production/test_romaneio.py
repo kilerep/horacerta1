@@ -292,7 +292,9 @@ class ItemSearchTests(TestCase):
         self.assertIn(f"nº {sent.number_label}", html)
         self.assertIn("Gbach", html)
         self.assertIn("Enviado em 1 romaneio", html)
-        self.assertNotIn("Rascunho Ltda", html)
+        # o rascunho so aparece como destino da selecao ("Continuar romaneio para..."), nunca como envio
+        self.assertNotIn("· Rascunho Ltda</strong>", html)
+        self.assertIn("Continuar romaneio para Rascunho Ltda", html)
 
     def test_only_own_items_and_empty_states(self):
         make_entry(make_user("alheio-busca@example.com"), code="9999-ALHEIO")
@@ -406,3 +408,35 @@ class SameItemTwoMachinesTests(TestCase):
         self.assertIn("Chenlong", html)
         self.assertIn("Cortado na Lippel", html)
         self.assertIn("Cortado na Chenlong", html)
+
+
+@override_settings(**BASE)
+class SearchToShipmentTests(TestCase):
+    """2026-11-24: pesquisar o item e mandar para o romaneio direto da busca (varias maquinas)."""
+
+    def setUp(self):
+        self.owner = make_user("busca-romaneio@example.com")
+        self.client.force_login(self.owner)
+        self.chen = make_entry(self.owner, code="0128-208", quantity=5, order="7542.1")
+        lippel = ProductionSheet.objects.create(owner=self.owner, equipment="Lippel")
+        self.lip = ProductionEntry.objects.create(sheet=lippel, item_code="0128-208", quantity=10,
+                                                  production_order="7542.1", manual_minutes=30)
+
+    def test_search_has_checkboxes_and_bar(self):
+        html = self.client.get(reverse("production_item_search"), {"q": "0128"}).content.decode()
+        self.assertIn('form="search-romaneio"', html)
+        self.assertIn(reverse("shipment_from_search"), html)
+
+    def test_items_from_two_machines_go_to_one_draft(self):
+        draft = ShipmentNote.objects.create(owner=self.owner, destination_company="Ensimec")
+        response = self.client.post(reverse("shipment_from_search"),
+                                    {"entry": [self.lip.id, self.chen.id], "target": str(draft.id)})
+        self.assertRedirects(response, reverse("shipment_edit", args=[draft.id]))
+        self.assertEqual(draft.items.count(), 2)
+        self.assertEqual(draft.grouped_items()[0]["machines_label"], "Lippel 10 + Chenlong 5")
+
+    def test_cannot_send_other_accounts_items(self):
+        intruder = make_entry(make_user("outro-busca@example.com"), code="ALHEIO")
+        response = self.client.post(reverse("shipment_from_search"), {"entry": [intruder.id], "target": "new"})
+        self.assertEqual(response.status_code, 404)
+        self.assertFalse(ShipmentNote.objects.filter(owner=self.owner).exists())
