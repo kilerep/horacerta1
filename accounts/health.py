@@ -36,7 +36,7 @@ def check_database():
             cursor.execute("SELECT 1")
         return _check(OK, "Banco de dados responde")
     except Exception as exc:  # noqa: BLE001 - mostrar a causa ao administrador
-        return _check(FAIL, "Banco de dados nao responde", f"{type(exc).__name__}: {exc}")
+        return _check(FAIL, "Banco de dados não responde", f"{type(exc).__name__}: {exc}")
 
 
 def check_pending_migrations():
@@ -44,16 +44,16 @@ def check_pending_migrations():
         executor = MigrationExecutor(connection)
         pending = executor.migration_plan(executor.loader.graph.leaf_nodes())
     except Exception as exc:  # noqa: BLE001
-        return _check(WARN, "Nao foi possivel verificar migracoes", f"{type(exc).__name__}: {exc}")
+        return _check(WARN, "Não foi possível verificar migrações", f"{type(exc).__name__}: {exc}")
     if pending:
         names = ", ".join(f"{m.app_label}.{m.name}" for m, _backwards in pending[:5])
-        return _check(FAIL, f"{len(pending)} migracao(oes) pendente(s)", f"Rode migrate. Ex.: {names}")
-    return _check(OK, "Nenhuma migracao pendente")
+        return _check(FAIL, f"{len(pending)} migração(ões) pendente(s)", f"Rode migrate. Ex.: {names}")
+    return _check(OK, "Nenhuma migração pendente")
 
 
 def check_debug():
     if settings.DEBUG:
-        return _check(FAIL, "DEBUG esta LIGADO em producao", "Expoe detalhes internos. Defina DEBUG=False no .env.")
+        return _check(FAIL, "DEBUG está LIGADO em produção", "Expõe detalhes internos. Defina DEBUG=False no .env.")
     return _check(OK, "DEBUG desligado")
 
 
@@ -70,10 +70,10 @@ def check_email():
         return _check(
             FAIL,
             "E-mail em modo CONSOLE (nada sai)",
-            "A recuperacao de senha nao chega. Defina USE_CONSOLE_EMAIL=False no .env.",
+            "A recuperação de senha não chega. Defina USE_CONSOLE_EMAIL=False no .env.",
         )
     if not settings.EMAIL_HOST_USER or not settings.EMAIL_HOST_PASSWORD:
-        return _check(FAIL, "E-mail sem usuario/senha SMTP", "Defina EMAIL_HOST_USER e EMAIL_HOST_PASSWORD.")
+        return _check(FAIL, "E-mail sem usuário/senha SMTP", "Defina EMAIL_HOST_USER e EMAIL_HOST_PASSWORD.")
     if settings.DEFAULT_FROM_EMAIL.endswith(".local"):
         return _check(WARN, "Remetente de e-mail com valor de exemplo", settings.DEFAULT_FROM_EMAIL)
     return _check(OK, "E-mail configurado para envio real", "Confirme com o teste em /interno/email/.")
@@ -82,19 +82,19 @@ def check_email():
 def check_public_url():
     url = (settings.APP_BASE_URL or "").strip()
     if not url:
-        return _check(WARN, "APP_BASE_URL nao definido", "Links de e-mail usam o host da requisicao.")
+        return _check(WARN, "APP_BASE_URL não definido", "Links de e-mail usam o host da requisição.")
     parsed = urlparse(url)
     if parsed.scheme != "https":
-        return _check(FAIL, "Endereco publico sem HTTPS", f"{url} - use https://seu-dominio no .env.")
+        return _check(FAIL, "Endereço público sem HTTPS", f"{url} - use https://seu-dominio no .env.")
     if _is_ip(parsed.hostname or ""):
-        return _check(FAIL, "Endereco publico e um IP", f"{url} - use o dominio.")
-    return _check(OK, "Endereco publico com dominio e HTTPS", url)
+        return _check(FAIL, "Endereço público é um IP", f"{url} - use o domínio.")
+    return _check(OK, "Endereço público com domínio e HTTPS", url)
 
 
 def check_secure_cookies():
     if not settings.SESSION_COOKIE_SECURE or not settings.CSRF_COOKIE_SECURE:
-        return _check(FAIL, "Cookies sem flag Secure", "Sessao/CSRF trafegariam em HTTP puro.")
-    return _check(OK, "Cookies de sessao e CSRF com Secure")
+        return _check(FAIL, "Cookies sem flag Secure", "Sessão/CSRF trafegariam em HTTP puro.")
+    return _check(OK, "Cookies de sessão e CSRF com Secure")
 
 
 def check_allowed_hosts():
@@ -106,8 +106,8 @@ def check_allowed_hosts():
 
 def check_signup_flag():
     if getattr(settings, "MEI_SIGNUP_ENABLED", True):
-        return _check(OK, "Cadastro publico de MEI ABERTO", "Feche com MEI_SIGNUP_ENABLED=False se houver abuso.")
-    return _check(WARN, "Cadastro publico de MEI FECHADO", "Novas pessoas nao conseguem criar conta.")
+        return _check(OK, "Cadastro público de MEI ABERTO", "Feche com MEI_SIGNUP_ENABLED=False se houver abuso.")
+    return _check(WARN, "Cadastro público de MEI FECHADO", "Novas pessoas não conseguem criar conta.")
 
 
 def run_checks():

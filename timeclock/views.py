@@ -39,7 +39,7 @@ def _only_employee(user):
 def _contract_employee_label(contract):
     employee = getattr(contract, "employee", None)
     if not employee:
-        return "MEI indisponivel"
+        return "MEI indisponível"
 
     full_name = (getattr(employee, "full_name", "") or "").strip()
     if full_name:
@@ -54,7 +54,7 @@ def _contract_employee_label(contract):
         if username:
             return username
 
-    return "MEI indisponivel"
+    return "MEI indisponível"
 
 
 def _active_contracts_for_employee_user(user):
@@ -340,7 +340,7 @@ def employee_dashboard(request):
 @require_POST
 def create_manual_punches(request):
     if not _only_employee(request.user):
-        return JsonResponse({"ok": False, "errors": ["Perfil sem permissao para esta operacao."]}, status=403)
+        return JsonResponse({"ok": False, "errors": ["Perfil sem permissão para esta operação."]}, status=403)
 
     contract_id = (request.POST.get("contract") or "").strip()
     manual_date_raw = (request.POST.get("manual_date") or "").strip()
@@ -351,14 +351,14 @@ def create_manual_punches(request):
     if not contract_id:
         errors.append("Selecione o cliente.")
     if not manual_date_raw:
-        errors.append("Informe a data do lancamento.")
+        errors.append("Informe a data do lançamento.")
 
     launch_date = None
     if manual_date_raw:
         try:
             launch_date = datetime.strptime(manual_date_raw, "%Y-%m-%d").date()
         except ValueError:
-            errors.append("Data invalida.")
+            errors.append("Data inválida.")
 
     parsed_times = []
     invalid_times = []
@@ -372,9 +372,9 @@ def create_manual_punches(request):
             invalid_times.append(value)
 
     if invalid_times:
-        errors.append("Horario invalido: %s." % ", ".join(invalid_times))
+        errors.append("Horário inválido: %s." % ", ".join(invalid_times))
     if not parsed_times:
-        errors.append("Informe pelo menos 1 horario.")
+        errors.append("Informe pelo menos 1 horário.")
 
     seen_hm = set()
     duplicated_payload_hm = []
@@ -386,7 +386,7 @@ def create_manual_punches(request):
             seen_hm.add(hm)
     if duplicated_payload_hm:
         unique_dup = sorted(set(duplicated_payload_hm))
-        errors.append("Horarios duplicados no lancamento: %s." % ", ".join(unique_dup))
+        errors.append("Horários duplicados no lançamento: %s." % ", ".join(unique_dup))
 
     if errors:
         return JsonResponse({"ok": False, "errors": errors}, status=400)
@@ -418,9 +418,9 @@ def create_manual_punches(request):
             {
                 "ok": False,
                 "errors": [
-                    "Este dia (%s) ja faz parte do relatorio \"%s\" (periodo %s a %s) e esta bloqueado "
-                    "para novos lancamentos. Fale com o suporte se precisar corrigir um horario "
-                    "desse periodo."
+                    "Este dia (%s) já faz parte do relatório \"%s\" (período %s a %s) e está bloqueado "
+                    "para novos lançamentos. Fale com o suporte se precisar corrigir um horário "
+                    "desse período."
                     % (
                         launch_date.strftime("%d/%m/%Y"),
                         locked_report.title,
@@ -520,7 +520,7 @@ def export_csv(request):
     response["Content-Disposition"] = f'attachment; filename="horacerta_{contract.company.name}.csv"'
 
     writer = csv.writer(response)
-    header = ["Empresa", "Data"]
+    header = ["Cliente", "Data"]
     for idx in range(1, max_punches + 1):
         header.append(f"horário {idx}")
     header.extend(["Total Horas (HH:MM)", "Status"])
@@ -566,7 +566,7 @@ def export_xlsx(request):
     ws = wb.active
     ws.title = "horários"
 
-    headers = ["Funcionario", "Empresa", "Data", "Hora"]
+    headers = ["Prestador", "Cliente", "Data", "Hora"]
     ws.append(headers)
     for cell in ws[1]:
         cell.font = Font(bold=True)
@@ -596,9 +596,9 @@ def export_xlsx(request):
     period_label = (
         f"{start_date.strftime('%d/%m/%Y')} até {end_date.strftime('%d/%m/%Y')}"
         if start_date and end_date
-        else "Periodo completo"
+        else "Período completo"
     )
-    ws.append(["Periodo", period_label, "", ""])
+    ws.append(["Período", period_label, "", ""])
     ws.append(["Total de horários", len(punches), "", ""])
     ws.append(["Total de horas", total_hours_hhmm, "", ""])
 
@@ -635,7 +635,7 @@ def export_pdf(request):
     period_label = (
         f"{start_date.strftime('%d/%m/%Y')} até {end_date.strftime('%d/%m/%Y')}"
         if start_date and end_date
-        else "Periodo completo"
+        else "Período completo"
     )
 
     daily_rows, max_punches = build_daily_summary(punches, min_punch_columns=4)

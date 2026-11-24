@@ -66,7 +66,7 @@ class ServiceJobForm(forms.ModelForm):
             "start_date": "Data prevista",
             "planned_start_time": "Hora inicial prevista",
             "planned_end_time": "Hora final prevista",
-            "billing_mode": "Modo de cobrança",
+            "billing_mode": "Forma de calcular o valor",
             "hourly_rate_snapshot": "Valor por hora",
             "fixed_labor_value": "Valor fixo da mão de obra",
             "notes": "Observações finais do prestador",
@@ -186,9 +186,9 @@ class ServiceJobForm(forms.ModelForm):
             self.add_error("manual_client_name", "Informe o nome do cliente avulso.")
         billing_mode = data.get("billing_mode")
         if billing_mode == ServiceJob.BillingMode.HOURLY and not data.get("hourly_rate_snapshot") and not contract:
-            self.add_error("hourly_rate_snapshot", "Informe o valor/hora ou escolha outro modo de cobrança.")
+            self.add_error("hourly_rate_snapshot", "Informe o valor/hora ou escolha outra forma de calcular o valor.")
         if billing_mode == ServiceJob.BillingMode.FIXED and data.get("fixed_labor_value") in (None, ""):
-            self.add_error("fixed_labor_value", "Informe o valor fixo ou escolha outro modo de cobrança.")
+            self.add_error("fixed_labor_value", "Informe o valor fixo ou escolha outra forma de calcular o valor.")
         return data
 
     def save(self, commit=True, status=None):
@@ -261,7 +261,7 @@ class ServiceRequestForm(forms.ModelForm):
             "category": "Categoria",
             "title": "Título curto",
             "description": "Descrição do que o cliente pediu",
-            "urgency": "Urgencia",
+            "urgency": "Urgência",
             "source": "Origem",
         }
         widgets = {
@@ -507,7 +507,7 @@ class ServiceItemExpenseForm(forms.ModelForm):
     )
     save_to_catalog = forms.BooleanField(
         required=False,
-        label="Salvar este item no meu catalogo para usar depois",
+        label="Salvar este item no meu catálogo para usar depois",
     )
     update_catalog_price = forms.BooleanField(
         required=False,

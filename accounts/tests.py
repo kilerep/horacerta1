@@ -777,7 +777,7 @@ class MeiMultiCompanyContextTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         row = response.context["selected_client_row"]
-        self.assertEqual(row["quick_closure"]["period_label"], f"{week_start:%d/%m/%Y} ate {week_end:%d/%m/%Y}")
+        self.assertEqual(row["quick_closure"]["period_label"], f"{week_start:%d/%m/%Y} até {week_end:%d/%m/%Y}")
         self.assertEqual(row["quick_closure"]["total_hours"], "04:00")
         self.assertEqual(row["quick_closure"]["estimated_value_brl"], "R$ 480,00")
         self.assertIn(f"date_from={week_start.isoformat()}", row["quick_closure"]["report_url"])
@@ -1430,7 +1430,7 @@ class MeiMultiCompanyContextTests(TestCase):
             follow=True,
         )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Gere e compartilhe o link deste relatório antes de marca-lo como recebido.")
+        self.assertContains(response, "Gere e compartilhe o link deste relatório antes de marcá-lo como recebido.")
         report.refresh_from_db()
         self.assertEqual(report.payment_status, ServiceReport.PaymentStatus.PENDING)
         self.assertIsNone(report.paid_at)

@@ -27,7 +27,7 @@ def manifest(request):
         "id": "/",
         "name": "HoraCerta - Gestão de Horas",
         "short_name": "HoraCerta",
-        "description": "Plataforma de gestão de horas entre empresa e MEI. Controle suas horas, clientes e serviços na palma da mão.",
+        "description": "Organizador de horas, clientes e serviços para prestadores de serviços e MEIs, na palma da mão.",
         "start_url": "/",
         "scope": "/",
         "display": "standalone",

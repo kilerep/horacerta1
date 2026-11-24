@@ -528,7 +528,7 @@ def mei_edit_today_punches(request):
         sorted_times = sorted(final_times)
         for idx in range(0, len(sorted_times) - 1, 2):
             if sorted_times[idx] >= sorted_times[idx + 1]:
-                errors.append("A entrada deve ser menor que a saida em cada par de horários.")
+                errors.append("A entrada deve ser menor que a saída em cada par de horários.")
                 break
 
         if not errors:
@@ -709,11 +709,11 @@ def mei_notifications_bulk_action(request):
             is_read=False,
         ).update(is_read=True, read_at=now)
         if updated:
-            messages.success(request, "Notificacoes marcadas como lidas.")
+            messages.success(request, "Notificações marcadas como lidas.")
         else:
-            messages.info(request, "Não havia notificacoes novas.")
+            messages.info(request, "Não havia notificações novas.")
     else:
-        messages.error(request, "Ação inválida para notificacoes.")
+        messages.error(request, "Ação inválida para notificações.")
     return redirect("mei_notifications")
 
 
@@ -732,9 +732,9 @@ def mei_notification_action(request, notification_id):
     action = (request.POST.get("action") or "").strip()
     if action == "read":
         _mark_notification_read(notification)
-        messages.success(request, "Notificacao marcada como lida.")
+        messages.success(request, "Notificação marcada como lida.")
     else:
-        messages.error(request, "Ação inválida para esta notificacao.")
+        messages.error(request, "Ação inválida para esta notificação.")
     return redirect("mei_notifications")
 
 
@@ -840,11 +840,11 @@ def mei_contract(request):
         quick_date_from = None
         quick_date_to = None
         quick_metrics = None
-        quick_period_label = "Definir manualmente em Relatorios"
+        quick_period_label = "Definir manualmente em Relatórios"
         if contract.closure_type != Contract.ClosureType.CUSTOM:
             quick_date_from, quick_date_to = _suggest_closure_period(contract, today)
             quick_metrics = _compute_contract_period_totals(contract, quick_date_from, quick_date_to)
-            quick_period_label = f"{quick_date_from:%d/%m/%Y} ate {quick_date_to:%d/%m/%Y}"
+            quick_period_label = f"{quick_date_from:%d/%m/%Y} até {quick_date_to:%d/%m/%Y}"
         quick_query = {"contract": str(contract.id)}
         if quick_date_from and quick_date_to:
             quick_query["date_from"] = quick_date_from.isoformat()
@@ -1142,7 +1142,7 @@ def mei_reports(request):
             # dois clientes tem o mesmo total no periodo.
             key=lambda row: (-row["bar_percent"], row["contract"].id),
         )
-    comparison_period_label = f"{comparison_period_from:%d/%m/%Y} ate {comparison_period_to:%d/%m/%Y}"
+    comparison_period_label = f"{comparison_period_from:%d/%m/%Y} até {comparison_period_to:%d/%m/%Y}"
 
     pending_requests = [item for item in requests_qs[:300] if item.status == ActivityReportRequest.Status.PENDING]
     responded_requests = [item for item in requests_qs[:300] if item.status != ActivityReportRequest.Status.PENDING]
@@ -1215,7 +1215,7 @@ def mei_reports(request):
                 if report.status == ServiceReport.Status.DRAFT:
                     messages.error(
                         request,
-                        "Gere e compartilhe o link deste relatório antes de marca-lo como recebido.",
+                        "Gere e compartilhe o link deste relatório antes de marcá-lo como recebido.",
                     )
                     event = "receive_invalid"
                 else:
@@ -1342,7 +1342,7 @@ def mei_service_report_detail(request, report_id):
             if not report.can_be_canceled:
                 messages.error(
                     request,
-                    "Este relatório já esta cancelado ou já foi marcado como recebido/pago e não pode ser cancelado.",
+                    "Este relatório já está cancelado ou já foi marcado como recebido/pago e não pode ser cancelado.",
                 )
                 return redirect("mei_service_report_detail", report_id=report.id)
             if request.POST.get("confirm_cancel") != "on":
@@ -1376,10 +1376,10 @@ def mei_service_report_detail(request, report_id):
                     expires_at = datetime.strptime(expires_at_raw, "%Y-%m-%dT%H:%M")
                     expires_at = timezone.make_aware(expires_at, timezone.get_current_timezone())
                 except ValueError:
-                    messages.error(request, "Informe uma data de expiracao válida.")
+                    messages.error(request, "Informe uma data de expiração válida.")
                     return redirect("mei_service_report_detail", report_id=report.id)
                 if expires_at <= timezone.now():
-                    messages.error(request, "A expiracao precisa ser uma data futura.")
+                    messages.error(request, "A expiração precisa ser uma data futura.")
                     return redirect("mei_service_report_detail", report_id=report.id)
             report.ensure_conference_link(expires_at=expires_at)
             report.save(

@@ -18,7 +18,7 @@ User = get_user_model()
 class UnifiedSignupForm(forms.Form):
     company_name = forms.CharField(label="Nome da empresa", max_length=120, required=False)
     company_email = forms.EmailField(label="Email da empresa (opcional)", required=False)
-    rh_email = forms.EmailField(label="Email do RH/Admin", required=False)
+    rh_email = forms.EmailField(label="E-mail do responsável", required=False)
     password1 = forms.CharField(label="Senha", widget=forms.PasswordInput)
     password2 = forms.CharField(label="Confirmar senha", widget=forms.PasswordInput)
 
@@ -41,7 +41,7 @@ class UnifiedSignupForm(forms.Form):
 
         rh_email = (data.get("rh_email") or "").strip().lower()
         if not rh_email:
-            self.add_error("rh_email", "Informe o email do RH/Admin.")
+            self.add_error("rh_email", "Informe o e-mail do responsável.")
         else:
             data["rh_email"] = rh_email
             if User.objects.filter(email__iexact=rh_email).exists() or User.objects.filter(username__iexact=rh_email).exists():
@@ -170,7 +170,7 @@ class PunchCorrectionRequestForm(forms.ModelForm):
         label="Registro relacionado (opcional)",
         queryset=Punch.all_objects.none(),
         required=False,
-        empty_label="Nenhum registro especifico",
+        empty_label="Nenhum registro específico",
     )
 
     class Meta:
@@ -210,7 +210,7 @@ class PunchCorrectionRequestForm(forms.ModelForm):
         self.fields["contract"].queryset = contracts_qs
         self.fields["problem_date"].required = True
         self.fields["contract"].label_from_instance = (
-            lambda obj: f"{obj.company.name} | inicio {obj.start_date.strftime('%d/%m/%Y') if obj.start_date else '-'}"
+            lambda obj: f"{obj.company.name} | início {obj.start_date.strftime('%d/%m/%Y') if obj.start_date else '-'}"
         )
         self.fields["punch"].queryset = punches_qs
         self.fields["punch"].label_from_instance = (
@@ -394,7 +394,7 @@ class CompanyActivityReportRequestForm(forms.ModelForm):
             "instruction": forms.Textarea(
                 attrs={
                     "rows": 3,
-                    "placeholder": "Instrucao curta para orientar o profissional na resposta.",
+                    "placeholder": "Instrução curta para orientar o profissional na resposta.",
                 }
             ),
         }
@@ -402,7 +402,7 @@ class CompanyActivityReportRequestForm(forms.ModelForm):
             "date_from": "Data inicial",
             "date_to": "Data final",
             "subject": "Título/assunto",
-            "instruction": "Instrucao",
+            "instruction": "Instrução",
         }
 
     def __init__(self, *args, company=None, **kwargs):
@@ -433,7 +433,7 @@ class CompanyActivityReportRequestForm(forms.ModelForm):
         self.fields["contract"].queryset = contract_qs
         self.fields["contract"].label_from_instance = (
             lambda obj: (
-                f"{obj.employee.full_name} | inicio {obj.start_date.strftime('%d/%m/%Y') if obj.start_date else '-'}"
+                f"{obj.employee.full_name} | início {obj.start_date.strftime('%d/%m/%Y') if obj.start_date else '-'}"
                 f" | R$ {obj.hourly_rate}/h"
             )
         )
@@ -522,9 +522,9 @@ class CompanyMEICreateForm(forms.Form):
         widget=forms.ClearableFileInput(attrs={"accept": ".pdf,application/pdf"}),
     )
     contract_notes = forms.CharField(
-        label="Observacoes (opcional)",
+        label="Observações (opcional)",
         required=False,
-        widget=forms.Textarea(attrs={"rows": 3, "placeholder": "Informacoes complementares para a operacao"}),
+        widget=forms.Textarea(attrs={"rows": 3, "placeholder": "Informações complementares para a operação"}),
     )
 
     def __init__(self, *args, company=None, **kwargs):
@@ -687,10 +687,10 @@ class CompanyContractForm(forms.ModelForm):
         }
         labels = {
             "hourly_rate": "Valor/hora do cliente",
-            "start_date": "Início da vigência",
-            "end_date": "Fim da vigência (opcional)",
+            "start_date": "Início do atendimento",
+            "end_date": "Encerramento do atendimento (opcional)",
             "contract_file": "Documento em PDF (opcional)",
-            "notes": "Observacoes (opcional)",
+            "notes": "Observações (opcional)",
         }
 
     def __init__(self, *args, company=None, request=None, **kwargs):
@@ -804,13 +804,13 @@ class MEIClientForm(forms.Form):
         widget=forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
     )
     closure_type = forms.ChoiceField(
-        label="Frequencia",
+        label="Período de fechamento",
         choices=Contract.ClosureType.choices,
     )
     notes = forms.CharField(
-        label="Observacoes",
+        label="Observações",
         required=False,
-        widget=forms.Textarea(attrs={"rows": 4, "placeholder": "Informacoes internas sobre o atendimento, combinados ou faturamento."}),
+        widget=forms.Textarea(attrs={"rows": 4, "placeholder": "Informações internas sobre o atendimento e os combinados."}),
     )
 
     def __init__(self, *args, user=None, instance=None, **kwargs):

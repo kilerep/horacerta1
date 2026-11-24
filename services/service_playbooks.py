@@ -7,7 +7,7 @@ DEFAULT_PLAYBOOK = {
         "Validar dados do cliente e local combinado.",
         "Conferir descrição do serviço e limites do escopo.",
         "Revisar itens, materiais, equipamentos ou despesas previstas.",
-        "Confirmar valor estimado, valor fechado ou regra de cobrança por hora.",
+        "Confirmar valor estimado, valor fechado ou valor por hora.",
         "Registrar períodos de execução e gerar relatório final ao concluir.",
     ],
     "logistics": [
@@ -151,14 +151,14 @@ SERVICE_PLAYBOOKS = {
             "Registrar local, horário e duração estimada.",
             "Listar produtos, materiais descartáveis e recursos necessários.",
             "Registrar observações importantes do atendimento.",
-            "Gerar relatório ou comprovante quando o serviço for concluído.",
+            "Gerar o relatório final quando o serviço for concluído.",
         ],
         "logistics": [
             "Cliente agenda atendimento.",
             "Prestador define procedimento, tempo e valor.",
             "Folha confirma combinado e observações.",
             "Atendimento é executado e registrado.",
-            "Relatório final ou comprovante resume o atendimento.",
+            "O relatório final resume o atendimento.",
         ],
     },
     "eventos-sonorizacao": {
@@ -171,7 +171,7 @@ SERVICE_PLAYBOOKS = {
             "Listar equipamentos inclusos sem expor preço unitário quando for pacote fechado.",
             "Definir operação técnica, acompanhamento e desmontagem.",
             "Registrar sinal, saldo, condições e limites do pacote.",
-            "No futuro, usar check-in opcional de presença no local combinado.",
+            "Registrar a chegada ao local combinado, se for útil para o cliente.",
         ],
         "logistics": [
             "Cliente informa evento, local, data e necessidade técnica.",
@@ -205,10 +205,10 @@ SERVICE_PLAYBOOKS = {
         "document_title": "Plano de aula ou consultoria",
         "items_title": "Entregáveis, materiais e horas previstas",
         "scope_title": "Objetivo do atendimento",
-        "client_focus": "Conferir objetivo, carga horária, temas, entregáveis e formato do atendimento.",
+        "client_focus": "Conferir objetivo, quantidade de horas, temas, entregáveis e formato do atendimento.",
         "checklist": [
             "Definir objetivo do aluno, cliente ou empresa.",
-            "Registrar temas, carga horária e formato presencial/remoto.",
+            "Registrar temas, quantidade de horas e formato presencial/remoto.",
             "Listar materiais de apoio, diagnóstico ou entregáveis.",
             "Combinar valor por hora, pacote ou projeto.",
             "Registrar sessões realizadas e evolução no relatório final.",

@@ -226,7 +226,7 @@ def shipment_send(request, note_id):
 def shipment_delete(request, note_id):
     note = _note_for(request, note_id)
     if note.is_locked:
-        messages.error(request, "Romaneio enviado não pode ser apagado: ele é o seu comprovante.")
+        messages.error(request, "Romaneio enviado não pode ser apagado: ele fica guardado como registro do envio.")
         return redirect("shipment_detail", note_id=note.id)
     note.delete()
     messages.success(request, "Rascunho apagado.")

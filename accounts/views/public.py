@@ -13,9 +13,9 @@ def public_service_report_conference(request, token):
     now = timezone.now()
     unavailable_reason = ""
     if report.conference_revoked_at:
-        unavailable_reason = "Este link de conferencia foi revogado pelo profissional."
+        unavailable_reason = "Este link de conferência foi revogado pelo profissional."
     elif report.conference_is_expired:
-        unavailable_reason = "Este link de conferencia expirou."
+        unavailable_reason = "Este link de conferência expirou."
         if report.conference_final_status != ServiceReport.ConferenceStatus.EXPIRED:
             report.conference_final_status = ServiceReport.ConferenceStatus.EXPIRED
             report.save(update_fields=["conference_final_status", "updated_at"])
@@ -98,7 +98,7 @@ def public_service_report_respond(request, token):
         return render(
             request,
             "public/service_report_conference.html",
-            {"report": None, "payload": {}, "unavailable_reason": "Este link nao aceita mais respostas."},
+            {"report": None, "payload": {}, "unavailable_reason": "Este link não aceita mais respostas."},
             status=410,
         )
     if report.conference_final_status in {
@@ -145,7 +145,7 @@ def public_service_report_pdf(request, token):
     if report.conference_is_expired:
         report.conference_final_status = ServiceReport.ConferenceStatus.EXPIRED
         report.save(update_fields=["conference_final_status", "updated_at"])
-        raise PermissionDenied("Link de conferencia expirado.")
+        raise PermissionDenied("Link de conferência expirado.")
     if not report.conference_first_viewed_at:
         viewed_at = timezone.now()
         report.conference_first_viewed_at = viewed_at
@@ -164,7 +164,7 @@ def public_service_report_xlsx(request, token):
     if report.conference_is_expired:
         report.conference_final_status = ServiceReport.ConferenceStatus.EXPIRED
         report.save(update_fields=["conference_final_status", "updated_at"])
-        raise PermissionDenied("Link de conferencia expirado.")
+        raise PermissionDenied("Link de conferência expirado.")
     if not report.conference_first_viewed_at:
         viewed_at = timezone.now()
         report.conference_first_viewed_at = viewed_at
