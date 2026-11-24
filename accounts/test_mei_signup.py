@@ -183,7 +183,7 @@ class NewMeiFirstScreenTests(TestCase):
 
         self.assertContains(response, "Bem-vindo ao HoraCerta, Maria")
         self.assertContains(response, reverse("mei_client_create"))
-        self.assertNotContains(response, "aguardando liberacao operacional")
+        self.assertNotContains(response, "aguardando liberação de acesso")
         self.assertNotContains(response, "Solicite ao cliente")
 
     def test_mei_with_a_link_but_no_active_contract_keeps_the_waiting_message(self):

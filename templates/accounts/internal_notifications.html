@@ -16,7 +16,7 @@
         </select>
       </label>
       <label>
-        Publico
+        Público
         <select name="audience">
           <option value="">Todos</option>
           {% for value,label in notification_audience_choices %}
@@ -51,7 +51,7 @@
         </select>
       </label>
       <label>
-        Ciencia
+        Ciência
         <select name="ack">
           <option value="">Todas</option>
           <option value="pending" {% if ack_filter == "pending" %}selected{% endif %}>Não marcada</option>
@@ -63,7 +63,7 @@
         <input type="date" name="date_from" value="{{ date_from|date:'Y-m-d' }}">
       </label>
       <label>
-        Ate
+        Até
         <input type="date" name="date_to" value="{{ date_to|date:'Y-m-d' }}">
       </label>
       <button class="btn primary" type="submit">Filtrar</button>
@@ -78,11 +78,11 @@
           <tr>
             <th>Data</th>
             <th>Tipo</th>
-            <th>Publico</th>
+            <th>Público</th>
             <th>Destino</th>
             <th>Mensagem</th>
             <th>Leitura</th>
-            <th>Ciencia</th>
+            <th>Ciência</th>
           </tr>
         </thead>
         <tbody>
@@ -91,7 +91,7 @@
               <tr>
                 <td data-label="Data">{{ item.created_at|date:"d/m/Y H:i" }}</td>
                 <td data-label="Tipo"><span class="pill {{ row.tone }}">{{ item.get_notification_type_display }}</span></td>
-                <td data-label="Publico">{{ item.get_audience_display }}</td>
+                <td data-label="Público">{{ item.get_audience_display }}</td>
                 <td data-label="Destino">
                   {% if item.recipient_company %}{{ item.recipient_company.name }}{% endif %}
                   {% if item.recipient_user %}<div class="muted">{{ item.recipient_user.email|default:item.recipient_user.username }}</div>{% endif %}
@@ -102,7 +102,7 @@
                   {% if item.target_url %}<br><a class="strong-link" href="{{ item.target_url }}">Abrir relacionado</a>{% endif %}
                 </td>
                 <td data-label="Leitura">{% if item.is_read %}{{ item.read_at|date:"d/m/Y H:i" }}{% else %}<span class="pill warn">Não lida</span>{% endif %}</td>
-                <td data-label="Ciencia">
+                <td data-label="Ciência">
                   {% if item.recipient_company %}
                     {% if item.company_acknowledged %}
                       {{ item.company_acknowledged_at|date:"d/m/Y H:i" }}<br>

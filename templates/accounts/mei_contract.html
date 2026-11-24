@@ -234,7 +234,7 @@
                         <div class="client-detail-item"><span>Status</span><strong>{{ row.status.label }}</strong></div>
                         <div class="client-detail-item"><span>Valor/hora</span><strong>{% if contract.hourly_rate %}R$ {{ contract.hourly_rate }}/h{% else %}Não definido{% endif %}</strong></div>
                         <div class="client-detail-item"><span>Data de início</span><strong>{{ contract.start_date|date:"d/m/Y"|default:"-" }}</strong></div>
-                        <div class="client-detail-item"><span>Frequência</span><strong>{{ contract.get_closure_type_display }}</strong></div>
+                        <div class="client-detail-item"><span>Período de fechamento</span><strong>{{ contract.get_closure_type_display }}</strong></div>
                         {% if company.contact_name %}<div class="client-detail-item"><span>Contato</span><strong>{{ company.contact_name }}</strong></div>{% endif %}
                         {% if company.whatsapp or company.phone %}<div class="client-detail-item"><span>WhatsApp</span><strong>{{ company.whatsapp|default:company.phone }}</strong></div>{% endif %}
                         {% if contract.notes %}<div class="client-detail-item"><span>Observações</span><strong>{{ contract.notes }}</strong></div>{% endif %}
@@ -255,7 +255,7 @@
                   <article class="client-detail-box">
                     <h3>Fechamento rápido</h3>
                     <div class="quick-closure-grid">
-                      <div class="client-metric"><span>Frequência</span><strong>{{ contract.get_closure_type_display }}</strong></div>
+                      <div class="client-metric"><span>Período de fechamento</span><strong>{{ contract.get_closure_type_display }}</strong></div>
                       <div class="client-metric"><span>Período</span><strong>{{ row.quick_closure.period_label }}</strong></div>
                       <div class="client-metric"><span>Horas no período</span><strong>{{ row.quick_closure.total_hours }}</strong></div>
                       <div class="client-metric"><span>Valor estimado</span><strong>{{ row.quick_closure.estimated_value_brl }}</strong></div>

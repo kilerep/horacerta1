@@ -1357,7 +1357,7 @@ class ServiceJobAreaTests(TestCase):
         self.assertContains(detail_response, "Pedir cotação")
         self.assertContains(detail_response, "Copiar mensagem")
         self.assertContains(detail_response, "Abrir WhatsApp")
-        self.assertContains(detail_response, "Cotação oficial")
+        self.assertContains(detail_response, "Pedido de cotação")
         self.assertContains(detail_response, "Mensagem para loja: pronta para pedir preço pelo WhatsApp.")
         self.assertContains(detail_response, "* 2 x Disjuntor 20A")
 

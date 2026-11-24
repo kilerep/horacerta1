@@ -1,6 +1,6 @@
 {% extends "accounts/base.html" %}
-{% block title %}Exportacoes{% endblock %}
-{% block page_title %}Exportacoes{% endblock %}
+{% block title %}Exportações{% endblock %}
+{% block page_title %}Exportações{% endblock %}
 
 {% block content %}
   <style>
@@ -48,7 +48,7 @@
           <input type="date" name="start">
         </div>
         <div class="field">
-          <label>Ate</label>
+          <label>Até</label>
           <input type="date" name="end">
         </div>
         <button class="btn" type="submit" formaction="{% url 'export_csv' %}" data-loading-text="Gerando CSV...">CSV</button>

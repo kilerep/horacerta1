@@ -51,7 +51,7 @@
     <section class="today-edit__panel">
       <h2 class="today-edit__title">Editar horários de hoje</h2>
       <p class="today-edit__sub">
-        Você so pode editar horários do dia atual. Dias anteriores ficam bloqueados para preservar a seguranca dos relatórios.
+        Você só pode editar horários do dia atual. Dias anteriores ficam bloqueados para preservar a segurança dos relatórios.
       </p>
       {% if is_locked %}
         <div class="today-edit__locked" style="margin-top:12px;">{{ lock_message }}</div>
@@ -116,7 +116,7 @@
         </div>
 
         <div class="today-edit__actions">
-          <button class="btn primary" type="submit" {% if is_locked %}disabled{% endif %}>Salvar alteracoes</button>
+          <button class="btn primary" type="submit" {% if is_locked %}disabled{% endif %}>Salvar alterações</button>
           <a class="btn" href="{% url 'mei_history' %}">Cancelar</a>
         </div>
       </form>

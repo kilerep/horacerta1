@@ -2,7 +2,7 @@
 {% block title %}HoraCerta - Auditoria interna{% endblock %}
 {% block internal_breadcrumb %}<span class="internal-breadcrumb__sep">></span><span>Auditoria</span>{% endblock %}
 {% block internal_title %}Auditoria{% endblock %}
-{% block internal_subtitle %}Linha do tempo centralizada de ações sensiveis realizadas no HoraCerta.{% endblock %}
+{% block internal_subtitle %}Linha do tempo centralizada de ações sensíveis realizadas no HoraCerta.{% endblock %}
 
 {% block internal_content %}
   <style>
@@ -42,7 +42,7 @@
         </select>
       </div>
       <div class="field">
-        <label for="employee">Funcionario/prestador</label>
+        <label for="employee">Prestador</label>
         <select id="employee" name="employee">
           <option value="">Todos</option>
           {% for option in employees %}
@@ -76,8 +76,8 @@
   <section class="internal-panel">
     <div class="internal-head">
       <div>
-        <h3>Eventos sensiveis</h3>
-        <p class="internal-subtitle">Registros somente leitura. Edição e exclusão não estão disponiveis nesta tela.</p>
+        <h3>Eventos sensíveis</h3>
+        <p class="internal-subtitle">Registros somente leitura. Edição e exclusão não estão disponíveis nesta tela.</p>
       </div>
       <span class="pill neutral">{{ rows|length }} itens</span>
     </div>
