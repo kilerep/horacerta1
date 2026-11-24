@@ -187,22 +187,6 @@ def privacy_view(request):
     return render(request, "public/privacy.html")
 
 
-def _public_base_url(request):
-    app_base_url = (settings.APP_BASE_URL or "").rstrip("/")
-    return app_base_url or f"{request.scheme}://{request.get_host()}"
-
-
-def _public_page_context(request, path="/"):
-    base_url = _public_base_url(request)
-    canonical_url = f"{base_url}{path}"
-    og_image_url = f"{base_url}{static('img/public/prints/painel-profissional-mobile.png.jpg')}"
-    return {
-        "canonical_url": canonical_url,
-        "og_url": canonical_url,
-        "og_image_url": og_image_url,
-    }
-
-
 def landing_view(request):
     # Landing page removida (nov/2026): "/" vai direto para o login; quem ja esta
     # logado segue para a tela certa do seu perfil.
@@ -211,14 +195,8 @@ def landing_view(request):
     return redirect("login")
 
 
-def evaluation_view(request):
-    context = _public_page_context(request, "/avaliacao/")
-    return render(request, "public/evaluation.html", context)
-
-
-def evaluation_next_step_view(request):
-    context = _public_page_context(request, "/avaliacao/proximo-passo/")
-    return render(request, "public/evaluation_next_step.html", context)
+# "evaluation_view"/"evaluation_next_step_view" (avaliação para empresas) foram removidas em
+# 2026-11-23: os endereços /avaliacao/ já redirecionam para o cadastro do prestador (accounts/urls.py).
 
 
 # Observação: as views "pwa_manifest", "pwa_service_worker" e a seção
