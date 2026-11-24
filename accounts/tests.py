@@ -831,7 +831,7 @@ class MeiMultiCompanyContextTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, self.company_a.name)
         self.assertContains(response, "Em breve: relatório de serviço por período")
-        self.assertContains(response, "Relatorio de servico -")
+        self.assertContains(response, "Relatório de serviço -")
 
     def test_theme_selector_uses_graphite_default_and_professional_themes(self):
         self.client.logout()
