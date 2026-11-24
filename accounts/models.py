@@ -4,8 +4,8 @@ from django.contrib.auth.models import AbstractUser
 
 class User(AbstractUser):
     class Role(models.TextChoices):
-        EMPRESA = "EMPRESA", "Empresa (RH/Admin)"
-        FUNCIONARIO = "FUNCIONARIO", "Funcionário (MEI)"
+        EMPRESA = "EMPRESA", "Empresa (área desativada)"
+        FUNCIONARIO = "FUNCIONARIO", "Prestador (MEI)"
 
     class VisualTheme(models.TextChoices):
         GRAPHITE = "graphite-premium", "Grafite Premium"

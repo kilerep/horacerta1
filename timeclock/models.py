@@ -66,9 +66,9 @@ class Contract(models.Model):
     def clean(self):
         errors = {}
         if not self.employee_id:
-            errors["employee"] = "Contract precisa de um employee valido."
+            errors["employee"] = "Cliente precisa de um prestador válido."
         if not self.company_id:
-            errors["company"] = "Contract precisa de uma company valida."
+            errors["company"] = "Cliente precisa de uma empresa válida."
         if self.employee_id and self.company_id and not Employee.objects.filter(
             id=self.employee_id,
             company_id=self.company_id,
@@ -101,8 +101,8 @@ class ActivePunchManager(models.Manager):
 
 class Punch(models.Model):
     class ValidationMethod(models.TextChoices):
-        FREE_POLICY = "FREE_POLICY", "Politica livre"
-        GEOLOCATION = "GEOLOCATION", "Geolocalizacao"  # legado: GPS desativado em 2026-11
+        FREE_POLICY = "FREE_POLICY", "Política livre"
+        GEOLOCATION = "GEOLOCATION", "Geolocalização"  # legado: GPS desativado em 2026-11
         PRESENTIAL_QR_PENDING = "PRESENTIAL_QR_PENDING", "Presencial com QR (pendente)"
 
     # legado: GPS desativado em 2026-11. Novos registros sempre usam FREE;
@@ -111,13 +111,13 @@ class Punch(models.Model):
         FREE = "FREE", "Livre"
         ON_SITE = "ON_SITE", "No local"
         OUT_OF_RADIUS = "OUT_OF_RADIUS", "Fora do raio"
-        NO_LOCATION = "NO_LOCATION", "Sem localizacao"
-        IMPRECISE = "IMPRECISE", "Localizacao imprecisa"
+        NO_LOCATION = "NO_LOCATION", "Sem localização"
+        IMPRECISE = "IMPRECISE", "Localização imprecisa"
 
     class QrConfirmationStatus(models.TextChoices):
-        NOT_REQUIRED = "NOT_REQUIRED", "Nao exigido"
+        NOT_REQUIRED = "NOT_REQUIRED", "Não exigido"
         CONFIRMED = "CONFIRMED", "Confirmado por QR"
-        REQUIRED_MISSING = "REQUIRED_MISSING", "QR exigido e nao confirmado"
+        REQUIRED_MISSING = "REQUIRED_MISSING", "QR exigido e não confirmado"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     audit_event_id = models.UUIDField(default=uuid.uuid4, editable=False, db_index=True)
@@ -233,10 +233,10 @@ class Punch(models.Model):
 
 class PunchCorrectionLog(models.Model):
     class ActionType(models.TextChoices):
-        TIME_CHANGED = "time_changed", "Horario corrigido"
+        TIME_CHANGED = "time_changed", "Horário corrigido"
         CANCELLED = "cancelled", "Cancelado"
         RESTORED = "restored", "Restaurado"
-        ADMIN_NOTE_ADDED = "admin_note_added", "Observacao administrativa"
+        ADMIN_NOTE_ADDED = "admin_note_added", "Observação administrativa"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     punch = models.ForeignKey(
@@ -270,11 +270,11 @@ class PunchCorrectionLog(models.Model):
 
 class WorkdayChangeLog(models.Model):
     class ChangeType(models.TextChoices):
-        EDIT = "edit", "Edicao"
-        ADD = "add", "Adicao"
-        REMOVE = "remove", "Remocao"
+        EDIT = "edit", "Edição"
+        ADD = "add", "Adição"
+        REMOVE = "remove", "Remoção"
         CLIENT_CHANGED = "client_changed", "Troca de cliente"
-        MIXED = "mixed", "Alteracao mista"
+        MIXED = "mixed", "Alteração mista"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(
@@ -323,13 +323,13 @@ class PunchCorrectionRequest(models.Model):
     class ProblemType(models.TextChoices):
         EXTRA_PUNCH = "extra_punch", "Registro a mais"
         MISSED_PUNCH = "missed_punch", "Esqueci de registrar um horário"
-        WRONG_TIME = "wrong_time", "Horario errado"
+        WRONG_TIME = "wrong_time", "Horário errado"
         DUPLICATED_PUNCH = "duplicated_punch", "Registro duplicado"
         OTHER = "other", "Outro"
 
     class Status(models.TextChoices):
         OPEN = "open", "Aberta"
-        IN_REVIEW = "in_review", "Em analise"
+        IN_REVIEW = "in_review", "Em análise"
         CORRECTED = "corrected", "Corrigida"
         REJECTED = "rejected", "Recusada"
 
@@ -399,15 +399,15 @@ class InternalNotification(models.Model):
         MEI = "mei", "Prestador/MEI"
 
     class NotificationType(models.TextChoices):
-        CORRECTION_REQUEST_CREATED = "correction_request_created", "Solicitacao de correcao criada"
-        CORRECTION_REQUEST_STATUS_CHANGED = "correction_request_status_changed", "Status de solicitacao alterado"
-        PUNCH_CORRECTED = "punch_corrected", "Horario corrigido"
+        CORRECTION_REQUEST_CREATED = "correction_request_created", "Solicitação de correção criada"
+        CORRECTION_REQUEST_STATUS_CHANGED = "correction_request_status_changed", "Status de solicitação alterado"
+        PUNCH_CORRECTED = "punch_corrected", "Horário corrigido"
         PUNCH_CANCELLED = "punch_cancelled", "Registro cancelado"
         PUNCH_RESTORED = "punch_restored", "Registro restaurado"
-        ADMIN_NOTE_ADDED = "admin_note_added", "Observacao administrativa adicionada"
-        COMPANY_ACKNOWLEDGED = "company_acknowledged", "Ciencia da empresa registrada"
-        SHIPMENT_NOTE = "shipment_note", "Nota de envio"
-        SERVICE_REMINDER = "service_reminder", "Lembrete de servico"
+        ADMIN_NOTE_ADDED = "admin_note_added", "Observação administrativa adicionada"
+        COMPANY_ACKNOWLEDGED = "company_acknowledged", "Ciência da empresa registrada"
+        SHIPMENT_NOTE = "shipment_note", "Romaneio de envio"
+        SERVICE_REMINDER = "service_reminder", "Lembrete de serviço"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     recipient_user = models.ForeignKey(
@@ -538,14 +538,14 @@ class ActivityReportRequest(models.Model):
     def clean(self):
         errors = {}
         if not self.employee_id:
-            errors["employee"] = "Solicitacao precisa de um employee valido."
+            errors["employee"] = "Solicitação precisa de um prestador válido."
         if not self.company_id:
-            errors["company"] = "Solicitacao precisa de uma company valida."
+            errors["company"] = "Solicitação precisa de uma empresa válida."
         if self.employee_id and self.company_id and not Employee.objects.filter(
             id=self.employee_id,
             company_id=self.company_id,
         ).exists():
-            errors["employee"] = "Employee da solicitacao precisa pertencer a empresa."
+            errors["employee"] = "O prestador da solicitação precisa pertencer à empresa."
         if self.contract_id:
             contract = Contract.objects.select_related("employee", "company").filter(id=self.contract_id).first()
             if not contract:
@@ -556,11 +556,11 @@ class ActivityReportRequest(models.Model):
                 if self.employee_id and contract.employee_id != self.employee_id:
                     errors["employee"] = "Profissional da solicitação difere do profissional do cliente."
         if self.date_from and self.date_to and self.date_from > self.date_to:
-            errors["date_to"] = "Data final nao pode ser anterior a data inicial."
+            errors["date_to"] = "Data final não pode ser anterior à data inicial."
         if self.status in {self.Status.RESPONDED, self.Status.REVIEWED} and not self.response_report_id:
-            errors["response_report"] = "Solicitacao respondida precisa de relatorio vinculado."
+            errors["response_report"] = "Solicitação respondida precisa de relatório ligado a ela."
         if self.status == self.Status.REVIEWED and not self.reviewed_by_id:
-            errors["reviewed_by"] = "Solicitacao revisada precisa de usuario revisor."
+            errors["reviewed_by"] = "Solicitação revisada precisa de usuário revisor."
         if errors:
             raise ValidationError(errors)
 
@@ -600,7 +600,7 @@ class ServiceReport(models.Model):
         CANCELED = "CANCELED", "Cancelado"
 
     class ConferenceStatus(models.TextChoices):
-        PENDING = "PENDING", "Aguardando conferencia"
+        PENDING = "PENDING", "Aguardando conferência"
         VIEWED = "VIEWED", "Visualizado"
         REVIEWED = "REVIEWED", "Conferido"
         DIVERGENT = "DIVERGENT", "Com divergência"
@@ -670,9 +670,9 @@ class ServiceReport(models.Model):
     def clean(self):
         errors = {}
         if not self.company_id:
-            errors["company"] = "Relatorio precisa de uma empresa valida."
+            errors["company"] = "Relatório precisa de uma empresa válida."
         if not self.employee_id:
-            errors["employee"] = "Relatorio precisa de um profissional valido."
+            errors["employee"] = "Relatório precisa de um profissional válido."
         if not self.contract_id:
             errors["contract"] = "Relatório precisa de um cliente válido."
 
@@ -686,10 +686,10 @@ class ServiceReport(models.Model):
                 if self.employee_id and contract.employee_id != self.employee_id:
                     errors["employee"] = "Profissional do relatório difere do profissional do cliente."
                 if self.company_id and self.employee_id and contract.employee.company_id != self.company_id:
-                    errors["employee"] = "Profissional informado nao pertence a empresa."
+                    errors["employee"] = "Profissional informado não pertence à empresa."
 
         if self.date_from and self.date_to and self.date_from > self.date_to:
-            errors["date_to"] = "Data final nao pode ser anterior a data inicial."
+            errors["date_to"] = "Data final não pode ser anterior à data inicial."
         if errors:
             raise ValidationError(errors)
 

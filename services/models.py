@@ -49,8 +49,8 @@ class ServiceRequest(models.Model):
 
     class Source(models.TextChoices):
         WHATSAPP = "WHATSAPP", "WhatsApp"
-        PHONE = "PHONE", "Ligacao"
-        REFERRAL = "REFERRAL", "Indicacao"
+        PHONE = "PHONE", "Ligação"
+        REFERRAL = "REFERRAL", "Indicação"
         OLD_CLIENT = "OLD_CLIENT", "Cliente antigo"
         PUBLIC_LINK = "PUBLIC_LINK", "Link público"
         OTHER = "OTHER", "Outro"
@@ -204,7 +204,7 @@ class ServiceRequestItem(models.Model):
             models.Index(fields=["service_request", "created_at"]),
         ]
         verbose_name = "Item rápido do pedido"
-        verbose_name_plural = "Itens rapidos do pedido"
+        verbose_name_plural = "Itens rápidos do pedido"
 
     def __str__(self):
         return f"{self.quantity_label} x {self.name}"
@@ -548,10 +548,10 @@ class ServiceItemExpense(models.Model):
         MATERIAL = "MATERIAL", "Material"
         EXPENSE = "EXPENSE", "Despesa"
         PART = "PART", "Peça"
-        TOLL = "TOLL", "Pedagio"
-        FUEL = "FUEL", "Combustivel"
+        TOLL = "TOLL", "Pedágio"
+        FUEL = "FUEL", "Combustível"
         PARKING = "PARKING", "Estacionamento"
-        FOOD = "FOOD", "Alimentacao"
+        FOOD = "FOOD", "Alimentação"
         OTHER = "OTHER", "Outro"
 
     class UsageStatus(models.TextChoices):
@@ -687,8 +687,8 @@ class ServiceItemCatalog(models.Model):
                 name="unique_service_catalog_code_per_professional",
             ),
         ]
-        verbose_name = "Item do catalogo"
-        verbose_name_plural = "Itens do catalogo"
+        verbose_name = "Item do catálogo"
+        verbose_name_plural = "Itens do catálogo"
 
     def __str__(self):
         return f"{self.internal_code} - {self.name}" if self.internal_code else self.name
