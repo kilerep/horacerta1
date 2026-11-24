@@ -22,6 +22,11 @@
   .is-row .meta{display:flex;flex-wrap:wrap;gap:2px 10px;color:var(--color-text-muted);font-size:13.5px}
   .is-row .qty{font-weight:900;font-variant-numeric:tabular-nums;white-space:nowrap}
   .is-none{color:var(--color-text-muted);font-size:14px}
+  .is-pickrow{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:center;border-top:1px solid var(--color-border)}
+  .is-pickrow:first-of-type{border-top:0}
+  .is-pickrow .is-row{border-top:0}
+  .is-check{display:grid;place-items:center;width:44px;height:44px;margin:0;cursor:pointer}
+  .is-check input{width:22px;height:22px;accent-color:var(--color-primary)}
   @media (max-width:640px){.is-top,.is-block{padding-left:14px;padding-right:14px}.is-top h2{font-size:20px}}
 </style>
 {% endblock %}
@@ -63,6 +68,8 @@
           <section class="is-block">
             <h3>{% icon "clock" 16 %} Cortes</h3>
             {% for entry in group.cuts %}
+              <div class="is-pickrow">
+              <label class="is-check"><input type="checkbox" name="entry" value="{{ entry.id }}" form="search-romaneio" data-search-pick aria-label="Mandar {{ entry.item_code|default:'item' }} da {{ entry.sheet.equipment }} para o romaneio"></label>
               <a class="is-row" href="{% url 'production_entry_edit' entry.sheet_id entry.id %}">
                 <span>
                   <strong>{{ entry.work_date|date:"d/m/Y" }} · {{ entry.sheet.equipment }}</strong>
@@ -74,6 +81,7 @@
                 </span>
                 <span class="qty">{% if entry.quantity %}{{ entry.quantity }} un.{% else %}—{% endif %}</span>
               </a>
+              </div>
             {% endfor %}
           </section>
         {% endif %}
@@ -101,6 +109,31 @@
     {% empty %}
       <div class="prod-empty">Nenhum item encontrado para “{{ query }}”. Confira o código ou tente só uma parte dele.</div>
     {% endfor %}
+    {% if groups %}
+      <form id="search-romaneio" class="prod-pickbar no-print" method="post" action="{% url 'shipment_from_search' %}" data-search-bar hidden>
+        {% csrf_token %}
+        <strong data-search-count>0 itens</strong>
+        <label class="sr-only" for="search-target">Para onde</label>
+        <select id="search-target" name="target">
+          {% for draft in shipment_drafts %}<option value="{{ draft.id }}"{% if forloop.first %} selected{% endif %}>Continuar romaneio para {{ draft.destination_company|default:"sem destino" }} ({{ draft.item_count }} {% if draft.item_count == 1 %}item{% else %}itens{% endif %})</option>{% endfor %}
+          <option value="new">Novo romaneio</option>
+        </select>
+        <button class="btn primary" type="submit">Mandar para o romaneio</button>
+      </form>
+      <script>
+        (function () {
+          var bar = document.querySelector("[data-search-bar]");
+          var count = document.querySelector("[data-search-count]");
+          function update() {
+            var n = document.querySelectorAll("[data-search-pick]:checked").length;
+            bar.hidden = !n;
+            count.textContent = n + (n === 1 ? " item" : " itens");
+          }
+          document.addEventListener("change", function (e) { if (e.target.matches("[data-search-pick]")) update(); });
+          update();
+        })();
+      </script>
+    {% endif %}
   {% endif %}
 </div>
 {% endblock %}

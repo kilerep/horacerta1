@@ -323,7 +323,11 @@ def item_search(request):
     from .item_history import item_groups
 
     query = (request.GET.get("q") or "").strip()[:60]
-    return render(request, "production/item_search.html", {"query": query, "groups": item_groups(request.user, query)})
+    return render(request, "production/item_search.html", {
+        "query": query, "groups": item_groups(request.user, query),
+        "shipment_drafts": ShipmentNote.objects.filter(owner=request.user, status=ShipmentNote.Status.DRAFT)
+        .annotate(item_count=Count("items")).order_by("-updated_at"),
+    })
 
 
 @login_required

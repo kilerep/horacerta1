@@ -393,8 +393,22 @@ def shipment_from_entries(request, sheet_id):
     from .models import ProductionEntry, ProductionSheet
 
     sheet = get_object_or_404(ProductionSheet, id=sheet_id, owner=request.user)
+    return _add_entries_to_draft(request, ProductionEntry.objects.filter(sheet=sheet))
+
+
+@login_required
+@require_POST
+def shipment_from_search(request):
+    """Itens marcados na busca (de qualquer maquina do usuario) vao para o romaneio em montagem."""
+    from .models import ProductionEntry
+
+    return _add_entries_to_draft(request, ProductionEntry.objects.filter(sheet__owner=request.user))
+
+
+def _add_entries_to_draft(request, allowed):
+    """Junta os itens marcados (so os de `allowed`) no rascunho escolhido ou num novo."""
     wanted = [value for value in request.POST.getlist("entry") if value]
-    by_id = {str(e.id): e for e in ProductionEntry.objects.filter(sheet=sheet, id__in=_valid_uuids(wanted))}
+    by_id = {str(e.id): e for e in allowed.filter(id__in=_valid_uuids(wanted))}
     entries = [by_id[value] for value in wanted if value in by_id]  # na ordem em que foram marcados
     if not entries:
         raise Http404
