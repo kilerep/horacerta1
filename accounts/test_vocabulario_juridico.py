@@ -27,11 +27,14 @@ estão: só o texto que a pessoa vê é verificado.
 import io
 import re
 import tokenize
+from datetime import date
+from decimal import Decimal
 from pathlib import Path
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, TestCase, override_settings
+from django.urls import reverse
 
 User = get_user_model()
 
@@ -195,3 +198,59 @@ class VocabularioJuridicoTests(SimpleTestCase):
         self.assertEqual(User.Role.FUNCIONARIO.value, "FUNCIONARIO")
         self.assertEqual(User.Role.FUNCIONARIO.label, "Prestador (MEI)")
         self.assertNotIn("RH", User.Role.EMPRESA.label)
+
+
+@override_settings(ALLOWED_HOSTS=["testserver", "localhost"], SECURE_SSL_REDIRECT=False)
+class RelatorioPagoApareceComoConferidoTests(TestCase):
+    """O HoraCerta não controla pagamento: relatório antigo marcado como pago aparece como
+    "Conferido pelo cliente". O valor gravado (PAID/paid) não muda."""
+
+    def setUp(self):
+        from companies.models import Company, Employee
+        from timeclock.models import Contract, ServiceReport
+
+        self.user = User.objects.create_user(username="pago@example.com", email="pago@example.com",
+                                             password="x-Senha-123456", role=User.Role.FUNCIONARIO)
+        company = Company.objects.create(owner=self.user, name="Padaria Sol")
+        employee = Employee.objects.create(user=self.user, company=company, full_name="Prestador Teste", is_active=True)
+        self.contract = Contract.objects.create(company=company, employee=employee, hourly_rate=Decimal("50.00"),
+                                                start_date=date(2026, 1, 1), is_active=True)
+        self.report = ServiceReport.objects.create(
+            company=company, employee=employee, contract=self.contract, report_date=date(2026, 6, 4),
+            date_from=date(2026, 6, 1), date_to=date(2026, 6, 4), title="Relatório antigo",
+            status=ServiceReport.Status.PAID, payment_status=ServiceReport.PaymentStatus.PAID,
+        )
+        self.report.ensure_conference_link()
+        self.report.save()
+        self.client.force_login(self.user)
+
+    def test_rotulos_nao_falam_em_pago(self):
+        from timeclock.models import ServiceReport
+
+        self.assertEqual(ServiceReport.Status.PAID.value, "PAID")
+        self.assertEqual(ServiceReport.Status.PAID.label, "Conferido pelo cliente")
+        self.assertEqual(ServiceReport.PaymentStatus.PAID.value, "paid")
+        self.assertEqual(ServiceReport.PaymentStatus.PAID.label, "Conferido pelo cliente")
+
+    def test_telas_mostram_conferido_pelo_cliente(self):
+        from timeclock.models import ServiceReport
+
+        urls = [
+            reverse("mei_reports"),
+            reverse("mei_reports") + f"?status={ServiceReport.Status.REVIEWED}",
+            reverse("mei_service_report_detail", args=[self.report.id]),
+            reverse("mei_contract") + f"?contract={self.contract.id}",
+        ]
+        for url in urls:
+            with self.subTest(url=url):
+                html = self.client.get(url).content.decode()
+                self.assertNotRegex(html, r">\s*Pago\s*<")
+                self.assertNotIn("Recebido:", html)
+        lista = self.client.get(reverse("mei_reports") + f"?status={ServiceReport.Status.REVIEWED}").content.decode()
+        self.assertIn("Conferido pelo cliente", lista)
+        detalhe = self.client.get(reverse("mei_service_report_detail", args=[self.report.id])).content.decode()
+        self.assertIn("Conferido pelo cliente", detalhe)
+        publico = self.client_class().get(
+            reverse("public_service_report_conference", args=[self.report.conference_token])
+        ).content.decode()
+        self.assertNotRegex(publico, r"\bPago\b")

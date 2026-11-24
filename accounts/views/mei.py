@@ -1096,7 +1096,10 @@ def mei_reports(request):
     if date_to:
         reports_qs = reports_qs.filter(date_from__lte=date_to)
     valid_statuses = {choice[0] for choice in ServiceReport.Status.choices}
-    if status_filter in valid_statuses:
+    if status_filter == ServiceReport.Status.REVIEWED:
+        # Relatórios antigos com status PAID aparecem como "Conferido pelo cliente".
+        reports_qs = reports_qs.filter(status__in=[ServiceReport.Status.REVIEWED, ServiceReport.Status.PAID])
+    elif status_filter in valid_statuses:
         reports_qs = reports_qs.filter(status=status_filter)
     if view_filter == "viewed":
         reports_qs = reports_qs.filter(conference_first_viewed_at__isnull=False)
@@ -1342,7 +1345,7 @@ def mei_service_report_detail(request, report_id):
             if not report.can_be_canceled:
                 messages.error(
                     request,
-                    "Este relatório já está cancelado ou já foi marcado como recebido/pago e não pode ser cancelado.",
+                    "Este relatório já está cancelado ou já foi conferido pelo cliente e não pode ser cancelado.",
                 )
                 return redirect("mei_service_report_detail", report_id=report.id)
             if request.POST.get("confirm_cancel") != "on":

@@ -1209,8 +1209,8 @@ def _build_mei_persistent_notification_card(notification):
 def _service_report_received_label(report):
     if report.payment_status == ServiceReport.PaymentStatus.PAID:
         if report.paid_at:
-            return f"Recebido: {timezone.localtime(report.paid_at).strftime('%d/%m/%Y %H:%M')}"
-        return "Recebido"
+            return f"Conferido pelo cliente: {timezone.localtime(report.paid_at).strftime('%d/%m/%Y %H:%M')}"
+        return "Conferido pelo cliente"
     return "Pendente"
 
 
@@ -1221,8 +1221,9 @@ def _service_report_view_label(report):
 
 
 def _service_report_status_label(report):
+    # Relatórios antigos marcados como pagos aparecem como conferidos: o HoraCerta não controla pagamento.
     if report.status == ServiceReport.Status.PAID:
-        return "Recebido"
+        return "Conferido pelo cliente"
     return report.get_status_display()
 
 

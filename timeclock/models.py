@@ -596,7 +596,7 @@ class ServiceReport(models.Model):
         VIEWED = "VIEWED", "Visualizado"
         REVIEWED = "REVIEWED", "Conferido"
         DIVERGENT = "DIVERGENT", "Com divergência"
-        PAID = "PAID", "Pago"
+        PAID = "PAID", "Conferido pelo cliente"  # legado: valor gravado continua PAID
         CANCELED = "CANCELED", "Cancelado"
 
     class ConferenceStatus(models.TextChoices):
@@ -609,7 +609,7 @@ class ServiceReport(models.Model):
 
     class PaymentStatus(models.TextChoices):
         PENDING = "pending", "Pendente"
-        PAID = "paid", "Pago"
+        PAID = "paid", "Conferido pelo cliente"  # legado: valor gravado continua paid
 
     company = models.ForeignKey(
         Company,
