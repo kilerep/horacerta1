@@ -101,9 +101,9 @@ class Employee(models.Model):
     def clean(self):
         errors = {}
         if not self.user_id:
-            errors["user"] = "Employee precisa de um usuario valido."
+            errors["user"] = "Employee precisa de um usuário válido."
         if not self.company_id:
-            errors["company"] = "Employee precisa de uma empresa valida."
+            errors["company"] = "Employee precisa de uma empresa válida."
         if errors:
             raise ValidationError(errors)
 
@@ -123,7 +123,7 @@ class Employee(models.Model):
 
 class EmployeeRelationshipAuditLog(models.Model):
     class ActionType(models.TextChoices):
-        RELATIONSHIP_ENDED = "relationship_ended", "Vinculo encerrado"
+        RELATIONSHIP_ENDED = "relationship_ended", "Atendimento encerrado"
 
     admin_user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -178,7 +178,7 @@ class Feature(models.Model):
     class RequiredRole(models.TextChoices):
         ANY = "ANY", "Qualquer papel"
         EMPRESA = "EMPRESA", "Somente empresa"
-        FUNCIONARIO = "FUNCIONARIO", "Somente funcionario/MEI"
+        FUNCIONARIO = "FUNCIONARIO", "Somente prestador/MEI"
 
     code = models.SlugField(max_length=80, unique=True)
     name = models.CharField(max_length=120)
@@ -342,13 +342,13 @@ class CompanyFeatureOverride(models.Model):
 class CompanyAttendancePolicy(models.Model):
     class ValidationMode(models.TextChoices):
         FREE = "FREE", "Livre"
-        GEOLOCATION = "GEOLOCATION", "Com localizacao"  # legado: GPS desativado em 2026-11 (tratado como livre)
+        GEOLOCATION = "GEOLOCATION", "Com localização"  # legado: GPS desativado em 2026-11 (tratado como livre)
         PRESENTIAL_QR = "PRESENTIAL_QR", "Presencial com QR"
 
     class QrRequirement(models.TextChoices):
-        NONE = "NONE", "Nao exigir QR"
-        FIRST_PUNCH = "FIRST_PUNCH", "Exigir QR na primeira marcacao"
-        FIRST_AND_LAST = "FIRST_AND_LAST", "Exigir QR na primeira e ultima marcacao"
+        NONE = "NONE", "Não exigir QR"
+        FIRST_PUNCH = "FIRST_PUNCH", "Exigir QR no primeiro registro"
+        FIRST_AND_LAST = "FIRST_AND_LAST", "Exigir QR no primeiro e no último registro"
 
     company = models.OneToOneField(
         Company,
@@ -393,7 +393,7 @@ class CompanyAttendancePolicy(models.Model):
         errors = {}
         if self.default_location_id and self.company_id:
             if self.default_location.company_id != self.company_id:
-                errors["default_location"] = "Local padrao precisa pertencer a mesma empresa da politica."
+                errors["default_location"] = "Local padrão precisa pertencer à mesma empresa da política."
         if self.validation_mode == self.ValidationMode.FREE:
             self.require_location = False
             self.require_qr = False
@@ -444,7 +444,7 @@ class CompanyAuthorizedLocation(models.Model):
     def clean(self):
         errors = {}
         if not self.company_id:
-            errors["company"] = "Local autorizado precisa de uma empresa valida."
+            errors["company"] = "Local autorizado precisa de uma empresa válida."
         if errors:
             raise ValidationError(errors)
 

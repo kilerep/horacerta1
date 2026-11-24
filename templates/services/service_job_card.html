@@ -3,7 +3,7 @@
   <div class="sc-body">
     <div class="sc-top">
       <span class="sc-client">{{ job.client_display_name }}</span>
-      {% if job.is_overdue %}<span class="status-chip danger">Atrasado</span>{% else %}<span class="status-chip {{ job.status_tone }}">{{ job.status_label }}</span>{% endif %}
+      {% if job.is_overdue %}<span class="status-chip danger">Fora do prazo</span>{% else %}<span class="status-chip {{ job.status_tone }}">{{ job.status_label }}</span>{% endif %}
     </div>
     <h3>{{ job.title }}</h3>
     <div class="service-meta">

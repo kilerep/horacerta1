@@ -64,11 +64,11 @@ def create_or_link_mei_by_email(
     contract_payload: dict | None = None,
 ) -> MeiLinkResult:
     if not company:
-        raise MeiLinkError("company_missing", "Empresa nao encontrada para criar MEI.")
+        raise MeiLinkError("company_missing", "Empresa não encontrada para criar MEI.")
 
     normalized_email = _normalize_email(mei_email)
     if not normalized_email:
-        raise MeiLinkError("invalid_email", "Informe um email valido.")
+        raise MeiLinkError("invalid_email", "Informe um e-mail válido.")
 
     normalized_full_name = (full_name or "").strip()
     if not normalized_full_name:

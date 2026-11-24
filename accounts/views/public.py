@@ -13,9 +13,9 @@ def public_service_report_conference(request, token):
     now = timezone.now()
     unavailable_reason = ""
     if report.conference_revoked_at:
-        unavailable_reason = "Este link de conferencia foi revogado pelo profissional."
+        unavailable_reason = "Este link de conferência foi revogado pelo profissional."
     elif report.conference_is_expired:
-        unavailable_reason = "Este link de conferencia expirou."
+        unavailable_reason = "Este link de conferência expirou."
         if report.conference_final_status != ServiceReport.ConferenceStatus.EXPIRED:
             report.conference_final_status = ServiceReport.ConferenceStatus.EXPIRED
             report.save(update_fields=["conference_final_status", "updated_at"])
@@ -98,7 +98,7 @@ def public_service_report_respond(request, token):
         return render(
             request,
             "public/service_report_conference.html",
-            {"report": None, "payload": {}, "unavailable_reason": "Este link nao aceita mais respostas."},
+            {"report": None, "payload": {}, "unavailable_reason": "Este link não aceita mais respostas."},
             status=410,
         )
     if report.conference_final_status in {
@@ -145,7 +145,7 @@ def public_service_report_pdf(request, token):
     if report.conference_is_expired:
         report.conference_final_status = ServiceReport.ConferenceStatus.EXPIRED
         report.save(update_fields=["conference_final_status", "updated_at"])
-        raise PermissionDenied("Link de conferencia expirado.")
+        raise PermissionDenied("Link de conferência expirado.")
     if not report.conference_first_viewed_at:
         viewed_at = timezone.now()
         report.conference_first_viewed_at = viewed_at
@@ -164,7 +164,7 @@ def public_service_report_xlsx(request, token):
     if report.conference_is_expired:
         report.conference_final_status = ServiceReport.ConferenceStatus.EXPIRED
         report.save(update_fields=["conference_final_status", "updated_at"])
-        raise PermissionDenied("Link de conferencia expirado.")
+        raise PermissionDenied("Link de conferência expirado.")
     if not report.conference_first_viewed_at:
         viewed_at = timezone.now()
         report.conference_first_viewed_at = viewed_at
@@ -187,22 +187,6 @@ def privacy_view(request):
     return render(request, "public/privacy.html")
 
 
-def _public_base_url(request):
-    app_base_url = (settings.APP_BASE_URL or "").rstrip("/")
-    return app_base_url or f"{request.scheme}://{request.get_host()}"
-
-
-def _public_page_context(request, path="/"):
-    base_url = _public_base_url(request)
-    canonical_url = f"{base_url}{path}"
-    og_image_url = f"{base_url}{static('img/public/prints/painel-profissional-mobile.png.jpg')}"
-    return {
-        "canonical_url": canonical_url,
-        "og_url": canonical_url,
-        "og_image_url": og_image_url,
-    }
-
-
 def landing_view(request):
     # Landing page removida (nov/2026): "/" vai direto para o login; quem ja esta
     # logado segue para a tela certa do seu perfil.
@@ -211,14 +195,8 @@ def landing_view(request):
     return redirect("login")
 
 
-def evaluation_view(request):
-    context = _public_page_context(request, "/avaliacao/")
-    return render(request, "public/evaluation.html", context)
-
-
-def evaluation_next_step_view(request):
-    context = _public_page_context(request, "/avaliacao/proximo-passo/")
-    return render(request, "public/evaluation_next_step.html", context)
+# "evaluation_view"/"evaluation_next_step_view" (avaliação para empresas) foram removidas em
+# 2026-11-23: os endereços /avaliacao/ já redirecionam para o cadastro do prestador (accounts/urls.py).
 
 
 # Observação: as views "pwa_manifest", "pwa_service_worker" e a seção

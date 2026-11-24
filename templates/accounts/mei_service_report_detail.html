@@ -96,8 +96,8 @@
       </div>
     {% elif report.status != "CANCELED" %}
       <div class="link-box">
-        <strong>Link de conferência indisponivel</strong>
-        <div class="detail-sub">Gere um link ativo para copiar, enviar pelo WhatsApp e permitir a conferência publica.</div>
+        <strong>Link de conferência indisponível</strong>
+        <div class="detail-sub">Gere um link ativo para copiar, enviar pelo WhatsApp e permitir a conferência pública.</div>
       </div>
     {% endif %}
   </section>
@@ -140,7 +140,7 @@
             <th>Horários</th>
             <th>Total</th>
             <th>Status</th>
-            <th>Observacoes</th>
+            <th>Observações</th>
           </tr>
         </thead>
         <tbody>
@@ -161,8 +161,8 @@
   </section>
 
   <section class="detail-panel">
-    <h2 class="detail-title">Observacoes gerais</h2>
-    <p class="detail-note">{{ report.description|default:"Sem observacoes gerais." }}</p>
+    <h2 class="detail-title">Observações gerais</h2>
+    <p class="detail-note">{{ report.description|default:"Sem observações gerais." }}</p>
   </section>
 </div>
 <script>
@@ -185,7 +185,7 @@
         navigator.clipboard.writeText(value).then(function () {
           setStatus("Link copiado.");
         }).catch(function () {
-          setStatus("Nao foi possivel copiar automaticamente. Selecione o link e copie manualmente.");
+          setStatus("Não foi possível copiar automaticamente. Selecione o link e copie manualmente.");
         });
         return;
       }

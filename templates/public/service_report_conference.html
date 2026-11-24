@@ -5,7 +5,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Relatório de horas | HoraCerta</title>
-  <meta name="description" content="Relatorio publico de horas HoraCerta.">
+  <meta name="description" content="Relatório de horas do HoraCerta.">
   <link rel="icon" type="image/png" sizes="32x32" href="{% static 'pwa/favicon-32.png' %}">
   <style>
     :root{
@@ -244,13 +244,13 @@
     <div class="report-shell">
       {% if unavailable_reason %}
         <section class="unavailable">
-          <span class="status">Link indisponivel</span>
+          <span class="status">Link indisponível</span>
           <div class="brand">
             <span class="brand-mark">HC</span>
             <span class="brand-name">HoraCerta</span>
           </div>
           <div class="title-block">
-            <h1>Relatório indisponivel</h1>
+            <h1>Relatório indisponível</h1>
             <p class="subtitle">{{ unavailable_reason }}</p>
           </div>
         </section>
@@ -267,7 +267,7 @@
             <h1>Relatório de horas</h1>
             <p class="subtitle">{{ payload.professional|default:report.employee.full_name }} para {{ payload.company|default:report.company.name }}</p>
           </div>
-          <nav class="actions" aria-label="Exportacoes do relatório">
+          <nav class="actions" aria-label="Exportações do relatório">
             <a class="btn primary" href="{{ pdf_url }}">Imprimir PDF</a>
             <a class="btn" href="{{ xlsx_url }}">Baixar Excel</a>
           </nav>
@@ -364,13 +364,13 @@
           </section>
 
           <section class="section" aria-labelledby="obs-title">
-            <h2 id="obs-title">Observacoes gerais</h2>
-            <div class="empty">{{ report.description|default:"Sem observacoes gerais."|linebreaksbr }}</div>
+            <h2 id="obs-title">Observações gerais</h2>
+            <div class="empty">{{ report.description|default:"Sem observações gerais."|linebreaksbr }}</div>
           </section>
         </div>
       {% endif %}
     </div>
-    <div class="footer-note">HoraCerta - relatório público por token seguro.</div>
+    <div class="footer-note">HoraCerta - relatório acessado por link exclusivo.</div>
   </main>
 </body>
 </html>

@@ -144,7 +144,7 @@ def change_punch_time(*, punch, admin_user, new_datetime, reason):
 
     reason = _require_correction_reason(reason)
     if new_datetime is None:
-        raise ValueError("Informe o novo horario.")
+        raise ValueError("Informe o novo horário.")
     if timezone.is_naive(new_datetime):
         new_datetime = timezone.make_aware(new_datetime, timezone.get_current_timezone())
 
@@ -215,7 +215,7 @@ def add_punch_admin_note(*, punch, admin_user, note, reason=None):
 
     clean_note = (note or "").strip()
     if not clean_note:
-        raise ValueError("Informe a observacao administrativa.")
+        raise ValueError("Informe a observação administrativa.")
     clean_reason = _require_correction_reason(reason)
     old_status = _punch_status(punch)
     old_datetime = punch.timestamp

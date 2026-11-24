@@ -48,7 +48,7 @@
           <input type="text" value="{{ contract.company.name }}" disabled>
         </div>
         <div class="service-report-prep__field">
-          <label>Data de emissao</label>
+          <label>Data de emissão</label>
           <input type="date" value="{{ issued_at|date:'Y-m-d' }}" disabled>
         </div>
         <div class="service-report-prep__field">
@@ -61,21 +61,21 @@
         </div>
         <div class="service-report-prep__field service-report-prep__field--full">
           <label>Título</label>
-          <input type="text" value="Relatorio de servico - {{ contract.company.name }}" disabled>
+          <input type="text" value="Relatório de serviço - {{ contract.company.name }}" disabled>
         </div>
         <div class="service-report-prep__field service-report-prep__field--full">
           <label>Descrição dos serviços realizados</label>
           <textarea rows="5" disabled>Durante o período informado, descreva aqui os serviços executados para este cliente.</textarea>
         </div>
         <div class="service-report-prep__field service-report-prep__field--full">
-          <label>Observacoes opcionais</label>
+          <label>Observações opcionais</label>
           <textarea rows="3" disabled></textarea>
         </div>
       </div>
 
       <div class="service-report-prep__actions">
         <a class="btn" href="{% url 'mei_contract' %}?contract={{ contract.id }}">Voltar aos detalhes</a>
-        <span class="btn primary" aria-disabled="true">Geracao em breve</span>
+        <span class="btn primary" aria-disabled="true">Geração em breve</span>
       </div>
     </section>
   </div>

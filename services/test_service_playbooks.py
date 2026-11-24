@@ -12,7 +12,7 @@ class ServicePlaybookTests(SimpleTestCase):
         self.assertIn("equipamentos inclusos", playbook["client_focus"])
         self.assertIn("montagem", playbook["client_focus"])
         self.assertIn("desmontagem", playbook["client_focus"])
-        self.assertTrue(any("check-in opcional" in item for item in playbook["checklist"]))
+        self.assertTrue(any("chegada ao local combinado" in item for item in playbook["checklist"]))
 
     def test_assistance_playbook_uses_technical_order_language(self):
         playbook = service_playbook_for("assistencia-tecnica")

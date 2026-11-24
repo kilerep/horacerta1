@@ -64,7 +64,7 @@
       <header class="client-form-head">
         <div>
           <h1>{{ title }}</h1>
-          <p>Comece pelo essencial: nome do cliente, quanto você cobra por hora e desde quando. O resto é opcional.</p>
+          <p>Comece pelo essencial: nome do cliente, seu valor por hora e desde quando. O resto é opcional.</p>
         </div>
         <a class="btn" href="{% url 'mei_contract' %}">Voltar</a>
       </header>
@@ -84,7 +84,7 @@
           <div class="client-form-field">
             {{ form.hourly_rate.label_tag }}
             {{ form.hourly_rate }}
-            <small class="client-form-hint">Quanto você cobra por hora deste cliente. Usamos só para calcular seus ganhos.</small>
+            <small class="client-form-hint">Seu valor por hora para este cliente. Usamos só para calcular seus ganhos.</small>
             {% for error in form.hourly_rate.errors %}<span class="client-form-error">{{ error }}</span>{% endfor %}
           </div>
           <div class="client-form-field">

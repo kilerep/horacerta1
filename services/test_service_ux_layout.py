@@ -105,7 +105,7 @@ class ServiceUxLayoutTests(TestCase):
         self.assertLess(html.index("Sobre o serviço"), more)
         # valor/hora e obrigatorio no modo por hora: precisa estar FORA do bloco opcional
         self.assertLess(html.index('name="hourly_rate_snapshot"'), more)
-        self.assertLess(html.index("Como cobrar"), more)
+        self.assertLess(html.index("Como calcular o valor"), more)
         for later in ("Local do serviço", "Previsão de atendimento", "Itens previstos"):
             self.assertGreater(html.index(later, more), more)
         self.assertNotIn('<details class="os-more" open', html)

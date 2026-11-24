@@ -25,15 +25,15 @@ class FeatureAccessResult:
 
 FEATURE_REASON_LABELS = {
     "allowed": "Recurso liberado.",
-    "company_missing": "Empresa nao localizada para o usuario atual.",
-    "feature_not_found": "Feature nao cadastrada ou inativa no sistema.",
-    "role_not_allowed": "Seu perfil nao possui acesso a este recurso.",
-    "subscription_missing": "A empresa ainda nao possui assinatura ativa.",
-    "subscription_inactive": "A assinatura atual esta inativa ou vencida.",
-    "feature_not_in_plan": "Seu plano atual nao inclui este recurso.",
+    "company_missing": "Empresa não localizada para o usuário atual.",
+    "feature_not_found": "Recurso não cadastrado ou inativo no sistema.",
+    "role_not_allowed": "Seu perfil não possui acesso a este recurso.",
+    "subscription_missing": "A conta ainda não possui assinatura ativa.",
+    "subscription_inactive": "A assinatura atual está inativa ou vencida.",
+    "feature_not_in_plan": "Seu plano atual não inclui este recurso.",
     "override_forced_enable": "Recurso liberado manualmente para esta empresa.",
     "override_forced_disable": "Recurso bloqueado manualmente para esta empresa.",
-    "user_not_authenticated": "E necessario autenticar para usar este recurso.",
+    "user_not_authenticated": "É necessário entrar na conta para usar este recurso.",
 }
 
 
@@ -195,7 +195,7 @@ def user_has_feature(user, feature_code: str, at_time=None) -> bool:
 
 
 def humanize_feature_reason(reason: str) -> str:
-    return FEATURE_REASON_LABELS.get(reason, "Acesso indisponivel para o recurso solicitado.")
+    return FEATURE_REASON_LABELS.get(reason, "Acesso indisponível para o recurso solicitado.")
 
 
 def get_feature_minimum_plan(feature_code: str) -> Plan | None:

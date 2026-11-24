@@ -493,7 +493,7 @@ def service_job_list(request):
     # "Precisa de voce": so o que pede acao agora, do mais urgente ao menos; contadores zerados somem.
     attention = [
         item for item in (
-            ("Atrasados", overdue_count, f"{list_url}?status={ServiceJob.Status.PLANNED}", "danger"),
+            ("Fora do prazo", overdue_count, f"{list_url}?status={ServiceJob.Status.PLANNED}", "danger"),
             ("Pedidos para responder", requests_open, reverse("service_request_list"), "warning"),
             ("Em execução", status_counts["in_progress"], f"{list_url}?status={ServiceJob.Status.IN_PROGRESS}", "progress"),
             ("Relatório a enviar", status_counts["finished"], f"{list_url}?status={ServiceJob.Status.FINISHED}", "finished"),
@@ -599,7 +599,7 @@ def _service_request_primary_action(service_request):
     if service_request.status == ServiceRequest.Status.IN_REVIEW:
         return {"label": "Transformar em serviço", "kind": "post", "url": reverse("service_request_convert", args=[service_request.id])}
     if service_request.status == ServiceRequest.Status.CONVERTED and service_request.converted_service_id:
-        return {"label": "Ver servico", "kind": "get", "url": reverse("service_job_detail", args=[service_request.converted_service_id])}
+        return {"label": "Ver serviço", "kind": "get", "url": reverse("service_job_detail", args=[service_request.converted_service_id])}
     if service_request.status == ServiceRequest.Status.REJECTED:
         return {"label": "Arquivar", "kind": "post", "url": reverse("service_request_status_action", args=[service_request.id]), "post_action": "archive"}
     if service_request.status == ServiceRequest.Status.ARCHIVED:
@@ -614,7 +614,7 @@ def _convert_service_request_to_job(service_request):
     notes = (
         "Criado a partir de pedido de serviço.\n"
         f"Origem: {service_request.get_source_display()}.\n"
-        f"Urgencia: {service_request.get_urgency_display()}."
+        f"Urgência: {service_request.get_urgency_display()}."
     )
     job = ServiceJob.objects.create(
         professional=service_request.professional,
@@ -879,14 +879,14 @@ def service_item_catalog_create(request):
         form = ServiceItemCatalogForm(request.POST, user=request.user)
         if form.is_valid():
             form.save()
-            messages.success(request, "Item salvo no catalogo.")
+            messages.success(request, "Item salvo no catálogo.")
             return redirect("service_item_catalog_list")
     else:
         form = ServiceItemCatalogForm(user=request.user)
     return render(
         request,
         "services/service_item_catalog_form.html",
-        {"form": form, "form_title": "Novo item do catalogo"},
+        {"form": form, "form_title": "Novo item do catálogo"},
     )
 
 
@@ -901,14 +901,14 @@ def service_item_catalog_update(request, item_id):
         form = ServiceItemCatalogForm(request.POST, user=request.user, instance=item)
         if form.is_valid():
             form.save()
-            messages.success(request, "Item do catalogo atualizado.")
+            messages.success(request, "Item do catálogo atualizado.")
             return redirect("service_item_catalog_list")
     else:
         form = ServiceItemCatalogForm(user=request.user, instance=item)
     return render(
         request,
         "services/service_item_catalog_form.html",
-        {"form": form, "form_title": "Editar item do catalogo", "catalog_item": item},
+        {"form": form, "form_title": "Editar item do catálogo", "catalog_item": item},
     )
 
 
@@ -976,7 +976,7 @@ def service_item_catalog_seed_suggestions(request):
             estimated_unit_value=None,
         )
         created += 1
-    messages.success(request, f"{created} sugestoes adicionadas sem preco estimado.")
+    messages.success(request, f"{created} sugestões adicionadas sem preço estimado.")
     return redirect("service_item_catalog_list")
 
 
@@ -1308,7 +1308,7 @@ def service_clock_action(request, job_id):
                     service_job=job,
                     work_date=now.date(),
                     start_time=now.time().replace(second=0, microsecond=0),
-                    description="Trabalho iniciado pelo cronometro",
+                    description="Trabalho iniciado pelo cronômetro",
                 )
                 if job.status != ServiceJob.Status.IN_PROGRESS:
                     job.status = ServiceJob.Status.IN_PROGRESS

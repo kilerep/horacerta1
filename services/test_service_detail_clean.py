@@ -113,8 +113,8 @@ class ServiceDetailCleanTests(TestCase):
         store_box = html.index('id="send-store"')
         self.assertLess(client_box, store_box)
         self.assertIn("Orçamento (para o cliente)", html)
-        self.assertIn("Cotação oficial (para a loja)", html)
-        self.assertLess(html.index("Orçamento (para o cliente)"), html.index("Cotação oficial (para a loja)"))
+        self.assertIn("Pedido de cotação (para a loja)", html)
+        self.assertLess(html.index("Orçamento (para o cliente)"), html.index("Pedido de cotação (para a loja)"))
 
     def test_secondary_client_actions_are_folded(self):
         job = self._job(manual_client_name="Fulano", client=None, contract=None)

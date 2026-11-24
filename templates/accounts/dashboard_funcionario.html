@@ -80,7 +80,7 @@
     {% if no_contracts and is_new_mei %}
       <section class="hc-panel" id="new-mei-welcome">
         <h2 class="hc-section-title">Bem-vindo ao HoraCerta{% if request.user.first_name %}, {{ request.user.first_name }}{% endif %}!</h2>
-        <p class="hc-muted" style="margin:0 0 10px;">Falta só um passo para começar: cadastre o primeiro cliente para quem você trabalha e quanto cobra por hora.</p>
+        <p class="hc-muted" style="margin:0 0 10px;">Falta só um passo para começar: cadastre o primeiro cliente para quem você presta serviço e qual é o seu valor por hora.</p>
         <ol class="hc-muted" style="margin:0 0 14px;padding-left:1.2rem;display:grid;gap:4px;">
           <li>Cadastre o cliente e o valor da sua hora (1 minuto).</li>
           <li>Registre sua entrada e saída quando trabalhar.</li>
@@ -90,7 +90,7 @@
       </section>
     {% elif no_contracts %}
       <section class="hc-panel">
-        <h2 class="hc-section-title">Cadastro confirmado, aguardando liberacao operacional</h2>
+        <h2 class="hc-section-title">Cadastro confirmado, aguardando liberação de acesso</h2>
         <p class="hc-muted" style="margin:0 0 8px;">
           Seu cadastro no HoraCerta esta ativo{% if employee_company_name %} para <strong>{{ employee_company_name }}</strong>{% endif %},
           mas ainda não existe cliente ativo para registrar horários.
@@ -215,7 +215,7 @@
             {% endfor %}
           </div>
         {% else %}
-          <p class="hc-muted" style="margin:0;">Nenhuma inconsistencia recente. Bom trabalho na rotina.</p>
+          <p class="hc-muted" style="margin:0;">Nenhuma inconsistência recente.</p>
         {% endif %}
       </section>
 

@@ -163,7 +163,7 @@ def _pending_reports_count_for_company(company):
 def _contract_mei_label(contract):
     employee = getattr(contract, "employee", None)
     if not employee:
-        return "MEI indisponivel"
+        return "MEI indisponível"
 
     full_name = (getattr(employee, "full_name", "") or "").strip()
     if full_name:
@@ -178,7 +178,7 @@ def _contract_mei_label(contract):
         if username:
             return username
 
-    return "MEI indisponivel"
+    return "MEI indisponível"
 
 
 def _count_inconsistency_days(punches):
@@ -355,16 +355,16 @@ def _require_admin_reason(raw_reason):
 
 
 AUDIT_ACTION_CHOICES = [
-    ("time_changed", "Correcao de horário"),
+    ("time_changed", "Correção de horário"),
     ("cancelled", "Cancelamento de registro"),
-    ("restored", "Restauracao de registro"),
+    ("restored", "Restauração de registro"),
     ("admin_note_added", "Observação administrativa"),
     ("relationship_ended", "Encerramento de atendimento"),
-    ("deactivate_company", "Desativacao de empresa"),
-    ("activate_company", "Reativacao de empresa"),
-    ("deactivate_user", "Desativacao de usuário"),
-    ("activate_user", "Reativacao de usuário"),
-    ("company_acknowledged", "Ciencia marcada pela empresa"),
+    ("deactivate_company", "Desativação de empresa"),
+    ("activate_company", "Reativação de empresa"),
+    ("deactivate_user", "Desativação de usuário"),
+    ("activate_user", "Reativação de usuário"),
+    ("company_acknowledged", "Ciência marcada pela empresa"),
     ("correction_request_status_changed", "Status de solicitação alterado"),
 ]
 
@@ -553,7 +553,7 @@ def _commercial_plan_snapshot(subscription):
         "monthly_price": "R$ 79,00",
         "active_provider_limit": 10,
         "description": (
-            "Sua empresa possui acesso aos recursos essenciais para acompanhar prestadores, clientes, "
+            "Seu plano dá acesso aos recursos essenciais para organizar clientes, "
             "registros de horário, histórico, conferência, notificações e relatórios."
         ),
     }
@@ -571,7 +571,7 @@ def _employee_activation_summary(employee):
         return {
             "key": "inactive",
             "label": "Inativo/desativado",
-            "hint": "Acesso bloqueado para login e operacao do profissional.",
+            "hint": "Acesso bloqueado para login e operação do profissional.",
             "tone": "warn",
         }
 
@@ -580,13 +580,13 @@ def _employee_activation_summary(employee):
         return {
             "key": "active",
             "label": "Ativo",
-            "hint": f"Acesso ativado. Ultimo login em {last_login_local.strftime('%d/%m/%Y %H:%M')}.",
+            "hint": f"Acesso ativado. Último login em {last_login_local.strftime('%d/%m/%Y %H:%M')}.",
             "tone": "success",
         }
 
     return {
         "key": "pending",
-        "label": "Pendente de ativacao",
+        "label": "Pendente de ativação",
         "hint": "Aguardando primeiro acesso do profissional.",
         "tone": "pending",
     }
@@ -662,7 +662,7 @@ def _build_xlsx_response(filename, headers, rows):
         "xl/workbook.xml": """<?xml version="1.0" encoding="UTF-8"?>
 <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   <sheets>
-    <sheet name="Relatorio" sheetId="1" r:id="rId1"/>
+    <sheet name="Relatório" sheetId="1" r:id="rId1"/>
   </sheets>
 </workbook>""",
         "xl/_rels/workbook.xml.rels": """<?xml version="1.0" encoding="UTF-8"?>
@@ -848,7 +848,7 @@ def _build_service_report_payload(contract, date_from, date_to):
         "period": {
             "date_from": date_from.isoformat(),
             "date_to": date_to.isoformat(),
-            "label": f"{date_from:%d/%m/%Y} ate {date_to:%d/%m/%Y}",
+            "label": f"{date_from:%d/%m/%Y} até {date_to:%d/%m/%Y}",
         },
         "days": days,
         "total_hours": format_hhmm(total_seconds),
@@ -908,7 +908,7 @@ def _service_report_period_display(report):
         return period_label
     start_label = report.date_from.strftime("%d/%m/%Y") if report.date_from else "-"
     end_label = report.date_to.strftime("%d/%m/%Y") if report.date_to else "-"
-    return f"{start_label} ate {end_label}"
+    return f"{start_label} até {end_label}"
 
 
 def _notification_card(
@@ -951,11 +951,11 @@ def _plain_lower(text):
 def _notification_category_for_title(title):
     title = _plain_lower(title)
     if "relatorio" in title or "recebimento" in title or "periodo fechado" in title:
-        return "Relatorios"
+        return "Relatórios"
     if "fechamento" in title:
         return "Fechamentos"
     if "incompleto" in title or "valor/hora" in title:
-        return "Pendencias"
+        return "Pendências"
     return "Sistema"
 
 
@@ -1087,7 +1087,7 @@ def _build_mei_dynamic_notifications(user):
                             f"Você registrou {len(today_punches)} horários hoje na {company_name}. "
                             "Confira antes de gerar relatório."
                         ),
-                        category="Pendencias",
+                        category="Pendências",
                         priority="high",
                         created_at=timezone.now(),
                         client_name=company_name,
@@ -1107,7 +1107,7 @@ def _build_mei_dynamic_notifications(user):
                                 f"Você registrou {len(day_punches)} horários em {day:%d/%m/%Y} na {company_name}. "
                                 "Confira para evitar relatório com erro."
                             ),
-                            category="Pendencias",
+                            category="Pendências",
                             priority="high",
                             client_name=company_name,
                             action_label="Revisar horário",
@@ -1124,7 +1124,7 @@ def _build_mei_dynamic_notifications(user):
                             f"O cliente {company_name} esta sem valor/hora definido. "
                             "O valor estimado pode ficar zerado no relatório."
                         ),
-                        category="Pendencias",
+                        category="Pendências",
                         priority="high",
                         client_name=company_name,
                         action_label="Editar cliente",
@@ -1178,7 +1178,7 @@ def _build_mei_dynamic_notifications(user):
                     f"O relatório da {company_name} já foi visualizado, "
                     "mas ainda está como pendente no seu controle interno."
                 ),
-                category="Relatorios",
+                category="Relatórios",
                 priority="normal",
                 created_at=report.conference_first_viewed_at,
                 client_name=company_name,
@@ -1209,8 +1209,8 @@ def _build_mei_persistent_notification_card(notification):
 def _service_report_received_label(report):
     if report.payment_status == ServiceReport.PaymentStatus.PAID:
         if report.paid_at:
-            return f"Recebido: {timezone.localtime(report.paid_at).strftime('%d/%m/%Y %H:%M')}"
-        return "Recebido"
+            return f"Conferido pelo cliente: {timezone.localtime(report.paid_at).strftime('%d/%m/%Y %H:%M')}"
+        return "Conferido pelo cliente"
     return "Pendente"
 
 
@@ -1221,8 +1221,9 @@ def _service_report_view_label(report):
 
 
 def _service_report_status_label(report):
+    # Relatórios antigos marcados como pagos aparecem como conferidos: o HoraCerta não controla pagamento.
     if report.status == ServiceReport.Status.PAID:
-        return "Recebido"
+        return "Conferido pelo cliente"
     return report.get_status_display()
 
 
@@ -1448,7 +1449,7 @@ def _service_report_xlsx_response(report):
         ["Total de horas", payload.get("total_hours") or "-"],
         ["Valor estimado", payload.get("estimated_value_brl") or "-"],
         [],
-        ["Dia", "Horários", "Total", "Status", "Observacoes"],
+        ["Dia", "Horários", "Total", "Status", "Observações"],
     ]
     day_rows = []
     for day in payload.get("days") or []:

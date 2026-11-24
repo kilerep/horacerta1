@@ -207,7 +207,7 @@ def internal_company_detail(request, company_id):
                 action="save_company_note",
                 target_type="company",
                 target_id=company.id,
-                description=description or "Observacao interna da empresa atualizada.",
+                description=description or "Observação interna da empresa atualizada.",
             )
             messages.success(request, "Observação interna salva.")
         elif action == "end_relationship":
@@ -386,7 +386,7 @@ def internal_employee_detail(request, employee_id):
                 action="activate_user",
                 target_type="employee",
                 target_id=employee.id,
-                description=description or "Usuario e perfil ativados pelo Painel Interno.",
+                description=description or "Usuário e perfil ativados pelo Painel Interno.",
             )
             messages.success(request, "Usuário ativado.")
         elif action == "deactivate_user":
@@ -399,7 +399,7 @@ def internal_employee_detail(request, employee_id):
                 action="deactivate_user",
                 target_type="employee",
                 target_id=employee.id,
-                description=description or "Usuario e perfil desativados pelo Painel Interno.",
+                description=description or "Usuário e perfil desativados pelo Painel Interno.",
             )
             messages.success(request, "Usuário desativado.")
         elif action == "mark_pending":
@@ -410,7 +410,7 @@ def internal_employee_detail(request, employee_id):
                 action="mark_employee_pending",
                 target_type="employee",
                 target_id=employee.id,
-                description=description or "Perfil marcado como pendente de ativacao.",
+                description=description or "Perfil marcado como pendente de ativação.",
             )
             messages.success(request, "Profissional marcado como pendente.")
         else:
@@ -548,7 +548,7 @@ def internal_punch_detail(request, punch_id):
                     actor_user=request.user,
                     action_type=PunchCorrectionLog.ActionType.TIME_CHANGED,
                 )
-                messages.success(request, "Horario corrigido com auditoria registrada.")
+                messages.success(request, "Horário corrigido com auditoria registrada.")
             elif action == "cancel":
                 cancel_punch(punch=punch, admin_user=request.user, reason=reason)
                 notify_punch_admin_action(
@@ -577,9 +577,9 @@ def internal_punch_detail(request, punch_id):
                     actor_user=request.user,
                     action_type=PunchCorrectionLog.ActionType.ADMIN_NOTE_ADDED,
                 )
-                messages.success(request, "Observacao administrativa salva com auditoria registrada.")
+                messages.success(request, "Observação administrativa salva com auditoria registrada.")
             else:
-                messages.error(request, "Acao administrativa invalida.")
+                messages.error(request, "Ação administrativa inválida.")
         except ValueError as exc:
             messages.error(request, str(exc))
         return redirect("internal_punch_detail", punch_id=punch.id)
@@ -674,7 +674,7 @@ def internal_correction_request_detail(request, request_id):
         reason = (request.POST.get("reason") or "").strip()
         valid_statuses = {choice[0] for choice in PunchCorrectionRequest.Status.choices}
         if new_status not in valid_statuses:
-            messages.error(request, "Status invalido para a solicitacao.")
+            messages.error(request, "Status inválido para a solicitação.")
         else:
             try:
                 reason = _require_admin_reason(reason)
@@ -707,7 +707,7 @@ def internal_correction_request_detail(request, request_id):
                     actor_user=request.user,
                     old_status=old_status,
                 )
-                messages.success(request, "Solicitacao atualizada com auditoria registrada.")
+                messages.success(request, "Solicitação atualizada com auditoria registrada.")
             except ValueError as exc:
                 messages.error(request, str(exc))
         return redirect("internal_correction_request_detail", request_id=correction_request.id)
@@ -781,7 +781,7 @@ def internal_audit(request):
                 new_value = log.new_status
             else:
                 old_value = "-"
-                new_value = "Observacao administrativa atualizada"
+                new_value = "Observação administrativa atualizada"
             rows.append(
                 _audit_row(
                     created_at=log.created_at,
@@ -948,8 +948,8 @@ def internal_audit(request):
                     actor=notification.company_acknowledged_by,
                     action_type="company_acknowledged",
                     company=notification.recipient_company,
-                    old_value="Ciencia pendente",
-                    new_value="Ciencia marcada",
+                    old_value="Ciência pendente",
+                    new_value="Ciência marcada",
                     reason=notification.title,
                     target_url=notification.target_url,
                 )
