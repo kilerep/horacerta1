@@ -85,6 +85,7 @@
               <span>
                 <strong>Romaneio nº {{ item.note.number_label }} · {{ item.note.destination_company }}</strong>
                 <span class="meta">
+                  {% if item.source_entry_id %}<span>Cortado na {{ item.source_entry.sheet.equipment }}</span>{% endif %}
                   <span>Carregado {{ item.note.loaded_at|date:"d/m/Y" }} às {{ item.note.loaded_at|time:"H:i" }}</span>
                   {% if item.production_order %}<span>OP {{ item.production_order }}</span>{% endif %}
                   <span>{{ item.note.situation.0 }}</span>

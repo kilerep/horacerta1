@@ -1,5 +1,5 @@
 {% extends "accounts/base.html" %}
-{% load static %}
+{% load static hc_icons %}
 
 {% block title %}{{ sheet.equipment }} - Relatório de produção{% endblock %}
 {% block page_title %}Relatórios de produção{% endblock %}
@@ -43,6 +43,13 @@
     </form>
   {% endif %}
 
+  {% with building=shipment_drafts.0 %}{% if building %}
+    <div class="prod-building no-print" role="status">
+      <span>{% icon "truck" %} Romaneio em montagem: <strong>{{ building.destination_company|default:"sem destino" }}</strong> · {{ building.item_count }} {% if building.item_count == 1 %}item{% else %}itens{% endif %}. Os itens que você selecionar entram nele.</span>
+      <a class="btn" href="{% url 'shipment_edit' building.id %}">Abrir romaneio</a>
+    </div>
+  {% endif %}{% endwith %}
+
   <section class="prod-entries" aria-label="Itens do relatório" data-pick-list>
     <div class="prod-entries-head">
       <h2 style="margin:0;font-size:18px">Itens ({{ entries|length }})</h2>
@@ -77,8 +84,8 @@
     <strong data-pick-count>0 itens</strong>
     <label class="sr-only" for="romaneio-target">Para onde</label>
     <select id="romaneio-target" name="target">
+      {% for draft in shipment_drafts %}<option value="{{ draft.id }}"{% if forloop.first %} selected{% endif %}>Continuar romaneio para {{ draft.destination_company|default:"sem destino" }} ({{ draft.item_count }} {% if draft.item_count == 1 %}item{% else %}itens{% endif %})</option>{% endfor %}
       <option value="new">Novo romaneio</option>
-      {% for draft in shipment_drafts %}<option value="{{ draft.id }}">Rascunho para {{ draft.destination_company|default:"sem destino" }}</option>{% endfor %}
     </select>
     <button class="btn primary" type="submit" data-pick-submit disabled>Mandar para o romaneio</button>
     <button class="btn" type="button" data-select-cancel>Cancelar</button>

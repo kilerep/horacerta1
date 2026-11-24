@@ -20,6 +20,7 @@
     .pieces td+td,.pieces th+th{padding-left:12px}
     .pieces .qty{text-align:right;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
     .pieces small{display:block;color:var(--muted);font-size:13.5px}
+    .pieces small.ship-from{color:var(--ink,#1c1a17);font-weight:700}
     .pieces tfoot td{border-bottom:0;font-weight:800;padding-top:12px}
     .people{display:grid;gap:10px}
     .person{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--soft)}
@@ -88,7 +89,7 @@
         <thead><tr><th>Ordem de produção</th><th>Desenho</th><th class="qty">Qtd</th></tr></thead>
         <tbody>
           {% for item in items %}
-            <tr><td>{{ item.production_order|default:"—" }}</td><td><strong>{{ item.drawing_number }}</strong>{% if item.description %}<small>{{ item.description }}</small>{% endif %}</td><td class="qty">{{ item.quantity }}</td></tr>
+            <tr><td>{{ item.production_order|default:"—" }}</td><td><strong>{{ item.drawing_number }}</strong>{% if item.description %}<small>{{ item.description }}</small>{% endif %}{% if item.machines_label %}<small class="ship-from">{{ item.machines_label }}</small>{% endif %}</td><td class="qty">{{ item.quantity }}</td></tr>
           {% endfor %}
         </tbody>
         <tfoot><tr><td colspan="2">Total</td><td class="qty">{{ note.total_quantity }}</td></tr></tfoot>

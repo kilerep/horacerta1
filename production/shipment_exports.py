@@ -54,7 +54,14 @@ def info_pairs(note):
 
 
 def item_rows(note):
-    return [(i.production_order or "-", i.drawing_number, i.description or "", i.quantity) for i in note.items.all()]
+    """Linhas do PDF/Excel: itens iguais juntos; a descricao ganha de qual maquina veio cada parte."""
+    rows = []
+    for g in note.grouped_items():
+        description = g["description"] or ""
+        if g["machines_label"]:
+            description = f"{description} · {g['machines_label']}" if description else g["machines_label"]
+        rows.append((g["production_order"] or "-", g["drawing_number"], description, g["quantity"]))
+    return rows
 
 
 def shipment_filename(note, ext):

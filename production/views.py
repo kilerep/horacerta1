@@ -2,7 +2,7 @@ import csv
 from urllib.parse import quote
 
 from django.contrib import messages
-from django.db.models import Sum
+from django.db.models import Count, Sum
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -233,7 +233,9 @@ def sheet_detail(request, sheet_id):
     return render(request, "production/sheet_detail.html", {
         "sheet": sheet,
         "entries": entries,
-        "shipment_drafts": ShipmentNote.objects.filter(owner=request.user, status=ShipmentNote.Status.DRAFT),
+        # rascunho mais recente primeiro: a selecao continua o romaneio em montagem (varias maquinas, 1 romaneio)
+        "shipment_drafts": ShipmentNote.objects.filter(owner=request.user, status=ShipmentNote.Status.DRAFT)
+        .annotate(item_count=Count("items")).order_by("-updated_at"),
         "form": form,
         "totals": _totals_display(sheet),
         "code_suggestions": _code_suggestions(request.user),
