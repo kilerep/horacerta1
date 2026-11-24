@@ -1,9 +1,8 @@
 from datetime import date, datetime, time
-from math import atan2, cos, radians, sin, sqrt
 
 from django.utils import timezone
 
-from companies.models import CompanyAttendancePolicy, CompanyAuthorizedLocation
+from companies.models import CompanyAttendancePolicy
 
 
 def format_punch_time(local_dt):
@@ -26,6 +25,40 @@ def compute_day_total(local_datetimes):
         if delta > 0:
             total_seconds += delta
     return total_seconds, bool(len(minute_aligned) % 2)
+
+
+def locked_report_for_day(day, *, user=None, contract=None):
+    """Retorna o ServiceReport (nao cancelado) mais recente que cobre `day`,
+    ou None se o dia nao estiver coberto por nenhum relatorio ja gerado.
+
+    Fonte unica desta checagem: o app promete ao profissional (na tela de
+    Historico e ao gerar um relatorio) que "dias anteriores ficam bloqueados
+    para preservar a seguranca dos relatorios". Antes desta funcao existir,
+    cada tela reimplementava essa regra por conta propria e "Registrar
+    horario manual" (timeclock.views.create_manual_punches) tinha ficado de
+    fora, permitindo lancar horas em dias ja cobertos por relatorios
+    enviados/recebidos pelo cliente (bug da auditoria de 12/09/2026).
+
+    Passe `contract` para checar um vinculo especifico, ou `user` para checar
+    todos os vinculos desse profissional de uma vez (usado por telas que
+    trabalham com "o dia de hoje" independente de qual contrato esta
+    selecionado). Pelo menos um dos dois precisa ser informado.
+    """
+    from .models import ServiceReport  # import local evita ciclo de import no carregamento do app
+
+    if contract is None and user is None:
+        raise ValueError("Informe 'contract' ou 'user' para checar o bloqueio do dia.")
+
+    qs = ServiceReport.objects.filter(date_from__lte=day, date_to__gte=day)
+    if contract is not None:
+        qs = qs.filter(contract=contract)
+    if user is not None:
+        qs = qs.filter(employee__user=user)
+    return qs.exclude(status=ServiceReport.Status.CANCELED).order_by("-report_date").first()
+
+
+def report_locks_day(day, *, user=None, contract=None):
+    return locked_report_for_day(day, user=user, contract=contract) is not None
 
 
 def filter_punches_by_period(base_qs, date_from_raw, date_to_raw, field_name="timestamp"):
@@ -111,7 +144,7 @@ def change_punch_time(*, punch, admin_user, new_datetime, reason):
 
     reason = _require_correction_reason(reason)
     if new_datetime is None:
-        raise ValueError("Informe o novo horario.")
+        raise ValueError("Informe o novo horário.")
     if timezone.is_naive(new_datetime):
         new_datetime = timezone.make_aware(new_datetime, timezone.get_current_timezone())
 
@@ -182,7 +215,7 @@ def add_punch_admin_note(*, punch, admin_user, note, reason=None):
 
     clean_note = (note or "").strip()
     if not clean_note:
-        raise ValueError("Informe a observacao administrativa.")
+        raise ValueError("Informe a observação administrativa.")
     clean_reason = _require_correction_reason(reason)
     old_status = _punch_status(punch)
     old_datetime = punch.timestamp
@@ -200,87 +233,19 @@ def add_punch_admin_note(*, punch, admin_user, note, reason=None):
     )
 
 
-def haversine_distance_meters(lat1, lon1, lat2, lon2):
-    earth_radius_m = 6371000.0
-    d_lat = radians(lat2 - lat1)
-    d_lon = radians(lon2 - lon1)
-    a = sin(d_lat / 2) ** 2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(d_lon / 2) ** 2
-    c = 2 * atan2(sqrt(a), sqrt(1 - a))
-    return earth_radius_m * c
+def evaluate_punch_confidence(contract):
+    """Classifica o registro conforme a politica do cliente.
 
-
-def evaluate_punch_confidence(contract, latitude=None, longitude=None, accuracy_m=None):
+    GPS desativado em 2026-11: o sistema nao coleta nem confere mais a
+    localizacao do aparelho. Politicas antigas no modo GEOLOCATION (ou com
+    require_location) passam a ser tratadas como livres. O QR presencial tambem
+    foi removido (2026-11): politicas antigas em PRESENTIAL_QR contam como livres.
+    """
     policy = CompanyAttendancePolicy.objects.filter(company=contract.company).first()
     validation_mode = policy.validation_mode if policy else CompanyAttendancePolicy.ValidationMode.FREE
-    requires_location = bool(policy and policy.require_location) or validation_mode == CompanyAttendancePolicy.ValidationMode.GEOLOCATION
 
     result = {
         "validation_method": "FREE_POLICY",
         "confidence_status": "FREE",
-        "validated_location": None,
-        "distance_to_location_m": None,
     }
-
-    if validation_mode == CompanyAttendancePolicy.ValidationMode.FREE and not requires_location:
-        return result
-
-    if not requires_location:
-        if validation_mode == CompanyAttendancePolicy.ValidationMode.PRESENTIAL_QR:
-            result["validation_method"] = "PRESENTIAL_QR_PENDING"
-        return result
-
-    result["validation_method"] = "GEOLOCATION"
-    locations_qs = CompanyAuthorizedLocation.objects.filter(company=contract.company, is_active=True).order_by("name")
-    if policy and policy.default_location_id:
-        default_location = locations_qs.filter(id=policy.default_location_id).first()
-        locations = [default_location] if default_location else list(locations_qs)
-    else:
-        locations = list(locations_qs)
-    if not locations:
-        result["confidence_status"] = "FREE"
-        return result
-
-    if latitude is None or longitude is None:
-        result["confidence_status"] = "NO_LOCATION"
-        return result
-
-    nearest_location = None
-    nearest_distance = None
-    for item in locations:
-        distance = haversine_distance_meters(
-            float(latitude),
-            float(longitude),
-            float(item.latitude),
-            float(item.longitude),
-        )
-        if nearest_distance is None or distance < nearest_distance:
-            nearest_distance = distance
-            nearest_location = item
-
-    if nearest_location:
-        result["validated_location"] = nearest_location
-        result["distance_to_location_m"] = round(float(nearest_distance), 2)
-
-    if accuracy_m is not None:
-        try:
-            accuracy_value = float(accuracy_m)
-        except (TypeError, ValueError):
-            accuracy_value = None
-        if accuracy_value and accuracy_value > 200:
-            result["confidence_status"] = "IMPRECISE"
-            return result
-
-    radius_limit = None
-    if nearest_location:
-        radius_limit = float(nearest_location.allowed_radius_m)
-    if (radius_limit is None or radius_limit <= 0) and policy and policy.default_allowed_radius_m:
-        radius_limit = float(policy.default_allowed_radius_m)
-    if radius_limit is None or radius_limit <= 0:
-        radius_limit = 120.0
-
-    if nearest_location and nearest_distance is not None and nearest_distance <= radius_limit:
-        result["confidence_status"] = "ON_SITE"
-    else:
-        result["confidence_status"] = "OUT_OF_RADIUS"
-
     return result

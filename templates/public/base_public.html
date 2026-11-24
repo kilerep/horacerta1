@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" href="{% static 'pwa/apple-touch-icon-180.png' %}">
   <link rel="icon" type="image/png" sizes="32x32" href="{% static 'pwa/favicon-32.png' %}">
   <title>{% block title %}HoraCerta{% endblock %}</title>
-  <meta name="description" content="{% block meta_description %}HoraCerta: controle de horas, clientes e relatorios para profissionais e MEIs.{% endblock %}">
+  <meta name="description" content="{% block meta_description %}HoraCerta: organização de horas, clientes e relatórios para prestadores de serviços e MEIs.{% endblock %}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -60,7 +60,7 @@
             <div class="sub">Controle de horas para profissionais</div>
           </span>
         </a>
-        <nav class="nav" aria-label="Navegacao publica">
+        <nav class="nav" aria-label="Navegação pública">
           <div class="theme-switch" aria-label="Tema visual">
             <span class="theme-switch__label">Tema</span>
             <select class="theme-switch__select" data-theme-control>
@@ -68,9 +68,12 @@
               <option value="professional-neutral">Neutro Profissional</option>
               <option value="brazil-corporate">Brasil Corporativo</option>
               <option value="rubro-professional">Rubro Profissional</option>
+              <option value="claro-operacional">Claro Operacional</option>
+              <option value="areia-terracota">Areia Terracota</option>
+              <option value="oceano-noturno">Oceano Noturno</option>
+              <option value="indigo-horacerta">Índigo HoraCerta</option>
             </select>
           </div>
-          <a class="link hide-sm" href="{% url 'landing' %}#recursos">Recursos</a>
           <a class="link" href="{% url 'help' %}">Ajuda</a>
           <a class="btn" href="{% url 'login' %}">Entrar no sistema</a>
         </nav>
@@ -89,6 +92,7 @@
     </div>
   </footer>
   <script src="{% static 'js/theme_engine.js' %}"></script>
+  <script src="{% static 'js/connection_guard.js' %}"></script>
   <script src="{% static 'js/pwa-register.js' %}"></script>
 </body>
 </html>

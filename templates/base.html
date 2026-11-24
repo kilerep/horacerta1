@@ -59,6 +59,10 @@
             <option value="professional-neutral">Neutro Profissional</option>
             <option value="brazil-corporate">Brasil Corporativo</option>
             <option value="rubro-professional">Rubro Profissional</option>
+            <option value="claro-operacional">Claro Operacional</option>
+            <option value="areia-terracota">Areia Terracota</option>
+            <option value="oceano-noturno">Oceano Noturno</option>
+            <option value="indigo-horacerta">Índigo HoraCerta</option>
           </select>
         </div>
         <a class="btn" href="{% url 'help' %}">Ajuda</a>
@@ -67,7 +71,7 @@
           {% if header_mode == "company" %}
             <span class="pill">Empresa: {{ header_company_name|default:"Empresa" }}</span>
           {% else %}
-            <span class="pill">Logado como: {{ header_display_name|default:"Usuario" }}</span>
+            <span class="pill">Logado como: {{ header_display_name|default:"Usuário" }}</span>
           {% endif %}
           <a class="btn" href="{% url 'logout' %}">Sair</a>
         {% endif %}
@@ -77,5 +81,7 @@
     {% block content %}{% endblock %}
   </div>
   <script src="{% static 'js/theme_engine.js' %}"></script>
+  <script src="{% static 'js/connection_guard.js' %}"></script>
+  <script src="{% static 'js/offline_mirror.js' %}"></script>
 </body>
 </html>

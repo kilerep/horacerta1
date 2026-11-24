@@ -1,0 +1,12 @@
+<a class="wr-card {% if not report.is_locked %}is-draft{% endif %}" href="{% url 'written_report_detail' report.id %}">
+  <span class="wr-num"><small>Nº</small><strong>{% if report.number %}{{ report.number_label }}{% else %}—{% endif %}</strong></span>
+  <span class="wr-body">
+    <strong>{{ report.title }}</strong>
+    <span class="wr-meta">
+      <span>{{ report.get_kind_display }}</span>
+      <span>{{ report.client_label }}</span>
+      {% if report.issued_at %}<span>Emitido {{ report.issued_at|date:"d/m/Y" }}</span>{% endif %}
+    </span>
+  </span>
+  {% if report.is_locked %}<span class="wr-chip {% if report.viewed_at %}ok{% endif %}">{% if report.viewed_at %}Cliente abriu{% else %}Emitido{% endif %}</span>{% else %}<span class="wr-chip">Rascunho</span>{% endif %}
+</a>

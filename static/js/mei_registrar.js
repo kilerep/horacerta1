@@ -9,12 +9,9 @@
   var form = document.getElementById("hcPunchForm");
   var punchBtn = document.getElementById("hcPunchBtn");
   var punchLabel = punchBtn ? punchBtn.querySelector(".hc-punch-btn__label") : null;
-  var defaultPunchLabel = punchLabel ? punchLabel.textContent : "Registrar horario";
+  var defaultPunchLabel = punchLabel ? punchLabel.textContent : "Registrar horário";
   var selectedContractInput = document.getElementById("hcSelectedContract");
   var contractSelect = document.getElementById("hcContractSelect");
-  var geoLatitudeInput = document.getElementById("hcGeoLatitude");
-  var geoLongitudeInput = document.getElementById("hcGeoLongitude");
-  var geoAccuracyInput = document.getElementById("hcGeoAccuracy");
 
   var manualOpenBtn = document.getElementById("hcManualOpen");
   var manualModal = document.getElementById("hcManualModal");
@@ -38,7 +35,7 @@
 
   function applyGreetingAndDate(now) {
     if (greetingLine) {
-      var displayName = greetingLine.getAttribute("data-display-name") || "usuario";
+      var displayName = greetingLine.getAttribute("data-display-name") || "usuário";
       if (greetingSalute) {
         greetingSalute.textContent = getGreeting(now.getHours()) + ",";
       }
@@ -73,22 +70,22 @@
     badgeEl.classList.remove("hc-badge--warn", "hc-badge--ok", "hc-badge--neutral");
 
     if (count === 0) {
-      badgeEl.textContent = "Sem horarios hoje";
+      badgeEl.textContent = "Sem horários hoje";
       badgeEl.classList.add("hc-badge--neutral");
-      if (badgeHint) badgeHint.textContent = "Registre o primeiro horario para iniciar o dia.";
+      if (badgeHint) badgeHint.textContent = "Registre o primeiro horário para iniciar o dia.";
       return;
     }
 
     if (count % 2 === 0) {
       badgeEl.textContent = "Dia completo";
       badgeEl.classList.add("hc-badge--ok");
-      if (badgeHint) badgeHint.textContent = "Todos os horarios de hoje estao pareados.";
+      if (badgeHint) badgeHint.textContent = "Todos os horários de hoje estão pareados.";
       return;
     }
 
     badgeEl.textContent = "Dia em andamento";
     badgeEl.classList.add("hc-badge--warn");
-    if (badgeHint) badgeHint.textContent = "Existe um horario sem par ate o momento.";
+    if (badgeHint) badgeHint.textContent = "Existe um horário sem par até o momento.";
   }
 
   function setSubmittingState(isLoading) {
@@ -127,86 +124,25 @@
   function bindPunchSubmit() {
     if (!form || !punchBtn) return;
     form.dataset.submitting = "0";
-    form.dataset.geoReady = "0";
-
-    function clearGeoFields() {
-      if (geoLatitudeInput) geoLatitudeInput.value = "";
-      if (geoLongitudeInput) geoLongitudeInput.value = "";
-      if (geoAccuracyInput) geoAccuracyInput.value = "";
-    }
-
-    function submitWithGeo(coords) {
-      clearGeoFields();
-      if (coords) {
-        if (geoLatitudeInput && typeof coords.latitude === "number") {
-          geoLatitudeInput.value = String(coords.latitude.toFixed(6));
-        }
-        if (geoLongitudeInput && typeof coords.longitude === "number") {
-          geoLongitudeInput.value = String(coords.longitude.toFixed(6));
-        }
-        if (geoAccuracyInput && typeof coords.accuracy === "number") {
-          geoAccuracyInput.value = String(Math.round(coords.accuracy * 100) / 100);
-        }
-      }
-      form.dataset.geoReady = "1";
-      form.submit();
-    }
-
-    function resolveGeolocationAndSubmit() {
-      if (!navigator.geolocation) {
-        submitWithGeo(null);
-        return;
-      }
-
-      var completed = false;
-      function complete(coords) {
-        if (completed) return;
-        completed = true;
-        submitWithGeo(coords);
-      }
-
-      var fallbackTimer = window.setTimeout(function () {
-        complete(null);
-      }, 2600);
-
-      navigator.geolocation.getCurrentPosition(
-        function (position) {
-          window.clearTimeout(fallbackTimer);
-          complete(position && position.coords ? position.coords : null);
-        },
-        function () {
-          window.clearTimeout(fallbackTimer);
-          complete(null);
-        },
-        {
-          enableHighAccuracy: false,
-          timeout: 2200,
-          maximumAge: 60000
-        }
-      );
-    }
 
     form.addEventListener("submit", function (event) {
-      if (form.dataset.geoReady === "1") {
+      // Sem internet o offline_bridge.js ja guardou o horario no aparelho.
+      if (event.defaultPrevented) {
         return;
       }
-
-      event.preventDefault();
       if (form.dataset.submitting === "1") {
+        event.preventDefault();
         return;
       }
 
       form.dataset.submitting = "1";
       setSubmittingState(true);
-      resolveGeolocationAndSubmit();
     });
 
     form.addEventListener(
       "invalid",
       function () {
         form.dataset.submitting = "0";
-        form.dataset.geoReady = "0";
-        clearGeoFields();
         setSubmittingState(false);
       },
       true
@@ -214,8 +150,6 @@
 
     window.addEventListener("pageshow", function () {
       form.dataset.submitting = "0";
-      form.dataset.geoReady = "0";
-      clearGeoFields();
       setSubmittingState(false);
     });
   }
@@ -263,7 +197,7 @@
     var removeBtn = document.createElement("button");
     removeBtn.type = "button";
     removeBtn.className = "btn hc-time-remove";
-    removeBtn.setAttribute("aria-label", "Remover horario");
+    removeBtn.setAttribute("aria-label", "Remover horário");
     removeBtn.textContent = "Remover";
     removeBtn.addEventListener("click", function () {
       row.remove();
@@ -356,9 +290,9 @@
       }
 
       var clientErrors = [];
-      if (!selectedContract) clientErrors.push("Selecione cliente e contrato.");
+      if (!selectedContract) clientErrors.push("Selecione o cliente.");
       if (!selectedDate) clientErrors.push("Informe a data do registro.");
-      if (!times.length) clientErrors.push("Informe pelo menos 1 horario.");
+      if (!times.length) clientErrors.push("Informe pelo menos 1 horário.");
 
       if (clientErrors.length) {
         showManualErrors(clientErrors);
@@ -395,7 +329,7 @@
         })
         .then(function (data) {
           if (!data || !data.ok) {
-            var backendErrors = data && data.errors && data.errors.length ? data.errors : ["Nao foi possivel salvar o lancamento manual."];
+            var backendErrors = data && data.errors && data.errors.length ? data.errors : ["Não foi possível salvar o lançamento manual."];
             showManualErrors(backendErrors);
             return;
           }
@@ -410,7 +344,7 @@
           window.location.assign(nextUrl);
         })
         .catch(function () {
-          showManualErrors(["Erro de rede ao enviar lancamento manual."]);
+          showManualErrors(["Erro de rede ao enviar o lançamento manual."]);
         })
         .finally(function () {
           if (manualSaveBtn) {

@@ -159,6 +159,20 @@
       background:rgba(250,204,21,.12);
       border-color:rgba(250,204,21,.25);
     }
+    .status-dayoff{
+      color:var(--success-text);
+      background:var(--success-bg);
+      border-color:var(--success-border);
+    }
+    .hx-off{display:grid;gap:10px}
+    .hx-off form{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:end}
+    .hx-off .kinds{display:flex;gap:6px;flex-wrap:wrap}
+    .hx-off .kinds label{display:flex;align-items:center;gap:6px;min-height:44px;padding:0 12px;border:1px solid var(--color-border);border-radius:999px;font-weight:800;cursor:pointer}
+    .hx-off .kinds label:has(input:checked){border-color:var(--color-primary);background:var(--color-primary-soft)}
+    .hx-off ul{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+    .hx-off li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--color-border);border-radius:10px}
+    .hx-off li form{display:block}
+    @media (max-width:640px){.hx-off form{grid-template-columns:1fr}}
     .status-empty{
       color:#d7e4ff;
       background:rgba(255,255,255,.08);
@@ -238,6 +252,20 @@
       color:var(--muted);
       background:rgba(255,255,255,.02);
     }
+    .hx-day{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:12px 2px;border-top:1px solid var(--color-border)}
+    .hx-day:first-child{border-top:0}
+    .hx-day__main{min-width:0}
+    .hx-day__date{display:block;font-size:15px;color:var(--color-text-strong)}
+    .hx-day__times{display:block;margin-top:2px;color:var(--color-text-muted);font-size:13px;overflow-wrap:anywhere}
+    .hx-day__side{text-align:right}
+    .hx-day__total{display:block;font-size:17px;font-variant-numeric:tabular-nums}
+    .hx-day__money{display:block;color:var(--color-text-muted);font-size:13px;font-variant-numeric:tabular-nums}
+    .hx-day__status{grid-column:1 / -1;justify-self:start}
+    .hx-empty-days{margin-top:6px;border-top:1px solid var(--color-border);padding-top:8px}
+    .hx-empty-days summary{display:flex;align-items:center;min-height:44px;cursor:pointer;color:var(--color-text-muted);font-weight:700;font-size:14px}
+    .hx-empty-days p{margin:0;display:flex;flex-wrap:wrap;gap:6px}
+    .hx-empty-days span{padding:3px 8px;border:1px solid var(--color-border);border-radius:999px;font-size:12px;color:var(--color-text-muted);font-variant-numeric:tabular-nums}
+    .hx-row-empty td{opacity:.55}
     @media (max-width: 900px){
       .mei-history__filters{grid-template-columns:repeat(2,minmax(0,1fr))}
       .mei-history__field:first-child,
@@ -284,14 +312,14 @@
   <div class="mei-history">
     <section class="mei-history__panel">
       <h2 class="mei-history__title">Filtros do histórico</h2>
-      <p class="mei-history__sub">Selecione cliente, contrato e período para acompanhar sua jornada com clareza.</p>
+      <p class="mei-history__sub">Escolha cliente e período para conferir suas horas.</p>
       <div style="margin-top:10px;">
         <a class="btn" href="{% url 'mei_edit_today_punches' %}">Editar horários de hoje</a>
         <p class="mei-history__sub" style="margin-top:8px;">Você só pode editar horários do dia atual. Dias anteriores ficam bloqueados para preservar a segurança dos relatórios.</p>
       </div>
       <form method="get" class="mei-history__filters" data-submit-once="true">
         <div class="mei-history__field">
-          <label>Cliente e contrato</label>
+          <label>Cliente</label>
           <select name="contract" onchange="this.form.submit()">
             {% for c in contracts %}
               <option value="{{ c.id }}" {% if selected_contract and c.id == selected_contract.id %}selected{% endif %}>
@@ -343,6 +371,31 @@
       </div>
     </section>
 
+    <section class="mei-history__panel hx-off" aria-labelledby="hx-off-title">
+      <h2 class="mei-history__title" id="hx-off-title">Folgas e feriados</h2>
+      <p class="mei-history__sub">Marque os dias em que você não trabalhou. Eles aparecem aqui e no fechamento de horas, para o cliente entender por que não há horas.</p>
+      <form method="post" action="{% url 'mei_day_off' %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <div class="field"><label for="off-date">Dia</label><input id="off-date" type="date" name="date" value="{{ today_iso }}" required></div>
+        <div class="kinds" role="radiogroup" aria-label="Tipo">
+          <label><input type="radio" name="kind" value="FOLGA" checked> Folga</label>
+          <label><input type="radio" name="kind" value="FERIADO"> Feriado</label>
+        </div>
+        <button class="btn primary" type="submit">Marcar</button>
+        <div class="field" style="grid-column:1 / -1"><label for="off-note">Observação (opcional)</label><input id="off-note" name="note" maxlength="80" placeholder="Ex.: Proclamação da República"></div>
+      </form>
+      {% if period_days_off %}
+        <ul>
+          {% for off in period_days_off %}
+            <li><span><strong>{{ off.date|date:"d/m/Y" }}</strong> · {{ off.label }}</span>
+              <form method="post" action="{% url 'mei_day_off' %}">{% csrf_token %}<input type="hidden" name="date" value="{{ off.date|date:'Y-m-d' }}"><input type="hidden" name="action" value="remove"><input type="hidden" name="next" value="{{ request.get_full_path }}"><button class="btn" type="submit">Desmarcar</button></form>
+            </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    </section>
+
     <section class="mei-history__panel">
       <h2 class="mei-history__title">Histórico diário</h2>
       <p class="mei-history__sub">Visão por dia para leitura rápida: horários, total e status.</p>
@@ -361,7 +414,7 @@
             </thead>
             <tbody>
               {% for row in history_rows %}
-                <tr>
+                <tr{% if not row.punches_count %} class="hx-row-empty"{% endif %}>
                   <td>{{ row.date|date:"d/m/Y" }}</td>
                   <td>{{ row.punches_count }}</td>
                   <td class="mei-history__times">{{ row.punch_times_label }}</td>
@@ -375,32 +428,25 @@
             </tbody>
           </table>
         </div>
-        <div class="mei-history__cards" aria-label="Histórico diário em cartões">
-          {% for row in history_rows %}
-            <article class="mei-history__day-card">
-              <div class="mei-history__day-head">
-                <div class="mei-history__date">{{ row.date|date:"d/m/Y" }}</div>
-                <span class="mei-history__status-badge status-{{ row.status_kind }}">{{ row.status_label }}</span>
+        <div class="mei-history__cards" aria-label="Histórico diário">
+          {% if not summary_total_days_with_records %}<p class="mei-history__empty-state">Nenhum horário registrado neste período. Escolha outras datas acima ou registre um horário hoje.</p>{% endif %}
+          {% for row in history_rows %}{% if row.punches_count %}
+            <article class="hx-day">
+              <div class="hx-day__main">
+                <strong class="hx-day__date">{{ row.date|date:"D, d/m"|capfirst }}</strong>
+                <span class="hx-day__times">{{ row.punch_times_label }}</span>
               </div>
-              <div class="mei-history__day-grid">
-                <div class="mei-history__day-item">
-                  <span class="mei-history__day-label">Horários</span>
-                  <span class="mei-history__day-value">{{ row.punches_count }}</span>
-                </div>
-                <div class="mei-history__day-item">
-                  <span class="mei-history__day-label">Horários registrados</span>
-                  <span class="mei-history__day-value">{{ row.punch_times_label }}</span>
-                </div>
-                <div class="mei-history__day-item">
-                  <span class="mei-history__day-label">Total</span>
-                  <span class="mei-history__day-total-row">
-                    <span class="mei-history__day-value">{{ row.total_hours_hhmm }}</span>
-                    <span class="mei-history__day-money">{{ row.estimated_value_brl }}</span>
-                  </span>
-                </div>
+              <div class="hx-day__side">
+                <strong class="hx-day__total">{{ row.total_hours_hhmm }}</strong>
+                <span class="hx-day__money">{{ row.estimated_value_brl }}</span>
               </div>
+              <span class="mei-history__status-badge status-{{ row.status_kind }} hx-day__status">{{ row.status_label }}</span>
             </article>
-          {% endfor %}
+          {% endif %}{% endfor %}
+          <details class="hx-empty-days">
+            <summary>Dias sem registro no período</summary>
+            <p>{% for row in history_rows %}{% if not row.punches_count %}<span>{{ row.date|date:"d/m" }}{% if row.day_off %} ({{ row.day_off.get_kind_display }}){% endif %}</span>{% endif %}{% endfor %}</p>
+          </details>
         </div>
       {% else %}
         <div class="mei-history__empty-state">Sem registros no período.</div>

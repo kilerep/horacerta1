@@ -66,14 +66,14 @@ class Contract(models.Model):
     def clean(self):
         errors = {}
         if not self.employee_id:
-            errors["employee"] = "Contract precisa de um employee valido."
+            errors["employee"] = "Cliente precisa de um prestador válido."
         if not self.company_id:
-            errors["company"] = "Contract precisa de uma company valida."
+            errors["company"] = "Cliente precisa de uma empresa válida."
         if self.employee_id and self.company_id and not Employee.objects.filter(
             id=self.employee_id,
             company_id=self.company_id,
         ).exists():
-            errors["employee"] = "Employee do contrato precisa pertencer a empresa do contrato."
+            errors["employee"] = "O profissional precisa pertencer ao cliente informado."
         if errors:
             raise ValidationError(errors)
 
@@ -101,21 +101,23 @@ class ActivePunchManager(models.Manager):
 
 class Punch(models.Model):
     class ValidationMethod(models.TextChoices):
-        FREE_POLICY = "FREE_POLICY", "Politica livre"
-        GEOLOCATION = "GEOLOCATION", "Geolocalizacao"
+        FREE_POLICY = "FREE_POLICY", "Política livre"
+        GEOLOCATION = "GEOLOCATION", "Geolocalização"  # legado: GPS desativado em 2026-11
         PRESENTIAL_QR_PENDING = "PRESENTIAL_QR_PENDING", "Presencial com QR (pendente)"
 
+    # legado: GPS desativado em 2026-11. Novos registros sempre usam FREE;
+    # os demais valores ficam so para ler registros antigos.
     class ConfidenceStatus(models.TextChoices):
         FREE = "FREE", "Livre"
         ON_SITE = "ON_SITE", "No local"
         OUT_OF_RADIUS = "OUT_OF_RADIUS", "Fora do raio"
-        NO_LOCATION = "NO_LOCATION", "Sem localizacao"
-        IMPRECISE = "IMPRECISE", "Localizacao imprecisa"
+        NO_LOCATION = "NO_LOCATION", "Sem localização"
+        IMPRECISE = "IMPRECISE", "Localização imprecisa"
 
     class QrConfirmationStatus(models.TextChoices):
-        NOT_REQUIRED = "NOT_REQUIRED", "Nao exigido"
+        NOT_REQUIRED = "NOT_REQUIRED", "Não exigido"
         CONFIRMED = "CONFIRMED", "Confirmado por QR"
-        REQUIRED_MISSING = "REQUIRED_MISSING", "QR exigido e nao confirmado"
+        REQUIRED_MISSING = "REQUIRED_MISSING", "QR exigido e não confirmado"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     audit_event_id = models.UUIDField(default=uuid.uuid4, editable=False, db_index=True)
@@ -129,9 +131,11 @@ class Punch(models.Model):
     timestamp = models.DateTimeField(default=timezone.now, editable=False)
     note = models.TextField(blank=True, default="")
     is_manual = models.BooleanField(default=False)
+    # legado: GPS desativado em 2026-11 (campos mantidos so para nao apagar dados antigos)
     geo_latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     geo_longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     geo_accuracy_m = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    # legado: GPS desativado em 2026-11
     validated_location = models.ForeignKey(
         CompanyAuthorizedLocation,
         on_delete=models.SET_NULL,
@@ -139,6 +143,7 @@ class Punch(models.Model):
         null=True,
         blank=True,
     )
+    # legado: GPS desativado em 2026-11
     distance_to_location_m = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     validation_method = models.CharField(
         max_length=30,
@@ -210,16 +215,6 @@ class Punch(models.Model):
         super().save(*args, **kwargs)
 
     @property
-    def confidence_tone(self):
-        if self.confidence_status == self.ConfidenceStatus.ON_SITE:
-            return "success"
-        if self.confidence_status in {self.ConfidenceStatus.OUT_OF_RADIUS, self.ConfidenceStatus.NO_LOCATION}:
-            return "warn"
-        if self.confidence_status == self.ConfidenceStatus.IMPRECISE:
-            return "pending"
-        return "neutral"
-
-    @property
     def qr_tone(self):
         if self.qr_confirmation_status == self.QrConfirmationStatus.CONFIRMED:
             return "success"
@@ -231,8 +226,6 @@ class Punch(models.Model):
     def audit_method_label(self):
         if self.qr_confirmation_status == self.QrConfirmationStatus.CONFIRMED:
             return "QR presencial"
-        if self.validation_method == self.ValidationMethod.GEOLOCATION:
-            return "Localizacao"
         if self.validation_method == self.ValidationMethod.PRESENTIAL_QR_PENDING:
             return "QR presencial (pendente)"
         return "Livre"
@@ -240,10 +233,10 @@ class Punch(models.Model):
 
 class PunchCorrectionLog(models.Model):
     class ActionType(models.TextChoices):
-        TIME_CHANGED = "time_changed", "Horario corrigido"
+        TIME_CHANGED = "time_changed", "Horário corrigido"
         CANCELLED = "cancelled", "Cancelado"
         RESTORED = "restored", "Restaurado"
-        ADMIN_NOTE_ADDED = "admin_note_added", "Observacao administrativa"
+        ADMIN_NOTE_ADDED = "admin_note_added", "Observação administrativa"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     punch = models.ForeignKey(
@@ -277,11 +270,11 @@ class PunchCorrectionLog(models.Model):
 
 class WorkdayChangeLog(models.Model):
     class ChangeType(models.TextChoices):
-        EDIT = "edit", "Edicao"
-        ADD = "add", "Adicao"
-        REMOVE = "remove", "Remocao"
+        EDIT = "edit", "Edição"
+        ADD = "add", "Adição"
+        REMOVE = "remove", "Remoção"
         CLIENT_CHANGED = "client_changed", "Troca de cliente"
-        MIXED = "mixed", "Alteracao mista"
+        MIXED = "mixed", "Alteração mista"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(
@@ -329,14 +322,14 @@ class WorkdayChangeLog(models.Model):
 class PunchCorrectionRequest(models.Model):
     class ProblemType(models.TextChoices):
         EXTRA_PUNCH = "extra_punch", "Registro a mais"
-        MISSED_PUNCH = "missed_punch", "Esqueci uma batida"
-        WRONG_TIME = "wrong_time", "Horario errado"
+        MISSED_PUNCH = "missed_punch", "Esqueci de registrar um horário"
+        WRONG_TIME = "wrong_time", "Horário errado"
         DUPLICATED_PUNCH = "duplicated_punch", "Registro duplicado"
         OTHER = "other", "Outro"
 
     class Status(models.TextChoices):
         OPEN = "open", "Aberta"
-        IN_REVIEW = "in_review", "Em analise"
+        IN_REVIEW = "in_review", "Em análise"
         CORRECTED = "corrected", "Corrigida"
         REJECTED = "rejected", "Recusada"
 
@@ -406,13 +399,15 @@ class InternalNotification(models.Model):
         MEI = "mei", "Prestador/MEI"
 
     class NotificationType(models.TextChoices):
-        CORRECTION_REQUEST_CREATED = "correction_request_created", "Solicitacao de correcao criada"
-        CORRECTION_REQUEST_STATUS_CHANGED = "correction_request_status_changed", "Status de solicitacao alterado"
-        PUNCH_CORRECTED = "punch_corrected", "Horario corrigido"
+        CORRECTION_REQUEST_CREATED = "correction_request_created", "Solicitação de correção criada"
+        CORRECTION_REQUEST_STATUS_CHANGED = "correction_request_status_changed", "Status de solicitação alterado"
+        PUNCH_CORRECTED = "punch_corrected", "Horário corrigido"
         PUNCH_CANCELLED = "punch_cancelled", "Registro cancelado"
         PUNCH_RESTORED = "punch_restored", "Registro restaurado"
-        ADMIN_NOTE_ADDED = "admin_note_added", "Observacao administrativa adicionada"
-        COMPANY_ACKNOWLEDGED = "company_acknowledged", "Ciencia da empresa registrada"
+        ADMIN_NOTE_ADDED = "admin_note_added", "Observação administrativa adicionada"
+        COMPANY_ACKNOWLEDGED = "company_acknowledged", "Ciência da empresa registrada"
+        SHIPMENT_NOTE = "shipment_note", "Romaneio de envio"
+        SERVICE_REMINDER = "service_reminder", "Lembrete de serviço"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     recipient_user = models.ForeignKey(
@@ -543,29 +538,29 @@ class ActivityReportRequest(models.Model):
     def clean(self):
         errors = {}
         if not self.employee_id:
-            errors["employee"] = "Solicitacao precisa de um employee valido."
+            errors["employee"] = "Solicitação precisa de um prestador válido."
         if not self.company_id:
-            errors["company"] = "Solicitacao precisa de uma company valida."
+            errors["company"] = "Solicitação precisa de uma empresa válida."
         if self.employee_id and self.company_id and not Employee.objects.filter(
             id=self.employee_id,
             company_id=self.company_id,
         ).exists():
-            errors["employee"] = "Employee da solicitacao precisa pertencer a empresa."
+            errors["employee"] = "O prestador da solicitação precisa pertencer à empresa."
         if self.contract_id:
             contract = Contract.objects.select_related("employee", "company").filter(id=self.contract_id).first()
             if not contract:
-                errors["contract"] = "Vinculo informado nao existe."
+                errors["contract"] = "Cliente informado não existe."
             else:
                 if self.company_id and contract.company_id != self.company_id:
-                    errors["company"] = "Empresa da solicitacao difere da empresa do vinculo."
+                    errors["company"] = "Empresa da solicitação difere da empresa do cliente."
                 if self.employee_id and contract.employee_id != self.employee_id:
-                    errors["employee"] = "Profissional da solicitacao difere do profissional do vinculo."
+                    errors["employee"] = "Profissional da solicitação difere do profissional do cliente."
         if self.date_from and self.date_to and self.date_from > self.date_to:
-            errors["date_to"] = "Data final nao pode ser anterior a data inicial."
+            errors["date_to"] = "Data final não pode ser anterior à data inicial."
         if self.status in {self.Status.RESPONDED, self.Status.REVIEWED} and not self.response_report_id:
-            errors["response_report"] = "Solicitacao respondida precisa de relatorio vinculado."
+            errors["response_report"] = "Solicitação respondida precisa de relatório ligado a ela."
         if self.status == self.Status.REVIEWED and not self.reviewed_by_id:
-            errors["reviewed_by"] = "Solicitacao revisada precisa de usuario revisor."
+            errors["reviewed_by"] = "Solicitação revisada precisa de usuário revisor."
         if errors:
             raise ValidationError(errors)
 
@@ -600,21 +595,21 @@ class ServiceReport(models.Model):
         SENT = "SENT", "Enviado"
         VIEWED = "VIEWED", "Visualizado"
         REVIEWED = "REVIEWED", "Conferido"
-        DIVERGENT = "DIVERGENT", "Com divergencia"
-        PAID = "PAID", "Pago"
+        DIVERGENT = "DIVERGENT", "Com divergência"
+        PAID = "PAID", "Conferido pelo cliente"  # legado: valor gravado continua PAID
         CANCELED = "CANCELED", "Cancelado"
 
     class ConferenceStatus(models.TextChoices):
-        PENDING = "PENDING", "Aguardando conferencia"
+        PENDING = "PENDING", "Aguardando conferência"
         VIEWED = "VIEWED", "Visualizado"
         REVIEWED = "REVIEWED", "Conferido"
-        DIVERGENT = "DIVERGENT", "Com divergencia"
+        DIVERGENT = "DIVERGENT", "Com divergência"
         REVOKED = "REVOKED", "Link revogado"
         EXPIRED = "EXPIRED", "Link expirado"
 
     class PaymentStatus(models.TextChoices):
         PENDING = "pending", "Pendente"
-        PAID = "paid", "Pago"
+        PAID = "paid", "Conferido pelo cliente"  # legado: valor gravado continua paid
 
     company = models.ForeignKey(
         Company,
@@ -655,6 +650,10 @@ class ServiceReport(models.Model):
     payment_status = models.CharField(max_length=20, choices=PaymentStatus.choices, default=PaymentStatus.PENDING)
     paid_at = models.DateTimeField(null=True, blank=True)
     paid_note = models.TextField(blank=True, default="")
+    # Cancelamento pelo prestador (ex.: cliente contestou): libera os dias do
+    # periodo para edicao. O relatorio nao e apagado - fica no historico.
+    canceled_at = models.DateTimeField(null=True, blank=True)
+    cancel_reason = models.CharField(max_length=255, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -671,26 +670,26 @@ class ServiceReport(models.Model):
     def clean(self):
         errors = {}
         if not self.company_id:
-            errors["company"] = "Relatorio precisa de uma empresa valida."
+            errors["company"] = "Relatório precisa de uma empresa válida."
         if not self.employee_id:
-            errors["employee"] = "Relatorio precisa de um profissional valido."
+            errors["employee"] = "Relatório precisa de um profissional válido."
         if not self.contract_id:
-            errors["contract"] = "Relatorio precisa de um vinculo valido."
+            errors["contract"] = "Relatório precisa de um cliente válido."
 
         if self.contract_id:
             contract = Contract.objects.select_related("employee", "company").filter(id=self.contract_id).first()
             if not contract:
-                errors["contract"] = "Vinculo informado nao existe."
+                errors["contract"] = "Cliente informado não existe."
             else:
                 if self.company_id and contract.company_id != self.company_id:
-                    errors["company"] = "Empresa do relatorio difere da empresa do vinculo."
+                    errors["company"] = "Empresa do relatório difere da empresa do cliente."
                 if self.employee_id and contract.employee_id != self.employee_id:
-                    errors["employee"] = "Profissional do relatorio difere do profissional do vinculo."
+                    errors["employee"] = "Profissional do relatório difere do profissional do cliente."
                 if self.company_id and self.employee_id and contract.employee.company_id != self.company_id:
-                    errors["employee"] = "Profissional informado nao pertence a empresa."
+                    errors["employee"] = "Profissional informado não pertence à empresa."
 
         if self.date_from and self.date_to and self.date_from > self.date_to:
-            errors["date_to"] = "Data final nao pode ser anterior a data inicial."
+            errors["date_to"] = "Data final não pode ser anterior à data inicial."
         if errors:
             raise ValidationError(errors)
 
@@ -723,9 +722,75 @@ class ServiceReport(models.Model):
         if self.status == self.Status.DRAFT:
             self.status = self.Status.SENT
 
+    @property
+    def can_be_canceled(self):
+        return self.status != self.Status.CANCELED and self.status != self.Status.PAID and (
+            self.payment_status != self.PaymentStatus.PAID
+        )
+
+    def cancel(self, reason=""):
+        """Cancela o relatorio: libera os dias e desativa o link publico."""
+        now = timezone.now()
+        self.status = self.Status.CANCELED
+        self.canceled_at = now
+        self.cancel_reason = (reason or "").strip()[:255]
+        if self.conference_token and not self.conference_revoked_at:
+            self.conference_revoked_at = now
+            self.conference_final_status = self.ConferenceStatus.REVOKED
+
     def revoke_conference_link(self):
         self.conference_revoked_at = timezone.now()
         self.conference_final_status = self.ConferenceStatus.REVOKED
 
     def __str__(self):
         return f"ServiceReport<{self.id}> {self.report_date:%d/%m/%Y} {self.title}"
+
+
+
+class DayOff(models.Model):
+    """Dia sem trabalho marcado pelo prestador (folga ou feriado): aparece no Historico e no fechamento,
+    para o cliente entender por que nao ha horas naquele dia. Vale para todos os clientes."""
+
+    class Kind(models.TextChoices):
+        FOLGA = "FOLGA", "Folga"
+        FERIADO = "FERIADO", "Feriado"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="days_off")
+    date = models.DateField("Dia")
+    kind = models.CharField(max_length=10, choices=Kind.choices, default=Kind.FOLGA)
+    note = models.CharField("Observação", max_length=80, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["date"]
+        constraints = [models.UniqueConstraint(fields=["owner", "date"], name="one_day_off_per_date")]
+
+    def __str__(self):
+        return f"{self.get_kind_display()} {self.date:%d/%m/%Y}"
+
+    @property
+    def label(self):
+        return f"{self.get_kind_display()}" + (f" · {self.note}" if self.note else "")
+
+
+class OfflineReceipt(models.Model):
+    """Recibo de cada acao feita sem internet e ja aplicada (Offline 2.0, etapa 3).
+
+    O aparelho manda cada acao com um client_ref unico. Se a mesma acao chegar de novo
+    (internet caiu no meio do envio), o recibo mostra que ja foi feita e nada duplica.
+    object_id guarda o que foi criado (ex.: cliente novo) para outras acoes da fila
+    apontarem para ele antes mesmo de existir no servidor.
+    """
+
+    client_ref = models.UUIDField(primary_key=True)
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="offline_receipts")
+    kind = models.CharField(max_length=30)
+    object_id = models.CharField(max_length=64, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["owner", "kind"])]
+
+    def __str__(self):
+        return f"{self.kind} {self.client_ref}"

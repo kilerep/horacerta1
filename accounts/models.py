@@ -4,14 +4,18 @@ from django.contrib.auth.models import AbstractUser
 
 class User(AbstractUser):
     class Role(models.TextChoices):
-        EMPRESA = "EMPRESA", "Empresa (RH/Admin)"
-        FUNCIONARIO = "FUNCIONARIO", "Funcionário (MEI)"
+        EMPRESA = "EMPRESA", "Empresa (área desativada)"
+        FUNCIONARIO = "FUNCIONARIO", "Prestador (MEI)"
 
     class VisualTheme(models.TextChoices):
         GRAPHITE = "graphite-premium", "Grafite Premium"
         NEUTRAL = "professional-neutral", "Neutro Profissional"
         BRAZIL = "brazil-corporate", "Brasil Corporativo"
         RUBRO = "rubro-professional", "Rubro Profissional"
+        CLARO = "claro-operacional", "Claro Operacional"
+        AREIA = "areia-terracota", "Areia Terracota"
+        OCEANO = "oceano-noturno", "Oceano Noturno"
+        INDIGO = "indigo-horacerta", "Índigo HoraCerta"
 
     role = models.CharField(
         max_length=20,
@@ -25,6 +29,18 @@ class User(AbstractUser):
         choices=VisualTheme.choices,
         default=VisualTheme.GRAPHITE,
     )
+    # Chaves dos tours guiados (baloes explicativos por tela) que o usuario
+    # ja dispensou - fechou ou concluiu. Guardado no servidor (nao em
+    # localStorage) para nao repetir o tour quando o mesmo usuario troca de
+    # aparelho (ex.: viu no celular, depois abre no PC).
+    dismissed_tours = models.JSONField(default=list, blank=True)
+    # Quando a pessoa aceitou os Termos de Uso/Privacidade no autocadastro.
+    # Nulo para contas criadas antes desse fluxo (empresa/admin ou manuais).
+    terms_accepted_at = models.DateTimeField(null=True, blank=True)
+    terms_version = models.CharField(max_length=20, blank=True, default="")
+
+    def has_dismissed_tour(self, tour_key):
+        return tour_key in (self.dismissed_tours or [])
 
     def resolve_employee_profile(self, *, contract_id=None, company_id=None):
         """
@@ -79,3 +95,44 @@ class User(AbstractUser):
 
     def __str__(self):
         return f"{self.username} ({self.role})"
+
+
+class ProductEvent(models.Model):
+    """Evento de produto para medir ativacao/retencao (funil de uso).
+
+    Sem PII: so o usuario (FK) e propriedades de uma allowlist fixa - ver
+    accounts/analytics.py. Nada de nome, e-mail, cliente, token ou URL.
+    """
+
+    user = models.ForeignKey("accounts.User", on_delete=models.CASCADE, related_name="product_events")
+    event = models.CharField(max_length=64)
+    occurred_at = models.DateTimeField(auto_now_add=True)
+    properties = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["event", "occurred_at"]),
+            models.Index(fields=["user", "event", "occurred_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.event} ({self.user_id})"
+
+
+class PushSubscription(models.Model):
+    """Celular/navegador que aceitou receber avisos do HoraCerta (notificacao push)."""
+
+    user = models.ForeignKey("accounts.User", on_delete=models.CASCADE, related_name="push_subscriptions")
+    endpoint = models.TextField(unique=True)
+    p256dh = models.CharField(max_length=255)
+    auth = models.CharField(max_length=255)
+    user_agent = models.CharField(max_length=300, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_success_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Aviso no celular"
+        verbose_name_plural = "Avisos no celular"
+
+    def __str__(self):
+        return f"push {self.user_id}"

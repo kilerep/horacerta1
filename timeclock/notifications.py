@@ -15,7 +15,9 @@ def create_internal_notification(
     recipient_company=None,
     target_url="",
     audience=None,
+    push=False,
 ):
+    """Cria o aviso do sininho. Com push=True tambem avisa no celular (se o usuario ativou)."""
     if not recipient_user and not recipient_company:
         return None
     if audience is None:
@@ -25,7 +27,7 @@ def create_internal_notification(
             audience = InternalNotification.Audience.INTERNAL_ADMIN
         else:
             audience = InternalNotification.Audience.MEI
-    return InternalNotification.objects.create(
+    notification = InternalNotification.objects.create(
         recipient_user=recipient_user,
         recipient_company=recipient_company,
         actor_user=actor_user,
@@ -35,6 +37,14 @@ def create_internal_notification(
         message=message,
         target_url=target_url or "",
     )
+    if push and recipient_user:
+        from accounts.push import send_push_after_commit
+
+        send_push_after_commit(
+            recipient_user, title=title, body=message, url=target_url or "/",
+            tag=f"hc-{notification_type}",
+        )
+    return notification
 
 
 def notify_internal_staff(*, notification_type, title, message, actor_user=None, target_url=""):
@@ -55,14 +65,6 @@ def notify_internal_staff(*, notification_type, title, message, actor_user=None,
         )
 
 
-def _company_history_url(punch):
-    day = timezone.localtime(punch.timestamp).date()
-    return (
-        f"{reverse('company_history')}?employee={punch.contract.employee_id}"
-        f"&date_from={day:%Y-%m-%d}&date_to={day:%Y-%m-%d}"
-    )
-
-
 def _mei_history_url(punch):
     day = timezone.localtime(punch.timestamp).date()
     return f"{reverse('mei_history')}?date_from={day:%Y-%m-%d}&date_to={day:%Y-%m-%d}"
@@ -73,24 +75,15 @@ def notify_correction_request_created(correction_request):
     employee_name = correction_request.employee.full_name
     company_name = correction_request.company.name
     problem_date = correction_request.problem_date.strftime("%d/%m/%Y")
-    title = "Solicitacao de correcao de horario"
+    title = "Solicitação de correção de horário"
     message = f"{employee_name} reportou um problema em {problem_date} para {company_name}."
-    create_internal_notification(
-        recipient_company=correction_request.company,
-        actor_user=correction_request.user,
-        audience=InternalNotification.Audience.COMPANY,
-        notification_type=InternalNotification.NotificationType.CORRECTION_REQUEST_CREATED,
-        title=title,
-        message=message,
-        target_url=reverse("company_correction_request_detail", args=[correction_request.id]),
-    )
     create_internal_notification(
         recipient_user=correction_request.user,
         actor_user=correction_request.user,
         audience=InternalNotification.Audience.MEI,
         notification_type=InternalNotification.NotificationType.CORRECTION_REQUEST_CREATED,
-        title="Solicitacao enviada",
-        message=f"Sua solicitacao sobre {problem_date} foi registrada para analise interna.",
+        title="Solicitação enviada",
+        message=f"Sua solicitação sobre {problem_date} foi registrada para análise interna.",
         target_url=reverse("mei_notifications"),
     )
     notify_internal_staff(
@@ -107,8 +100,8 @@ def notify_correction_request_status_changed(correction_request, *, actor_user, 
         return
     status_label = correction_request.get_status_display()
     problem_date = correction_request.problem_date.strftime("%d/%m/%Y")
-    title = "Solicitacao de correcao atualizada"
-    message = f"A solicitacao de {problem_date} foi atualizada para {status_label}."
+    title = "Solicitação de correção atualizada"
+    message = f"A solicitação de {problem_date} foi atualizada para {status_label}."
     create_internal_notification(
         recipient_user=correction_request.user,
         actor_user=actor_user,
@@ -117,15 +110,6 @@ def notify_correction_request_status_changed(correction_request, *, actor_user, 
         title=title,
         message=message,
         target_url=reverse("mei_notifications"),
-    )
-    create_internal_notification(
-        recipient_company=correction_request.company,
-        actor_user=actor_user,
-        audience=InternalNotification.Audience.COMPANY,
-        notification_type=InternalNotification.NotificationType.CORRECTION_REQUEST_STATUS_CHANGED,
-        title=title,
-        message=f"{correction_request.employee.full_name}: {message}",
-        target_url=reverse("company_correction_request_detail", args=[correction_request.id]),
     )
     notify_internal_staff(
         actor_user=actor_user,
@@ -140,28 +124,28 @@ def notify_punch_admin_action(punch, *, actor_user, action_type):
     type_map = {
         PunchCorrectionLog.ActionType.TIME_CHANGED: (
             InternalNotification.NotificationType.PUNCH_CORRECTED,
-            "Horario corrigido",
-            "Um horario foi corrigido pelo Painel Interno.",
+            "Horário corrigido",
+            "Um horário foi corrigido pelo Painel Interno.",
         ),
         PunchCorrectionLog.ActionType.CANCELLED: (
             InternalNotification.NotificationType.PUNCH_CANCELLED,
             "Registro cancelado",
-            "Um registro de ponto foi cancelado pelo Painel Interno.",
+            "Um horário registrado foi cancelado pelo Painel Interno.",
         ),
         PunchCorrectionLog.ActionType.RESTORED: (
             InternalNotification.NotificationType.PUNCH_RESTORED,
             "Registro restaurado",
-            "Um registro de ponto foi restaurado pelo Painel Interno.",
+            "Um horário registrado foi restaurado pelo Painel Interno.",
         ),
         PunchCorrectionLog.ActionType.ADMIN_NOTE_ADDED: (
             InternalNotification.NotificationType.ADMIN_NOTE_ADDED,
-            "Observacao administrativa adicionada",
-            "Uma observacao administrativa foi adicionada ao registro.",
+            "Observação administrativa adicionada",
+            "Uma observação administrativa foi adicionada ao registro.",
         ),
     }
     notification_type, title, base_message = type_map[action_type]
     local_time = timezone.localtime(punch.timestamp).strftime("%d/%m/%Y %H:%M")
-    message = f"{base_message} Horario relacionado: {local_time}."
+    message = f"{base_message} Horário relacionado: {local_time}."
     employee_user = punch.contract.employee.user
     create_internal_notification(
         recipient_user=employee_user,
@@ -171,15 +155,6 @@ def notify_punch_admin_action(punch, *, actor_user, action_type):
         title=title,
         message=message,
         target_url=_mei_history_url(punch),
-    )
-    create_internal_notification(
-        recipient_company=punch.contract.company,
-        actor_user=actor_user,
-        audience=InternalNotification.Audience.COMPANY,
-        notification_type=notification_type,
-        title=title,
-        message=f"{punch.contract.employee.full_name}: {message}",
-        target_url=_company_history_url(punch),
     )
     notify_internal_staff(
         actor_user=actor_user,
@@ -209,10 +184,10 @@ def acknowledge_company_notification(notification, *, actor_user):
     return notify_internal_staff(
         actor_user=actor_user,
         notification_type=InternalNotification.NotificationType.COMPANY_ACKNOWLEDGED,
-        title="Empresa marcou ciencia",
+        title="Empresa marcou ciência",
         message=(
             f"{actor_user.get_full_name() or actor_user.email or actor_user.username} "
-            f"marcou ciencia: {notification.title}."
+            f"marcou ciência: {notification.title}."
         ),
         target_url=reverse("internal_notifications"),
     )

@@ -1,0 +1,24 @@
+{# Corpo do relatorio (detalhe do dono): fatos, secoes escritas e a parte automatica. #}
+<div class="wr-facts">
+  <div><span>Prestador</span><strong>{{ data.sender|default:"—" }}</strong></div>
+  <div><span>Cliente</span><strong>{{ report.client_label|default:"—" }}</strong></div>
+  {% if report.kind == "HOURS" %}<div><span>Período</span><strong>{{ data.period|default:"—" }}</strong></div>
+  {% else %}<div><span>Serviço</span><strong>{{ data.service|default:report.service_name|default:"—" }}</strong></div>
+  {% if data.period %}<div><span>Data</span><strong>{{ data.period }}</strong></div>{% endif %}{% endif %}
+</div>
+{% for label, text in report.sections %}
+  <section class="wr-section"><h3>{{ label }}</h3><p>{{ text }}</p></section>
+{% endfor %}
+{% if report.kind == "HOURS" and data.rows %}
+  <table class="wr-table"><thead><tr><th>Dia</th><th class="num">Horas</th></tr></thead><tbody>
+    {% for row in data.rows %}<tr><td>{{ row.date }}</td><td class="num">{{ row.hours }}{% if row.incomplete %} (incompleto){% endif %}</td></tr>{% endfor %}
+  </tbody></table>
+  <div class="wr-total"><span>Total {{ data.total_hours }}</span>{% if data.total_value %}<span>Valor estimado {{ data.total_value }}</span>{% endif %}</div>
+{% elif report.kind == "SERVICE" and data %}
+  {% if data.items %}
+    <table class="wr-table"><thead><tr><th>Item / material</th><th class="num">Qtd.</th><th class="num">Total</th></tr></thead><tbody>
+      {% for item in data.items %}<tr><td>{{ item.name }}</td><td class="num">{{ item.quantity }}</td><td class="num">{{ item.total }}</td></tr>{% endfor %}
+    </tbody></table>
+  {% endif %}
+  {% if data.total_value %}<div class="wr-total"><span>Horas {{ data.total_hours }}</span><span>Total do serviço {{ data.total_value }}</span></div>{% endif %}
+{% endif %}

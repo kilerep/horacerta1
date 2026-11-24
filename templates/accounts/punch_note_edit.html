@@ -11,7 +11,7 @@
     <form method="post" style="display:grid; gap:10px;">
       {% csrf_token %}
       <textarea name="note" rows="4"
-        style="width:100%; background: rgba(0,0,0,.22); color:#fff; border:1px solid rgba(255,255,255,.12); border-radius:14px; padding:12px;">{{ punch.note }}</textarea>
+        style="width:100%; background: var(--field-bg); color: var(--color-text); border:1px solid var(--field-border); border-radius:14px; padding:12px;">{{ punch.note }}</textarea>
 
       <div style="display:flex; gap:10px; flex-wrap:wrap;">
         <button class="btn primary" style="border-radius:14px;">Salvar</button>

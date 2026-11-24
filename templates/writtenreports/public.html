@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>{{ report.title }} — Relatório nº {{ report.number_label }}</title>
+  {% include "services/_public_style.html" %}
+  <style>
+    .doc-kind{font-size:14px;color:var(--muted)}
+    .facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));margin-top:14px;border-top:1px solid var(--line)}
+    .facts div{padding:10px 0;border-bottom:1px solid var(--line)}
+    .facts div:nth-child(odd){padding-right:12px}
+    .facts span{display:block;font-size:13px;color:var(--muted)}
+    .facts strong{display:block;overflow-wrap:anywhere}
+    .text p{color:var(--ink);line-height:1.7;white-space:pre-line}
+    .table{width:100%;border-collapse:collapse;font-size:15px}
+    .table th{padding:0 0 8px;text-align:left;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line)}
+    .table td{padding:10px 0;border-bottom:1px solid var(--line)}
+    .table .num{text-align:right;font-weight:800;font-variant-numeric:tabular-nums}
+    .big{display:inline-flex;align-items:center;justify-content:center;width:100%;min-height:52px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-weight:800;text-decoration:none}
+    .sign{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:28px}
+    .sign div{padding-top:8px;border-top:1px solid var(--ink);text-align:center;font-size:14px;color:var(--muted)}
+    @media (max-width:520px){.facts,.sign{grid-template-columns:1fr}.facts div:nth-child(odd){padding-right:0}}
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="card">
+      <div class="brandline"><span class="brand">HoraCerta</span><span class="kind">{{ report.get_kind_display }}</span></div>
+      <h1>{{ report.title }}</h1>
+      <p class="doc-kind">Relatório nº {{ report.number_label }} · emitido em {{ data.issued }}</p>
+      <div class="facts">
+        <div><span>Prestador</span><strong>{{ sender }}</strong></div>
+        <div><span>Cliente</span><strong>{{ data.client }}</strong></div>
+        {% if report.kind == "HOURS" %}<div><span>Período</span><strong>{{ data.period }}</strong></div><div><span>Total de horas</span><strong>{{ data.total_hours }}</strong></div>
+        {% else %}<div><span>Serviço</span><strong>{{ data.service }}</strong></div>{% if data.period %}<div><span>Data</span><strong>{{ data.period }}</strong></div>{% endif %}{% if data.total_value %}<div><span>Total do serviço</span><strong>{{ data.total_value }}</strong></div>{% endif %}{% endif %}
+      </div>
+    </header>
+
+    {% for label, text in report.sections %}
+      <section class="card text"><h2>{{ label }}</h2><p>{{ text }}</p></section>
+    {% endfor %}
+
+    {% if report.kind == "HOURS" and data.rows %}
+      <section class="card"><h2>Horas por dia</h2>
+        <table class="table"><thead><tr><th>Dia</th><th class="num">Horas</th></tr></thead><tbody>
+          {% for row in data.rows %}<tr><td>{{ row.date }}</td><td class="num">{{ row.hours }}</td></tr>{% endfor %}
+        </tbody><tfoot><tr><td><strong>Total</strong></td><td class="num">{{ data.total_hours }}</td></tr></tfoot></table>
+        {% if data.total_value %}<p class="hint">Valor estimado: <strong>{{ data.total_value }}</strong> ({{ data.rate }}).</p>{% endif %}
+      </section>
+    {% elif report.kind == "SERVICE" and data.items %}
+      <section class="card"><h2>Itens e materiais</h2>
+        <table class="table"><thead><tr><th>Item</th><th class="num">Qtd.</th><th class="num">Total</th></tr></thead><tbody>
+          {% for item in data.items %}<tr><td>{{ item.name }}</td><td class="num">{{ item.quantity }}</td><td class="num">{{ item.total }}</td></tr>{% endfor %}
+        </tbody></table>
+      </section>
+    {% endif %}
+
+    <section class="card">
+      <a class="big" href="{% url 'written_report_public_pdf' report.share_token %}" target="_blank" rel="noopener">Baixar em PDF</a>
+      <div class="sign"><div>{{ sender }}</div><div>{{ data.client }}</div></div>
+    </section>
+
+    <p class="legal">Documento emitido pelo HoraCerta. Depois de emitido, não pode ser alterado. Código de conferência {{ report.id|stringformat:"s"|slice:":8"|upper }}.</p>
+  </main>
+</body>
+</html>
