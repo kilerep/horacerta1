@@ -71,7 +71,7 @@
           {% if header_mode == "company" %}
             <span class="pill">Empresa: {{ header_company_name|default:"Empresa" }}</span>
           {% else %}
-            <span class="pill">Logado como: {{ header_display_name|default:"Usuario" }}</span>
+            <span class="pill">Logado como: {{ header_display_name|default:"Usuário" }}</span>
           {% endif %}
           <a class="btn" href="{% url 'logout' %}">Sair</a>
         {% endif %}
